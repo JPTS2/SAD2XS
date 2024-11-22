@@ -12,6 +12,7 @@ Last Updated:   20-11-2024
 ################################################################################
 import xtrack as xt
 import numpy as np
+import os
 
 ################################################################################
 # Version Information
@@ -127,12 +128,15 @@ def sad2xsuite(
     ########################################
     # Separate Elements By Kind
     ########################################
-    # Semicolons are used to separete element sections
+    # Remove commented out (parts of) lines in content
+    content = os.linesep.join(line.split('!')[0] for line in content.splitlines())
+
+    # Semicolons are used to separate element sections
     sad_sections = content.split(';')
 
     # Known Element Kinds
     sad_elements = (
-        'drift', 'bend', 'quad', 'oct', 'mult', 'sol',
+        'drift', 'bend', 'quad', 'sext', 'oct', 'mult', 'sol',
         'cavi', 'mark', 'moni', 'beambeam', 'apert')
 
     ########################################
@@ -140,6 +144,7 @@ def sad2xsuite(
     ########################################
     # Create a dictionary to store the cleaned content
     cleaned_content = {}
+    variables = {}
 
     for section in sad_sections:
         cleaned_section = section
@@ -153,11 +158,35 @@ def sad2xsuite(
         section_command = cleaned_section.split()[0]
 
         ########################################
+        # Processing Variable Declarations
+        ########################################
+        # Check if command is a variable assignment
+        lrhsides = cleaned_section.split('=')
+        if len(lrhsides) == 2:
+            varname = lrhsides[0]
+            varvalue = lrhsides[1]
+            if is_number(varvalue):
+                variables[varname] = varvalue
+                continue
+            else:
+                # simulate parsing by replacing variable names
+                for v in variables:
+                    varvalue = varvalue.replace(v, variables[v])
+                try:
+                    variables[varname] = str(eval(varvalue))
+                    continue
+                except SyntaxError:
+                    # right hand side is not a simple expression, ignore
+                    pass
+
+        ########################################
         # Processing Elements
         ########################################
         # Check if this command is an element type
         if section_command in sad_elements:
             # Clean the section into dictionary style
+            cleaned_section = cleaned_section.replace('( ', '(')
+            cleaned_section = cleaned_section.replace(' )', ')')
             cleaned_section = cleaned_section.replace('(', 'dict(')
             cleaned_section = cleaned_section.replace(')', '),')
             cleaned_section = cleaned_section.replace(section_command, 'dict(')
@@ -187,6 +216,10 @@ def sad2xsuite(
 
             # Add a closing bracket
             cleaned_section += ')'
+
+            # Replace known variables with their assignments
+            for varname in variables:
+                cleaned_section = cleaned_section.replace(varname, varvalue)
 
             # Evaluate the section as a dictionary
             section_dict = eval(cleaned_section)
@@ -403,6 +436,32 @@ def sad2xsuite(
                     np.cos( np.deg2rad( rotation ) * 2),
                 k1s     = ( ele_vars['k1'] / ele_vars['l'] ) *\
                     np.sin( np.deg2rad( rotation ) * 2))
+
+    ########################################
+    # Sextupole
+    ########################################
+    if 'sext' in cleaned_content:
+        sexts   = cleaned_content['sext']
+
+        for ele_name, ele_vars in sexts.items():
+            # Sextupoles can be thin lenses
+            length = 0
+            if 'l' in ele_vars:
+                length = ele_vars['l']
+
+            k2l = 0
+            if 'k2' in ele_vars:
+                k2l = ele_vars['k2']
+            knl_arr = np.array([0, 0, k2l])
+
+            rotation = 0
+            if 'rotate' in ele_vars:
+                rotation = ele_vars['rotate'] * -1
+
+            xsuite_elements[ele_name] = xt.Multipole(
+                length  = length,
+                knl     = knl_arr * np.cos(np.deg2rad(rotation) * 3),
+                ksl     = knl_arr * np.sin(np.deg2rad(rotation) * 3))
 
     ########################################
     # Octupole
@@ -934,3 +993,11 @@ def sad2xsuite(
     print(40 * '*')
 
     return line, marker_locations
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
