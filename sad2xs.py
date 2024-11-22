@@ -185,6 +185,8 @@ def sad2xsuite(
         # Check if this command is an element type
         if section_command in sad_elements:
             # Clean the section into dictionary style
+            cleaned_section = cleaned_section.replace('( ', '(')
+            cleaned_section = cleaned_section.replace(' )', ')')
             cleaned_section = cleaned_section.replace('(', 'dict(')
             cleaned_section = cleaned_section.replace(')', '),')
             cleaned_section = cleaned_section.replace(section_command, 'dict(')
