@@ -136,7 +136,7 @@ def sad2xsuite(
 
     # Known Element Kinds
     sad_elements = (
-        'drift', 'bend', 'quad', 'oct', 'mult', 'sol',
+        'drift', 'bend', 'quad', 'sext', 'oct', 'mult', 'sol',
         'cavi', 'mark', 'moni', 'beambeam', 'apert')
 
     ########################################
@@ -407,6 +407,32 @@ def sad2xsuite(
                     np.cos( np.deg2rad( rotation ) * 2),
                 k1s     = ( ele_vars['k1'] / ele_vars['l'] ) *\
                     np.sin( np.deg2rad( rotation ) * 2))
+
+    ########################################
+    # Sextupole
+    ########################################
+    if 'sext' in cleaned_content:
+        sexts   = cleaned_content['sext']
+
+        for ele_name, ele_vars in sexts.items():
+            # Sextupoles can be thin lenses
+            length = 0
+            if 'l' in ele_vars:
+                length = ele_vars['l']
+
+            k2l = 0
+            if 'k2' in ele_vars:
+                k2l = ele_vars['k2']
+            knl_arr = np.array([0, 0, k2l])
+
+            rotation = 0
+            if 'rotate' in ele_vars:
+                rotation = ele_vars['rotate'] * -1
+
+            xsuite_elements[ele_name] = xt.Multipole(
+                length  = length,
+                knl     = knl_arr * np.cos(np.deg2rad(rotation) * 3),
+                ksl     = knl_arr * np.sin(np.deg2rad(rotation) * 3))
 
     ########################################
     # Octupole
