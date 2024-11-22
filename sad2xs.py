@@ -12,6 +12,7 @@ Last Updated:   20-11-2024
 ################################################################################
 import xtrack as xt
 import numpy as np
+import os
 
 ################################################################################
 # Version Information
@@ -127,7 +128,10 @@ def sad2xsuite(
     ########################################
     # Separate Elements By Kind
     ########################################
-    # Semicolons are used to separete element sections
+    # Remove commented out (parts of) lines in content
+    content = os.linesep.join(line.split('!')[0] for line in content.splitlines())
+
+    # Semicolons are used to separate element sections
     sad_sections = content.split(';')
 
     # Known Element Kinds
