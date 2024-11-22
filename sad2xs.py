@@ -144,6 +144,7 @@ def sad2xsuite(
     ########################################
     # Create a dictionary to store the cleaned content
     cleaned_content = {}
+    variables = {}
 
     for section in sad_sections:
         cleaned_section = section
@@ -155,6 +156,28 @@ def sad2xsuite(
 
         # Each section starts with a SAD command
         section_command = cleaned_section.split()[0]
+
+        ########################################
+        # Processing Variable Declarations
+        ########################################
+        # Check if command is a variable assignment
+        lrhsides = cleaned_section.split('=')
+        if len(lrhsides) == 2:
+            varname = lrhsides[0]
+            varvalue = lrhsides[1]
+            if is_number(varvalue):
+                variables[varname] = varvalue
+                continue
+            else:
+                # simulate parsing by replacing variable names
+                for v in variables:
+                    varvalue = varvalue.replace(v, variables[v])
+                try:
+                    variables[varname] = str(eval(varvalue))
+                    continue
+                except SyntaxError:
+                    # right hand side is not a simple expression, ignore
+                    pass
 
         ########################################
         # Processing Elements
@@ -191,6 +214,10 @@ def sad2xsuite(
 
             # Add a closing bracket
             cleaned_section += ')'
+
+            # Replace known variables with their assignments
+            for varname in variables:
+                cleaned_section = cleaned_section.replace(varname, varvalue)
 
             # Evaluate the section as a dictionary
             section_dict = eval(cleaned_section)
@@ -964,3 +991,11 @@ def sad2xsuite(
     print(40 * '*')
 
     return line, marker_locations
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
