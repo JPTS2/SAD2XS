@@ -5,7 +5,7 @@ Tested (working) on import of FCC-ee (Z) Lattice (GHC 24.3)
 =============================================
 Author(s):      John P T Salvesen, Giovanni Iadarola
 Email:          john.salvesen@cern.ch
-Last Updated:   20-11-2024
+Last Updated:   09-12-2024
 """
 ################################################################################
 # Required Packages
@@ -16,26 +16,25 @@ import numpy as np
 ################################################################################
 # Version Information
 ################################################################################
-__version__ = '0.1.1'
-__date__    = '20-11-2024'
+__version__ = '0.2.0'
+__date__    = '09-12-2024'
 __author__  = 'J. Salvesen, G. Iadarola'
 __email__   = 'john.salvesen@cern.ch'
 
 ################################################################################
 # Conversion Function
 ################################################################################
+
 def sad2xsuite(
-    sad_lattice_path,
-    mult_replacements:  dict    = None,
-    ref_particle_mass0: float   = xt.ELECTRON_MASS_EV,
-    bend_edge_model:    str     = 'linear',
-    install_markers:    bool    = True,
-    ref_particle_p0c:   float   = None,
-    allow_thick_mult:   bool    = False,
-) -> tuple[xt.Line, dict]:
+        sad_lattice_path:       str,
+        multipole_replacements: dict        = None,
+        ref_particle_mass0:     float       = None,
+        ref_particle_p0c:       float       = None,
+        bend_edge_model:        str         = 'linear',
+        install_markers:        bool        = True) -> tuple[xt.Line, dict]:
     """
     Convert SAD Lattice to XSuite Lattice
-    
+
     ############################################################################
     Parameters:
     ############################################################################
@@ -43,11 +42,13 @@ def sad2xsuite(
     sad_lattice_path: str
         Path to the SAD lattice file
 
-    mult_replacements: dict (optional)
+    multipole_replacements: dict (optional)
         Dictionary of replacements for multipole elements
         Default is None
         Dictionary should be of the form:
-        {'element_base_string': replacement_element_type}
+        {
+            'element_base_string': replacement_element_type
+        }
         Where element_base_string is the base string of the element name
         and replacement_element_type is the element type to replace with
         Currently supported options for replacement_element_type are:
@@ -57,6 +58,10 @@ def sad2xsuite(
         Reference Particle Mass [eV]
         Default is the electron mass
 
+    ref_particle_p0c: float (optional)
+        Reference Particle Momentum [eV/c]
+        Default is None, will attempt to read from SAD file
+
     bend_edge_model: str (optional)
         Model for the bend elements. Options are 'full', 'linear', 'suppressed'
         Default is 'linear'
@@ -65,18 +70,6 @@ def sad2xsuite(
         Install markers at the correct locations
         Default is True
         Requires slicing of thick elements
-    
-    ref_particle_p0c: float (optional)
-        Reference Particle Momentum [eV/c]
-        Default is None, will attempt to read from SAD file
-    
-    allow_thick_mult: bool (optional)
-        Allows thick multipoles to be imported
-        Default is False
-        Default behaviour is to replace thick multipoles with drift kick drift
-        NOT RECOMMENDED
-        SUBJECT TO CHANGE WITH FUTURE XSUITE VERSIONS
-    
         
     ############################################################################
     Outputs
@@ -90,28 +83,38 @@ def sad2xsuite(
     """
 
     ############################################################################
-    # Print Version Information
+    # Setup
     ############################################################################
-    print(80 * '#' + '\n' + 'SAD to XSuite Converter' + '\n' + 80 * '#')
-    print(f'Version: {__version__}')
-    print(f'Dated: {__date__}')
-    print(f'Author(s): {__author__}')
-    print(f'Email: {__email__}')
-    print(40 * '#' + 2*'\n')
-
-    ############################################################################
-    # Load Elements from SAD
-    ############################################################################
-    print('\n' + 40 * '*')
-    print('Loading Elements from SAD Lattice')
-    print(40 * '*')
 
     ########################################
-    # Load and clean SAD File
+    # Known Element Types
+    ########################################
+    sad_elements = (
+        'drift',
+        'bend', 'quad', 'sext', 'oct', 'mult',
+        'sol', 'cavi', 'apert',
+        'mark', 'moni', 'beambeam')
+
+    ########################################
+    # Marker Replacements
+    ########################################
+    # Dangerous default value {} as argument
+    if multipole_replacements is None:
+        multipole_replacements  = {}
+
+    ############################################################################
+    # Parsing Raw SAD File
+    ############################################################################
+
+    ########################################
+    # Load SAD File to Python
     ########################################
     with open(sad_lattice_path, 'r', encoding="utf-8") as sad_file:
         content = sad_file.read()
 
+    ########################################
+    # Convert Formatting to XSuite Style
+    ########################################
     # Make Content Lowercase (Xsuite style)
     content = content.lower()
 
@@ -120,806 +123,925 @@ def sad2xsuite(
         content = content.replace(' =', '=')
     while '= ' in content:
         content = content.replace('= ', '=')
+    while '( ' in content:
+        content = content.replace('( ', '(')
+    while ' )' in content:
+        content = content.replace(' )', ')')
     while '  ' in content:
         content = content.replace('  ', ' ')
-    content = content.replace('deg', '')
 
     ########################################
-    # Separate Elements By Kind
+    # Angle Handling
     ########################################
-    # Semicolons are used to separete element sections
-    sad_sections = content.split(';')
-
-    # Known Element Kinds
-    sad_elements = (
-        'drift', 'bend', 'quad', 'oct', 'mult', 'sol',
-        'cavi', 'mark', 'moni', 'beambeam', 'apert')
+    # Ensure no spaces between the value and it's unit
+    content = content.replace(' deg', 'deg')
 
     ########################################
-    # Clean Each Section
+    # Split the file into sections
     ########################################
-    # Create a dictionary to store the cleaned content
-    cleaned_content = {}
+    # Semicolons are used to separate element sections
+    sad_sections    = content.split(';')
 
+    ############################################################################
+    # SAD File Section Cleaning
+    ############################################################################
+    cleaned_sections = []
+
+    ########################################
+    # Iterate through the sections
+    ########################################
     for section in sad_sections:
         cleaned_section = section
+
+        ########################################
+        # Remove Commented Lines
+        ########################################
+        # Remove lines that start with '!'
+        comment_removed_section = []
+        for line in cleaned_section.split('\n'):
+            if not line.startswith('!'):
+                comment_removed_section.append(line)
+        cleaned_section = '\n'.join(comment_removed_section)
+
+        ########################################
+        # Strip newlines and whitespace
+        ########################################
         cleaned_section = cleaned_section.strip()
 
-        # If the section is empty post strip, skip the section
+        ########################################
+        # Remove Empty Sections
+        ########################################
         if len(cleaned_section) == 0:
             continue
 
-        # Each section starts with a SAD command
-        section_command = cleaned_section.split()[0]
+        cleaned_sections.append(cleaned_section)
+
+    ############################################################################
+    # Separation by Element Type
+    ############################################################################
+    cleaned_elements    = {}
+    cleaned_expressions = {}
+    cleaned_lines       = {}
+
+    ########################################
+    # Iterate through the sections
+    ########################################
+    for section in cleaned_sections:
 
         ########################################
-        # Processing Elements
+        # Get the "Command" of the Section
         ########################################
-        # Check if this command is an element type
-        if section_command in sad_elements:
-            # Clean the section into dictionary style
-            cleaned_section = cleaned_section.replace('(', 'dict(')
-            cleaned_section = cleaned_section.replace(')', '),')
-            cleaned_section = cleaned_section.replace(section_command, 'dict(')
+        section_command = section.split()[0]
 
-            # Split the section into lines
-            lines = cleaned_section.split('\n')
+        ########################################
+        # SAD Feature Commands
+        ########################################
+        if section_command.startswith('on') or section_command.startswith('off'):
+            continue
 
-            for line_num, line in enumerate(lines):
-                # Split the line into tokens
-                tokens = line.split(' ')
-                for token_num, token in enumerate(tokens):
-                    # If the token is a parameter, add a comma
-                    if '=' in token:
-                        tokens[token_num] = token + ','
-                # Rejoin the tokens into a line
-                lines[line_num] = ' '.join(tokens)
+        ########################################
+        # Momentum Command
+        ########################################
+        if section_command.startswith('momentum'):
 
-            # Rejoin the lines into a section
-            cleaned_section = '\n'.join(lines)
+            momentum    = section
+            momentum    = momentum.replace("momentum", "")
+            momentum    = momentum.replace("\n", "")
+            momentum    = momentum.replace(" ", "")
+            momentum    = momentum.replace("=", "")
 
-            # Format the section as a dictionary
-            cleaned_section ='dict(\n' + cleaned_section + '\n)'
-
-            # Remove any double commas
-            while ',,' in cleaned_section:
-                cleaned_section = cleaned_section.replace(',,', ',')
-
-            # Add a closing bracket
-            cleaned_section += ')'
-
-            # Evaluate the section as a dictionary
-            section_dict = eval(cleaned_section)
-
-            # Add the section to the cleaned content
-            # If command already in the cleaned content, append the section
-            if section_command in cleaned_content:
-                cleaned_content[section_command].update(section_dict)
+            if 'kev' in momentum:
+                momentum    = float(momentum.replace("kev", "")) * 1E3
+            elif 'mev' in momentum:
+                momentum    = float(momentum.replace("mev", "")) * 1E6
+            elif 'gev' in momentum:
+                momentum    = float(momentum.replace("gev", "")) * 1E9
+            elif 'tev' in momentum:
+                momentum    = float(momentum.replace("tev", "")) * 1E12
+            elif 'ev' in momentum:
+                momentum    = float(momentum.replace("ev", ""))
             else:
-                cleaned_content[section_command] = section_dict
-
-        ########################################
-        # Processing Line Description
-        ########################################
-        if section_command == 'line':
-
-            # Parse the data to a dict to enable sublists
-            line_dict = {}
-
-            # Split the section into lines
-            lines = section.splitlines()
-            current_key = None
-            current_values = []
-
-            for line in lines:
-                line = line.strip()
-
-                if not line:
+                try:
+                    momentum    = float(momentum)
+                except TypeError:
                     continue
 
-                if '=' in line:
-                    if current_key:
-                        line_dict[current_key] = current_values
-                    key, _ = line.split('=', 1)
-                    current_key = key.strip()
-                    current_values = []
-                else:
-                    current_values.extend(line.strip('()').split())
-
-            if current_key:
-                line_dict[current_key] = current_values
-
-            # Step 2: Determine the master list by checking references
-            all_keys = set(line_dict.keys())
-            referenced_keys = set()
-
-            for values in line_dict.values():
-                for value in values:
-                    if value in line_dict:
-                        referenced_keys.add(value)
-
-            # The master key is the one that is not referenced by any other key
-            master_list_key = list(all_keys - referenced_keys)[0]
-            master_list = line_dict[master_list_key]
-
-            # Step 3: Replace references in the master list with actual values
-            def expand_list(lst):
-                expanded_list = []
-                for item in lst:
-                    if item in line_dict:
-                        expanded_list.extend(expand_list(line_dict[item]))
-                    else:
-                        expanded_list.append(item)
-                return expanded_list
-
-            master_list_expanded = expand_list(master_list)
-
-            cleaned_content['line'] = master_list_expanded
+            cleaned_expressions['momentum'] = momentum
+            continue
 
         ########################################
-        # Misc Information
+        # Mass Command
         ########################################
-        # Can store important details e.g. energy, etc.
-        if section_command not in (list(sad_elements) + ['line']):
-            if 'momentum' in section:
-                sad_p0c = section.replace("\n", "")
-                sad_p0c = sad_p0c.replace(" ", "")
-                sad_p0c = sad_p0c.replace("=", "")
-                sad_p0c = sad_p0c.replace("momentum", "")
+        if section_command.startswith('mass'):
 
-                if 'kev' in sad_p0c:
-                    sad_p0c = sad_p0c.replace("kev", "")
-                    sad_p0c = float(sad_p0c) * 1E3
-                elif 'mev' in sad_p0c:
-                    sad_p0c = sad_p0c.replace("mev", "")
-                    sad_p0c = float(sad_p0c) * 1E6
-                elif 'gev' in sad_p0c:
-                    sad_p0c = sad_p0c.replace("gev", "")
-                    sad_p0c = float(sad_p0c) * 1E9
-                elif 'tev' in sad_p0c:
-                    sad_p0c = sad_p0c.replace("tev", "")
-                    sad_p0c = float(sad_p0c) * 1E12
-                elif 'ev' in sad_p0c:
-                    sad_p0c = sad_p0c.replace("ev", "")
-                    sad_p0c = float(sad_p0c)
-                else:
-                    try:
-                        sad_p0c = float(sad_p0c)
-                    except TypeError:
-                        sad_p0c = None
-                        print('Error: Unable to parse momentum')
+            mass    = section
+            mass    = mass.replace("mass", "")
+            mass    = mass.replace("\n", "")
+            mass    = mass.replace(" ", "")
+            mass    = mass.replace("=", "")
 
-                if sad_p0c is None and ref_particle_p0c is None:
-                    raise ValueError('Error: Unable to parse momentum \n' +\
-                        'Please provide a reference momentum')
-                elif ref_particle_p0c is None and sad_p0c is not None:
-                    ref_particle_p0c = sad_p0c
-                elif ref_particle_p0c is not None and sad_p0c is not None:
-                    print('Warning: Multiple momenta detected')
-                    print('Using the momentum provided in the function call')
-
+            if 'kev' in mass:
+                mass    = float(mass.replace("kev", "")) * 1E3
+            elif 'mev' in mass:
+                mass    = float(mass.replace("mev", "")) * 1E6
+            elif 'gev' in mass:
+                mass    = float(mass.replace("gev", "")) * 1E9
+            elif 'tev' in mass:
+                mass    = float(mass.replace("tev", "")) * 1E12
+            elif 'ev' in mass:
+                mass    = float(mass.replace("ev", ""))
             else:
+                try:
+                    mass    = float(mass)
+                except TypeError:
+                    continue
+
+            cleaned_expressions['mass'] = mass
+            continue
+
+        ########################################
+        # Deferred Expressions
+        ########################################
+        if section_command not in sad_elements and section_command != 'line':
+
+            ########################################
+            # If no equals sign, skip the section
+            ########################################
+            if '=' not in section:
                 print('Unknown Section Includes the following information:')
                 print(section)
+                continue
+
+            ########################################
+            # Split information based on the equals sign
+            ########################################
+            variable, expression = section.split('=')
+
+            ########################################
+            # Convert to Float if Possible
+            ########################################
+            if all(char in "0123456789-." for char in expression) \
+                    and expression.count('.') <= 1 \
+                    and expression.count('-') <= 1:
+
+                cleaned_expressions[variable] = float(expression)
+                continue
+            else:
+
+                ########################################
+                # Check if the expression is duplicated
+                ########################################
+                if variable not in cleaned_expressions:
+                    cleaned_expressions[variable] = expression
+                    continue
+                else:
+                    ########################################
+                    # If duplicate, create new with all dependencies
+                    ########################################
+                    previous_expression = cleaned_expressions[variable]
+
+                    if isinstance(previous_expression, float):
+                        previous_expression = str(previous_expression)
+
+                    new_expression      = expression.replace(
+                        variable, previous_expression)
+
+                    cleaned_expressions[variable] = new_expression
+                    continue
+
+        ########################################
+        # Lines
+        ########################################
+        if section_command.startswith('line'):
+
+            line_section    = section
+            line_section    = line_section.replace("line", "")
+            line_section    = line_section.replace("\n", "")
+
+            ########################################
+            # Split into lines by closing bracket
+            ########################################
+            lines   = line_section.split(')')
+
+            ########################################
+            # Process each line
+            ########################################
+            for line in lines:
+                if len(line) == 0:
+                    continue
+
+                line_name, line_content = line.split('=')
+
+                line_name   = line_name.replace(' ', '')
+
+                line_content    = line_content.replace('(', '')
+                line_content    = line_content.replace('\n', ' ')
+
+                line_elements = []
+                for element in line_content.split():
+                    if len(element) > 0:
+                        line_elements.append(element)
+
+                cleaned_lines[line_name] = line_elements
+
+        ########################################
+        # Elements
+        ########################################
+        if section_command in sad_elements:
+            section_dict    = {}
+
+            ########################################
+            # Convert to Dictionary Style
+            ########################################
+            element_section = section
+            element_section = element_section.replace(section_command, "")
+            element_section = element_section.replace('\n ', ' ')
+            element_section = element_section.replace(' \n', ' ')
+            element_section = element_section.replace('\n', ' ')
+            element_section = element_section.replace(')', '),')
+
+            ########################################
+            # Split the section into elements
+            ########################################
+            elements    = element_section.split(',')
+
+            ########################################
+            # Process each element
+            ########################################
+            for element in elements:
+                if len(element) == 0:
+                    continue
+
+                ele_dict    = {}
+
+                while element.startswith(' '):
+                    element = element[1:]
+
+                ele_name, ele_vars = element.split('(')
+
+                ele_name    = ele_name.replace(' ', '')
+                ele_name    = ele_name.replace('=', '')
+                ele_vars    = ele_vars.replace(')', '')
+
+                ########################################
+                # Process data in each element
+                ########################################
+                tokens  = ele_vars.split(' ')
+                for token in tokens:
+
+                    if len(token) == 0:
+                        continue
+
+                    ########################################
+                    # Angle handling
+                    ########################################
+                    if 'deg' in token:
+                        token_name, token_value = token.split('=')
+
+                        token_value = token_value.replace('deg', '')
+                        token_value = float(token_value)
+                        token_value = np.deg2rad(token_value)
+                        token = token_name + '=' + str(token_value)
+
+                    var_name, var_value = token.split('=')
+
+                    try:
+                        var_value = float(var_value)
+                        ele_dict[var_name] = var_value
+                    except ValueError:
+                        ele_dict[var_name] = var_value
+
+                section_dict[ele_name] = ele_dict
+
+            ########################################
+            # Add elements
+            ########################################
+            if section_command in cleaned_elements:
+                cleaned_elements[section_command].update(section_dict)
+            else:
+                cleaned_elements[section_command] = section_dict
 
     ############################################################################
-    # Convert Elements to XSuite Elements
+    # Address missing momentum and mass
     ############################################################################
-    print('\n' + 40 * '*')
-    print('Converting Elements to Xsuite Objects')
-    print(40 * '*')
+    if 'mass' not in cleaned_expressions and ref_particle_mass0 is None:
+        raise ValueError('No mass found in SAD file or function input')
+    elif 'mass' not in cleaned_expressions:
+        print('Warning: No mass found in SAD file')
+        print('Using user provided value')
+        cleaned_expressions['mass'] = ref_particle_mass0
+    elif 'mass' in cleaned_expressions and ref_particle_mass0 is not None:
+        print('Warning: Mass found in SAD file and function input')
+        print('Using user provided value')
+        cleaned_expressions['mass'] = ref_particle_mass0
+
+    if 'momentum' not in cleaned_expressions and ref_particle_p0c is None:
+        raise ValueError('No momentum found in SAD file or function input')
+    elif 'momentum' not in cleaned_expressions:
+        print('Warning: No momentum found in SAD file')
+        print('Using user provided value')
+        cleaned_expressions['momentum'] = ref_particle_p0c
+    elif 'momentum' in cleaned_expressions and ref_particle_p0c is not None:
+        print('Warning: Momentum found in SAD file and function input')
+        print('Using user provided value')
+        cleaned_expressions['momentum'] = ref_particle_p0c
+
+    ############################################################################
+    # Create Xsuite Environment
+    ############################################################################
+    env = xt.Environment()
+
+    ############################################################################
+    # Pass deferred expressions to the environment
+    ############################################################################
 
     ########################################
-    # Conversion Setup
+    # Floats first
     ########################################
-    xsuite_elements     = {}
-    excluded_elements   = []
+    for expression_name, expression in cleaned_expressions.items():
+        if isinstance(expression, float):
+            env[expression_name] = expression
+
+    ########################################
+    # Strings may depend on floats
+    ########################################
+    for expression_name, expression in cleaned_expressions.items():
+        if isinstance(expression, str):
+            env[expression_name] = expression
+
+    ############################################################################
+    # Create Xsuite Elements
+    ############################################################################
 
     ########################################
     # Drift
     ########################################
-    if 'drift' in cleaned_content:
-        drifts  = cleaned_content['drift']
+    if 'drift' in cleaned_elements:
+        drifts  = cleaned_elements['drift']
 
         for ele_name, ele_vars in drifts.items():
-            # Drift must have a length
-            if 'l' not in ele_vars:
-                excluded_elements.append(ele_name)
-                continue
 
-            # Convert to XTrack Drift Element
-            xsuite_elements[ele_name] = xt.Drift(length  = ele_vars['l'])
+            ########################################
+            # Assert Length
+            ########################################
+            if 'l' not in ele_vars:
+                raise ValueError(f'Error: Drift {ele_name} missing length')
+
+            ########################################
+            # Create Element
+            ########################################
+            env.new(
+                name    = ele_name,
+                parent  = xt.Drift,
+                length  = ele_vars['l'])
+            continue
 
     ########################################
     # Bend
     ########################################
-    if 'bend' in cleaned_content:
-        bends   = cleaned_content['bend']
+    if 'bend' in cleaned_elements:
+        bends   = cleaned_elements['bend']
 
         for ele_name, ele_vars in bends.items():
-            # Bend must have a length
+
+            ########################################
+            # Assert Length
+            ########################################
             if 'l' not in ele_vars:
-                excluded_elements.append(ele_name)
+                print(f'Warning: Bend {ele_name} missing length ')
+                print('Installing unpowered 0 length bend')
+                env.new(
+                    name                = ele_name,
+                    parent              = xt.Bend,
+                    length              = 0,
+                    k0                  = 0,
+                    h                   = 0,
+                    edge_entry_angle    = 0,
+                    edge_exit_angle     = 0,
+                    rot_s_rad           = 0)
                 continue
 
-            length  = ele_vars['l']
-            # SAD face angle parameters initialised to 0
-            e1 = 0
-            e2 = 0
+            ########################################
+            # Initialise parameters that may not be present
+            ########################################
+            rotation    = 0
+            if 'rotate' in ele_vars:
+                rotation = ele_vars['rotate']
 
-            # Two types of bends: bends defining orbit and bends defining kicks
-            # Parameters for bends
+            e1          = 0
+            e2          = 0
+            h           = 0
+
+            ########################################
+            # Separate Bends and Kicks
+            ########################################
+            # Bends have angle, and allowed to have edge angles
             if 'angle' in ele_vars:
                 k0l     = ele_vars['angle']
-                k0      = k0l / length
+                k0      = f"{k0l} / {ele_vars['l']}"
                 h       = k0
-                # We only import the edges if it is a real bend
-                # This convention is employed by SAD at runtime
                 if 'e1' in ele_vars:
                     e1 = ele_vars['e1']
                 if 'e2' in ele_vars:
                     e2 = ele_vars['e2']
-            # Parameters for kicks
+            # Kicks have k0, and are not allowed to have edge angles
             elif 'k0' in ele_vars:
-                k0l     = ele_vars['k0'] # SAD k0 is k0l
-                k0      = k0l / length
-                h       = 0
-            else:
-                raise ValueError('Error: Bend must have an angle or k0')
+                k0l     = ele_vars['k0']
+                k0      = f"{k0l} / {ele_vars['l']}"
 
-            rotation = 0
-            if 'rotate' in ele_vars:
-                rotation = ele_vars['rotate'] * -1
-
-            # Convert to XTrack Bend Element
-            xsuite_elements[ele_name] = xt.elements.Bend(
-                length              = length,
-                k0                  = k0,
-                h                   = h,
-                edge_entry_angle    = e1 * k0l,
-                edge_exit_angle     = e2 * k0l,
-                rot_s_rad           = - np.deg2rad( rotation ))
+            ########################################
+            # Create Element
+            ########################################
+            env.new(
+                name    = ele_name,
+                parent  = xt.Bend,
+                length  = ele_vars['l'],
+                k0      = k0,
+                h       = h,
+                edge_entry_angle    = f"{e1} * {k0l}",
+                edge_exit_angle     = f"{e2} * {k0l}",
+                rot_s_rad           = rotation)
+            continue
 
     ########################################
     # Quadrupole
     ########################################
-    if 'quad' in cleaned_content:
-        quads   = cleaned_content['quad']
+    if 'quad' in cleaned_elements:
+        quads   = cleaned_elements['quad']
 
         for ele_name, ele_vars in quads.items():
-            # Quadrupole must have a length
+
+            ########################################
+            # Assert Length
+            ########################################
             if 'l' not in ele_vars:
-                excluded_elements.append(ele_name)
+                print(f'Error: Quadrupole {ele_name} missing length and excluded')
                 continue
 
-            rotation = 0
+            ########################################
+            # Initialise parameters that may not be present
+            ########################################
+            rotation    = 0
             if 'rotate' in ele_vars:
-                rotation = ele_vars['rotate'] * -1
+                rotation = ele_vars['rotate']
 
-            # Convert to XTrack Quadrupole Element
-            xsuite_elements[ele_name] = xt.Quadrupole(
+            ########################################
+            # Create Element
+            ########################################
+            # TODO: Better to do k1 and k1s native + rotation?
+            env.new(
+                name    = ele_name,
+                parent  = xt.Quadrupole,
                 length  = ele_vars['l'],
-                k1      = ( ele_vars['k1'] / ele_vars['l'] ) *\
-                    np.cos( np.deg2rad( rotation ) * 2),
-                k1s     = ( ele_vars['k1'] / ele_vars['l'] ) *\
-                    np.sin( np.deg2rad( rotation ) * 2))
+                k1      = f"{ele_vars['k1']} / {ele_vars['l']} *\
+                    {np.cos(rotation * 2)}",
+                k1s     = f"{ele_vars['k1']} / {ele_vars['l']} *\
+                    {np.sin(rotation * 2)}")
+            continue
+
+    ########################################
+    # Sextupole
+    ########################################
+    if 'sext' in cleaned_elements:
+        sexts   = cleaned_elements['sext']
+
+        for ele_name, ele_vars in sexts.items():
+
+            ########################################
+            # Assert Length
+            ########################################
+            if 'l' not in ele_vars:
+                print(f'Error: Sextupole {ele_name} missing length and excluded')
+                continue
+
+            ########################################
+            # Initialise parameters that may not be present
+            ########################################
+            rotation    = 0
+            if 'rotate' in ele_vars:
+                rotation = ele_vars['rotate']
+
+            ########################################
+            # Create Element
+            ########################################
+            # TODO: Better to do k1 and k1s native + rotation?
+            env.new(
+                name    = ele_name,
+                parent  = xt.Sextupole,
+                length  = ele_vars['l'],
+                k2      = f"{ele_vars['k2']} / {ele_vars['l']} *\
+                    {np.cos(rotation * 3)}",
+                k2s     = f"{ele_vars['k2']} / {ele_vars['l']} *\
+                    {np.sin(rotation * 3)}")
+            continue
 
     ########################################
     # Octupole
     ########################################
-    if 'oct' in cleaned_content:
-        octs    = cleaned_content['oct']
+    if 'oct' in cleaned_elements:
+        octs    = cleaned_elements['oct']
 
         for ele_name, ele_vars in octs.items():
-            # Octupoles can be thin lenses
-            length = 0
-            if 'l' in ele_vars:
-                length = ele_vars['l']
 
+            ########################################
+            # Initialise parameters that may not be present
+            ########################################
+            rotation    = 0
+            if 'rotate' in ele_vars:
+                rotation = ele_vars['rotate']
+
+            k0l = 0
+            if 'k0' in ele_vars:
+                k0l = ele_vars['k0']
+            k1l = 0
+            if 'k1' in ele_vars:
+                k1l = ele_vars['k1']
+            k2l = 0
+            if 'k2' in ele_vars:
+                k2l = ele_vars['k2']
             k3l = 0
             if 'k3' in ele_vars:
                 k3l = ele_vars['k3']
-            knl_arr = np.array([0, 0, 0, k3l])
 
-            rotation = 0
-            if 'rotate' in ele_vars:
-                rotation = ele_vars['rotate'] * -1
+            knl = [
+                f"{k0l} * {np.cos(rotation)}"       if k0l != 0 else 0,
+                f"{k1l} * {np.cos(rotation * 2)}"   if k1l != 0 else 0,
+                f"{k2l} * {np.cos(rotation * 3)}"   if k2l != 0 else 0,
+                f"{k3l} * {np.cos(rotation * 4)}"   if k3l != 0 else 0]
+            ksl = [
+                f"{k0l} * {np.sin(rotation)}"       if k0l != 0 else 0,
+                f"{k1l} * {np.sin(rotation * 2)}"   if k1l != 0 else 0,
+                f"{k2l} * {np.sin(rotation * 3)}"   if k2l != 0 else 0,
+                f"{k3l} * {np.sin(rotation * 4)}"   if k3l != 0 else 0]
 
-            xsuite_elements[ele_name] = xt.Multipole(
-                length  = length,
-                knl     = knl_arr * np.cos(np.deg2rad(rotation) * 4),
-                ksl     = knl_arr * np.sin(np.deg2rad(rotation) * 4))
+            ########################################
+            # Thin lens, or drift kick drift
+            ########################################
+            if 'l' in ele_vars:
+                if ele_vars['l'] != 0:
+
+                    env.new(
+                        f'{ele_name}_drift_i', xt.Drift,
+                        length = f"{ele_vars['l']} / 2")
+                    env.new(
+                        f'{ele_name}_drift_o', xt.Drift,
+                        length = f"{ele_vars['l']} / 2")
+
+                    env.new(
+                        f'{ele_name}_kick', xt.Multipole,
+                        knl = knl, ksl = ksl)
+
+                    env.new_line(
+                        name        = ele_name,
+                        components  = [
+                            f'{ele_name}_drift_i',
+                            f'{ele_name}_kick',
+                            f'{ele_name}_drift_o'])
+                    continue
+
+            else:
+                env.new(f'{ele_name}', xt.Multipole, knl = knl, ksl = ksl)
+                continue
 
     ########################################
     # Multipole
     ########################################
-    if 'mult' in cleaned_content:
-        mults   = cleaned_content['mult']
+    if 'mult' in cleaned_elements:
+        mults   = cleaned_elements['mult']
 
         for ele_name, ele_vars in mults.items():
-            # Multipole can be thin lenses
-            length = 0
+
+            ########################################
+            # Initialise parameters that may not be present
+            ########################################
+            length  = 0
             if 'l' in ele_vars:
                 length = ele_vars['l']
 
-            knl_list = []
-            for kn in range(0, 21):
-                knl = 0
-                if f'k{kn}' in ele_vars:
-                    knl = ele_vars[f'k{kn}']
-                knl_list.append(knl)
-            knl_arr = np.array(knl_list)
-
-            ksl_list = []
-            for ks in range(0, 21):
-                ksl = 0
-                if f'sk{ks}' in ele_vars:
-                    ksl = ele_vars[f'sk{ks}']
-                ksl_list.append(ksl)
-            ksl_arr = np.array(ksl_list)
-
-            rotation = 0
+            rotation    = 0
             if 'rotate' in ele_vars:
-                rotation = ele_vars['rotate'] * -1
-            rotation_knl_scaling = np.array(
-                [ np.cos(np.deg2rad(rotation) * (i +1)) for i in range(0, 21) ])
-            rotation_ksl_scaling = np.array(
-                [ np.sin(np.deg2rad(rotation) * (i +1)) for i in range(0, 21) ])
+                rotation = ele_vars['rotate']
+
+            knl = []
+            for kn in range(0, 21):
+                knl.append(0)
+                if f'k{kn}' in ele_vars:
+                    knl[kn] = ele_vars[f'k{kn}']
+
+            ksl = []
+            for ks in range(0, 21):
+                ksl.append(0)
+                if f'sk{ks}' in ele_vars:
+                    ksl[ks] = ele_vars[f'sk{ks}']
 
             ########################################
             # User Defined Multipole Replacements
             ########################################
-            # Need mult_replacements to be a dictionary
-            # Empty dict not function safe
-            if mult_replacements is None:
-                mult_replacements = {}
+            if any(ele_name.startswith(test_key) for test_key in multipole_replacements):
+                replace_type    = None
 
-            # Check if the element name starts with any of the replacement keys
-            if any(ele_name.startswith(test_key)
-                    for test_key in mult_replacements):
-                replace_key = None
-                for test_key in mult_replacements:
-                    if ele_name.startswith(test_key):
-                        replace_key = test_key
+                if not 'l' in ele_vars:
+                    print('Warning: Multipole replacement not supported for thin lens')
+                    print(f'Installing element {ele_name} as normal multipole')
+                    env.new(
+                        f'{ele_name}', xt.Multipole,
+                        knl = knl, ksl = ksl, rot_s_rad = rotation)
+                    continue
 
-                # Check what kind of replacement
-                if mult_replacements[replace_key] == 'Bend':
-                    k0l         = knl_arr[0] * np.cos(np.deg2rad(rotation)) +\
-                        ksl_arr[0] * np.sin(np.deg2rad(rotation))
-                    k0sl        = ksl_arr[0] * np.sin(np.deg2rad(rotation)) -\
-                        knl_arr[0] * np.cos(np.deg2rad(rotation))
-                    k0l         = np.sqrt(k0l**2 + k0sl**2)
-                    rotation    = np.arctan2(k0sl, k0l)
-                    k0          = k0l / length
+                # Search the multipole replacements dict for the type of element
+                for replacement in multipole_replacements:
+                    if ele_name.startswith(replacement):
+                        replace_type    = multipole_replacements[replacement]
 
-                    # Convert to XTrack Bend Element
-                    xsuite_elements[ele_name] = xt.elements.Bend(
-                        length              = length,
+                ########################################
+                # Bend Replacement (kick)
+                ########################################
+                k0  = 0
+                if 'k0' in ele_vars:
+                    k0  = f"{ele_vars['k0']} / {ele_vars['l']}"
+
+                if replace_type == 'Bend':
+                    env.new(
+                        name                = ele_name,
+                        parent              = xt.Bend,
+                        length              = ele_vars['l'],
                         k0                  = k0,
                         h                   = 0,
                         edge_entry_angle    = 0,
                         edge_exit_angle     = 0,
-                        rot_s_rad           = np.deg2rad( rotation ))
+                        rot_s_rad           = rotation)
+                    continue
 
-                elif mult_replacements[replace_key] == 'Quadrupole':
-                    k1l         = knl_arr[1] * np.cos(np.deg2rad(rotation * 2)) +\
-                        ksl_arr[1] * np.sin(np.deg2rad(rotation * 2))
-                    k1sl        = ksl_arr[1] * np.cos(np.deg2rad(rotation * 2)) -\
-                        knl_arr[1] * np.sin(np.deg2rad(rotation * 2))
+                ########################################
+                # Quadrupole Replacement
+                ########################################
+                k1  = 0
+                k1s = 0
+                if 'k1' in ele_vars:
+                    k1  = f"{ele_vars['k1']} / {ele_vars['l']} * {np.cos(rotation * 2)}"
+                    k1s = f"{ele_vars['k1']} / {ele_vars['l']} * {np.sin(rotation * 2)}"
 
-                    # Convert to XTrack Quadrupole Element
-                    xsuite_elements[ele_name] = xt.Quadrupole(
+                elif replace_type == 'Quadrupole':
+                    # TODO: Better to do k1 and k1s native + rotation?
+                    env.new(
+                        name    = ele_name,
+                        parent  = xt.Quadrupole,
                         length  = ele_vars['l'],
-                        k1      = k1l / length,
-                        k1s     = k1sl / length)
+                        k1      = k1,
+                        k1s     = k1s)
+                    continue
 
-                elif mult_replacements[replace_key] == 'Sextupole':
-                    k2l         = knl_arr[2] * np.cos(np.deg2rad(rotation * 3)) +\
-                        ksl_arr[2] * np.sin(np.deg2rad(rotation * 3))
-                    k2sl        = ksl_arr[2] * np.cos(np.deg2rad(rotation * 3)) -\
-                        knl_arr[2] * np.sin(np.deg2rad(rotation * 3))
+                ########################################
+                # Sextupole Replacement
+                ########################################
+                k2  = 0
+                k2s = 0
+                if 'k2' in ele_vars:
+                    k2  = f"{ele_vars['k2']} / {ele_vars['l']} * {np.cos(rotation * 3)}"
+                    k2s = f"{ele_vars['k2']} / {ele_vars['l']} * {np.sin(rotation * 3)}"
 
-                    # Convert to XTrack Quadrupole Element
-                    xsuite_elements[ele_name] = xt.Sextupole(
+                elif replace_type == 'Sextupole':
+                    env.new(
+                        name    = ele_name,
+                        parent  = xt.Sextupole,
                         length  = ele_vars['l'],
-                        k2      = k2l / length,
-                        k2s     = k2sl / length)
+                        k2      = k2,
+                        k2s     = k2s)
+                    continue
+
                 else:
                     raise ValueError('Error: Unknown element replacement')
 
             ########################################
-            # Bends stored as Multipole
+            # Elements stored as multipole, but really something simpler
             ########################################
-            elif (
-                (
-                    length != 0 and
-                    knl_arr[1] == 0 and ksl_arr[1] == 0 and
-                    knl_arr[2] == 0 and ksl_arr[2] == 0) and
-                (knl_arr[0] != 0 or ksl_arr[0] != 0)
-            ):
-                k0l         = knl_arr[0] * np.cos(np.deg2rad(rotation)) +\
-                    ksl_arr[0] * np.sin(np.deg2rad(rotation))
-                k0sl        = ksl_arr[0] * np.sin(np.deg2rad(rotation)) -\
-                    knl_arr[0] * np.cos(np.deg2rad(rotation))
-                k0l         = np.sqrt(k0l**2 + k0sl**2)
-                rotation    = np.arctan2(k0sl, k0l)
-                k0          = k0l / length
+            if (length != 0 and knl[1] == 0 and ksl[1] == 0 \
+                and knl[2] == 0 and ksl[2] == 0) \
+                and (knl[0] != 0 or ksl[0] != 0):
 
-                # Convert to XTrack Bend Element
-                xsuite_elements[ele_name] = xt.elements.Bend(
-                    length              = length,
-                    k0                  = k0,
+                # Then it's a bend
+                env.new(
+                    name                = ele_name,
+                    parent              = xt.Bend,
+                    length              = ele_vars['l'],
+                    k0                  = f"{ele_vars['k0']} / {ele_vars['l']}",
                     h                   = 0,
                     edge_entry_angle    = 0,
                     edge_exit_angle     = 0,
-                    rot_s_rad           = np.deg2rad( rotation ))
+                    rot_s_rad           = rotation)
+                continue
 
-            ########################################
-            # Quadrupoles stored as Multipole
-            ########################################
-            elif (
-                (
-                    length != 0 and
-                    knl_arr[0] == 0 and ksl_arr[0] == 0 and
-                    knl_arr[2] == 0 and ksl_arr[2] == 0) and
-                (knl_arr[1] != 0 or ksl_arr[1] != 0)
-            ):
-                k1l         = knl_arr[1] * np.cos(np.deg2rad(rotation * 2)) +\
-                    ksl_arr[1] * np.sin(np.deg2rad(rotation * 2))
-                k1sl        = ksl_arr[1] * np.cos(np.deg2rad(rotation * 2)) -\
-                    knl_arr[1] * np.sin(np.deg2rad(rotation * 2))
+            elif (length != 0 and knl[0] == 0 and ksl[0] == 0 \
+                  and knl[2] == 0 and ksl[2] == 0) \
+                  and (knl[1] != 0 or ksl[1] != 0):
 
-                # Convert to XTrack Quadrupole Element
-                xsuite_elements[ele_name] = xt.Quadrupole(
+                # Then it's a quadrupole
+                env.new(
+                    name    = ele_name,
+                    parent  = xt.Quadrupole,
                     length  = ele_vars['l'],
-                    k1      = k1l / length,
-                    k1s     = k1sl / length)
-            ########################################
-            # Sextupoles stored as Multipole
-            ########################################
+                    k1      = f"{ele_vars['k1']} / {ele_vars['l']} *\
+                        {np.cos(rotation * 2)}",
+                    k1s     = f"{ele_vars['k1']} / {ele_vars['l']} *\
+                        {np.sin(rotation * 2)}")
+                continue
 
-            elif (
-                (
-                    length != 0 and
-                    knl_arr[0] == 0 and ksl_arr[0] == 0 and
-                    knl_arr[1] == 0 and ksl_arr[1] == 0) and
-                (knl_arr[2] != 0 or ksl_arr[2] != 0)
-            ):
-                k2l         = knl_arr[2] * np.cos(np.deg2rad(rotation * 3)) +\
-                    ksl_arr[2] * np.sin(np.deg2rad(rotation * 3))
-                k2sl        = ksl_arr[2] * np.cos(np.deg2rad(rotation * 3)) -\
-                    knl_arr[2] * np.sin(np.deg2rad(rotation * 3))
+            elif (length != 0 and knl[0] == 0 and ksl[0] == 0 \
+                  and knl[1] == 0 and ksl[1] == 0) \
+                  and (knl[2] != 0 or ksl[2] != 0):
 
-                # Convert to XTrack Quadrupole Element
-                xsuite_elements[ele_name] = xt.Sextupole(
+                # Then it's a sextupole
+                env.new(
+                    name    = ele_name,
+                    parent  = xt.Sextupole,
                     length  = ele_vars['l'],
-                    k2      = k2l / length,
-                    k2s     = k2sl / length)
+                    k2      = f"{ele_vars['k2']} / {ele_vars['l']} *\
+                        {np.cos(rotation * 3)}",
+                    k2s     = f"{ele_vars['k2']} / {ele_vars['l']} *\
+                        {np.sin(rotation * 3)}")
+                continue
 
             ########################################
-            # Else is a true multipole
+            # Else True multipole
             ########################################
+            if 'l' in ele_vars:
+                if ele_vars['l'] != 0:
+
+                    env.new(f'{ele_name}_drift_i', xt.Drift,
+                        length = f"{ele_vars['l']} / 2")
+                    env.new(f'{ele_name}_drift_o', xt.Drift,
+                        length = f"{ele_vars['l']} / 2")
+
+                    env.new(f'{ele_name}_kick', xt.Multipole,
+                            knl         = knl,
+                            ksl         = ksl,
+                            rot_s_rad   = rotation)
+
+                    env.new_line(
+                        name        = ele_name,
+                        components  = [
+                            f'{ele_name}_drift_i',
+                            f'{ele_name}_kick',
+                            f'{ele_name}_drift_o'])
+                    continue
+
             else:
-                xsuite_elements[ele_name] = xt.Multipole(
-                        length  = length,
-                        knl     = knl_arr * rotation_knl_scaling,
-                        ksl     = knl_arr * rotation_ksl_scaling)
-
-                mult_length = xsuite_elements[ele_name].length
-                if mult_length != 0:
-                    if allow_thick_mult:
-                        xsuite_elements[ele_name].isthick = True
-                    else:
-                        # Convert to drift kick drift
-                        xsuite_elements[ele_name].length = 0
-
-                        # Create drifts either side of the multipole
-                        xsuite_elements[ele_name + '.mult_drift..0'] = xt.Drift(
-                            length = mult_length / 2)
-                        xsuite_elements[ele_name + '.mult_drift..1'] = xt.Drift(
-                            length = mult_length / 2)
-
-                        # Add the drifts to the line
-                        temp_line = []
-                        for element_name in cleaned_content['line']:
-                            if element_name == ele_name:
-                                temp_line.extend([
-                                    ele_name + '.mult_drift..0',
-                                    ele_name,
-                                    ele_name + '.mult_drift..1'])
-                            else:
-                                temp_line.append(element_name)
-                        cleaned_content['line'] = temp_line
+                env.new(
+                    f'{ele_name}', xt.Multipole,
+                    knl = knl, ksl = ksl, rot_s_rad = rotation)
+                continue
 
     ########################################
     # Cavities
     ########################################
-    if 'cavi' in cleaned_content:
-        cavs    = cleaned_content['cavi']
+    if 'cavi' in cleaned_elements:
+        cavis   = cleaned_elements['cavi']
 
-        for ele_name, ele_vars in cavs.items():
+        for ele_name, ele_vars in cavis.items():
 
-            phi = 0
+            ########################################
+            # Initialise parameters that may not be present
+            ########################################
+            phi     = 0
             if 'phi' in ele_vars:
                 phi = ele_vars['phi']
 
-            xsuite_elements[ele_name] = xt.Cavity(
+            freq    = 0
+            if 'freq' in ele_vars:
+                freq = ele_vars['freq']
+
+            if 'harm' in ele_vars:
+                print('Warning: Harmonic numbers not implemented')
+
+            ########################################
+            # Create Element
+            ########################################
+            env.new(
+                name        = ele_name,
+                parent      = xt.Cavity,
                 voltage     = ele_vars['volt'],
-                frequency   = ele_vars['freq'],
+                frequency   = freq,
                 lag         = phi)
+            continue
 
     ########################################
     # Apertures
     ########################################
-    if 'apert' in cleaned_content:
-        aperts  = cleaned_content['apert']
+    if 'apert' in cleaned_elements:
+        aperts  = cleaned_elements['apert']
 
         for ele_name, ele_vars in aperts.items():
-            xsuite_elements[ele_name] = xt.LimitEllipse(
-                a   = ele_vars['ax'],
-                b   = ele_vars['ay'])
 
-    ########################################
-    # Solenoid (excluded except geometric effect)
-    ########################################
-    if 'sol' in cleaned_content:
-        solenoids   = cleaned_content['sol']
-
-        for ele_name, ele_vars in solenoids.items():
-            if 'dz' in ele_vars:
-
-                # Create a drift after the solenoid slice
-                xsuite_elements[ele_name + '.geom_corr_drift'] = xt.Drift(
-                    length = ele_vars['dz'])
-
-                # Add the drift to the line
-                temp_line = []
-                for element_name in cleaned_content['line']:
-                    if element_name == ele_name:
-                        temp_line.extend([
-                            ele_name,
-                            ele_name + '.geom_corr_drift'])
-                    elif element_name == '-' + ele_name:
-                        temp_line.extend([
-                            ele_name + '.geom_corr_drift',
-                            ele_name])
-                    else:
-                        temp_line.append(element_name)
-
-                cleaned_content['line'] = temp_line
-
-            excluded_elements.append(ele_name)
-
-    ########################################
-    # Beam Beam (Marker)
-    ########################################
-    if 'beambeam' in cleaned_content:
-        beam_beams   = cleaned_content['beambeam']
-
-        for ele_name, ele_vars in beam_beams.items():
-            xsuite_elements[ele_name] = xt.Marker()
-
-    ########################################
-    # Monitors (Marker)
-    ########################################
-    if 'moni' in cleaned_content:
-        monis   = cleaned_content['moni']
-
-        for ele_name, ele_vars in monis.items():
-            # Monitor must be a thin element
-            assert 'l' not in ele_vars
-            xsuite_elements[ele_name] = xt.Marker()
-
-    ########################################
-    # Markers
-    ########################################
-    if 'mark' in cleaned_content:
-        marks   = cleaned_content['mark']
-
-        for ele_name, ele_vars in marks.items():
-            # Markers must be a thin element
-            assert 'l' not in ele_vars
-            xsuite_elements[ele_name] = xt.Marker()
-
-    ############################################################################
-    # Create Line
-    ############################################################################
-    print('\n' + 40 * '*')
-    print('Creating XSuite Line')
-    print(40 * '*')
-
-    ########################################
-    # Element Name Corrections
-    ########################################
-    # First iterate through the elements to count the number of each element
-    element_counts = {}
-    for ele_name in cleaned_content['line']:
-
-        # TODO: Decide naming convention for inverted elements
-        if ele_name.startswith('-'):
-            ele_name = ele_name[1:]
-
-        if ele_name not in element_counts:
-            element_counts[ele_name] = 1
-        else:
-            element_counts[ele_name] += 1
-
-    element_names   = []
-    elements        = []
-
-    element_names_inc_markers = []
-    marker_offsets = {}
-
-    element_counts2 = {}
-    # Second iterate through the elements to correct the names
-    # Only adding numbers to elements that are repeated
-    for ele_name in cleaned_content['line']:
-
-        # Check for inversion
-        inverted = False
-        if ele_name.startswith('-'):
-            inverted = True
-            ele_name = ele_name[1:]
-
-        if ele_name in excluded_elements:
+            ########################################
+            # Create Element
+            ########################################
+            env.new(
+                name    = ele_name,
+                parent  = xt.LimitEllipse,
+                a       = ele_vars['ax'],
+                b       = ele_vars['ay'])
             continue
 
-        # Check if the element is repeated
-        if ele_name not in element_counts2:
-            element_counts2[ele_name] = 1
-        else:
-            element_counts2[ele_name] += 1
+    ########################################
+    # Solenoid (only geometric effect)
+    ########################################
+    if 'sol' in cleaned_elements:
+        solenoids   = cleaned_elements['sol']
 
-        # Correct the name if the element is repeated
-        if element_counts[ele_name] == 1:
-            xs_name = ele_name
-        else:
-            xs_name = ele_name + '.' + str(element_counts2[ele_name])
+        for ele_name, ele_vars in solenoids.items():
+            # TODO: Decide on solenoid implementation
 
-        # Get the element from the dictionary
-        ele_to_insert = xsuite_elements[ele_name]
+            if 'dz' in ele_vars:
+                env.new(
+                    name    = ele_name,
+                    parent  = xt.Solenoid,
+                    length  = ele_vars['dz'])
+                continue
 
-        # Invert the element longitudinally
-        if inverted:
-            if isinstance(ele_to_insert, xt.Bend):
-                edge_entry_angle    = ele_to_insert.edge_entry_angle
-                edge_exit_angle     = ele_to_insert.edge_exit_angle
-                ele_to_insert.edge_entry_angle  = edge_exit_angle
-                ele_to_insert.edge_exit_angle   = edge_entry_angle
-            elif isinstance(ele_to_insert, xt.Cavity):
-                ele_to_insert.voltage *= -1
-            # TODO: Solenoid here
-
-        element_names_inc_markers.append(xs_name)
-
-        # if ele_name not in cleaned_content['mark']:
-        # This way removes all markers, inclduing moni and beam beam
-
-        if ele_name not in list(
-            (list(cleaned_content['mark'].keys())
-             if 'mark' in cleaned_content else []) +\
-            (list(cleaned_content['moni'].keys())
-             if 'moni' in cleaned_content else []) +\
-            (list(cleaned_content['beambeam'].keys())
-             if 'beambeam' in cleaned_content else [])
-        ):
-            element_names.append(xs_name)
-            elements.append(ele_to_insert)
-        else:
-            offset = 0
-            # Only mark can have offset, not moni or beambeam
-            if ele_name in cleaned_content['mark']:
-                if 'offset' in cleaned_content['mark'][ele_name]:
-                    offset = cleaned_content['mark'][ele_name]['offset']
-
-            if inverted:
-                if offset < 0:
-                    offset = 1 + offset * -1
-                elif offset > 1:
-                    offset = (offset -1) * -1
-                elif 0 < offset < 1:
-                    offset = 0
-
-            marker_offsets[xs_name] = offset
+            else:
+                env.new(
+                    name    = ele_name,
+                    parent  = xt.Solenoid)
+                continue
 
     ########################################
-    # Build Line
+    # Markers (all types)
     ########################################
-    line    = xt.Line(
-        elements        = elements,
-        element_names   = element_names)
+    if 'mark' in cleaned_elements:
+        marks   = cleaned_elements['mark']
+
+        for ele_name, ele_vars in marks.items():
+            env.new(
+                name    = ele_name,
+                parent  = xt.Marker)
+            continue
+
+    if 'moni' in cleaned_elements:
+        monis   = cleaned_elements['moni']
+
+        for ele_name, ele_vars in monis.items():
+            env.new(
+                name    = ele_name,
+                parent  = xt.Marker)
+            continue
+
+    if 'beambeam' in cleaned_elements:
+        beam_beams   = cleaned_elements['beambeam']
+
+        for ele_name, ele_vars in beam_beams.items():
+            env.new(
+                name    = ele_name,
+                parent  = xt.Marker)
+            continue
+
+    ############################################################################
+    # PATCH FIX FOR REVERSED ELEMENTS
+    ############################################################################
+
+    ########################################
+    # Create a reverse for each element
+    ########################################
+    imported_elements   = env._element_dict.copy()
+    for ele_name, element in imported_elements.items():
+        env.new(f'-{ele_name}', ele_name, mode='clone')
+
+        ########################################
+        # Reverse Voltage
+        ########################################
+        if isinstance(element, xt.Cavity):
+            env[f'-{ele_name}'].voltage *= -1
+
+
+        ########################################
+        # Swap Face angles
+        ########################################
+        if isinstance(element, xt.Bend):
+            env[f'-{ele_name}'].edge_entry_angle  = env[ele_name].edge_exit_angle
+            env[f'-{ele_name}'].edge_exit_angle   = env[ele_name].edge_entry_angle
+
+    ############################################################################
+    # Create Lines
+    ############################################################################
+
+    ########################################
+    # Create all lines
+    ########################################
+    for line, components in cleaned_lines.items():
+        env.new_line(
+            name        = line,
+            components  = components)
+
+    ########################################
+    # Select the top line
+    ########################################
+    line = env[list(cleaned_lines.keys())[-1]]
+
+    ########################################
+    # Add reference particle
+    ########################################
     line.particle_ref = xt.Particles(
-        p0c     = ref_particle_p0c,
-        mass0   = ref_particle_mass0)
-
-   ########################################
-    # Add Markers at the correct position
-    ########################################
-    # Get the line table
-    line.build_tracker()
-    tt      = line.get_table(attr=True)
-    buffer  = line._buffer
-    line.discard_tracker()
-
-    # Summary dict to output
-    marker_locations = {}
-
-    # Add a check for if the next element is a mult drift
-
-    for marker_xs_name, offset in marker_offsets.items():
-
-        # Cases based on offset
-        if 0 <= offset <= 1:
-            # Get the index of the next element
-            marker_idx = element_names_inc_markers.index(marker_xs_name)
-            try:
-                insert_at_ele = element_names_inc_markers[marker_idx+1]
-                s_to_insert = tt['s', insert_at_ele]
-            except IndexError:
-                # If index error, the next element is the end of the line
-                s_to_insert = tt.s[-1]
-            except KeyError:
-                # If key error, the next element is a marker, so use the next
-                relative_idx = 1
-                while True:
-                    relative_idx += 1
-                    try:
-                        insert_at_ele = element_names_inc_markers[
-                            marker_idx + relative_idx]
-                        s_to_insert = tt['s', insert_at_ele]
-                        break
-                    except KeyError:
-                        pass
-                    except IndexError:
-                    # If index error, the next element is the end of the line
-                        s_to_insert = tt.s[-1]
-                        break
-
-        else:
-            # Get the index of the corresponding element
-            relative_idx    = int(np.floor(offset))
-            marker_idx      = element_names_inc_markers.index(marker_xs_name)
-            insert_at_ele   = element_names_inc_markers[
-                marker_idx + relative_idx
-            ]
-            # Get the length of the element to insert at
-            insert_ele_length   = tt['length', insert_at_ele]
-            # Add the fraction of element length
-            # Check if the element is a multipole drift
-            if 'mult_drift' in insert_at_ele:
-                if offset > 0:
-                    s_to_insert = tt['s', insert_at_ele] +\
-                        (insert_ele_length * 2) * (offset % 1)
-                else:
-                    # If offset is negative, then need to step back the ele length
-                    s_to_insert = tt['s', insert_at_ele] -\
-                        insert_ele_length +\
-                        (insert_ele_length * 2) * (offset % 1)
-            else:
-                s_to_insert     = tt['s', insert_at_ele] +\
-                    insert_ele_length * (offset % 1)
-
-        # Produce a dictionary of the s locations that markers are inserted at
-        marker_locations[marker_xs_name] = s_to_insert
-
-    if install_markers:
-        for marker, insert_at_s in marker_locations.items():
-            if insert_at_s < tt.s[-1]:
-                try:
-                    line.insert_element(
-                        name    = marker,
-                        element = xt.Marker(_buffer = buffer),
-                        at_s    = insert_at_s,
-                        s_tol   = 1e-6)
-                except AttributeError:
-                    print(f'Error: Unable to insert marker {marker}'
-                        f' at {insert_at_s}')
-                    print('Likely trying to slice a "thick" multipole')
-                    print('Recommended to turn on "replace_thick_multipole')
-            else:
-                line.append_element(
-                    name    = marker,
-                    element = xt.Marker(_buffer = buffer))
+        p0c     = cleaned_expressions['momentum'],
+        mass0   = cleaned_expressions['mass'])
 
     ########################################
     # Apply chosen bend model to the line
@@ -927,10 +1049,119 @@ def sad2xsuite(
     line.configure_bend_model(edge = bend_edge_model)
 
     ############################################################################
+    # Reposition markers
+    ############################################################################
+    # Markers in SAD have an offset parameter that is not replicated in Xsuite
+    marker_offsets = {}
+
+    ########################################
+    # Get line table
+    ########################################
+    print('Getting line table')
+    line.build_tracker()
+    tt      = line.get_table(attr = True)
+    buffer  = line._buffer # Buffer for inserting elements
+    line.discard_tracker()
+    print('Got line table')
+
+    ########################################
+    # Check for the offset of each marker
+    ########################################
+    print('Calculating marker positions')
+    for marker_type in ['mark', 'moni', 'beambeam']:
+        if marker_type in cleaned_elements:
+            for marker_name, marker in cleaned_elements[marker_type].items():
+                if 'offset' in marker:
+                    marker_offsets[marker_name] = marker['offset']
+                else:
+                    marker_offsets[marker_name] = 0
+
+    ########################################
+    # Get the names of inserted markers (check for reversed)
+    ########################################
+    inserted_markers    = list(tt.rows[tt.element_type == 'Marker'].name)
+    element_names       = list(tt.name)
+
+    ########################################
+    # Calculate intended marker locations
+    ########################################
+    marker_locations = {}
+
+    for marker in inserted_markers:
+
+        base_marker     = marker.split('::')[0]
+
+        if base_marker.startswith('-'):
+            base_marker = base_marker[1:]
+            offset      = marker_offsets[base_marker]
+        else:
+            offset      = marker_offsets[base_marker]
+
+        ########################################
+        # Case 1: Marker remains in the same element
+        ########################################
+        if 0 <= offset <= 1:
+            marker_idx = element_names.index(marker)
+            try:
+                insert_at_ele   = element_names[marker_idx + 1]
+                s_to_insert     = tt['s', insert_at_ele]
+            except IndexError:  # Next element is the end of the line
+                s_to_insert = tt.s[-1]
+            except KeyError:    # Next element is a marker
+                relative_idx = 1
+                while True:
+                    relative_idx += 1
+                    try:
+                        insert_at_ele   = element_names[marker_idx + relative_idx]
+                        s_to_insert     = tt['s', insert_at_ele]
+                        break
+                    except KeyError:   # Next element is a marker
+                        pass
+                    except IndexError: # Next element is the end of the line
+                        s_to_insert = tt.s[-1]
+                        break
+        ########################################
+        # Case 2: Marker is offset to within another element
+        ########################################
+            else:
+                # Get the index of the corresponding element
+                relative_idx    = int(np.floor(offset))
+                marker_idx      = element_names.index(marker)
+                insert_at_ele   = element_names[marker_idx + relative_idx]
+
+                # Get the length of the element to insert at
+                insert_ele_length   = tt['length', insert_at_ele]
+
+                # Add the fraction of element length
+                s_to_insert     = tt['s', insert_at_ele] +\
+                    insert_ele_length * (offset % 1)
+
+            # Produce a dictionary of the s locations that markers are inserted at
+            marker_locations[marker] = s_to_insert
+
+    ########################################
+    # Remove previous markers
+    ########################################
+    line.remove_markers()
+
+    ########################################
+    # Slice and install markers
+    ########################################
+    if install_markers:
+        for marker, insert_at_s in marker_locations.items():
+            if insert_at_s < tt.s[-1]:
+                line.insert_element(
+                    name    = marker,
+                    element = xt.Marker(_buffer = buffer),
+                    at_s    = insert_at_s,
+                    s_tol   = 1E-6)
+            else:
+                line.append_element(
+                    name    = marker,
+                    element = xt.Marker(_buffer = buffer))
+
+    ############################################################################
     # Return Line
     ############################################################################
-    print('\n' + 40 * '*')
-    print('Conversion Complete')
-    print(40 * '*')
 
     return line, marker_locations

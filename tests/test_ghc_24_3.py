@@ -35,13 +35,12 @@ line_sad2mad.particle_ref   = xt.Particles(
 # Convert SAD to XSuite
 ################################################################################
 line_sad2xs, line_sad2xs_markers    = sad2xsuite(
-    sad_lattice_path    = 'lattices/ghc_24_3.sad',
-    mult_replacements   = None,
-    ref_particle_mass0  = xt.ELECTRON_MASS_EV,
-    bend_edge_model     = 'linear',
-    ref_particle_p0c    = None,
-    allow_thick_mult    = False,
-    install_markers     = True)
+    sad_lattice_path        = 'lattices/ghc_24_3.sad',
+    multipole_replacements  = None,
+    ref_particle_mass0      = xt.ELECTRON_MASS_EV,
+    bend_edge_model         = 'linear',
+    ref_particle_p0c        = None,
+    install_markers         = True)
 
 ################################################################################
 # Build Trackers

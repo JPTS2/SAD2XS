@@ -24,13 +24,12 @@ from sad2xs import sad2xsuite
 ################################################################################
 # section = sad2xsuite(
 line, line_markers  = sad2xsuite(
-    sad_lattice_path    = 'lattices/ghc_collimation.sad',
-    mult_replacements   = None,
-    ref_particle_mass0  = xt.ELECTRON_MASS_EV,
-    bend_edge_model     = 'linear',
-    ref_particle_p0c    = None,
-    allow_thick_mult    = False,
-    install_markers     = True)
+    sad_lattice_path        = 'lattices/ghc_collimation.sad',
+    multipole_replacements  = None,
+    ref_particle_mass0      = xt.ELECTRON_MASS_EV,
+    bend_edge_model         = 'linear',
+    ref_particle_p0c        = None,
+    install_markers         = True)
 
 ################################################################################
 # Build Trackers
