@@ -1119,21 +1119,21 @@ def sad2xsuite(
         ########################################
         # Case 2: Marker is offset to within another element
         ########################################
-            else:
-                # Get the index of the corresponding element
-                relative_idx    = int(np.floor(offset))
-                marker_idx      = element_names.index(marker)
-                insert_at_ele   = element_names[marker_idx + relative_idx]
+        else:
+            # Get the index of the corresponding element
+            relative_idx    = int(np.floor(offset))
+            marker_idx      = element_names.index(marker)
+            insert_at_ele   = element_names[marker_idx + relative_idx]
 
-                # Get the length of the element to insert at
-                insert_ele_length   = tt['length', insert_at_ele]
+            # Get the length of the element to insert at
+            insert_ele_length   = tt['length', insert_at_ele]
 
-                # Add the fraction of element length
-                s_to_insert     = tt['s', insert_at_ele] +\
-                    insert_ele_length * (offset % 1)
+            # Add the fraction of element length
+            s_to_insert     = tt['s', insert_at_ele] +\
+                insert_ele_length * (offset % 1)
 
-            # Produce a dictionary of the s locations that markers are inserted at
-            marker_locations[marker] = s_to_insert
+        # Produce a dictionary of the s locations that markers are inserted at
+        marker_locations[marker] = s_to_insert
 
     ########################################
     # Remove previous markers
