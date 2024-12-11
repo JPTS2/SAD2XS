@@ -5,7 +5,7 @@ Tested (working) on import of FCC-ee (Z) Lattice (GHC 24.3)
 =============================================
 Author(s):      John P T Salvesen, Giovanni Iadarola
 Email:          john.salvesen@cern.ch
-Last Updated:   09-12-2024
+Last Updated:   11-12-2024
 """
 ################################################################################
 # Required Packages
@@ -16,8 +16,8 @@ import numpy as np
 ################################################################################
 # Version Information
 ################################################################################
-__version__ = '0.2.0'
-__date__    = '09-12-2024'
+__version__ = '0.2.1'
+__date__    = '11-12-2024'
 __author__  = 'J. Salvesen, G. Iadarola'
 __email__   = 'john.salvesen@cern.ch'
 
@@ -824,7 +824,7 @@ def sad2xsuite(
                     name                = ele_name,
                     parent              = xt.Bend,
                     length              = ele_vars['l'],
-                    k0                  = f"{ele_vars['k0']} / {ele_vars['l']}",
+                    k0                  = f"sqrt({knl[0]}**2 + {ksl[0]}**2) / {ele_vars['l']}",
                     h                   = 0,
                     edge_entry_angle    = 0,
                     edge_exit_angle     = 0,
@@ -840,10 +840,8 @@ def sad2xsuite(
                     name    = ele_name,
                     parent  = xt.Quadrupole,
                     length  = ele_vars['l'],
-                    k1      = f"{ele_vars['k1']} / {ele_vars['l']} *\
-                        {np.cos(rotation * 2)}",
-                    k1s     = f"{ele_vars['k1']} / {ele_vars['l']} *\
-                        {np.sin(rotation * 2)}")
+                    k1      = f"{knl[1]} / {ele_vars['l']}",
+                    k1s     = f"{ksl[1]} / {ele_vars['l']}")
                 continue
 
             elif (length != 0 and knl[0] == 0 and ksl[0] == 0 \
@@ -855,10 +853,8 @@ def sad2xsuite(
                     name    = ele_name,
                     parent  = xt.Sextupole,
                     length  = ele_vars['l'],
-                    k2      = f"{ele_vars['k2']} / {ele_vars['l']} *\
-                        {np.cos(rotation * 3)}",
-                    k2s     = f"{ele_vars['k2']} / {ele_vars['l']} *\
-                        {np.sin(rotation * 3)}")
+                    k2      = f"{knl[2]} / {ele_vars['l']}",
+                    k2s     = f"{ksl[2]} / {ele_vars['l']}")
                 continue
 
             ########################################
