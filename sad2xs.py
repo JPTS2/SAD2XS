@@ -16,7 +16,7 @@ import numpy as np
 ################################################################################
 # Version Information
 ################################################################################
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 __date__    = '11-12-2024'
 __author__  = 'J. Salvesen, G. Iadarola'
 __email__   = 'john.salvesen@cern.ch'
@@ -991,31 +991,6 @@ def sad2xsuite(
             continue
 
     ############################################################################
-    # PATCH FIX FOR REVERSED ELEMENTS
-    ############################################################################
-
-    ########################################
-    # Create a reverse for each element
-    ########################################
-    imported_elements   = env._element_dict.copy()
-    for ele_name, element in imported_elements.items():
-        env.new(f'-{ele_name}', ele_name, mode='clone')
-
-        ########################################
-        # Reverse Voltage
-        ########################################
-        if isinstance(element, xt.Cavity):
-            env[f'-{ele_name}'].voltage *= -1
-
-
-        ########################################
-        # Swap Face angles
-        ########################################
-        if isinstance(element, xt.Bend):
-            env[f'-{ele_name}'].edge_entry_angle  = env[ele_name].edge_exit_angle
-            env[f'-{ele_name}'].edge_exit_angle   = env[ele_name].edge_entry_angle
-
-    ############################################################################
     # Create Lines
     ############################################################################
 
@@ -1023,9 +998,37 @@ def sad2xsuite(
     # Create all lines
     ########################################
     for line, components in cleaned_lines.items():
+
+        ########################################
+        # Handle reversed components
+        ########################################
+        reverse_handled_components  = []
+
+        for component in components:
+            if '-' in component:
+                if isinstance(env.element_dict[component[1:]], xt.Bend):
+                    env.new(
+                        component,
+                        component[1:],
+                        mode='clone')
+                    env[component].edge_entry_angle  =\
+                        env[component[1:]].edge_exit_angle
+                    env[component].edge_exit_angle   =\
+                        env[component[1:]].edge_entry_angle
+
+                elif isinstance(env.element_dict[component[1:]], xt.Cavity):
+                    env.new(
+                        component,
+                        component[1:],
+                        mode='clone')
+                    env[component].voltage *= -1
+                else:
+                    component = component[1:]
+            reverse_handled_components.append(component)
+
         env.new_line(
             name        = line,
-            components  = components)
+            components  = reverse_handled_components)
 
     ########################################
     # Select the top line
@@ -1139,6 +1142,11 @@ def sad2xsuite(
     # Remove previous markers
     ########################################
     line.remove_markers()
+
+    ########################################
+    # Replace repeated elements
+    ########################################
+    line.replace_all_repeated_elements()
 
     ########################################
     # Slice and install markers
