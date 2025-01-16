@@ -5,7 +5,7 @@ Tested (working) on import of FCC-ee (Z) Lattice (GHC 24.3)
 =============================================
 Author(s):      John P T Salvesen, Giovanni Iadarola
 Email:          john.salvesen@cern.ch
-Last Updated:   11-12-2024
+Last Updated:   16-01-2024
 """
 ################################################################################
 # Required Packages
@@ -16,8 +16,8 @@ import numpy as np
 ################################################################################
 # Version Information
 ################################################################################
-__version__ = '0.2.2'
-__date__    = '11-12-2024'
+__version__ = '0.2.3'
+__date__    = '16-01-2024'
 __author__  = 'J. Salvesen, G. Iadarola'
 __email__   = 'john.salvesen@cern.ch'
 
@@ -1007,6 +1007,9 @@ def sad2xsuite(
         for component in components:
             if '-' in component:
                 if isinstance(env.element_dict[component[1:]], xt.Bend):
+                    # check if this clone has already been addressed
+                    if component[1:] in env.element_dict:
+                        continue
                     env.new(
                         component,
                         component[1:],
@@ -1017,6 +1020,9 @@ def sad2xsuite(
                         env[component[1:]].edge_entry_angle
 
                 elif isinstance(env.element_dict[component[1:]], xt.Cavity):
+                    # check if this clone has already been addressed
+                    if component[1:] in env.element_dict:
+                        continue
                     env.new(
                         component,
                         component[1:],
