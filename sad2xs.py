@@ -1007,9 +1007,6 @@ def sad2xsuite(
         for component in components:
             if '-' in component:
                 if isinstance(env.element_dict[component[1:]], xt.Bend):
-                    # check if this clone has already been addressed
-                    if component[1:] in env.element_dict:
-                        continue
                     env.new(
                         component,
                         component[1:],
@@ -1020,9 +1017,6 @@ def sad2xsuite(
                         env[component[1:]].edge_entry_angle
 
                 elif isinstance(env.element_dict[component[1:]], xt.Cavity):
-                    # check if this clone has already been addressed
-                    if component[1:] in env.element_dict:
-                        continue
                     env.new(
                         component,
                         component[1:],
