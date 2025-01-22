@@ -1006,11 +1006,16 @@ def sad2xsuite(
 
         for component in components:
             if '-' in component:
+                # If the component is already in the element dictionary
+                # We must remove this, not overwrite it
+                if component in env.element_dict:
+                    env.element_dict.pop(component)
+
                 if isinstance(env.element_dict[component[1:]], xt.Bend):
                     env.new(
-                        component,
-                        component[1:],
-                        mode='clone')
+                        name    = component,
+                        parent  = component[1:],
+                        mode    = 'clone')
                     env[component].edge_entry_angle  =\
                         env[component[1:]].edge_exit_angle
                     env[component].edge_exit_angle   =\
@@ -1018,10 +1023,10 @@ def sad2xsuite(
 
                 elif isinstance(env.element_dict[component[1:]], xt.Cavity):
                     env.new(
-                        component,
-                        component[1:],
-                        mode='clone')
-                    env[component].voltage *= -1
+                        name    = component,
+                        parent  = component[1:],
+                        mode    = 'clone')
+                    env[component].voltage  *= -1
                 else:
                     component = component[1:]
             reverse_handled_components.append(component)
