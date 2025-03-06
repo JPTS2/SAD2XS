@@ -550,6 +550,20 @@ def sad2xsuite(
                 k0      = f"{k0l} / {ele_vars['l']}"
 
             ########################################
+            # User warning if highly fringed
+            ########################################
+            max_fringe_ratio    = 0
+            if 'f1' in ele_vars:
+                max_fringe_ratio    = max(0, ele_vars['f1'] / ele_vars['l'])
+            if 'fb1' in ele_vars:
+                max_fringe_ratio    = max(0, ele_vars['fb1'] / ele_vars['l'])
+            if 'fb2' in ele_vars:
+                max_fringe_ratio    = max(0, ele_vars['fb2'] / ele_vars['l'])
+            
+            if max_fringe_ratio > 0.25:
+                print(f'Warning: Bend {ele_name} has fringe ratio > 0.25 at {max_fringe_ratio}')
+
+            ########################################
             # Create Element
             ########################################
             env.new(
@@ -584,6 +598,20 @@ def sad2xsuite(
             rotation    = 0
             if 'rotate' in ele_vars:
                 rotation = ele_vars['rotate']
+
+            ########################################
+            # User warning if highly fringed
+            ########################################
+            max_fringe_ratio    = 0
+            if 'f1' in ele_vars:
+                max_fringe_ratio    = max(0, ele_vars['f1'] / ele_vars['l'])
+            if 'fb1' in ele_vars:
+                max_fringe_ratio    = max(0, ele_vars['fb1'] / ele_vars['l'])
+            if 'fb2' in ele_vars:
+                max_fringe_ratio    = max(0, ele_vars['fb2'] / ele_vars['l'])
+            
+            if max_fringe_ratio > 0.25:
+                print(f'Warning: Quad {ele_name} has fringe ratio > 0.25 at {max_fringe_ratio}')
 
             ########################################
             # Create Element

@@ -39,6 +39,12 @@ def get_element_class(element_name):
     # If the element name has a period, the base string is the first substring
     if len(substrings) == 2 and substrings[1].isdigit():
         element_class   = substrings[0]
+    # If the name starts with a minus sign, remove it
+    if element_class.startswith('-'):
+        element_class = element_class[1:]
+    # If there is a minus sign elsewhere, raise an error
+    if '-' in element_class:
+        raise ValueError(f'Element name {element_name} contains a minus sign')
 
     return element_class
 
