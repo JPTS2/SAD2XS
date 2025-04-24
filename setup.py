@@ -2,8 +2,8 @@ from setuptools import setup, find_packages
 
 setup(
     name                    = "sad2xs",
-    version                 = "0.0.1",
-    date                    = "23-01-2024",
+    version                 = "0.0.2",
+    date                    = "24-04-2024",
     description             = "Conversion of SAD lattices to Xtrack format",
     long_description        = (
         "Python package for the conversion of particle accelerator lattices "

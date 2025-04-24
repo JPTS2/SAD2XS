@@ -9,6 +9,9 @@ Tested (working) on import of FCC-ee (Z) Lattice (GHC 24.3)
 import xtrack as xt
 import numpy as np
 
+from scipy.constants import c as clight
+from scipy.constants import e as qe
+
 ################################################################################
 # Conversion Function
 ################################################################################
@@ -16,6 +19,7 @@ def sad2xsuite(
         sad_lattice_path:       str,
         multipole_replacements: dict        = None,
         ref_particle_mass0:     float       = None,
+        ref_particle_q0:        float       = +1,
         ref_particle_p0c:       float       = None,
         bend_edge_model:        str         = 'linear',
         install_markers:        bool        = True) -> tuple[xt.Line, dict]:
@@ -38,6 +42,10 @@ def sad2xsuite(
     ref_particle_mass0: float, optional
         Reference Particle Mass [eV], default is the None\n
         If provided, will override any mass found in the SAD file
+
+    ref_particle_q0: float (optional)
+        Reference Particle Charge [e]
+        Default is +1 (positron)
 
     ref_particle_p0c: float, optional
         Reference particle momentum [eV/c], default is None\n
@@ -425,6 +433,13 @@ def sad2xsuite(
         cleaned_expressions['momentum'] = ref_particle_p0c
 
     ############################################################################
+    # Beam rigidity for solenoids
+    ############################################################################
+    P0_J    = cleaned_expressions['momentum'] * qe / clight
+    BRHO    = P0_J / qe / ref_particle_q0
+    # TODO: Actually get the variable for this
+
+    ############################################################################
     # Create Xsuite Environment
     ############################################################################
     env = xt.Environment()
@@ -712,6 +727,13 @@ def sad2xsuite(
                 if f'sk{ks}' in ele_vars:
                     ksl[ks] = ele_vars[f'sk{ks}']
 
+            offset_x    = 0
+            offset_y    = 0
+            if 'dx' in ele_vars:
+                offset_x    = ele_vars['dx']
+            if 'dy' in ele_vars:
+                offset_y    = ele_vars['dy']
+
             ########################################
             # User Defined Multipole Replacements
             ########################################
@@ -766,7 +788,9 @@ def sad2xsuite(
                         parent  = xt.Quadrupole,
                         length  = ele_vars['l'],
                         k1      = k1,
-                        k1s     = k1s)
+                        k1s     = k1s,
+                        shift_x = offset_x,
+                        shift_y = offset_y)
                     continue
 
                 ########################################
@@ -784,7 +808,9 @@ def sad2xsuite(
                         parent  = xt.Sextupole,
                         length  = ele_vars['l'],
                         k2      = k2,
-                        k2s     = k2s)
+                        k2s     = k2s,
+                        shift_x = offset_x,
+                        shift_y = offset_y)
                     continue
 
                 else:
@@ -806,6 +832,8 @@ def sad2xsuite(
                     h                   = 0,
                     edge_entry_angle    = 0,
                     edge_exit_angle     = 0,
+                    shift_x = offset_x,
+                    shift_y = offset_y,
                     rot_s_rad           = rotation)
                 continue
 
@@ -819,7 +847,9 @@ def sad2xsuite(
                     parent  = xt.Quadrupole,
                     length  = ele_vars['l'],
                     k1      = f"{knl[1]} / {ele_vars['l']}",
-                    k1s     = f"{ksl[1]} / {ele_vars['l']}")
+                    k1s     = f"{ksl[1]} / {ele_vars['l']}",
+                    shift_x = offset_x,
+                    shift_y = offset_y)
                 continue
 
             elif (length != 0 and knl[0] == 0 and ksl[0] == 0 \
@@ -832,7 +862,9 @@ def sad2xsuite(
                     parent  = xt.Sextupole,
                     length  = ele_vars['l'],
                     k2      = f"{knl[2]} / {ele_vars['l']}",
-                    k2s     = f"{ksl[2]} / {ele_vars['l']}")
+                    k2s     = f"{ksl[2]} / {ele_vars['l']}",
+                    shift_x = offset_x,
+                    shift_y = offset_y)
                 continue
 
             ########################################
@@ -849,6 +881,8 @@ def sad2xsuite(
                     env.new(f'{ele_name}_kick', xt.Multipole,
                             knl         = knl,
                             ksl         = ksl,
+                            shift_x     = offset_x,
+                            shift_y     = offset_y,
                             rot_s_rad   = rotation)
 
                     env.new_line(
@@ -860,9 +894,12 @@ def sad2xsuite(
                     continue
 
             else:
-                env.new(
-                    f'{ele_name}', xt.Multipole,
-                    knl = knl, ksl = ksl, rot_s_rad = rotation)
+                env.new(f'{ele_name}', xt.Multipole,
+                    knl         = knl,
+                    ksl         = ksl,
+                    shift_x     = offset_x,
+                    shift_y     = offset_y,
+                    rot_s_rad   = rotation)
                 continue
 
     ########################################
@@ -917,25 +954,27 @@ def sad2xsuite(
             continue
 
     ########################################
-    # Solenoid (only geometric effect)
+    # Solenoid
     ########################################
     if 'sol' in cleaned_elements:
         solenoids   = cleaned_elements['sol']
 
         for ele_name, ele_vars in solenoids.items():
-            # TODO: Decide on solenoid implementation
+            # TODO: Continue to update the solenoid
 
             if 'dz' in ele_vars:
                 env.new(
                     name    = ele_name,
                     parent  = xt.Solenoid,
-                    length  = ele_vars['dz'])
+                    length  = ele_vars['dz'],
+                    ks      = ele_vars['bz'] / BRHO)
                 continue
 
             else:
                 env.new(
                     name    = ele_name,
-                    parent  = xt.Solenoid)
+                    parent  = xt.Solenoid,
+                    ks      = ele_vars['bz'] / BRHO)
                 continue
 
     ########################################
