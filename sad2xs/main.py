@@ -1023,18 +1023,11 @@ def sad2xsuite(
 
             if compund_solenoid_element:
 
-                if 'l' in ele_vars and ele_vars['l'] != 0:
-                    env.new(
-                        name    = f'{ele_name}_solenoid',
-                        parent  = xt.Solenoid,
-                        length  = ele_vars['l'],
-                        ks      = ele_vars['bz'] / BRHO)
-                else:
-                    env.new(
-                        name    = f'{ele_name}_solenoid',
-                        parent  = xt.Solenoid,
-                        length  = 1E-10,
-                        ks      = ele_vars['bz'] / BRHO)
+                print(f'Warning: Solenoids in SAD behave differently than Xsuite')
+                env.new(
+                    name    = f'{ele_name}_solenoid',
+                    parent  = xt.Solenoid,
+                    ks      = ele_vars['bz'] / BRHO)
 
                     # env.new(
                     #     name    = f'{ele_name}_solenoid',
@@ -1050,22 +1043,15 @@ def sad2xsuite(
                 continue
             
             else:
-                if 'l' in ele_vars and ele_vars['l'] != 0:
-                    env.new(
-                        name    = f'{ele_name}',
-                        parent  = xt.Solenoid,
-                        length  = ele_vars['l'],
-                        ks      = ele_vars['bz'] / BRHO)
-                else:
-                    env.new(
-                        name    = f'{ele_name}',
-                        parent  = xt.Solenoid,
-                        length  = 1E-10,
-                        ks      = ele_vars['bz'] / BRHO)
-                    # env.new(
-                    #     name    = f'{ele_name}',
-                    #     parent  = xt.Solenoid,
-                    #     ksi     = ele_vars['bz'] / BRHO)
+                print(f'Warning: Solenoids in SAD behave differently than Xsuite')
+                env.new(
+                    name    = f'{ele_name}',
+                    parent  = xt.Solenoid,
+                    ks      = ele_vars['bz'] / BRHO)
+                # env.new(
+                #     name    = f'{ele_name}',
+                #     parent  = xt.Solenoid,
+                #     ksi     = ele_vars['bz'] / BRHO)
 
     ########################################
     # Markers (all types)
