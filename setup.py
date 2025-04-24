@@ -5,7 +5,7 @@ with open("README.md", "r") as f:
 
 setup(
     name                            = "sad2xs",
-    version                         = "0.0.3",
+    version                         = "0.0.2",
     date                            = "24-04-2024",
     description                     = "Conversion of SAD lattices to Xtrack format",
     long_description                = description,
@@ -13,7 +13,6 @@ setup(
     author                          = "J. Salvesen, G. Iadarola",
     author_email                    = "john.salvesen@cern.ch",
     url                             = "https://github.com/JPTS2/SAD2XS",
-    download_url                    = "TBD",
     packages                        = find_packages(),
     include_package_data            = True,
     install_requires                = [
