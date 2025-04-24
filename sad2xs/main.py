@@ -146,6 +146,9 @@ def sad2xsuite(
         comment_removed_section = []
         for line in cleaned_section.split('\n'):
             if not line.startswith('!'):
+                # Trim lines that have comment part way through
+                if '!' in line:
+                    line = line.split('!')[0]
                 comment_removed_section.append(line)
         cleaned_section = '\n'.join(comment_removed_section)
 
