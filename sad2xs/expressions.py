@@ -1,9 +1,5 @@
 """
-Knob Generation for SAD to XSuite Conversion
-=============================================
-Author(s): John P T Salvesen, Giovanni Iadarola
-Email:  john.salvesen@cern.ch
-Date:   20-11-2024
+Creation of expresions for imported lattice
 """
 ################################################################################
 # Required Packages
@@ -15,22 +11,19 @@ import numpy as np
 ################################################################################
 def get_element_class(element_name):
     """
-    Get the base string of an element name
-    Base strings used to define powering groups
+    Get the element class from the element name. Used to define powering groups.
 
-    ############################################################################
+    e.g. 'Bend.1' -> 'Bend'
+
     Parameters:
-    ############################################################################
-
+    ----------
     element_name: str
         The name of the element
         
-    ############################################################################
     Outputs
-    ############################################################################
-
+    ----------
     element_class: string
-        The base string of the element name
+        The name of the element class
     """
     # Default to the element name
     element_class   = element_name
@@ -39,12 +32,6 @@ def get_element_class(element_name):
     # If the element name has a period, the base string is the first substring
     if len(substrings) == 2 and substrings[1].isdigit():
         element_class   = substrings[0]
-    # If the name starts with a minus sign, remove it
-    if element_class.startswith('-'):
-        element_class = element_class[1:]
-    # If there is a minus sign elsewhere, raise an error
-    if '-' in element_class:
-        raise ValueError(f'Element name {element_name} contains a minus sign')
 
     return element_class
 
@@ -52,22 +39,18 @@ def get_element_class(element_name):
 # Conversion Function
 ################################################################################
 
-def sad2xsuite_knobs(line):
+def generate_expressions(line):
     """
-    Generate Xsuite Line variables for an imported lattice
-    Done according to naming of elements
+    Generate Xsuite line variables for an Xtrack lattice 
+    according to the naming of the elements
 
-    ############################################################################
     Parameters:
-    ############################################################################
-
+    ----------
     line: xtrack.Line
         Xsuite Line object representing the lattice    
-        
-    ############################################################################
-    Outputs
-    ############################################################################
 
+    Outputs
+    ----------
     line: xtrack.Line
         Xsuite Line object representing the lattice
     """
@@ -76,7 +59,7 @@ def sad2xsuite_knobs(line):
     # Build Line Table
     ############################################################################
     line.build_tracker()
-    line_table  = line.get_table(attr=True)
+    line_table  = line.get_table(attr = True)
     line.discard_tracker()
 
     ############################################################################

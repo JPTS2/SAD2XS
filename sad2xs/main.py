@@ -1,11 +1,7 @@
 """
-UNOFFICIAL SAD to XSuite Converter
+(Unofficial) SAD to XSuite Converter
 Designed for initial import of SuperKEKB Lattice
 Tested (working) on import of FCC-ee (Z) Lattice (GHC 24.3)
-=============================================
-Author(s):      John P T Salvesen, Giovanni Iadarola
-Email:          john.salvesen@cern.ch
-Last Updated:   16-01-2024
 """
 ################################################################################
 # Required Packages
@@ -14,17 +10,8 @@ import xtrack as xt
 import numpy as np
 
 ################################################################################
-# Version Information
-################################################################################
-__version__ = '0.2.3'
-__date__    = '16-01-2024'
-__author__  = 'J. Salvesen, G. Iadarola'
-__email__   = 'john.salvesen@cern.ch'
-
-################################################################################
 # Conversion Function
 ################################################################################
-
 def sad2xsuite(
         sad_lattice_path:       str,
         multipole_replacements: dict        = None,
@@ -33,48 +20,39 @@ def sad2xsuite(
         bend_edge_model:        str         = 'linear',
         install_markers:        bool        = True) -> tuple[xt.Line, dict]:
     """
-    Convert SAD Lattice to XSuite Lattice
+    Convert a particle accelerator lattice defined in Stratgeic Accelerator 
+    Design (SAD) to the Xtrack format (part of the Xsuite packages)
 
-    ############################################################################
     Parameters:
-    ############################################################################
-
+    ----------
     sad_lattice_path: str
         Path to the SAD lattice file
 
-    multipole_replacements: dict (optional)
-        Dictionary of replacements for multipole elements
-        Default is None
-        Dictionary should be of the form:
-        {
-            'element_base_string': replacement_element_type
-        }
-        Where element_base_string is the base string of the element name
-        and replacement_element_type is the element type to replace with
+    multipole_replacements: dict, optional
+        Dictionary of replacements for multipole elements, default is None\n 
+        formatted in the form:\n
+        {'element_base_string': replacement_element_type}\n
         Currently supported options for replacement_element_type are:
             'Bend', 'Quadrupole', 'Sextupole
         
-    ref_particle_mass0: float (optional)
-        Reference Particle Mass [eV]
-        Default is the electron mass
+    ref_particle_mass0: float, optional
+        Reference Particle Mass [eV], default is the None\n
+        If provided, will override any mass found in the SAD file
 
-    ref_particle_p0c: float (optional)
-        Reference Particle Momentum [eV/c]
-        Default is None, will attempt to read from SAD file
+    ref_particle_p0c: float, optional
+        Reference particle momentum [eV/c], default is None\n
+        If provided, will override any momentum found in the SAD file
 
-    bend_edge_model: str (optional)
-        Model for the bend elements. Options are 'full', 'linear', 'suppressed'
-        Default is 'linear'
+    bend_edge_model: str, optional
+        Model for the bend elements, default is 'linear'\n
+        Options are 'full', 'linear', 'suppressed'
         
-    install_markers: bool (optional)
-        Install markers at the correct locations
-        Default is True
+    install_markers: bool, optional
+        Install markers at the correct locations, default is True\n
         Requires slicing of thick elements
         
-    ############################################################################
     Outputs
-    ############################################################################
-
+    ----------
     line: xtrack.Line
         XSuite Line object representing the lattice
 
@@ -426,7 +404,7 @@ def sad2xsuite(
     ############################################################################
     if 'mass' not in cleaned_expressions and ref_particle_mass0 is None:
         raise ValueError('No mass found in SAD file or function input')
-    elif 'mass' not in cleaned_expressions:
+    if 'mass' not in cleaned_expressions:
         print('Warning: No mass found in SAD file')
         print('Using user provided value')
         cleaned_expressions['mass'] = ref_particle_mass0
@@ -437,7 +415,7 @@ def sad2xsuite(
 
     if 'momentum' not in cleaned_expressions and ref_particle_p0c is None:
         raise ValueError('No momentum found in SAD file or function input')
-    elif 'momentum' not in cleaned_expressions:
+    if 'momentum' not in cleaned_expressions:
         print('Warning: No momentum found in SAD file')
         print('Using user provided value')
         cleaned_expressions['momentum'] = ref_particle_p0c
@@ -550,20 +528,6 @@ def sad2xsuite(
                 k0      = f"{k0l} / {ele_vars['l']}"
 
             ########################################
-            # User warning if highly fringed
-            ########################################
-            max_fringe_ratio    = 0
-            if 'f1' in ele_vars:
-                max_fringe_ratio    = max(0, ele_vars['f1'] / ele_vars['l'])
-            if 'fb1' in ele_vars:
-                max_fringe_ratio    = max(0, ele_vars['fb1'] / ele_vars['l'])
-            if 'fb2' in ele_vars:
-                max_fringe_ratio    = max(0, ele_vars['fb2'] / ele_vars['l'])
-            
-            if max_fringe_ratio > 0.25:
-                print(f'Warning: Bend {ele_name} has fringe ratio > 0.25 at {max_fringe_ratio}')
-
-            ########################################
             # Create Element
             ########################################
             env.new(
@@ -598,20 +562,6 @@ def sad2xsuite(
             rotation    = 0
             if 'rotate' in ele_vars:
                 rotation = ele_vars['rotate']
-
-            ########################################
-            # User warning if highly fringed
-            ########################################
-            max_fringe_ratio    = 0
-            if 'f1' in ele_vars:
-                max_fringe_ratio    = max(0, ele_vars['f1'] / ele_vars['l'])
-            if 'fb1' in ele_vars:
-                max_fringe_ratio    = max(0, ele_vars['fb1'] / ele_vars['l'])
-            if 'fb2' in ele_vars:
-                max_fringe_ratio    = max(0, ele_vars['fb2'] / ele_vars['l'])
-            
-            if max_fringe_ratio > 0.25:
-                print(f'Warning: Quad {ele_name} has fringe ratio > 0.25 at {max_fringe_ratio}')
 
             ########################################
             # Create Element
@@ -1199,6 +1149,5 @@ def sad2xsuite(
 
     ############################################################################
     # Return Line
-    ############################################################################
-
+    ############################################################################å
     return line, marker_locations
