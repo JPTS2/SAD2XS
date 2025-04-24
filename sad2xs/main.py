@@ -1028,14 +1028,12 @@ def sad2xsuite(
                     name    = f'{ele_name}_solenoid',
                     parent  = xt.Solenoid,
                     ks      = ele_vars['bz'] / BRHO)
-
                     # env.new(
                     #     name    = f'{ele_name}_solenoid',
                     #     parent  = xt.Solenoid,
                     #     ksi     = ele_vars['bz'] / BRHO)
                 
                 compound_solenoid_components.insert(0, f'{ele_name}_solenoid')
-
 
                 env.new_line(
                     name        = ele_name,
