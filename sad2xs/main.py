@@ -963,22 +963,109 @@ def sad2xsuite(
         solenoids   = cleaned_elements['sol']
 
         for ele_name, ele_vars in solenoids.items():
-            # TODO: Continue to update the solenoid
+
+            compund_solenoid_element        = False
+            compound_solenoid_components    = []
+
+            if 'dx' in ele_vars:
+                compund_solenoid_element = True
+
+                env.new(
+                    name    = f'{ele_name}_dx',
+                    parent  = xt.XYShift,
+                    dx      = ele_vars['dx'])
+                compound_solenoid_components.append(f'{ele_name}_dx')
+
+            if 'dy' in ele_vars:
+                compund_solenoid_element = True
+
+                env.new(
+                    name    = f'{ele_name}_dy',
+                    parent  = xt.XYShift,
+                    dy      = ele_vars['dy'])
+                compound_solenoid_components.append(f'{ele_name}_dy')
 
             if 'dz' in ele_vars:
-                env.new(
-                    name    = ele_name,
-                    parent  = xt.Solenoid,
-                    length  = ele_vars['dz'],
-                    ks      = ele_vars['bz'] / BRHO)
-                continue
+                compund_solenoid_element = True
 
-            else:
                 env.new(
-                    name    = ele_name,
-                    parent  = xt.Solenoid,
-                    ks      = ele_vars['bz'] / BRHO)
+                    name    = f'{ele_name}_dz',
+                    parent  = xt.Drift,
+                    length  = ele_vars['dz'])
+                compound_solenoid_components.append(f'{ele_name}_dz')
+
+            if 'chi1' in ele_vars:
+                compund_solenoid_element = True
+
+                env.new(
+                    name    = f'{ele_name}_chi1',
+                    parent  = xt.YRotation,
+                    angle   = np.rad2deg(ele_vars['chi1']))
+                compound_solenoid_components.append(f'{ele_name}_chi1')
+
+            if 'chi2' in ele_vars:
+                compund_solenoid_element = True
+
+                env.new(
+                    name    = f'{ele_name}_chi2',
+                    parent  = xt.XRotation,
+                    angle   = np.rad2deg(ele_vars['chi2']))
+                compound_solenoid_components.append(f'{ele_name}_chi2')
+
+            if 'chi3' in ele_vars:
+                compund_solenoid_element = True
+
+                env.new(
+                    name    = f'{ele_name}_chi3',
+                    parent  = xt.SRotation,
+                    angle   = np.rad2deg(ele_vars['chi3']))
+                compound_solenoid_components.append(f'{ele_name}_chi3')
+
+            if compund_solenoid_element:
+
+                if 'l' in ele_vars and ele_vars['l'] != 0:
+                    env.new(
+                        name    = f'{ele_name}_solenoid',
+                        parent  = xt.Solenoid,
+                        length  = ele_vars['l'],
+                        ks      = ele_vars['bz'] / BRHO / ele_vars['l'])
+                else:
+                    env.new(
+                        name    = f'{ele_name}_solenoid',
+                        parent  = xt.Solenoid,
+                        length  = 1E-10,
+                        ks      = ele_vars['bz'] / BRHO / 1E-10)
+
+                    # env.new(
+                    #     name    = f'{ele_name}_solenoid',
+                    #     parent  = xt.Solenoid,
+                    #     ksi     = ele_vars['bz'] / BRHO)
+                
+                compound_solenoid_components.insert(0, f'{ele_name}_solenoid')
+
+
+                env.new_line(
+                    name        = ele_name,
+                    components  = compound_solenoid_components)
                 continue
+            
+            else:
+                if 'l' in ele_vars and ele_vars['l'] != 0:
+                    env.new(
+                        name    = f'{ele_name}',
+                        parent  = xt.Solenoid,
+                        length  = ele_vars['l'],
+                        ks      = ele_vars['bz'] / BRHO / ele_vars['l'])
+                else:
+                    env.new(
+                        name    = f'{ele_name}',
+                        parent  = xt.Solenoid,
+                        length  = 1E-10,
+                        ks      = ele_vars['bz'] / BRHO / 1E-10)
+                    # env.new(
+                    #     name    = f'{ele_name}',
+                    #     parent  = xt.Solenoid,
+                    #     ksi     = ele_vars['bz'] / BRHO)
 
     ########################################
     # Markers (all types)
