@@ -20,10 +20,13 @@ With thanks to Ghislain Roy for his support in testing across many different lat
 
 ## License
 Apache License Version 2.0
+
 [![License](https://img.shields.io/github/license/JPTS2/sad2xs)](https://github.com/JPTS2/sad2xs/blob/main/LICENSE)
 
 
 ## PyPI Version
+Package available on PyPI at https://pypi.org/project/sad2xs/
+
 [![PyPI version](https://img.shields.io/pypi/v/sad2xs)](https://pypi.org/project/sad2xs/)
 
 ## Support
@@ -37,4 +40,5 @@ Not currently available in Xsuite
 
 ## Tests
 [![Docker Build](https://github.com/JPTS2/sad2xs/actions/workflows/docker-build.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/docker-build.yml)
-[![Nightly Tests](https://github.com/JPTS2/sad2xs/actions/workflows/nightly-tests.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/nightly-tests.yml)
+
+[![Drift](https://github.com/JPTS2/sad2xs/actions/workflows/001_drift_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/001_drift_test.yml)
