@@ -59,9 +59,10 @@ build_instructions
 /tests/temporary_sad_twiss.tfs
 
 # ==============================================================================
-# Ignore local test files
+# Ignore local and private test files
 # ==============================================================================
 /misc
+/private_lattice_tests
 
 # ==============================================================================
 # Ignore output lattices
