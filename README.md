@@ -42,3 +42,9 @@ Not currently available in Xsuite
 [![Docker Build](https://github.com/JPTS2/sad2xs/actions/workflows/docker-build.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/docker-build.yml)
 
 [![Drift](https://github.com/JPTS2/sad2xs/actions/workflows/001_drift_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/001_drift_test.yml)
+
+[![Coordinate Transform](https://github.com/JPTS2/sad2xs/actions/workflows/002_coord_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/002_coord_test.yml)
+
+[![Solenoid](https://github.com/JPTS2/sad2xs/actions/workflows/003_sol_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/003_sol_test.yml)
+
+[![Reversal](https://github.com/JPTS2/sad2xs/actions/workflows/004_reversal_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/004_reversal_test.yml)

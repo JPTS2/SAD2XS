@@ -1,4 +1,4 @@
-name: Docker Rebuild
+name: SAD Docker Build
 
 on:
   push:

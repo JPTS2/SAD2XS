@@ -1,4 +1,4 @@
-name: Test 001-Drift
+name: Test 002-Coordinate Transform
 
 on:
   workflow_run:
@@ -13,7 +13,7 @@ permissions:
   packages: read
 
 concurrency:
-  group: test-001-drift-${{ github.ref }}
+  group: test-002-coord-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -25,5 +25,5 @@ jobs:
       pull_tag: latest
       test_files: |
         # List the relevant tests here (exact paths)
-        tests/test_001_drift.py
+        tests/test_002_coord.py
     secrets: inherit
