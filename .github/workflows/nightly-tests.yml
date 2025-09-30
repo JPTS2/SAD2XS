@@ -1,4 +1,4 @@
-name: SAD nightly tests
+name: Nightly SAD vs Xsuite Comparison Tests
 
 on:
   schedule:

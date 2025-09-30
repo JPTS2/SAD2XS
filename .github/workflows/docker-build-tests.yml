@@ -1,8 +1,8 @@
-name: SAD nightly tests
+name: Docker Rebuild SAD vs Xsuite Comparison Tests
 
 on:
   workflow_run:
-    workflows: [ "Build & Smoke" ]
+    workflows: [ "Docker Rebuild" ]
     types: [ completed ]
 
 permissions:

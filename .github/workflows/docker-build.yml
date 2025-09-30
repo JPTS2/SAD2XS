@@ -1,4 +1,4 @@
-name: SAD weekly build smoke
+name: Docker Rebuild
 
 on:
   push:
