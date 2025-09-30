@@ -1,6 +1,8 @@
 name: SAD weekly build smoke
 
 on:
+  push:
+    branches: [ main ]
   schedule:
     # Every Sunday at 03:00 UTC
     - cron: '0 3 * * 0'
