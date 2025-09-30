@@ -1,8 +1,6 @@
 name: SAD nightly tests
 
 on:
-  push:
-    branches: [ main ]
   schedule:
     # Every day at 02:00 UTC
     - cron: '0 2 * * *'

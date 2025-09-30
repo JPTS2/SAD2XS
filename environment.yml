@@ -12,6 +12,8 @@ channels:
 dependencies:
   - python=3.12
   - pip
+  - setuptools
+  - wheel
   - pip:
       - pytest
       - xsuite

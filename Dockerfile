@@ -138,6 +138,27 @@ RUN set -eux; \
   rm -rf /var/lib/apt/lists/*
 
 ########################################
+# Install sad2xs into the micromamba env
+########################################
+# Build in /opt/app to keep things tidy
+WORKDIR /opt/app
+
+# Copy build metadata first for better layer caching
+COPY setup.py README* LICENSE* /opt/app/
+
+# Copy the package sources
+COPY sad2xs /opt/app/sad2xs
+
+# Install into the 'sad2xs' conda env
+RUN micromamba run -n sad2xs python -m pip install --no-cache-dir --no-build-isolation .
+
+# Quick sanity check that it imports
+RUN micromamba run -n sad2xs python - <<'PY'
+import sad2xs, sys
+print("sad2xs import OK; version:", getattr(sad2xs, "__version__", "(none)"))
+PY
+
+########################################
 # SAD launcher script
 ########################################
 RUN printf '%s\n' '#!/usr/bin/env bash' \
