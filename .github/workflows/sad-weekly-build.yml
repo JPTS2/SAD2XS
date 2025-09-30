@@ -1,0 +1,38 @@
+name: SAD weekly build smoke
+
+on:
+  schedule:
+    # Every Sunday at 03:00 UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (load to runner; cache to/from GHA)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          tags: sad2xs/sad:ci
+          load: true
+          build-args: |
+            SAD_SMOKE_PATH=tests/sad_installation_test.sad
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run smoke test (assert SAD starts)
+        run: |
+          # EntryPoint already runs the smoke test; we also call it explicitly for clarity
+          docker run --rm sad2xs/sad:ci sad-smoke /opt/smoke.sad 20

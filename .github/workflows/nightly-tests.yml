@@ -1,0 +1,44 @@
+name: SAD nightly tests
+
+on:
+  schedule:
+    # Every day at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (load to runner; cache to/from GHA)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          tags: sad2xs/sad:test
+          load: true
+          build-args: |
+            SAD_SMOKE_PATH=tests/sad_installation_test.sad
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run full test suite (pytest)
+        env:
+          # Skip entrypoint smoke to go straight to pytest
+          SKIP_SMOKE: "1"
+        run: |
+          docker run --rm \
+            -e SKIP_SMOKE \
+            -v "$GITHUB_WORKSPACE":/work -w /work \
+            sad2xs/sad:test \
+            pytest -q

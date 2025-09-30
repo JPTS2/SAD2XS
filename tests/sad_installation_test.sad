@@ -1,0 +1,18 @@
+MOMENTUM    = 1.0 GEV;
+TEST_VAL    = 1;
+
+DRIFT       TEST_DRIFT  = (L = TEST_VAL);
+
+MARK        START       = ()
+            END         = ();
+
+LINE        TEST_LINE   = (START TEST_DRIFT END);
+
+FFS;
+USE TEST_LINE;
+
+INS;
+CALC;
+SAVE ALL;
+
+ABORT;

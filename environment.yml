@@ -1,0 +1,21 @@
+# ==============================================================================
+# Environment file for sad2xs
+# =============================================
+# Author(s):  John P T Salvesen
+# Email:      john.salvesen@cern.ch
+# Date:       30-09-2025
+# ==============================================================================
+
+name: sad2xs
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - pytest
+      - xsuite
+      - numpy
+      - pandas
+      - tfs-pandas
+      - matplotlib
