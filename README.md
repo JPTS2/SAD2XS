@@ -20,6 +20,11 @@ With thanks to Ghislain Roy for his support in testing across many different lat
 
 ## License
 Apache License Version 2.0
+[![License](https://img.shields.io/github/license/JPTS2/sad2xs)](https://github.com/JPTS2/sad2xs/blob/main/LICENSE)
+
+
+## PyPI Version
+[![PyPI version](https://img.shields.io/pypi/v/sad2xs)](https://pypi.org/project/sad2xs/)
 
 ## Support
 Please contact john.salvesen@cern.ch with queries
@@ -29,3 +34,7 @@ Please contact john.salvesen@cern.ch with queries
 ### Fringe Import
 No import of maxwellian fringes features in SAD.
 Not currently available in Xsuite
+
+## Tests
+[![Docker Build](https://github.com/JPTS2/sad2xs/actions/workflows/docker-build.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/docker-build.yml)
+[![Nightly Tests](https://github.com/JPTS2/sad2xs/actions/workflows/nightly-tests.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/nightly-tests.yml)
