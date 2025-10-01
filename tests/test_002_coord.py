@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from _sad_helpers import twiss_sad
-from _test_config import *
+from _config import *
 
 ################################################################################
 # Reference PyTest Function

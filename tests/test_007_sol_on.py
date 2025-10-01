@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from _sad_helpers import twiss_sad, rebuild_sad_lattice
-from _test_config import *
+from _config import *
 
 ################################################################################
 # Reference PyTest Function
@@ -323,67 +323,67 @@ def reference_sol_test(
         np.isclose(PY_SAD, PY_XS, rtol = DELTA_PY_RTOL, atol = DELTA_PY_ATOL)), \
         "py values do not match between SAD and XSuite."
 
-# ################################################################################
-# # Very weak sol (checking expansion of the square root)
-# ################################################################################
-# def test_sol_on_very_weak():
-#     """
-#     Test the conversion of a SAD SOL element with ref shifts at entry to XSuite.
-#     """
-#     reference_sol_test(
-#         test_name                  = "test_007_very_weak_sol",
-#         sad_elements_line_string   = textwrap.dedent(f"""\
-#             DRIFT       SHORT_DRIFT = (L = 0.10);
+################################################################################
+# Very weak sol (checking expansion of the square root)
+################################################################################
+def test_sol_on_very_weak():
+    """
+    Test the conversion of a SAD SOL element with ref shifts at entry to XSuite.
+    """
+    reference_sol_test(
+        test_name                  = "test_007_very_weak_sol",
+        sad_elements_line_string   = textwrap.dedent(f"""\
+            DRIFT       SHORT_DRIFT = (L = 0.10);
 
-#             SOL         SOL_IN      = (BZ = 0.000001 BOUND =1  DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL CHI2 = TEST_VAL GEO = 1)
-#                         SOL_OUT     = (BZ = 0.000001 BOUND =1);
+            SOL         SOL_IN      = (BZ = 0.000001 BOUND =1  DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL CHI2 = TEST_VAL GEO = 1)
+                        SOL_OUT     = (BZ = 0.000001 BOUND =1);
 
-#             MARK        START       = ()
-#                         END         = ()
-#                         SOL_START   = ()
-#                         SOL_END     = ();
+            MARK        START       = ()
+                        END         = ()
+                        SOL_START   = ()
+                        SOL_END     = ();
 
-#             LINE        SOL_DRIFT   = (SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT
-#                 SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT
-#                 SHORT_DRIFT SHORT_DRIFT)
-#                         TEST_LINE   = (START
-#                 SOL_IN SOL_START SOL_DRIFT SOL_END SOL_OUT END);
-#             """),
-#         sad_eval_marker            = "END",
-#         test_values                = generate_symlog_array(-6, -1, 11),
-#         static_val                 = STATIC_OFFSET,
-#         plot                       = True)
+            LINE        SOL_DRIFT   = (SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT
+                SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT
+                SHORT_DRIFT SHORT_DRIFT)
+                        TEST_LINE   = (START
+                SOL_IN SOL_START SOL_DRIFT SOL_END SOL_OUT END);
+            """),
+        sad_eval_marker            = "END",
+        test_values                = generate_symlog_array(-6, -1, 11),
+        static_val                 = STATIC_OFFSET,
+        plot                       = True)
 
-# ################################################################################
-# # Weak sol (checking expansion of the square root)
-# ################################################################################
-# def test_sol_on_weak():
-#     """
-#     Test the conversion of a SAD SOL element with ref shifts at entry to XSuite.
-#     """
-#     reference_sol_test(
-#         test_name                  = "test_007_weak_sol",
-#         sad_elements_line_string   = textwrap.dedent(f"""\
-#             DRIFT       SHORT_DRIFT = (L = 0.10);
+################################################################################
+# Weak sol (checking expansion of the square root)
+################################################################################
+def test_sol_on_weak():
+    """
+    Test the conversion of a SAD SOL element with ref shifts at entry to XSuite.
+    """
+    reference_sol_test(
+        test_name                  = "test_007_weak_sol",
+        sad_elements_line_string   = textwrap.dedent(f"""\
+            DRIFT       SHORT_DRIFT = (L = 0.10);
 
-#             SOL         SOL_IN      = (BZ = 0.001 BOUND =1  DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL CHI2 = TEST_VAL GEO = 1)
-#                         SOL_OUT     = (BZ = 0.001 BOUND =1);
+            SOL         SOL_IN      = (BZ = 0.001 BOUND =1  DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL CHI2 = TEST_VAL GEO = 1)
+                        SOL_OUT     = (BZ = 0.001 BOUND =1);
 
-#             MARK        START       = ()
-#                         END         = ()
-#                         SOL_START   = ()
-#                         SOL_END     = ();
+            MARK        START       = ()
+                        END         = ()
+                        SOL_START   = ()
+                        SOL_END     = ();
 
-#             LINE        SOL_DRIFT   = (SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT
-#                 SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT
-#                 SHORT_DRIFT SHORT_DRIFT)
-#                         TEST_LINE   = (START
-#                 SOL_IN SOL_START SOL_DRIFT SOL_END SOL_OUT END);
-#             """),
-#         sad_eval_marker            = "END",
-#         test_values                = generate_symlog_array(-6, -1, 11),
-#         static_val                 = STATIC_OFFSET,
-#         plot                       = True)
+            LINE        SOL_DRIFT   = (SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT
+                SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT SHORT_DRIFT
+                SHORT_DRIFT SHORT_DRIFT)
+                        TEST_LINE   = (START
+                SOL_IN SOL_START SOL_DRIFT SOL_END SOL_OUT END);
+            """),
+        sad_eval_marker            = "END",
+        test_values                = generate_symlog_array(-6, -1, 11),
+        static_val                 = STATIC_OFFSET,
+        plot                       = True)
 
 ################################################################################
 # Sol (checking expansion of the square root)
