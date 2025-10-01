@@ -41,9 +41,9 @@ dist
 *.gif
 
 # ======================================
-# Allow the readme image
+# Allow the readme images
 # ======================================
-!readme_plot.png
+!README/*.png
 
 # ==============================================================================
 # Ignore package build instructions
