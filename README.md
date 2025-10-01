@@ -1,8 +1,14 @@
 # SAD2XS: The (Unofficial) Strategic Accelerator Design (SAD) to Xsuite Converter
-SAD2XS is a lattice conversion tool,.
+SAD2XS is a lattice conversion tool.
 The input is a SAD lattice (.sad format).
 The converter outputs an Xtrack Line object, and generates a lattice and optics file.
 The lattice file generates the lattice from base elements.
+
+![FCC-ee w/ Solenoid IR Survey](README/fcc_survey.png)
+![FCC-ee w/ Solenoid IR Orbit](README/fcc_orbit.png)
+![FCC-ee w/ Solenoid IR Betas](README/fcc_beta.png)
+![FCC-ee w/ Solenoid IR Dispersion](README/fcc_disp.png)
+
 
 ## Project status
 This project is a **work in progress**.
