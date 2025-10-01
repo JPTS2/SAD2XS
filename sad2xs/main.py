@@ -192,12 +192,6 @@ def convert_sad_to_xsuite(
         print_section_heading("Configuring Modelling Mode", mode = 'section')
 
     ########################################
-    # Use exact drifts
-    ########################################
-    # Needed for large angles inside drifts
-    line.config.XTRACK_USE_EXACT_DRIFTS = True                  # type: ignore
-
-    ########################################
     # Set bend model
     ########################################
     if _verbose:
