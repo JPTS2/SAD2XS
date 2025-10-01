@@ -40,7 +40,7 @@ line    = s2x.convert_sad_to_xsuite(
     reverse_element_order       = False,
     reverse_bend_direction      = False,
     reverse_charge              = False,
-    output_directory            = 'out/',
+    output_directory            = 'out',
     output_filename             = "fcc_h",
     output_header               = "FCC-ee ZH")
 

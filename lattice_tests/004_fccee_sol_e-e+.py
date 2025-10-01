@@ -69,7 +69,7 @@ linep   = s2x.convert_sad_to_xsuite(
     reverse_element_order       = False,
     reverse_bend_direction      = False,
     reverse_charge              = False,
-    output_directory            = 'out/',
+    output_directory            = 'out',
     output_filename             = "fcc_sol_p",
     output_header               = "FCC-ee LCC Solenoid Positron Ring")
 linep.replace_all_repeated_elements()
@@ -85,7 +85,7 @@ linee   = s2x.convert_sad_to_xsuite(
     reverse_element_order       = False,
     reverse_bend_direction      = True,
     reverse_charge              = True,
-    output_directory            = 'out/',
+    output_directory            = 'out',
     output_filename             = "fcc_sol_e",
     output_header               = "FCC-ee LCC Solenoid Electron Ring")
 linee.replace_all_repeated_elements()
@@ -120,8 +120,45 @@ print("Fourth IP")
 print(svp.rows["ip.6"])
 print(sve.rows["ip.2"])
 
-fig = plt.figure()
+########################################
+# Overall Comparison
+########################################
+fig = plt.figure(figsize = (8, 4))
 plt.plot(svp.Z, svp.X, color = "r")
 plt.plot(sve.Z, sve.X, color = "b")
+plt.xlabel("Z [m]")
+plt.ylabel("X [m]")
+fig.suptitle("FCC-ee w/ Solenoid: Survey")
+fig.align_labels()
+fig.align_titles()
 
+########################################
+# IR Comparison
+########################################
+fig = plt.figure(figsize = (8, 4))
+plt.plot(svp.Z, svp.X, color = "r")
+plt.plot(sve.Z, sve.X, color = "b")
+plt.xlabel("Z [m]")
+plt.ylabel("X [m]")
+plt.xlim( -2000, 2000)
+plt.ylim(-100, 10)
+fig.suptitle("FCC-ee w/ Solenoid: IR Survey")
+fig.align_labels()
+fig.align_titles()
+
+################################################################################
+# Twiss comparison subsection
+################################################################################
+twp_ip      = twp.rows[
+    (twp.s > (twp["s", "ip.2"] - 20)) & \
+     (twp.s < (twp["s", "ip.2"] + 20))]
+twp_sad_ip  = twp_sad.rows[
+    (twp_sad.s > (twp_sad["s", "IP.3"] - 20)) & \
+     (twp_sad.s < (twp_sad["s", "IP.3"] + 20))]
+
+create_comparison_plots(twp_ip, twp_sad_ip, suptitle = "FCC-ee w/ Solenoid", zero_tol = 1E-10)
+
+################################################################################
+# Show plots
+################################################################################
 plt.show()

@@ -13,7 +13,10 @@ import xtrack as xt
 ################################################################################
 # Conversion Function
 ################################################################################
-def convert_offset_markers(line, parsed_lattice_data):
+def convert_offset_markers(
+        line,
+        parsed_lattice_data:    dict,
+        verbose:                bool                = False):
     """
     Markers in SAD have an offset parameter that is not replicated in Xsuite
     """
@@ -29,22 +32,37 @@ def convert_offset_markers(line, parsed_lattice_data):
     offset_marker_offsets   = {}
 
     ########################################
-    # Get line table
-    ########################################
-    line.build_tracker()
-    tt      = line.get_table(attr = True)
-    line.discard_tracker()
-
-    ########################################
     # Get the offsets for each marker
     ########################################
-    print('Calculating offset marker positions')
+    if verbose:
+        print('Calculating offset marker positions')
+    
     # Markers in Xsuite can come from mark, moni or beam-beam elements
     for marker_type in ['mark', 'moni', 'beambeam']:
         if marker_type in parsed_elements:
             for marker_name, marker in parsed_elements[marker_type].items():
                 if 'offset' in marker:
                     offset_marker_offsets[marker_name] = marker['offset']
+
+    ########################################
+    # Return if there are no offset markers
+    ########################################
+    if len(offset_marker_offsets) == 0:
+        
+        if verbose:
+            print('No offset markers found')
+        
+        return line, {}
+
+    ########################################
+    # Get line table
+    ########################################
+    if verbose:
+        print('Getting line table')
+
+    line.build_tracker()
+    tt      = line.get_table(attr = True)
+    line.discard_tracker()
 
     ########################################
     # Get the names of the inserted markers in the line

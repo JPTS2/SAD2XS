@@ -3,7 +3,7 @@ Package setup for SAD2XS Converter
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       30-09-2025
+Date:       01-10-2025
 """
 
 ################################################################################
@@ -22,8 +22,8 @@ with open("README.md", "r") as f:
 ################################################################################
 setup(
     name                            = "sad2xs",
-    version                         = "0.1.0",
-    date                            = "30-09-2025",
+    version                         = "0.1.1",
+    date                            = "01-10-2025",
     description                     = "Conversion of SAD lattices to Xtrack format",
     long_description                = description,
     long_description_content_type   = "text/markdown",

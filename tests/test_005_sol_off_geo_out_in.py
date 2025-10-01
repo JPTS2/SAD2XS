@@ -13,7 +13,7 @@ import textwrap
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from _sad_helpers import sad_twiss, rebuild_sad_lattice
+from _sad_helpers import twiss_sad, rebuild_sad_lattice
 from _test_config import *
 
 ################################################################################
@@ -62,9 +62,14 @@ def reference_sol_test(
         ########################################################################
         # Twiss SAD Lattice
         ########################################################################
-        tw_sad  = sad_twiss(
-            lattice_filename    = 'test_lattice.sad',
-            line_name           = 'TEST_LINE')
+        tw_sad  = twiss_sad(
+            lattice_filename        = 'test_lattice.sad',
+            line_name               = 'TEST_LINE',
+            method                  = "4d",
+            closed                  = False,
+            reverse_element_order   = False,
+            reverse_bend_direction  = False,
+            additional_commands     = "")
 
         ########################################################################
         # Rebuild SAD Lattice

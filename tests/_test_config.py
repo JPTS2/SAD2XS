@@ -18,7 +18,6 @@ DELTA_Y_ATOL    = 1E-9
 DELTA_PX_ATOL   = 1E-9
 DELTA_PY_ATOL   = 1E-9
 
-# I want to have these be less than this, but tests are failing otherwise
 # Not sure if it's possible to reduce these- might be a limit in the conversion
 DELTA_S_RTOL    = 1E-5
 DELTA_X_RTOL    = 1E-5

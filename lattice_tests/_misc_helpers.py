@@ -65,76 +65,291 @@ def check_symplecticity(twiss, line, tt = None):
 
 
 ################################################################################
+# Zero small values
+################################################################################
+def zero_small_values(array, tol = 1E-12):
+    array[np.abs(array) < tol] = 0
+    return array
+
+################################################################################
 # SAD vs Xsuite Comparison Plots
 ################################################################################
-def create_comparison_plots(twiss_xsuite, twiss_sad):
+def create_comparison_plots(
+        twiss_xsuite,
+        twiss_sad,
+        suptitle    = None,
+        zero_tol    = 1E-12,
+        figsize     = (8, 4)):
 
-    fig, axs = plt.subplots(2, figsize = (12, 8), sharex = True)
-    axs[0].plot(twiss_sad.s, twiss_sad.x, label = 'SAD', color = "r")
-    axs[0].plot(twiss_xsuite.s, twiss_xsuite.x, label = 'Xsuite', color = "b", linestyle = "--")
-    axs[1].plot(twiss_sad.s, twiss_sad.y, label = 'SAD', color = "r")
-    axs[1].plot(twiss_xsuite.s, twiss_xsuite.y, label = 'Xsuite', color = "b", linestyle = "--")
+    ########################################
+    # Orbit (x, y)
+    ########################################
+    fig, axs = plt.subplots(2, figsize = figsize, sharex = True)
+
+    axs[0].plot(
+        zero_small_values(twiss_sad.s, tol = zero_tol),
+        zero_small_values(twiss_sad.x, tol = zero_tol),
+        label       = 'SAD',
+        color       = "r")
+    axs[0].plot(
+        zero_small_values(twiss_xsuite.s, tol = zero_tol),
+        zero_small_values(twiss_xsuite.x, tol = zero_tol),
+        label       = 'Xsuite',
+        color       = "b",
+        linestyle   = "--")
+    axs[1].plot(
+        zero_small_values(twiss_sad.s, tol = zero_tol),
+        zero_small_values(twiss_sad.y, tol = zero_tol),
+        color       = "r")
+    axs[1].plot(
+        zero_small_values(twiss_xsuite.s, tol = zero_tol),
+        zero_small_values(twiss_xsuite.y, tol = zero_tol),
+        color       = "b",
+        linestyle   = "--")
+    
     axs[0].legend()
     axs[0].set_ylabel(r'$x$ [m]')
     axs[1].set_ylabel(r'$y$ [m]')
     axs[1].set_xlabel('s [m]')
 
-    fig, axs = plt.subplots(2, figsize = (12, 8), sharex = True)
-    axs[0].plot(twiss_sad.s, twiss_sad.px, label = 'SAD', color = "r")
-    axs[0].plot(twiss_xsuite.s, twiss_xsuite.px, label = 'Xsuite', color = "b", linestyle = "--")
-    axs[1].plot(twiss_sad.s, twiss_sad.py, label = 'SAD', color = "r")
-    axs[1].plot(twiss_xsuite.s, twiss_xsuite.py, label = 'Xsuite', color = "b", linestyle = "--")
+    if suptitle is not None:
+        fig.suptitle(f"{suptitle}: Orbit (x, y)")
+    else:
+        fig.suptitle("Orbit (x, y)")
+    fig.tight_layout()
+    fig.align_labels()
+    fig.align_titles()
+
+    ########################################
+    # Orbit (px, py)
+    ########################################
+    fig, axs = plt.subplots(2, figsize = figsize, sharex = True)
+
+    axs[0].plot(
+        zero_small_values(twiss_sad.s, tol = zero_tol),
+        zero_small_values(twiss_sad.px, tol = zero_tol),
+        label       = 'SAD',
+        color       = "r")
+    axs[0].plot(
+        zero_small_values(twiss_xsuite.s, tol = zero_tol),
+        zero_small_values(twiss_xsuite.px, tol = zero_tol),
+        label       = 'Xsuite',
+        color       = "b",
+        linestyle   = "--")
+    axs[1].plot(
+        zero_small_values(twiss_sad.s, tol = zero_tol),
+        zero_small_values(twiss_sad.py, tol = zero_tol),
+        color       = "r")
+    axs[1].plot(
+        zero_small_values(twiss_xsuite.s, tol = zero_tol),
+        zero_small_values(twiss_xsuite.py, tol = zero_tol),
+        color       = "b",
+        linestyle   = "--")
+    
     axs[0].legend()
     axs[0].set_ylabel(r'$p_{x}$ [m]')
     axs[1].set_ylabel(r'$p_{y}$ [m]')
     axs[1].set_xlabel('s [m]')
 
-    fig, axs = plt.subplots(2, figsize = (12, 8), sharex = True)
-    axs[0].plot(twiss_sad.s, twiss_sad.zeta, label = 'SAD', color = "r")
-    axs[0].plot(twiss_xsuite.s, twiss_xsuite.zeta, label = 'Xsuite', color = "b", linestyle = "--")
-    axs[1].plot(twiss_sad.s, twiss_sad.delta, label = 'SAD', color = "r")
-    axs[1].plot(twiss_xsuite.s, twiss_xsuite.delta, label = 'Xsuite', color = "b", linestyle = "--")
+    if suptitle is not None:
+        fig.suptitle(f"{suptitle}: Orbit (px, py)")
+    else:
+        fig.suptitle("Orbit (px, py)")
+    fig.tight_layout()
+    fig.align_labels()
+    fig.align_titles()
+
+    ########################################
+    # Longitudinal Plane (zeta, delta)
+    ########################################
+    fig, axs = plt.subplots(2, figsize = figsize, sharex = True)
+
+    axs[0].plot(
+        zero_small_values(twiss_sad.s, tol = zero_tol),
+        zero_small_values(twiss_sad.zeta, tol = zero_tol),
+        label       = 'SAD',
+        color       = "r")
+    axs[0].plot(
+        zero_small_values(twiss_xsuite.s, tol = zero_tol),
+        zero_small_values(twiss_xsuite.zeta, tol = zero_tol),
+        label       = 'Xsuite',
+        color       = "b",
+        linestyle   = "--")
+    axs[1].plot(
+        zero_small_values(twiss_sad.s, tol = zero_tol),
+        zero_small_values(twiss_sad.delta, tol = zero_tol),
+        color       = "r")
+    axs[1].plot(
+        zero_small_values(twiss_xsuite.s, tol = zero_tol),
+        zero_small_values(twiss_xsuite.delta, tol = zero_tol),
+        color       = "b",
+        linestyle   = "--")
+    
     axs[0].legend()
     axs[0].set_ylabel(r'$\zeta$ [m]')
     axs[1].set_ylabel(r'$\delta$ [m]')
     axs[1].set_xlabel('s [m]')
 
-    fig, axs = plt.subplots(2, figsize = (12, 8), sharex = True)
-    axs[0].plot(twiss_sad.s, twiss_sad.betx, label = 'SAD', color = "r")
-    axs[0].plot(twiss_xsuite.s, twiss_xsuite.betx, label = 'Xsuite', color = "b", linestyle = "--")
-    axs[1].plot(twiss_sad.s, twiss_sad.bety, label = 'SAD', color = "r")
-    axs[1].plot(twiss_xsuite.s, twiss_xsuite.bety, label = 'Xsuite', color = "b", linestyle = "--")
+    if suptitle is not None:
+        fig.suptitle(f"{suptitle}: Longitudinal Plane ($\zeta$, $\delta$)")
+    else:
+        fig.suptitle("Longitudinal Plane ($\zeta$, $\delta$)")
+    fig.tight_layout()
+    fig.align_labels()
+    fig.align_titles()
+
+    ########################################
+    # Beta Functions
+    ########################################
+    fig, axs = plt.subplots(2, figsize = figsize, sharex = True)
+
+    axs[0].plot(
+        zero_small_values(twiss_sad.s, tol = zero_tol),
+        zero_small_values(twiss_sad.betx, tol = zero_tol),
+        label       = 'SAD',
+        color       = "r")
+    axs[0].plot(
+        zero_small_values(twiss_xsuite.s, tol = zero_tol),
+        zero_small_values(twiss_xsuite.betx, tol = zero_tol),
+        label       = 'Xsuite',
+        color       = "b",
+        linestyle   = "--")
+    axs[1].plot(
+        zero_small_values(twiss_sad.s, tol = zero_tol),
+        zero_small_values(twiss_sad.bety, tol = zero_tol),
+        color       = "r")
+    axs[1].plot(
+        zero_small_values(twiss_xsuite.s, tol = zero_tol),
+        zero_small_values(twiss_xsuite.bety, tol = zero_tol),
+        color       = "b",
+        linestyle   = "--")
+
     axs[0].legend()
     axs[0].set_ylabel(r'$\beta_{x}$ [m]')
     axs[1].set_ylabel(r'$\beta_{y}$ [m]')
     axs[1].set_xlabel('s [m]')
 
-    fig, axs = plt.subplots(2, figsize = (12, 8), sharex = True)
-    axs[0].plot(twiss_sad.s, twiss_sad.alfx, label = 'SAD', color = "r")
-    axs[0].plot(twiss_xsuite.s, twiss_xsuite.alfx, label = 'Xsuite', color = "b", linestyle = "--")
-    axs[1].plot(twiss_sad.s, twiss_sad.alfy, label = 'SAD', color = "r")
-    axs[1].plot(twiss_xsuite.s, twiss_xsuite.alfy, label = 'Xsuite', color = "b", linestyle = "--")
+    if suptitle is not None:
+        fig.suptitle(f"{suptitle}: " + "Beta Functions ($\\beta_{x}$, $\\beta_{y}$)")
+    else:
+        fig.suptitle("Beta Functions ($\\beta_{x}$, $\\beta_{y}$)")
+    fig.tight_layout()
+    fig.align_labels()
+    fig.align_titles()
+
+    ########################################
+    # Alpha Functions
+    ########################################
+    fig, axs = plt.subplots(2, figsize = figsize, sharex = True)
+
+    axs[0].plot(
+        zero_small_values(twiss_sad.s, tol = zero_tol),
+        zero_small_values(twiss_sad.alfx, tol = zero_tol),
+        label       = 'SAD',
+        color       = "r")
+    axs[0].plot(
+        zero_small_values(twiss_xsuite.s, tol = zero_tol),
+        zero_small_values(twiss_xsuite.alfx, tol = zero_tol),
+        label       = 'Xsuite',
+        color       = "b",
+        linestyle   = "--")
+    axs[1].plot(
+        zero_small_values(twiss_sad.s, tol = zero_tol),
+        zero_small_values(twiss_sad.alfy, tol = zero_tol),
+        color       = "r")
+    axs[1].plot(
+        zero_small_values(twiss_xsuite.s, tol = zero_tol),
+        zero_small_values(twiss_xsuite.alfy, tol = zero_tol),
+        color       = "b",
+        linestyle   = "--")
+
     axs[0].legend()
     axs[0].set_ylabel(r'$\alpha_{x}$ [m]')
     axs[1].set_ylabel(r'$\alpha_{y}$ [m]')
     axs[1].set_xlabel('s [m]')
 
-    fig, axs = plt.subplots(2, figsize = (12, 8), sharex = True)
-    axs[0].plot(twiss_sad.s, twiss_sad.dx, label = 'SAD', color = "r")
-    axs[0].plot(twiss_xsuite.s, twiss_xsuite.dx, label = 'Xsuite', color = "b", linestyle = "--")
-    axs[1].plot(twiss_sad.s, twiss_sad.dy, label = 'SAD', color = "r")
-    axs[1].plot(twiss_xsuite.s, twiss_xsuite.dy, label = 'Xsuite', color = "b", linestyle = "--")
+    if suptitle is not None:
+        fig.suptitle(f"{suptitle}: " + "Alpha Functions ($\\alpha_{x}$, $\\alpha_{y}$)")
+    else:
+        fig.suptitle("Alpha Functions ($\\alpha_{x}$, $\\alpha_{y}$)")
+    fig.tight_layout()
+    fig.align_labels()
+    fig.align_titles()
+
+    ########################################
+    # Dispersion
+    ########################################
+    fig, axs = plt.subplots(2, figsize = figsize, sharex = True)
+
+    axs[0].plot(
+        zero_small_values(twiss_sad.s, tol = zero_tol),
+        zero_small_values(twiss_sad.dx, tol = zero_tol),
+        label       = 'SAD',
+        color       = "r")
+    axs[0].plot(
+        zero_small_values(twiss_xsuite.s, tol = zero_tol),
+        zero_small_values(twiss_xsuite.dx, tol = zero_tol),
+        label       = 'Xsuite',
+        color       = "b",
+        linestyle   = "--")
+    axs[1].plot(
+        zero_small_values(twiss_sad.s, tol = zero_tol),
+        zero_small_values(twiss_sad.dy, tol = zero_tol),
+        color       = "r")
+    axs[1].plot(
+        zero_small_values(twiss_xsuite.s, tol = zero_tol),
+        zero_small_values(twiss_xsuite.dy, tol = zero_tol),
+        color       = "b",
+        linestyle   = "--")
+
     axs[0].legend()
     axs[0].set_ylabel(r'$D_{x}$ [m]')
     axs[1].set_ylabel(r'$D_{y}$ [m]')
     axs[1].set_xlabel('s [m]')
 
-    fig, axs = plt.subplots(2, figsize = (12, 8), sharex = True)
-    axs[0].plot(twiss_sad.s, twiss_sad.dpx, label = 'SAD', color = "r")
-    axs[0].plot(twiss_xsuite.s, twiss_xsuite.dpx, label = 'Xsuite', color = "b", linestyle = "--")
-    axs[1].plot(twiss_sad.s, twiss_sad.dpy, label = 'SAD', color = "r")
-    axs[1].plot(twiss_xsuite.s, twiss_xsuite.dpy, label = 'Xsuite', color = "b", linestyle = "--")
+    if suptitle is not None:
+        fig.suptitle(f"{suptitle}: " + "Dispersion ($D_{x}$, $D_{y}$)")
+    else:
+        fig.suptitle("Dispersion ($D_{x}$, $D_{y}$)")
+    fig.tight_layout()
+    fig.align_labels()
+    fig.align_titles()
+
+    ########################################
+    # Derivative Dispersion
+    ########################################
+    fig, axs = plt.subplots(2, figsize = figsize, sharex = True)
+
+    axs[0].plot(
+        zero_small_values(twiss_sad.s, tol = zero_tol),
+        zero_small_values(twiss_sad.dpx, tol = zero_tol),
+        label       = 'SAD',
+        color       = "r")
+    axs[0].plot(
+        zero_small_values(twiss_xsuite.s, tol = zero_tol),
+        zero_small_values(twiss_xsuite.dpx, tol = zero_tol),
+        label       = 'Xsuite',
+        color       = "b",
+        linestyle   = "--")
+    axs[1].plot(
+        zero_small_values(twiss_sad.s, tol = zero_tol),
+        zero_small_values(twiss_sad.dpy, tol = zero_tol),
+        color       = "r")
+    axs[1].plot(
+        zero_small_values(twiss_xsuite.s, tol = zero_tol),
+        zero_small_values(twiss_xsuite.dpy, tol = zero_tol),
+        color       = "b",
+        linestyle   = "--")
+
     axs[0].legend()
-    axs[0].set_ylabel(r'$D_{px}$ [m]')
-    axs[1].set_ylabel(r'$D_{py}$ [m]')
+    axs[0].set_ylabel(r'$D_{x}$ [m]')
+    axs[1].set_ylabel(r'$D_{y}$ [m]')
     axs[1].set_xlabel('s [m]')
+
+    if suptitle is not None:
+        fig.suptitle(f"{suptitle}: " + "Dispersion ($D_{px}$, $D_{py}$)")
+    else:
+        fig.suptitle("Dispersion ($D_{px}$, $D_{py}$)")
+    fig.tight_layout()
+    fig.align_labels()
+    fig.align_titles()

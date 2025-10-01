@@ -3,7 +3,7 @@ Unofficial SAD to XSuite Lattice Converter
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       30-09-2025
+Date:       01-10-2025
 """
 
 ################################################################################
@@ -192,12 +192,6 @@ def convert_sad_to_xsuite(
         print_section_heading("Configuring Modelling Mode", mode = 'section')
 
     ########################################
-    # Use exact drifts
-    ########################################
-    # Needed for large angles inside drifts
-    line.config.XTRACK_USE_EXACT_DRIFTS = True                  # type: ignore
-
-    ########################################
     # Set bend model
     ########################################
     if _verbose:
@@ -262,7 +256,7 @@ def convert_sad_to_xsuite(
     # Handle Offset Markers
     ############################################################################
     if _verbose:
-        print_section_heading("Converting Offset Markers", mode = 'subsection')
+        print_section_heading("Converting Offset Markers", mode = 'section')
 
     line, offset_marker_locations   = convert_offset_markers(
         line                = line,
@@ -271,6 +265,9 @@ def convert_sad_to_xsuite(
     ############################################################################
     # Breakpoint for testing
     ############################################################################
+    if _verbose:
+        print_section_heading("Converter Breakpoint: Test mode active", mode = 'section')
+    
     if _test_mode:
         return line
 
@@ -290,7 +287,7 @@ def convert_sad_to_xsuite(
     # Lattice
     ########################################
     if _verbose:
-        print_section_heading("Generating Lattice File", mode = 'subsection')
+        print_section_heading("Generating Lattice File", mode = 'section')
 
     write_lattice(
         line                        = line,
@@ -303,7 +300,7 @@ def convert_sad_to_xsuite(
     # Import optics
     ########################################
     if _verbose:
-        print_section_heading("Generating Optics File", mode = 'subsection')
+        print_section_heading("Generating Optics File", mode = 'section')
 
     write_optics(
         line                        = line,
