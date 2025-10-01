@@ -281,12 +281,20 @@ abort;
     with open("temporary_sad_twiss.sad", "w") as f:
         f.write(SAD_COMMAND)
 
-    subprocess.run(
-        ["sad", "temporary_sad_twiss.sad"],
-        capture_output  = True,
-        text            = True,
-        timeout         = 30)
-    
+    try:
+        subprocess.run(
+            ["sad", "temporary_sad_twiss.sad"],
+            capture_output  = True,
+            text            = True,
+            timeout         = 30)
+    except subprocess.TimeoutExpired:
+        print("SAD Twiss timed out at 30s")
+        print("This typically means the process failed, often due to a filepath issue.")
+        print("Ensure that there are no spaces or special characters in the full path to the lattice file.")
+
+        os.remove("temporary_sad_twiss.sad")
+        raise subprocess.TimeoutExpired(cmd = ["sad", "temporary_sad_twiss.sad"], timeout = 30)
+
     ########################################
     # Read the data
     ########################################
@@ -457,11 +465,19 @@ abort;
     with open("temporary_sad_twiss.sad", "w") as f:
         f.write(SAD_COMMAND)
 
-    subprocess.run(
-        ["sad", "temporary_sad_twiss.sad"],
-        capture_output  = True,
-        text            = True,
-        timeout         = 30)
+    try:
+        subprocess.run(
+            ["sad", "temporary_sad_twiss.sad"],
+            capture_output  = True,
+            text            = True,
+            timeout         = 30)
+    except subprocess.TimeoutExpired:
+        print("SAD Twiss timed out at 30s")
+        print("This typically means the process failed, often due to a filepath issue.")
+        print("Ensure that there are no spaces or special characters in the full path to the lattice file.")
+
+        os.remove("temporary_sad_twiss.sad")
+        raise subprocess.TimeoutExpired(cmd = ["sad", "temporary_sad_twiss.sad"], timeout = 30)
 
     ########################################
     # Remove temporary files

@@ -91,6 +91,7 @@ WriteString[fn, "* ",
                 StringFill["PX"," ", -12],"    ",
                 StringFill["Y"," ", -12],"    ",
                 StringFill["PY"," ", -12],"    ",
+                StringFill["DZ"," ", -12],"    ",
                 StringFill["DELTA"," ", -12],"    ",
                 StringFill["GEO_X"," ", -12],"    ",
                 StringFill["GEO_Y"," ", -12],"    ",
@@ -107,6 +108,7 @@ WriteString[fn, "* ",
 WriteString[fn, "$ ",
                 StringFill["%s"," ", 20]," ",
                 StringFill["%s"," ", -12],"    ",
+                StringFill["%le"," ", -12],"    ",
                 StringFill["%le"," ", -12],"    ",
                 StringFill["%le"," ", -12],"    ",
                 StringFill["%le"," ", -12],"    ",
@@ -164,6 +166,7 @@ Do[
                         Twiss["DPX",pos[i]],"    ",
                         Twiss["DY",pos[i]],"    ",
                         Twiss["DPY",pos[i]],"    ",
+                        Twiss["DZ",pos[i]],"    ",
                         Twiss["DDP",pos[i]],"    ",
                         LINE["GX",pos[i]],"    ",
                         LINE["GY",pos[i]],"    ",
@@ -187,27 +190,82 @@ Close[fn];
     return TWISS_COMMAND
 
 ################################################################################
-# SAD Twiss Function
+# Closed Ring 4D Twiss Function
 ################################################################################
-def sad_twiss(
-        lattice_filename:       str = 'sad_lattice.sad',
-        line_name:              str = 'TEST_LINE'):
+def twiss_sad(
+        lattice_filename:       str,
+        line_name:              str,
+        method:                 str,
+        closed:                 bool,
+        reverse_element_order:  bool    = False,
+        reverse_bend_direction: bool    = False,
+        rf_enabled:             bool    = True,
+        radiation:              bool    = False,
+        rad_compensation:       bool    = False,
+        rad_taper:              bool    = False,
+        additional_commands:    str     = ''):
     """
     Generate a SAD command to compute the twiss parameters of a lattice.
     """
-    
+
+    ########################################
+    # Assertions
+    ########################################
+    assert method in ["4d", "4D", "6d", "6D"], "Method must be '4D' or '6D'"
+
+    ########################################
+    # Configure Settings
+    ########################################
+    if method == '4D' or method == '4d':
+        METHOD_FLAG = 'CALC4D;'
+    else:
+        METHOD_FLAG = 'CALC6D;'
+
+    if closed:
+        CLOSED_FLAG = 'CELL;'
+    else:
+        CLOSED_FLAG = 'INS;'
+
+    if rf_enabled:
+        RF_FLAG     = 'RFSW;'
+    else:
+        RF_FLAG     = 'NORFSW;'
+
+    if radiation:
+        RAD_FLAG    = """RAD;
+NOFLUC;"""
+    else:
+        RAD_FLAG    = 'NORAD;'
+
+    if rad_compensation:
+        RADCOMP_FLAG    = 'RADCOD;'
+    else:
+        RADCOMP_FLAG    = 'NORADCOD;'
+    if rad_taper:
+        TAPER_FLAG      = 'RADTAPER;'
+    else:
+        TAPER_FLAG      = ''
+
     ########################################
     # Generate the twiss command
     ########################################
     SAD_COMMAND = f"""
 FFS;
 
-GetMAIN["./{lattice_filename}"];  (* Input your lattice file before modification *)
+GetMAIN["./{lattice_filename}"];
 
 USE {line_name};
 
-INS;    ! Transfer Line
-CALC;   ! Twiss
+{additional_commands};
+
+{RF_FLAG}
+{RAD_FLAG}
+{RADCOMP_FLAG}
+{TAPER_FLAG}
+{CLOSED_FLAG}
+{METHOD_FLAG}
+COD;
+CALC;
 SAVE ALL;
 
 {generate_twiss_print_function()}
@@ -223,39 +281,137 @@ abort;
     with open("temporary_sad_twiss.sad", "w") as f:
         f.write(SAD_COMMAND)
 
-    subprocess.run(
-        ["sad", "temporary_sad_twiss.sad"],
-        capture_output  = True,
-        text            = True,
-        timeout         = 30)
-    
+    try:
+        subprocess.run(
+            ["sad", "temporary_sad_twiss.sad"],
+            capture_output  = True,
+            text            = True,
+            timeout         = 30)
+    except subprocess.TimeoutExpired:
+        print("SAD Twiss timed out at 30s")
+        print("This typically means the process failed, often due to a filepath issue.")
+        print("Ensure that there are no spaces or special characters in the full path to the lattice file.")
+
+        os.remove("temporary_sad_twiss.sad")
+        raise subprocess.TimeoutExpired(cmd = ["sad", "temporary_sad_twiss.sad"], timeout = 30)
+
     ########################################
-    # Read the data into an xtrack TwissTable
+    # Read the data
     ########################################
     sad_twiss   = tfs.read("temporary_sad_twiss.tfs")
-    tw_sad      = xt.TwissTable({
-        'name':     np.array(sad_twiss['NAME']),
-        's':        np.array(sad_twiss['S']),
-        'betx':     np.array(sad_twiss['BETX']),
-        'bety':     np.array(sad_twiss['BETY']),
-        'alfx':     np.array(sad_twiss['ALFX']),
-        'alfy':     np.array(sad_twiss['ALFY']),
-        'dx':       np.array(sad_twiss['DX']),
-        'dy':       np.array(sad_twiss['DY']),
-        'dpx':      np.array(sad_twiss['DPX']),
-        'dpy':      np.array(sad_twiss['DPY']),
-        'mux':      np.array(sad_twiss['MUX']),
-        'muy':      np.array(sad_twiss['MUY']),
-        'x':        np.array(sad_twiss['X']),
-        'px':       np.array(sad_twiss['PX']),
-        'y':        np.array(sad_twiss['Y']),
-        'py':       np.array(sad_twiss['PY'])})
-    
+
     ########################################
     # Remove temporary files
     ########################################
     os.remove("temporary_sad_twiss.sad")
     os.remove("temporary_sad_twiss.tfs")
+
+    ########################################
+    # Convert to TwissTable
+    ########################################
+    s_idx       = np.argsort(np.array(sad_twiss['S']), kind = "stable")
+    tw_sad      = xt.TwissTable({
+        "name":     np.array(sad_twiss['NAME'])[s_idx],
+        "s":        np.array(sad_twiss['S'])[s_idx],
+        "x":        np.array(sad_twiss['X'])[s_idx],
+        "px":       np.array(sad_twiss['PX'])[s_idx],
+        "y":        np.array(sad_twiss['Y'])[s_idx],
+        "py":       np.array(sad_twiss['PY'])[s_idx],
+        "zeta":     np.array(sad_twiss['DZ'])[s_idx],
+        "delta":    np.array(sad_twiss['DELTA'])[s_idx],
+        "betx":     np.array(sad_twiss['BETX'])[s_idx],
+        "bety":     np.array(sad_twiss['BETY'])[s_idx],
+        "alfx":     np.array(sad_twiss['ALFX'])[s_idx],
+        "alfy":     np.array(sad_twiss['ALFY'])[s_idx],
+        "dx":       np.array(sad_twiss['DX'])[s_idx],
+        "dpx":      np.array(sad_twiss['DPX'])[s_idx],
+        "dy":       np.array(sad_twiss['DY'])[s_idx],
+        "dpy":      np.array(sad_twiss['DPY'])[s_idx],
+        "mux":      np.array(sad_twiss['MUX'])[s_idx],
+        "muy":      np.array(sad_twiss['MUY'])[s_idx],
+        "R1":       np.array(sad_twiss['R1'])[s_idx],
+        "R2":       np.array(sad_twiss['R2'])[s_idx],
+        "R3":       np.array(sad_twiss['R3'])[s_idx],
+        "R4":       np.array(sad_twiss['R4'])[s_idx]})
+    tw_sad['qx']            = sad_twiss['Q1']
+    tw_sad['qy']            = sad_twiss['Q2']
+    tw_sad['circumference'] = sad_twiss['LENGTH']
+    
+    ########################################
+    # Element Order Reversal
+    ########################################
+    if reverse_element_order:
+    
+        tw_sad.s        = tw_sad.s[-1] - tw_sad.s
+        tw_sad.x        *= +1
+        tw_sad.px       *= +1 * -1
+        tw_sad.y        *= +1
+        tw_sad.py       *= +1 * -1
+        tw_sad.zeta     = tw_sad.zeta[-1] - tw_sad.zeta
+        tw_sad.delta    *= +1
+        tw_sad.betx     *= +1
+        tw_sad.bety     *= +1
+        tw_sad.alfx     *= +1 * -1
+        tw_sad.alfy     *= +1 * -1
+        tw_sad.dx       *= +1
+        tw_sad.dpx      *= +1 * -1
+        tw_sad.dy       *= +1
+        tw_sad.dpy      *= +1 * -1
+        tw_sad.mux      = tw_sad.mux[-1] - tw_sad.mux
+        tw_sad.muy      = tw_sad.muy[-1] - tw_sad.muy
+        tw_sad.R1       *= +1
+        tw_sad.R2       *= +1
+        tw_sad.R3       *= +1
+        tw_sad.R4       *= +1
+
+        tw_sad.name     = np.flip(tw_sad.name)
+        tw_sad.s        = np.flip(tw_sad.s)
+        tw_sad.x        = np.flip(tw_sad.x)
+        tw_sad.px       = np.flip(tw_sad.px)
+        tw_sad.y        = np.flip(tw_sad.y)
+        tw_sad.py       = np.flip(tw_sad.py)
+        tw_sad.zeta     = np.flip(tw_sad.zeta)
+        tw_sad.delta    = np.flip(tw_sad.delta)
+        tw_sad.betx     = np.flip(tw_sad.betx)
+        tw_sad.bety     = np.flip(tw_sad.bety)
+        tw_sad.alfx     = np.flip(tw_sad.alfx)
+        tw_sad.alfy     = np.flip(tw_sad.alfy)
+        tw_sad.dx       = np.flip(tw_sad.dx)
+        tw_sad.dpx      = np.flip(tw_sad.dpx)
+        tw_sad.dy       = np.flip(tw_sad.dy)
+        tw_sad.dpy      = np.flip(tw_sad.dpy)
+        tw_sad.mux      = np.flip(tw_sad.mux)
+        tw_sad.muy      = np.flip(tw_sad.muy)
+        tw_sad.R1       = np.flip(tw_sad.R1)
+        tw_sad.R2       = np.flip(tw_sad.R2)
+        tw_sad.R3       = np.flip(tw_sad.R3)
+        tw_sad.R4       = np.flip(tw_sad.R4)
+
+    ########################################
+    # Bend Direction Reversal
+    ########################################
+    if reverse_bend_direction:
+    
+        tw_sad.x        *= -1
+        tw_sad.px       *= -1
+        tw_sad.y        *= +1
+        tw_sad.py       *= +1
+        tw_sad.zeta     *= +1
+        tw_sad.delta    *= +1
+        tw_sad.betx     *= +1
+        tw_sad.bety     *= +1
+        tw_sad.alfx     *= +1
+        tw_sad.alfy     *= +1
+        tw_sad.dx       *= -1
+        tw_sad.dpx      *= -1
+        tw_sad.dy       *= +1
+        tw_sad.dpy      *= +1
+        tw_sad.mux      *= +1
+        tw_sad.muy      *= +1
+        tw_sad.R1       *= +1
+        tw_sad.R2       *= +1
+        tw_sad.R3       *= +1
+        tw_sad.R4       *= +1
 
     ########################################
     # Return the TwissTable
@@ -267,7 +423,9 @@ abort;
 ################################################################################
 def rebuild_sad_lattice(
         lattice_filename:       str = 'sad_lattice.sad',
-        line_name:              str = 'TEST_LINE'):
+        line_name:              str = 'TEST_LINE',
+        additional_commands:    str = '',
+        output_filename:        str | None = None):
     """
     Generate a SAD command to compute the twiss parameters of a lattice.
     """
@@ -275,6 +433,9 @@ def rebuild_sad_lattice(
     ########################################
     # Generate the twiss command
     ########################################
+    if output_filename is None:
+        output_filename = lattice_filename
+
     SAD_COMMAND = f"""
 FFS;
 
@@ -282,11 +443,13 @@ GetMAIN["./{lattice_filename}"];  (* Input your lattice file before modification
 
 USE {line_name};
 
+{additional_commands};
+
 INS;    ! Transfer Line
 CALC;   ! Twiss
 SAVE ALL;
 
-of=OpenWrite["./{lattice_filename}"];
+of=OpenWrite["./{output_filename}"];
 WriteString[of, "MOMENTUM = "//MOMENTUM//";\\n"];
 WriteString[of, "FSHIFT = 0;\\n"];
 FFS["output "//of//" type"];                     (* Write element definition *)
@@ -302,11 +465,19 @@ abort;
     with open("temporary_sad_twiss.sad", "w") as f:
         f.write(SAD_COMMAND)
 
-    subprocess.run(
-        ["sad", "temporary_sad_twiss.sad"],
-        capture_output  = True,
-        text            = True,
-        timeout         = 30)
+    try:
+        subprocess.run(
+            ["sad", "temporary_sad_twiss.sad"],
+            capture_output  = True,
+            text            = True,
+            timeout         = 30)
+    except subprocess.TimeoutExpired:
+        print("SAD Twiss timed out at 30s")
+        print("This typically means the process failed, often due to a filepath issue.")
+        print("Ensure that there are no spaces or special characters in the full path to the lattice file.")
+
+        os.remove("temporary_sad_twiss.sad")
+        raise subprocess.TimeoutExpired(cmd = ["sad", "temporary_sad_twiss.sad"], timeout = 30)
 
     ########################################
     # Remove temporary files
