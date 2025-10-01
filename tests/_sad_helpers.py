@@ -226,7 +226,8 @@ abort;
     subprocess.run(
         ["sad", "temporary_sad_twiss.sad"],
         capture_output  = True,
-        text            = True)
+        text            = True,
+        timeout         = 30)
     
     ########################################
     # Read the data into an xtrack TwissTable
@@ -304,4 +305,10 @@ abort;
     subprocess.run(
         ["sad", "temporary_sad_twiss.sad"],
         capture_output  = True,
-        text            = True)
+        text            = True,
+        timeout         = 30)
+
+    ########################################
+    # Remove temporary files
+    ########################################
+    os.remove("temporary_sad_twiss.sad")
