@@ -3,7 +3,7 @@ Unofficial SAD to XSuite Lattice Converter
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       30-09-2025
+Date:       01-10-2025
 """
 
 ################################################################################
