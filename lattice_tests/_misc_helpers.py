@@ -74,12 +74,17 @@ def zero_small_values(array, tol = 1E-12):
 ################################################################################
 # SAD vs Xsuite Comparison Plots
 ################################################################################
-def create_comparison_plots(twiss_xsuite, twiss_sad, suptitle = None, zero_tol = 1E-12):
+def create_comparison_plots(
+        twiss_xsuite,
+        twiss_sad,
+        suptitle    = None,
+        zero_tol    = 1E-12,
+        figsize     = (8, 4)):
 
     ########################################
     # Orbit (x, y)
     ########################################
-    fig, axs = plt.subplots(2, figsize = (12, 8), sharex = True)
+    fig, axs = plt.subplots(2, figsize = figsize, sharex = True)
 
     axs[0].plot(
         zero_small_values(twiss_sad.s, tol = zero_tol),
@@ -112,11 +117,13 @@ def create_comparison_plots(twiss_xsuite, twiss_sad, suptitle = None, zero_tol =
     else:
         fig.suptitle("Orbit (x, y)")
     fig.tight_layout()
+    fig.align_labels()
+    fig.align_titles()
 
     ########################################
     # Orbit (px, py)
     ########################################
-    fig, axs = plt.subplots(2, figsize = (12, 8), sharex = True)
+    fig, axs = plt.subplots(2, figsize = figsize, sharex = True)
 
     axs[0].plot(
         zero_small_values(twiss_sad.s, tol = zero_tol),
@@ -149,11 +156,13 @@ def create_comparison_plots(twiss_xsuite, twiss_sad, suptitle = None, zero_tol =
     else:
         fig.suptitle("Orbit (px, py)")
     fig.tight_layout()
+    fig.align_labels()
+    fig.align_titles()
 
     ########################################
     # Longitudinal Plane (zeta, delta)
     ########################################
-    fig, axs = plt.subplots(2, figsize = (12, 8), sharex = True)
+    fig, axs = plt.subplots(2, figsize = figsize, sharex = True)
 
     axs[0].plot(
         zero_small_values(twiss_sad.s, tol = zero_tol),
@@ -186,11 +195,13 @@ def create_comparison_plots(twiss_xsuite, twiss_sad, suptitle = None, zero_tol =
     else:
         fig.suptitle("Longitudinal Plane ($\zeta$, $\delta$)")
     fig.tight_layout()
+    fig.align_labels()
+    fig.align_titles()
 
     ########################################
     # Beta Functions
     ########################################
-    fig, axs = plt.subplots(2, figsize = (12, 8), sharex = True)
+    fig, axs = plt.subplots(2, figsize = figsize, sharex = True)
 
     axs[0].plot(
         zero_small_values(twiss_sad.s, tol = zero_tol),
@@ -223,11 +234,13 @@ def create_comparison_plots(twiss_xsuite, twiss_sad, suptitle = None, zero_tol =
     else:
         fig.suptitle("Beta Functions ($\\beta_{x}$, $\\beta_{y}$)")
     fig.tight_layout()
+    fig.align_labels()
+    fig.align_titles()
 
     ########################################
     # Alpha Functions
     ########################################
-    fig, axs = plt.subplots(2, figsize = (12, 8), sharex = True)
+    fig, axs = plt.subplots(2, figsize = figsize, sharex = True)
 
     axs[0].plot(
         zero_small_values(twiss_sad.s, tol = zero_tol),
@@ -260,11 +273,13 @@ def create_comparison_plots(twiss_xsuite, twiss_sad, suptitle = None, zero_tol =
     else:
         fig.suptitle("Alpha Functions ($\\alpha_{x}$, $\\alpha_{y}$)")
     fig.tight_layout()
+    fig.align_labels()
+    fig.align_titles()
 
     ########################################
     # Dispersion
     ########################################
-    fig, axs = plt.subplots(2, figsize = (12, 8), sharex = True)
+    fig, axs = plt.subplots(2, figsize = figsize, sharex = True)
 
     axs[0].plot(
         zero_small_values(twiss_sad.s, tol = zero_tol),
@@ -297,11 +312,13 @@ def create_comparison_plots(twiss_xsuite, twiss_sad, suptitle = None, zero_tol =
     else:
         fig.suptitle("Dispersion ($D_{x}$, $D_{y}$)")
     fig.tight_layout()
+    fig.align_labels()
+    fig.align_titles()
 
     ########################################
     # Derivative Dispersion
     ########################################
-    fig, axs = plt.subplots(2, figsize = (12, 8), sharex = True)
+    fig, axs = plt.subplots(2, figsize = figsize, sharex = True)
 
     axs[0].plot(
         zero_small_values(twiss_sad.s, tol = zero_tol),
@@ -334,3 +351,5 @@ def create_comparison_plots(twiss_xsuite, twiss_sad, suptitle = None, zero_tol =
     else:
         fig.suptitle("Dispersion ($D_{px}$, $D_{py}$)")
     fig.tight_layout()
+    fig.align_labels()
+    fig.align_titles()
