@@ -37,6 +37,8 @@ LINE["F1", "ESCL*"]         = 0;
 LINE["F1", "ESCR*"]         = 0;""",
     output_filename     = REBUILT_SAD_LATTICE_PATH)
 
+print("Lattice Rebuilt")
+
 tw_sad  = twiss_sad(
     lattice_filename        = REBUILT_SAD_LATTICE_PATH,
     line_name               = LINE_NAME,
@@ -45,6 +47,8 @@ tw_sad  = twiss_sad(
     reverse_element_order   = False,
     reverse_bend_direction  = False,
     additional_commands     = "")
+
+print("Twiss acquired")
 
 ################################################################################
 # Convert Lattice
@@ -57,7 +61,7 @@ line    = s2x.convert_sad_to_xsuite(
     reverse_element_order       = False,
     reverse_bend_direction      = False,
     reverse_charge              = False,
-    output_directory            = 'out/',
+    output_directory            = 'out',
     output_filename             = "fcc_sol",
     output_header               = "FCC-ee LCC With Solenoid")
 

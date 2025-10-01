@@ -69,7 +69,7 @@ linep   = s2x.convert_sad_to_xsuite(
     reverse_element_order       = False,
     reverse_bend_direction      = False,
     reverse_charge              = False,
-    output_directory            = 'out/',
+    output_directory            = 'out',
     output_filename             = "fcc_sol_p",
     output_header               = "FCC-ee LCC Solenoid Positron Ring")
 linep.replace_all_repeated_elements()
@@ -85,7 +85,7 @@ linee   = s2x.convert_sad_to_xsuite(
     reverse_element_order       = False,
     reverse_bend_direction      = True,
     reverse_charge              = True,
-    output_directory            = 'out/',
+    output_directory            = 'out',
     output_filename             = "fcc_sol_e",
     output_header               = "FCC-ee LCC Solenoid Electron Ring")
 linee.replace_all_repeated_elements()
