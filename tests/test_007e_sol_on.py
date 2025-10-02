@@ -331,7 +331,7 @@ def test_sol_on_very_weak():
     Test the conversion of a SAD SOL element with ref shifts at entry to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_007_very_weak_sol",
+        test_name                  = "test_007e_very_weak_sol",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SHORT_DRIFT = (L = 0.10);
 
@@ -362,7 +362,7 @@ def test_sol_on_weak():
     Test the conversion of a SAD SOL element with ref shifts at entry to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_007_weak_sol",
+        test_name                  = "test_007e_weak_sol",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SHORT_DRIFT = (L = 0.10);
 
@@ -393,7 +393,7 @@ def test_sol_on():
     Test the conversion of a SAD SOL element with ref shifts at entry to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_007_sol",
+        test_name                  = "test_007e_sol",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SHORT_DRIFT = (L = 0.10);
 

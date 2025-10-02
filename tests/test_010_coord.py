@@ -252,7 +252,7 @@ def test_coord_dxdy():
     Test the conversion of a SAD COORD element with DX and DY to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdy",
+        test_name                  = "test_010_coord_dxdy",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL);
             MARK        START       = ()
@@ -272,7 +272,7 @@ def test_coord_dxdy_rev():
     Test the conversion of a SAD COORD element with DX and DY to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdy_rev",
+        test_name                  = "test_010_coord_dxdy_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL);
             MARK        START       = ()
@@ -296,7 +296,7 @@ def test_coord_chi1():
     Test the conversion of a SAD COORD element with CHI1 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_chi1",
+        test_name                  = "test_010_coord_chi1",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD  = (CHI1 = TEST_VAL);
             MARK        START       = ()
@@ -316,7 +316,7 @@ def test_coord_chi1_rev():
     Test the conversion of a SAD COORD element with CHI1 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_chi1_rev",
+        test_name                  = "test_010_coord_chi1_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD  = (CHI1 = TEST_VAL);
             MARK        START       = ()
@@ -340,7 +340,7 @@ def test_coord_chi2():
     Test the conversion of a SAD COORD element with CHI2 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_chi2",
+        test_name                  = "test_010_coord_chi2",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD  = (CHI2 = TEST_VAL);
             MARK        START       = ()
@@ -360,7 +360,7 @@ def test_coord_chi2_rev():
     Test the conversion of a SAD COORD element with CHI2 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_chi2_rev",
+        test_name                  = "test_010_coord_chi2_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD  = (CHI2 = TEST_VAL);
             MARK        START       = ()
@@ -384,7 +384,7 @@ def test_coord_dxdy_chi1():
     Test the conversion of a SAD COORD element with DX and DY then CHI1 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdy_chi1",
+        test_name                  = "test_010_coord_dxdy_chi1",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
                         TEST_COORD2 = (CHI1 = TEST_VAL);
@@ -405,7 +405,7 @@ def test_coord_dxdy_chi1_rev():
     Test the conversion of a SAD COORD element with DX and DY then CHI1 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdy_chi1_rev",
+        test_name                  = "test_010_coord_dxdy_chi1_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
                         TEST_COORD2 = (CHI1 = TEST_VAL);
@@ -430,7 +430,7 @@ def test_coord_dxdy_chi2():
     Test the conversion of a SAD COORD element with DX and DY then CHI2 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdy_chi2",
+        test_name                  = "test_010_coord_dxdy_chi2",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
                         TEST_COORD2 = (CHI2 = TEST_VAL);
@@ -451,7 +451,7 @@ def test_coord_dxdy_chi2_rev():
     Test the conversion of a SAD COORD element with DX and DY then CHI2 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdy_chi2_rev",
+        test_name                  = "test_010_coord_dxdy_chi2_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
                         TEST_COORD2 = (CHI2 = TEST_VAL);
@@ -476,7 +476,7 @@ def test_coord_dxdy_chi3():
     Test the conversion of a SAD COORD element with DX and DY then CHI3 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdy_chi3",
+        test_name                  = "test_010_coord_dxdy_chi3",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
                         TEST_COORD2 = (CHI3 = TEST_VAL);
@@ -497,7 +497,7 @@ def test_coord_dxdy_chi3_rev():
     Test the conversion of a SAD COORD element with DX and DY then CHI3 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdy_chi3_rev",
+        test_name                  = "test_010_coord_dxdy_chi3_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
                         TEST_COORD2 = (CHI3 = TEST_VAL);
@@ -522,7 +522,7 @@ def test_coord_dxdychi1():
     Test the conversion of a SAD COORD element with DX, DY and CHI1 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdychi1",
+        test_name                  = "test_010_coord_dxdychi1",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL);
             MARK        START       = ()
@@ -542,7 +542,7 @@ def test_coord_dxdychi1_rev():
     Test the conversion of a SAD COORD element with DX, DY and CHI1 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdychi1_rev",
+        test_name                  = "test_010_coord_dxdychi1_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL);
             MARK        START       = ()
@@ -566,7 +566,7 @@ def test_coord_dxdychi2():
     Test the conversion of a SAD COORD element with DX, DY and CHI2 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdychi2",
+        test_name                  = "test_010_coord_dxdychi2",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI2 = TEST_VAL);
             MARK        START       = ()
@@ -586,7 +586,7 @@ def test_coord_dxdychi2_rev():
     Test the conversion of a SAD COORD element with DX, DY and CHI2 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdychi2_rev",
+        test_name                  = "test_010_coord_dxdychi2_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI2 = TEST_VAL);
             MARK        START       = ()
@@ -610,7 +610,7 @@ def test_coord_dxdychi3():
     Test the conversion of a SAD COORD element with DX, DY and CHI3 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdychi3",
+        test_name                  = "test_010_coord_dxdychi3",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI3 = TEST_VAL);
             MARK        START       = ()
@@ -630,7 +630,7 @@ def test_coord_dxdychi3_rev():
     Test the conversion of a SAD COORD element with DX, DY and CHI3 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdychi3_rev",
+        test_name                  = "test_010_coord_dxdychi3_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI3 = TEST_VAL);
             MARK        START       = ()
@@ -654,7 +654,7 @@ def test_coord_dxdychi1chi2chi3():
     Test the conversion of a SAD COORD element with DX, DY, CHI1, CHI2 and CHI3 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdychi1chi2chi3",
+        test_name                  = "test_010_coord_dxdychi1chi2chi3",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL CHI2 = TEST_VAL CHI3 = TEST_VAL);
             MARK        START       = ()
@@ -674,7 +674,7 @@ def test_coord_dxdychi1chi2chi3_rev():
     Test the conversion of a SAD COORD element with DX, DY, CHI1, CHI2 and CHI3 to XSuite.
     """
     reference_coord_test(
-        test_name                  = "test_002_coord_dxdychi1chi2chi3_rev",
+        test_name                  = "test_010_coord_dxdychi1chi2chi3_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
             COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL CHI2 = TEST_VAL CHI3 = TEST_VAL);
             MARK        START       = ()

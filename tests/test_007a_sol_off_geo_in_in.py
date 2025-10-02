@@ -259,7 +259,7 @@ def test_sol_off_in_dxdy():
     Test the conversion of a SAD COORD element with DX and DY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdy",
+        test_name                  = "test_007a_sol_off_in_dxdy",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -287,7 +287,7 @@ def test_sol_off_in_dxdy_rev_in():
     Test the conversion of a SAD COORD element with DX and DY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdy_rev_in",
+        test_name                  = "test_007a_sol_off_in_dxdy_rev_in",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -315,7 +315,7 @@ def test_sol_off_in_dxdy_rev_out():
     Test the conversion of a SAD COORD element with DX and DY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdy_rev_out",
+        test_name                  = "test_007a_sol_off_in_dxdy_rev_out",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -343,7 +343,7 @@ def test_sol_off_in_dxdy_rev_both():
     Test the conversion of a SAD COORD element with DX and DY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdy_rev_both",
+        test_name                  = "test_007a_sol_off_in_dxdy_rev_both",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -375,7 +375,7 @@ def test_sol_off_in_dz():
     Test the conversion of a SAD COORD element with DZ to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dz",
+        test_name                  = "test_007a_sol_off_in_dz",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -403,7 +403,7 @@ def test_sol_off_in_dz_rev_in():
     Test the conversion of a SAD COORD element with DZ to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dz_rev_in",
+        test_name                  = "test_007a_sol_off_in_dz_rev_in",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -431,7 +431,7 @@ def test_sol_off_in_dz_rev_out():
     Test the conversion of a SAD COORD element with DZ to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dz_rev_out",
+        test_name                  = "test_007a_sol_off_in_dz_rev_out",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -459,7 +459,7 @@ def test_sol_off_in_dz_rev_both():
     Test the conversion of a SAD COORD element with DZ to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dz_rev_both",
+        test_name                  = "test_007a_sol_off_in_dz_rev_both",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -491,7 +491,7 @@ def test_sol_off_in_dpx():
     Test the conversion of a SAD COORD element with DPX to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dpx",
+        test_name                  = "test_007a_sol_off_in_dpx",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -519,7 +519,7 @@ def test_sol_off_in_dpx_rev_in():
     Test the conversion of a SAD COORD element with DPX to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dpx_rev_in",
+        test_name                  = "test_007a_sol_off_in_dpx_rev_in",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -547,7 +547,7 @@ def test_sol_off_in_dpx_rev_out():
     Test the conversion of a SAD COORD element with DPX to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dpx_rev_out",
+        test_name                  = "test_007a_sol_off_in_dpx_rev_out",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -575,7 +575,7 @@ def test_sol_off_in_dpx_rev_both():
     Test the conversion of a SAD COORD element with DPX to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dpx_rev_both",
+        test_name                  = "test_007a_sol_off_in_dpx_rev_both",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -607,7 +607,7 @@ def test_sol_off_in_dpy():
     Test the conversion of a SAD COORD element with DPY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dpy",
+        test_name                  = "test_007a_sol_off_in_dpy",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -635,7 +635,7 @@ def test_sol_off_in_dpy_rev_in():
     Test the conversion of a SAD COORD element with DPY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dpy_rev_in",
+        test_name                  = "test_007a_sol_off_in_dpy_rev_in",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -663,7 +663,7 @@ def test_sol_off_in_dpy_rev_out():
     Test the conversion of a SAD COORD element with DPY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dpy_rev_out",
+        test_name                  = "test_007a_sol_off_in_dpy_rev_out",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -691,7 +691,7 @@ def test_sol_off_in_dpy_rev_both():
     Test the conversion of a SAD COORD element with DPY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dpy_rev_both",
+        test_name                  = "test_007a_sol_off_in_dpy_rev_both",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -723,7 +723,7 @@ def test_sol_off_in_chi1():
     Test the conversion of a SAD COORD element with CHI1 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_chi1",
+        test_name                  = "test_007a_sol_off_in_chi1",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -751,7 +751,7 @@ def test_sol_off_in_chi1_rev_in():
     Test the conversion of a SAD COORD element with CHI1 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_chi1_rev_in",
+        test_name                  = "test_007a_sol_off_in_chi1_rev_in",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -779,7 +779,7 @@ def test_sol_off_in_chi1_rev_out():
     Test the conversion of a SAD COORD element with CHI1 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_chi1_rev_out",
+        test_name                  = "test_007a_sol_off_in_chi1_rev_out",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -807,7 +807,7 @@ def test_sol_off_in_chi1_rev_both():
     Test the conversion of a SAD COORD element with CHI1 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_chi1_rev_both",
+        test_name                  = "test_007a_sol_off_in_chi1_rev_both",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -840,7 +840,7 @@ def test_sol_off_in_chi2():
     Test the conversion of a SAD COORD element with CHI2 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_chi2",
+        test_name                  = "test_007a_sol_off_in_chi2",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -868,7 +868,7 @@ def test_sol_off_in_chi2_rev_in():
     Test the conversion of a SAD COORD element with CHI2 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_chi2_rev_in",
+        test_name                  = "test_007a_sol_off_in_chi2_rev_in",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -896,7 +896,7 @@ def test_sol_off_in_chi2_rev_out():
     Test the conversion of a SAD COORD element with CHI2 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_chi2_rev_out",
+        test_name                  = "test_007a_sol_off_in_chi2_rev_out",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -924,7 +924,7 @@ def test_sol_off_in_chi2_rev_both():
     Test the conversion of a SAD COORD element with CHI2 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_chi2_rev_both",
+        test_name                  = "test_007a_sol_off_in_chi2_rev_both",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -956,7 +956,7 @@ def test_sol_off_in_dxdydpx():
     Test the conversion of a SAD COORD element with DX, DY and DPX to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdydpx",
+        test_name                  = "test_007a_sol_off_in_dxdydpx",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -984,7 +984,7 @@ def test_sol_off_in_dxdydpx_rev_in():
     Test the conversion of a SAD COORD element with DX, DY and DPX to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdydpx_rev_in",
+        test_name                  = "test_007a_sol_off_in_dxdydpx_rev_in",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1012,7 +1012,7 @@ def test_sol_off_in_dxdydpx_rev_out():
     Test the conversion of a SAD COORD element with DX, DY and DPX to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdydpx_rev_out",
+        test_name                  = "test_007a_sol_off_in_dxdydpx_rev_out",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1040,7 +1040,7 @@ def test_sol_off_in_dxdydpx_rev_both():
     Test the conversion of a SAD COORD element with DX, DY and DPX to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdydpx_rev_both",
+        test_name                  = "test_007a_sol_off_in_dxdydpx_rev_both",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1072,7 +1072,7 @@ def test_sol_off_in_dxdydpy():
     Test the conversion of a SAD COORD element with DX, DY and DPY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdydpy",
+        test_name                  = "test_007a_sol_off_in_dxdydpy",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1100,7 +1100,7 @@ def test_sol_off_in_dxdydpy_rev_in():
     Test the conversion of a SAD COORD element with DX, DY and DPY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdydpy_rev_in",
+        test_name                  = "test_007a_sol_off_in_dxdydpy_rev_in",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1128,7 +1128,7 @@ def test_sol_off_in_dxdydpy_rev_out():
     Test the conversion of a SAD COORD element with DX, DY and DPY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdydpy_rev_out",
+        test_name                  = "test_007a_sol_off_in_dxdydpy_rev_out",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1156,7 +1156,7 @@ def test_sol_off_in_dxdydpy_rev_both():
     Test the conversion of a SAD COORD element with DX, DY and DPY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdydpy_rev_both",
+        test_name                  = "test_007a_sol_off_in_dxdydpy_rev_both",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1188,7 +1188,7 @@ def test_sol_off_in_dxdychi1():
     Test the conversion of a SAD COORD element with DX, DY and CHI1 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdychi1",
+        test_name                  = "test_007a_sol_off_in_dxdychi1",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1216,7 +1216,7 @@ def test_sol_off_in_dxdychi1_rev_in():
     Test the conversion of a SAD COORD element with DX, DY and CHI1 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdychi1_rev_in",
+        test_name                  = "test_007a_sol_off_in_dxdychi1_rev_in",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1244,7 +1244,7 @@ def test_sol_off_in_dxdychi1_rev_out():
     Test the conversion of a SAD COORD element with DX, DY and CHI1 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdychi1_rev_out",
+        test_name                  = "test_007a_sol_off_in_dxdychi1_rev_out",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1272,7 +1272,7 @@ def test_sol_off_in_dxdychi1_rev_both():
     Test the conversion of a SAD COORD element with DX, DY and CHI1 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdychi1_rev_both",
+        test_name                  = "test_007a_sol_off_in_dxdychi1_rev_both",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1304,7 +1304,7 @@ def test_sol_off_in_dxdychi2():
     Test the conversion of a SAD COORD element with DX, DY and CHI2 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdychi2",
+        test_name                  = "test_007a_sol_off_in_dxdychi2",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1332,7 +1332,7 @@ def test_sol_off_in_dxdychi2_rev_in():
     Test the conversion of a SAD COORD element with DX, DY and CHI2 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdychi2_rev_in",
+        test_name                  = "test_007a_sol_off_in_dxdychi2_rev_in",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1360,7 +1360,7 @@ def test_sol_off_in_dxdychi2_rev_out():
     Test the conversion of a SAD COORD element with DX, DY and CHI2 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdychi2_rev_out",
+        test_name                  = "test_007a_sol_off_in_dxdychi2_rev_out",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1388,7 +1388,7 @@ def test_sol_off_in_dxdychi2_rev_both():
     Test the conversion of a SAD COORD element with DX, DY and CHI2 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdychi2_rev_both",
+        test_name                  = "test_007a_sol_off_in_dxdychi2_rev_both",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1420,7 +1420,7 @@ def test_sol_off_in_dxdydpxdpy():
     Test the conversion of a SAD COORD element with DX, DY, DPX and DPY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdydpxdpy",
+        test_name                  = "test_007a_sol_off_in_dxdydpxdpy",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1448,7 +1448,7 @@ def test_sol_off_in_dxdydpxdpy_rev_in():
     Test the conversion of a SAD COORD element with DX, DY, DPX and DPY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdydpxdpy_rev_in",
+        test_name                  = "test_007a_sol_off_in_dxdydpxdpy_rev_in",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1476,7 +1476,7 @@ def test_sol_off_in_dxdydpxdpy_rev_out():
     Test the conversion of a SAD COORD element with DX, DY, DPX and DPY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdydpxdpy_rev_out",
+        test_name                  = "test_007a_sol_off_in_dxdydpxdpy_rev_out",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1504,7 +1504,7 @@ def test_sol_off_in_dxdydpxdpy_rev_both():
     Test the conversion of a SAD COORD element with DX, DY, DPX and DPY to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdydpxdpy_rev_both",
+        test_name                  = "test_007a_sol_off_in_dxdydpxdpy_rev_both",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1536,7 +1536,7 @@ def test_sol_off_in_dxdychi1chi2():
     Test the conversion of a SAD COORD element with DX, DY, CHI1 and CHI2 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdychi1chi2",
+        test_name                  = "test_007a_sol_off_in_dxdychi1chi2",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1564,7 +1564,7 @@ def test_sol_off_in_dxdychi1chi2_rev_in():
     Test the conversion of a SAD COORD element with DX, DY, CHI1 and CHI2 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdychi1chi2_rev_in",
+        test_name                  = "test_007a_sol_off_in_dxdychi1chi2_rev_in",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1592,7 +1592,7 @@ def test_sol_off_in_dxdychi1chi2_rev_out():
     Test the conversion of a SAD COORD element with DX, DY, CHI1 and CHI2 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdychi1chi2_rev_out",
+        test_name                  = "test_007a_sol_off_in_dxdychi1chi2_rev_out",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
@@ -1620,7 +1620,7 @@ def test_sol_off_in_dxdychi1chi2_rev_both():
     Test the conversion of a SAD COORD element with DX, DY, CHI1 and CHI2 to XSuite.
     """
     reference_sol_test(
-        test_name                  = "test_003_sol_off_in_dxdychi1chi2_rev_both",
+        test_name                  = "test_007a_sol_off_in_dxdychi1chi2_rev_both",
         sad_elements_line_string   = textwrap.dedent(f"""\
             DRIFT       SOL_DRIFT   = (L = 1.00);
 
