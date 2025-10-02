@@ -92,7 +92,13 @@ try:
 except AssertionError as err:
     print("Couldn't insert all the markers. Usually this is because of negative drifts")
     print(err)
-    pass"""
+    pass
+
+########################################
+# Replace repeated elements (again, to account for new markers)
+########################################
+line.replace_all_repeated_elements()    
+"""
 
     ########################################
     # Return
