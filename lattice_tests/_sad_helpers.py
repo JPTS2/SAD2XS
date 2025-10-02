@@ -203,6 +203,7 @@ def twiss_sad(
         radiation:              bool    = False,
         rad_compensation:       bool    = False,
         rad_taper:              bool    = False,
+        delta0:                 float   = 0.0,
         additional_commands:    str     = ''):
     """
     Generate a SAD command to compute the twiss parameters of a lattice.
@@ -257,7 +258,7 @@ GetMAIN["./{lattice_filename}"];
 USE {line_name};
 
 {additional_commands};
-
+DP0 = {delta0};
 {RF_FLAG}
 {RAD_FLAG}
 {RADCOMP_FLAG}
