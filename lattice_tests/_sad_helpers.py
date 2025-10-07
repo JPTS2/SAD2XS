@@ -7,6 +7,7 @@
 ################################################################################
 import os
 import subprocess
+import ast
 import numpy as np
 import tfs
 import xtrack as xt
@@ -418,6 +419,89 @@ abort;
     # Return the TwissTable
     ########################################
     return tw_sad
+
+################################################################################
+# Calculate Transfer Matrix
+################################################################################
+def sad_transfer_matrix(
+        lattice_filename:       str,
+        line_name:              str,
+        start_element:          str | None  = None,
+        end_element:            str | None  = None):
+
+    ########################################
+    # Ensure both or neither of start_element and end_element are provided
+    ########################################
+    if start_element is not None and end_element is None:
+        raise ValueError("If start_element is provided, end_element must also be provided")
+    if start_element is None and end_element is not None:
+        raise ValueError("If end_element is provided, start_element must also be provided")
+    
+    ########################################
+    # Generate the Transfer Matrix command
+    ########################################
+    if start_element is not None and end_element is not None:
+        SAD_COMMAND = f"""
+FFS;
+
+GetMAIN["./{lattice_filename}"];
+USE {line_name};
+
+CALC4D;
+CALC;
+TM = TransferMatrix["{start_element}", "{end_element}"];
+Print[TM];
+abort;
+"""
+    else:
+        SAD_COMMAND = f"""
+FFS;
+
+GetMAIN["./{lattice_filename}"];
+USE {line_name};
+
+CALC4D;
+CALC;
+TM = TransferMatrix[1, -1];
+Print[TM];
+abort;
+"""
+
+    ########################################
+    # Write and execute the SAD command
+    ########################################
+    with open("temporary_sad_transfer_matrix.sad", "w") as f:
+        f.write(SAD_COMMAND)
+
+    try:
+        result = subprocess.run(
+            ["sad", "temporary_sad_transfer_matrix.sad"],
+            capture_output  = True,
+            text            = True,
+            timeout         = 30)
+        os.remove("temporary_sad_transfer_matrix.sad")
+    except subprocess.TimeoutExpired:
+        print("Timed out at 30s")
+
+        os.remove("temporary_sad_transfer_matrix.sad")
+        raise subprocess.TimeoutExpired(cmd = ["sad", "temporary_sad_transfer_matrix.sad"], timeout = 30)
+
+    # Take the raw text output
+    raw = result.stdout
+
+    # Isolate the matrix
+    start = raw.find("{{")
+    end   = raw.rfind("}}")
+    if start == -1 or end == -1:
+        raise ValueError("Matrix not found in subprocess output")
+    matrix_str = raw[start:end + 2]
+    
+    # Convert to numpy array
+    cleaned     = matrix_str.replace("}", "]").replace("{", "[")
+    matrix_list = ast.literal_eval(cleaned)
+    R_matrix    = np.array(matrix_list, dtype = float)
+
+    return R_matrix
 
 ################################################################################
 # Rebuild SAD lattice (post GEO for solenoid)
