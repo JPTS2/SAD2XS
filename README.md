@@ -91,6 +91,14 @@ A series of ongoing tests are performed to test the equivalence of SAD elements 
 
 ### Element Tests
 [![Drift](https://github.com/JPTS2/sad2xs/actions/workflows/001_drift_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/001_drift_test.yml)
-[![Coordinate Transform](https://github.com/JPTS2/sad2xs/actions/workflows/002_coord_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/002_coord_test.yml)
-[![Solenoid](https://github.com/JPTS2/sad2xs/actions/workflows/003_sol_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/003_sol_test.yml)
-[![Reversal](https://github.com/JPTS2/sad2xs/actions/workflows/004_reversal_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/004_reversal_test.yml)
+<!-- [![Bend](https://github.com/JPTS2/sad2xs/actions/workflows/002_bend_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/002_bend_test.yml) -->
+<!-- [![Quadrupole](https://github.com/JPTS2/sad2xs/actions/workflows/003_quad_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/003_quad_test.yml) -->
+<!-- [![Sextupole](https://github.com/JPTS2/sad2xs/actions/workflows/004_sext_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/004_sext_test.yml) -->
+<!-- [![Octupole](https://github.com/JPTS2/sad2xs/actions/workflows/005_oct_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/005_oct_test.yml) -->
+<!-- [![Multipole](https://github.com/JPTS2/sad2xs/actions/workflows/006_mult_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/006_mult_test.yml) -->
+[![Solenoid](https://github.com/JPTS2/sad2xs/actions/workflows/007_sol_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/007_sol_test.yml)
+[![Cavity](https://github.com/JPTS2/sad2xs/actions/workflows/008_cavi_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/008_cavi_test.yml)
+<!-- [![Aperture](https://github.com/JPTS2/sad2xs/actions/workflows/009_apert_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/009_apert_test.yml) -->
+[![Coordinate Transform](https://github.com/JPTS2/sad2xs/actions/workflows/010_coord_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/010_coord_test.yml)
+<!-- [![Marker](https://github.com/JPTS2/sad2xs/actions/workflows/011_mark_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/011_mark_test.yml) -->
+[![Reversal](https://github.com/JPTS2/sad2xs/actions/workflows/012_reversal_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/012_reversal_test.yml)

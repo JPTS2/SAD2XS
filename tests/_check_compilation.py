@@ -10,9 +10,27 @@ os.environ["XSUITE_VERBOSE"] = "1"
 
 import sad2xs as s2x
 import xtrack as xt
+import textwrap
 
 from _sad_helpers import twiss_sad
-from _test_config import *
+from _config import *
+
+########################################################################
+# Build Test Lattice
+########################################################################
+with open("test_lattice.sad", "w") as f:
+    f.write(textwrap.dedent(f"""\
+    MOMENTUM    = 1.0 GEV;
+                            
+    DRIFT       TEST_D  = (L = 1.00);
+    
+    BEND        TEST_B  = (L = 1.00 ANGLE = 0.01);
+
+    MARK        START       = ()
+                END         = ();
+
+    LINE        TEST_LINE   = (START TEST_D TEST_B TEST_D END);
+    """))
 
 ########################################################################
 # Twiss SAD Lattice
@@ -35,9 +53,9 @@ line    = s2x.convert_sad_to_xsuite(
     _verbose            = True,
     _test_mode          = True)
 
-########################################
+########################################################################
 # Twiss XSuite Lattice
-########################################
+########################################################################
 print("Running Twiss now")
 line.discard_tracker()
 line.build_tracker(compile = False)
@@ -47,3 +65,8 @@ tw_xs   = line.twiss4d(
     end                 = xt.END,
     betx                = 1,
     bety                = 1)
+
+########################################################################
+# Remove Test Lattice
+########################################################################
+os.remove("test_lattice.sad")

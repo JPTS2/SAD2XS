@@ -13,19 +13,13 @@ import textwrap
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from _sad_helpers import twiss_sad, rebuild_sad_lattice
-from _test_config import *
-
-################################################################################
-# N.B.
-################################################################################
-# REFERENCE SHIFTS INSIDE THE SOLENOID REGION DON'T WORK
-# INSTEAD, WE USE MULTIPOLES TO SHIFT THE BEAM
+from _sad_helpers import twiss_sad
+from _config import *
 
 ################################################################################
 # Reference PyTest Function
 ################################################################################
-def reference_sol_test(
+def reference_coord_test(
         test_name:                  str,
         sad_elements_line_string:   str,
         sad_eval_marker:            str         = "END",
@@ -76,13 +70,6 @@ def reference_sol_test(
             reverse_element_order   = False,
             reverse_bend_direction  = False,
             additional_commands     = "")
-
-        ########################################################################
-        # Rebuild SAD Lattice
-        ########################################################################
-        rebuild_sad_lattice(
-            lattice_filename    = 'test_lattice.sad',
-            line_name           = 'TEST_LINE')
 
         ########################################################################
         # Convert Lattice
@@ -260,28 +247,17 @@ def reference_sol_test(
 ########################################
 # Forward
 ########################################
-def test_sol_off_out_dxdy():
+def test_coord_dxdy():
     """
     Test the conversion of a SAD COORD element with DX and DY to XSuite.
     """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dxdy",
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdy",
         sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT1  = (K0 = +0.01 * TEST_VAL SK0 = +0.01 * TEST_VAL)
-                        TEST_MULT2  = (K0 = -0.01 * TEST_VAL SK0 = -0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
+            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL);
             MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                SOL_IN SOL_START TEST_MULT1 SOL_DRIFT TEST_MULT2 SOL_END SOL_OUT END);
+                        END         = ();
+            LINE        TEST_LINE   = (START TEST_COORD END);
             """),
         sad_eval_marker            = "END",
         test_values                = TEST_VALUES,
@@ -289,94 +265,43 @@ def test_sol_off_out_dxdy():
         plot                       = True)
     
 ########################################
-# Reverse
+# Reversed
 ########################################
-def test_sol_off_out_dxdy_rev():
+def test_coord_dxdy_rev():
     """
     Test the conversion of a SAD COORD element with DX and DY to XSuite.
     """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dxdy_rev",
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdy_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT1  = (K0 = +0.01 * TEST_VAL SK0 = +0.01 * TEST_VAL)
-                        TEST_MULT2  = (K0 = -0.01 * TEST_VAL SK0 = -0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
+            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL);
             MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                SOL_IN SOL_START TEST_MULT1 SOL_DRIFT TEST_MULT2 SOL_END -SOL_OUT END);
+                        END         = ();
+            LINE        TEST_LINE   = (START -TEST_COORD END);
             """),
         sad_eval_marker            = "END",
         test_values                = TEST_VALUES,
         static_val                 = STATIC_OFFSET,
         plot                       = True)
-
+    
 ################################################################################
-# DPX
+# CHI1
 ################################################################################
 
 ########################################
 # Forward
 ########################################
-def test_sol_off_out_dpx():
+def test_coord_chi1():
     """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
+    Test the conversion of a SAD COORD element with CHI1 to XSuite.
     """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dpx",
+    reference_coord_test(
+        test_name                  = "test_010_coord_chi1",
         sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT  = (K0 = 0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
+            COORD       TEST_COORD  = (CHI1 = TEST_VAL);
             MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                SOL_IN SOL_START SOL_DRIFT TEST_MULT SOL_END SOL_OUT END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-
-########################################
-# Reverse In
-########################################
-def test_sol_off_out_dpx_rev_in():
-    """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
-    """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dpx_rev_in",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT  = (K0 = 0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
-            MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                -SOL_IN SOL_START SOL_DRIFT TEST_MULT SOL_END SOL_OUT END);
+                        END         = ();
+            LINE        TEST_LINE   = (START TEST_COORD END);
             """),
         sad_eval_marker            = "END",
         test_values                = TEST_VALUES,
@@ -384,123 +309,43 @@ def test_sol_off_out_dpx_rev_in():
         plot                       = True)
     
 ########################################
-# Reverse Out
+# Reversed
 ########################################
-def test_sol_off_out_dpx_rev_out():
+def test_coord_chi1_rev():
     """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
+    Test the conversion of a SAD COORD element with CHI1 to XSuite.
     """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dpx_rev_out",
+    reference_coord_test(
+        test_name                  = "test_010_coord_chi1_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT  = (K0 = 0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
+            COORD       TEST_COORD  = (CHI1 = TEST_VAL);
             MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                SOL_IN SOL_START SOL_DRIFT TEST_MULT SOL_END -SOL_OUT END);
+                        END         = ();
+            LINE        TEST_LINE   = (START -TEST_COORD END);
             """),
         sad_eval_marker            = "END",
         test_values                = TEST_VALUES,
         static_val                 = STATIC_OFFSET,
         plot                       = True)
     
-########################################
-# Both Reversed
-########################################
-def test_sol_off_out_dpx_rev_both():
-    """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
-    """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dpx_rev_both",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT  = (K0 = 0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
-            MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                -SOL_IN SOL_START SOL_DRIFT TEST_MULT SOL_END -SOL_OUT END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-
 ################################################################################
-# DPY
+# CHI2
 ################################################################################
 
 ########################################
 # Forward
 ########################################
-def test_sol_off_out_dpy():
+def test_coord_chi2():
     """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
+    Test the conversion of a SAD COORD element with CHI2 to XSuite.
     """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dpy",
+    reference_coord_test(
+        test_name                  = "test_010_coord_chi2",
         sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT  = (SK0 = 0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
+            COORD       TEST_COORD  = (CHI2 = TEST_VAL);
             MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                SOL_IN SOL_START SOL_DRIFT TEST_MULT SOL_END SOL_OUT END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-
-########################################
-# Reverse In
-########################################
-def test_sol_off_out_dpy_rev_in():
-    """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
-    """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dpy_rev_in",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT  = (SK0 = 0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
-            MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                -SOL_IN SOL_START SOL_DRIFT TEST_MULT SOL_END SOL_OUT END);
+                        END         = ();
+            LINE        TEST_LINE   = (START TEST_COORD END);
             """),
         sad_eval_marker            = "END",
         test_values                = TEST_VALUES,
@@ -508,191 +353,65 @@ def test_sol_off_out_dpy_rev_in():
         plot                       = True)
     
 ########################################
-# Reverse Out
+# Reversed
 ########################################
-def test_sol_off_out_dpy_rev_out():
+def test_coord_chi2_rev():
     """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
+    Test the conversion of a SAD COORD element with CHI2 to XSuite.
     """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dpy_rev_out",
+    reference_coord_test(
+        test_name                  = "test_010_coord_chi2_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT  = (SK0 = 0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
+            COORD       TEST_COORD  = (CHI2 = TEST_VAL);
             MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                SOL_IN SOL_START SOL_DRIFT TEST_MULT SOL_END -SOL_OUT END);
+                        END         = ();
+            LINE        TEST_LINE   = (START -TEST_COORD END);
             """),
         sad_eval_marker            = "END",
         test_values                = TEST_VALUES,
         static_val                 = STATIC_OFFSET,
         plot                       = True)
     
-########################################
-# Both Reversed
-########################################
-def test_sol_off_out_dpy_rev_both():
-    """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
-    """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dpy_rev_both",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT  = (SK0 = 0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
-            MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                -SOL_IN SOL_START SOL_DRIFT TEST_MULT SOL_END -SOL_OUT END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-
 ################################################################################
-# DXDYDPX
+# DXDY then CHI1
 ################################################################################
 
 ########################################
 # Forward
 ########################################
-def test_sol_off_out_dxdydpx():
+def test_coord_dxdy_chi1():
     """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
+    Test the conversion of a SAD COORD element with DX and DY then CHI1 to XSuite.
     """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dxdydpx",
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdy_chi1",
         sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT1  = (K0 = +0.01 * TEST_VAL SK0 = +0.01 * TEST_VAL)
-                        TEST_MULT2  = (K0 = -0.01 * TEST_VAL SK0 = -0.01 * TEST_VAL)
-                        TEST_MULT3  = (K0 = +0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
+            COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
+                        TEST_COORD2 = (CHI1 = TEST_VAL);
             MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                SOL_IN SOL_START TEST_MULT1 SOL_DRIFT TEST_MULT2 TEST_MULT3 SOL_END SOL_OUT END);
+                        END         = ();
+            LINE        TEST_LINE   = (START TEST_COORD1 TEST_COORD2 END);
             """),
         sad_eval_marker            = "END",
         test_values                = TEST_VALUES,
         static_val                 = STATIC_OFFSET,
         plot                       = True)
-    
+
 ########################################
-# Reverse In
+# Reversed
 ########################################
-def test_sol_off_out_dxdydpx_rev_in():
+def test_coord_dxdy_chi1_rev():
     """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
+    Test the conversion of a SAD COORD element with DX and DY then CHI1 to XSuite.
     """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dxdydpx_rev_in",
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdy_chi1_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT1  = (K0 = +0.01 * TEST_VAL SK0 = +0.01 * TEST_VAL)
-                        TEST_MULT2  = (K0 = -0.01 * TEST_VAL SK0 = -0.01 * TEST_VAL)
-                        TEST_MULT3  = (K0 = +0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
+            COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
+                        TEST_COORD2 = (CHI1 = TEST_VAL);
             MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                -SOL_IN SOL_START TEST_MULT1 SOL_DRIFT TEST_MULT2 TEST_MULT3 SOL_END SOL_OUT END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-########################################
-# Reverse Out
-########################################
-def test_sol_off_out_dxdydpx_rev_out():
-    """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
-    """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dxdydpx_rev_out",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT1  = (K0 = +0.01 * TEST_VAL SK0 = +0.01 * TEST_VAL)
-                        TEST_MULT2  = (K0 = -0.01 * TEST_VAL SK0 = -0.01 * TEST_VAL)
-                        TEST_MULT3  = (K0 = +0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
-            MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                SOL_IN SOL_START TEST_MULT1 SOL_DRIFT TEST_MULT2 TEST_MULT3 SOL_END -SOL_OUT END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-########################################
-# Both Reversed
-########################################
-def test_sol_off_out_dxdydpx_rev_both():
-    """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
-    """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dxdydpx_rev_both",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT1  = (K0 = +0.01 * TEST_VAL SK0 = +0.01 * TEST_VAL)
-                        TEST_MULT2  = (K0 = -0.01 * TEST_VAL SK0 = -0.01 * TEST_VAL)
-                        TEST_MULT3  = (K0 = +0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
-            MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                -SOL_IN SOL_START TEST_MULT1 SOL_DRIFT TEST_MULT2 TEST_MULT3 SOL_END -SOL_OUT END);
+                        END         = ();
+            LINE        TEST_LINE   = (START TEST_COORD1 -TEST_COORD2 END);
             """),
         sad_eval_marker            = "END",
         test_values                = TEST_VALUES,
@@ -700,35 +419,24 @@ def test_sol_off_out_dxdydpx_rev_both():
         plot                       = True)
 
 ################################################################################
-# DXDYDPY
+# DXDY then CHI2
 ################################################################################
 
 ########################################
 # Forward
 ########################################
-def test_sol_off_out_dxdydpy():
+def test_coord_dxdy_chi2():
     """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
+    Test the conversion of a SAD COORD element with DX and DY then CHI2 to XSuite.
     """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dxdydpy",
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdy_chi2",
         sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT1  = (K0 = +0.01 * TEST_VAL SK0 = +0.01 * TEST_VAL)
-                        TEST_MULT2  = (K0 = -0.01 * TEST_VAL SK0 = -0.01 * TEST_VAL)
-                        TEST_MULT3  = (SK0 = +0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
+            COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
+                        TEST_COORD2 = (CHI2 = TEST_VAL);
             MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                SOL_IN SOL_START TEST_MULT1 SOL_DRIFT TEST_MULT2 TEST_MULT3 SOL_END SOL_OUT END);
+                        END         = ();
+            LINE        TEST_LINE   = (START TEST_COORD1 TEST_COORD2 END);
             """),
         sad_eval_marker            = "END",
         test_values                = TEST_VALUES,
@@ -736,95 +444,20 @@ def test_sol_off_out_dxdydpy():
         plot                       = True)
     
 ########################################
-# Reverse In
+# Reversed
 ########################################
-def test_sol_off_out_dxdydpy_rev_in():
+def test_coord_dxdy_chi2_rev():
     """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
+    Test the conversion of a SAD COORD element with DX and DY then CHI2 to XSuite.
     """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dxdydpy_rev_in",
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdy_chi2_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT1  = (K0 = +0.01 * TEST_VAL SK0 = +0.01 * TEST_VAL)
-                        TEST_MULT2  = (K0 = -0.01 * TEST_VAL SK0 = -0.01 * TEST_VAL)
-                        TEST_MULT3  = (SK0 = +0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
+            COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
+                        TEST_COORD2 = (CHI2 = TEST_VAL);
             MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                -SOL_IN SOL_START TEST_MULT1 SOL_DRIFT TEST_MULT2 TEST_MULT3 SOL_END SOL_OUT END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-########################################
-# Reverse Out
-########################################
-def test_sol_off_out_dxdydpy_rev_out():
-    """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
-    """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dxdydpy_rev_out",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT1  = (K0 = +0.01 * TEST_VAL SK0 = +0.01 * TEST_VAL)
-                        TEST_MULT2  = (K0 = -0.01 * TEST_VAL SK0 = -0.01 * TEST_VAL)
-                        TEST_MULT3  = (SK0 = +0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
-            MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                SOL_IN SOL_START TEST_MULT1 SOL_DRIFT TEST_MULT2 TEST_MULT3 SOL_END -SOL_OUT END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-########################################
-# Both Reversed
-########################################
-def test_sol_off_out_dxdydpy_rev_both():
-    """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
-    """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dxdydpy_rev_both",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT1  = (K0 = +0.01 * TEST_VAL SK0 = +0.01 * TEST_VAL)
-                        TEST_MULT2  = (K0 = -0.01 * TEST_VAL SK0 = -0.01 * TEST_VAL)
-                        TEST_MULT3  = (SK0 = +0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
-            MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                -SOL_IN SOL_START TEST_MULT1 SOL_DRIFT TEST_MULT2 TEST_MULT3 SOL_END -SOL_OUT END);
+                        END         = ();
+            LINE        TEST_LINE   = (START TEST_COORD1 -TEST_COORD2 END);
             """),
         sad_eval_marker            = "END",
         test_values                = TEST_VALUES,
@@ -832,33 +465,157 @@ def test_sol_off_out_dxdydpy_rev_both():
         plot                       = True)
     
 ################################################################################
-# DXDYDPXDPY
+# DXDY then CHI3
 ################################################################################
 
 ########################################
 # Forward
 ########################################
-def test_sol_off_out_dxdydpxdpy():
+def test_coord_dxdy_chi3():
     """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
+    Test the conversion of a SAD COORD element with DX and DY then CHI3 to XSuite.
     """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dxdydpxdpy",
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdy_chi3",
         sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT  = (K0 = +0.01 * TEST_VAL SK0 = +0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
+            COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
+                        TEST_COORD2 = (CHI3 = TEST_VAL);
             MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
+                        END         = ();
+            LINE        TEST_LINE   = (START TEST_COORD1 TEST_COORD2 END);
+            """),
+        sad_eval_marker            = "END",
+        test_values                = TEST_VALUES,
+        static_val                 = STATIC_OFFSET,
+        plot                       = True)
+    
+########################################
+# Reversed
+########################################
+def test_coord_dxdy_chi3_rev():
+    """
+    Test the conversion of a SAD COORD element with DX and DY then CHI3 to XSuite.
+    """
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdy_chi3_rev",
+        sad_elements_line_string   = textwrap.dedent(f"""\
+            COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
+                        TEST_COORD2 = (CHI3 = TEST_VAL);
+            MARK        START       = ()
+                        END         = ();
+            LINE        TEST_LINE   = (START TEST_COORD1 -TEST_COORD2 END);
+            """),
+        sad_eval_marker            = "END",
+        test_values                = TEST_VALUES,
+        static_val                 = STATIC_OFFSET,
+        plot                       = True)
 
-            LINE        TEST_LINE   = (START
-                SOL_IN SOL_START TEST_MULT1 SOL_DRIFT SOL_END SOL_OUT END);
+################################################################################
+# DXDYCHI1
+################################################################################
+
+########################################
+# Forward
+########################################
+def test_coord_dxdychi1():
+    """
+    Test the conversion of a SAD COORD element with DX, DY and CHI1 to XSuite.
+    """
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdychi1",
+        sad_elements_line_string   = textwrap.dedent(f"""\
+            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL);
+            MARK        START       = ()
+                        END         = ();
+            LINE        TEST_LINE   = (START TEST_COORD END);
+            """),
+        sad_eval_marker            = "END",
+        test_values                = TEST_VALUES,
+        static_val                 = STATIC_OFFSET,
+        plot                       = True)
+    
+########################################
+# Reversed
+########################################
+def test_coord_dxdychi1_rev():
+    """
+    Test the conversion of a SAD COORD element with DX, DY and CHI1 to XSuite.
+    """
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdychi1_rev",
+        sad_elements_line_string   = textwrap.dedent(f"""\
+            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL);
+            MARK        START       = ()
+                        END         = ();
+            LINE        TEST_LINE   = (START -TEST_COORD END);
+            """),
+        sad_eval_marker            = "END",
+        test_values                = TEST_VALUES,
+        static_val                 = STATIC_OFFSET,
+        plot                       = True)
+    
+################################################################################
+# DXDYCHI2
+################################################################################
+
+########################################
+# Forward
+########################################
+def test_coord_dxdychi2():
+    """
+    Test the conversion of a SAD COORD element with DX, DY and CHI2 to XSuite.
+    """
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdychi2",
+        sad_elements_line_string   = textwrap.dedent(f"""\
+            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI2 = TEST_VAL);
+            MARK        START       = ()
+                        END         = ();
+            LINE        TEST_LINE   = (START TEST_COORD END);
+            """),
+        sad_eval_marker            = "END",
+        test_values                = TEST_VALUES,
+        static_val                 = STATIC_OFFSET,
+        plot                       = True)
+    
+########################################
+# Reversed
+########################################
+def test_coord_dxdychi2_rev():
+    """
+    Test the conversion of a SAD COORD element with DX, DY and CHI2 to XSuite.
+    """
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdychi2_rev",
+        sad_elements_line_string   = textwrap.dedent(f"""\
+            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI2 = TEST_VAL);
+            MARK        START       = ()
+                        END         = ();
+            LINE        TEST_LINE   = (START -TEST_COORD END);
+            """),
+        sad_eval_marker            = "END",
+        test_values                = TEST_VALUES,
+        static_val                 = STATIC_OFFSET,
+        plot                       = True)
+    
+################################################################################
+# DXDYCHI3
+################################################################################
+
+########################################
+# Forward
+########################################
+def test_coord_dxdychi3():
+    """
+    Test the conversion of a SAD COORD element with DX, DY and CHI3 to XSuite.
+    """
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdychi3",
+        sad_elements_line_string   = textwrap.dedent(f"""\
+            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI3 = TEST_VAL);
+            MARK        START       = ()
+                        END         = ();
+            LINE        TEST_LINE   = (START TEST_COORD END);
             """),
         sad_eval_marker            = "END",
         test_values                = TEST_VALUES,
@@ -866,90 +623,63 @@ def test_sol_off_out_dxdydpxdpy():
         plot                       = True)
 
 ########################################
-# Reverse In
+# Reversed
 ########################################
-def test_sol_off_out_dxdydpxdpy_rev_in():
+def test_coord_dxdychi3_rev():
     """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
+    Test the conversion of a SAD COORD element with DX, DY and CHI3 to XSuite.
     """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dxdydpxdpy_rev_in",
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdychi3_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT  = (K0 = +0.01 * TEST_VAL SK0 = +0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
+            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI3 = TEST_VAL);
             MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                -SOL_IN SOL_START TEST_MULT1 SOL_DRIFT SOL_END SOL_OUT END);
+                        END         = ();
+            LINE        TEST_LINE   = (START -TEST_COORD END);
             """),
         sad_eval_marker            = "END",
         test_values                = TEST_VALUES,
         static_val                 = STATIC_OFFSET,
         plot                       = True)
 
+################################################################################
+# DXDYCHI1CHI2CHI3
+################################################################################
+
 ########################################
-# Reverse Out
+# Forward
 ########################################
-def test_sol_off_out_dxdydpxdpy_rev_out():
+def test_coord_dxdychi1chi2chi3():
     """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
+    Test the conversion of a SAD COORD element with DX, DY, CHI1, CHI2 and CHI3 to XSuite.
     """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dxdydpxdpy_rev_out",
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdychi1chi2chi3",
         sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT  = (K0 = +0.01 * TEST_VAL SK0 = +0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
+            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL CHI2 = TEST_VAL CHI3 = TEST_VAL);
             MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                SOL_IN SOL_START TEST_MULT1 SOL_DRIFT SOL_END -SOL_OUT END);
+                        END         = ();
+            LINE        TEST_LINE   = (START TEST_COORD END);
             """),
         sad_eval_marker            = "END",
         test_values                = TEST_VALUES,
         static_val                 = STATIC_OFFSET,
         plot                       = True)
-
-
+    
 ########################################
-# Both Reversed
+# Reversed
 ########################################
-def test_sol_off_out_dxdydpxdpy_rev_both():
+def test_coord_dxdychi1chi2chi3_rev():
     """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
+    Test the conversion of a SAD COORD element with DX, DY, CHI1, CHI2 and CHI3 to XSuite.
     """
-    reference_sol_test(
-        test_name                  = "test_006_sol_off_out_dxdydpxdpy_rev_both",
+    reference_coord_test(
+        test_name                  = "test_010_coord_dxdychi1chi2chi3_rev",
         sad_elements_line_string   = textwrap.dedent(f"""\
-            DRIFT       SOL_DRIFT   = (L = 1.00);
-
-            MULT        TEST_MULT  = (K0 = +0.01 * TEST_VAL SK0 = +0.01 * TEST_VAL);
-
-            SOL         SOL_IN      = (BZ = 0 BOUND =1)
-                        SOL_OUT     = (BZ = 0 BOUND =1 GEO = 1);
-
+            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL CHI2 = TEST_VAL CHI3 = TEST_VAL);
             MARK        START       = ()
-                        END         = ()
-                        SOL_START   = ()
-                        SOL_END     = ();
-
-            LINE        TEST_LINE   = (START
-                -SOL_IN SOL_START TEST_MULT1 SOL_DRIFT SOL_END -SOL_OUT END);
+                        END         = ();
+            LINE        TEST_LINE   = (START -TEST_COORD END);
             """),
         sad_eval_marker            = "END",
         test_values                = TEST_VALUES,

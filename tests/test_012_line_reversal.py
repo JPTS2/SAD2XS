@@ -8,13 +8,10 @@
 import os
 import sad2xs as s2x
 import xtrack as xt
-import numpy as np
 import textwrap
-import matplotlib.pyplot as plt
-from tqdm import tqdm
 
 from _sad_helpers import twiss_sad, rebuild_sad_lattice
-from _test_config import *
+from _config import *
 
 ################################################################################
 # Line reversal test
@@ -34,8 +31,8 @@ def test_line_reversal():
         DRIFT       OUTER_DRIFT = (L = 1.00)
                     SUB_DRIFT   = (L = 2.00);
         
-        BEND        TEST_BEND1  = (L = 1.00, ANGLE = 0.01)
-                    TEST_BEND2  = (L = 2.00, ANGLE = 0.02);
+        BEND        TEST_BEND1  = (L = 1.00 ANGLE = 0.01)
+                    TEST_BEND2  = (L = 2.00 ANGLE = 0.02);
 
         MARK        START       = ()
                     END         = ()
@@ -49,14 +46,14 @@ def test_line_reversal():
     ########################################################################
     # Twiss SAD Lattice
     ########################################################################
-        tw_sad  = twiss_sad(
-            lattice_filename        = 'test_lattice.sad',
-            line_name               = 'TEST_LINE',
-            method                  = "4d",
-            closed                  = False,
-            reverse_element_order   = False,
-            reverse_bend_direction  = False,
-            additional_commands     = "")
+    tw_sad  = twiss_sad(
+        lattice_filename        = 'test_lattice.sad',
+        line_name               = 'TEST_LINE',
+        method                  = "4d",
+        closed                  = False,
+        reverse_element_order   = False,
+        reverse_bend_direction  = False,
+        additional_commands     = "")
     
     ########################################################################
     # Rebuild SAD Lattice
@@ -73,7 +70,7 @@ def test_line_reversal():
         output_directory    = None,
         _verbose            = False,
         _test_mode          = True)
-    
+
     ########################################
     # Twiss XSuite Lattice
     ########################################

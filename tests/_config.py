@@ -12,18 +12,22 @@ import numpy as np
 ################################################################################
 # Tolerances
 ################################################################################
-DELTA_S_ATOL    = 1E-9
-DELTA_X_ATOL    = 1E-9
-DELTA_Y_ATOL    = 1E-9
-DELTA_PX_ATOL   = 1E-9
-DELTA_PY_ATOL   = 1E-9
+DELTA_S_ATOL        = 1E-9
+DELTA_X_ATOL        = 1E-9
+DELTA_Y_ATOL        = 1E-9
+DELTA_PX_ATOL       = 1E-9
+DELTA_PY_ATOL       = 1E-9
+DELTA_ZETA_ATOL     = 1E-9
+DELTA_DELTA_ATOL    = 1E-9
 
 # Not sure if it's possible to reduce these- might be a limit in the conversion
-DELTA_S_RTOL    = 1E-5
-DELTA_X_RTOL    = 1E-5
-DELTA_Y_RTOL    = 1E-5
-DELTA_PX_RTOL   = 1E-5
-DELTA_PY_RTOL   = 1E-5
+DELTA_S_RTOL        = 1E-5
+DELTA_X_RTOL        = 1E-5
+DELTA_Y_RTOL        = 1E-5
+DELTA_PX_RTOL       = 1E-5
+DELTA_PY_RTOL       = 1E-5
+DELTA_ZETA_RTOL     = 1E-5
+DELTA_DELTA_RTOL    = 1E-5
 
 ################################################################################
 # Test Values to scan over

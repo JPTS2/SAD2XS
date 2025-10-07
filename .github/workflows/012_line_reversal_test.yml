@@ -1,0 +1,29 @@
+name: Test 012-Reversal
+
+on:
+  workflow_run:
+    workflows: [ "SAD Docker Build" ]
+    types: [ completed ]
+  schedule:
+    - cron: '0 2 * * *'   # daily at 02:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: test-012-reversal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drift:
+    # if triggered by workflow_run, only run when rebuild succeeded
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    uses: ./.github/workflows/_test_template.yml
+    with:
+      pull_tag: latest
+      test_files: |
+        # List the relevant tests here (exact paths)
+        tests/test_012_line_reversal.py
+    secrets: inherit

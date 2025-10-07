@@ -1,4 +1,4 @@
-name: Test 003-Solenoid
+name: Test 008-Cavity
 
 on:
   workflow_run:
@@ -13,7 +13,7 @@ permissions:
   packages: read
 
 concurrency:
-  group: test-003-sol-${{ github.ref }}
+  group: test-008-cavi-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -25,9 +25,5 @@ jobs:
       pull_tag: latest
       test_files: |
         # List the relevant tests here (exact paths)
-        tests/test_003_sol_off_geo_in_in.py
-        tests/test_004_sol_off_geo_in_out.py
-        tests/test_005_sol_off_geo_out_in.py
-        tests/test_006_sol_off_geo_out_out.py
-        tests/test_007_sol_on.py
+        tests/test_008_cavi.py
     secrets: inherit
