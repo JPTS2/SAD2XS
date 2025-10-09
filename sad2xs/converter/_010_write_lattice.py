@@ -36,11 +36,11 @@ today   = date.today()
 ################################################################################
 def write_lattice(
         line:                       xt.Line,
-        offset_marker_locations:    dict,
         output_filename:            str,
-        output_directory:           str,
+        output_directory:           str | None,
         output_header:              str,
-        config:                     ConfigLike):
+        offset_marker_locations:    dict | None,
+        config:                     ConfigLike | None):
     """
     Write the outputs to the specified files.
     
@@ -49,6 +49,36 @@ def write_lattice(
     output_filename (str): The base name for the output files.
     header (str): The header for the output files.
     """
+
+    ########################################
+    # If it's not run through the converter, create config
+    ########################################
+    if config is None:
+        from ..config import Config
+        config  = Config()
+
+    ########################################
+    # If it's not a SAD2XS lattice, may not have right variables
+    ########################################
+    try:
+        line["p0c"]
+    except KeyError:
+        line["p0c"]     = line.particle_ref.p0c                 # type: ignore
+
+    try:
+        line["mass0"]
+    except KeyError:
+        line["mass0"]   = line.particle_ref.mass0               # type: ignore
+
+    try:
+        line["q0"]
+    except KeyError:
+        line["q0"]      = line.particle_ref.q0                  # type: ignore
+
+    try:
+        line["fshift"]
+    except KeyError:
+        line["fshift"]  = 0.0
 
     ########################################
     # Initialise the lattice file
@@ -78,7 +108,7 @@ env.vars.default_to_zero = True
 ########################################
 # Key Global Variables
 ########################################
-env["mass"]     = {line["mass0"]}
+env["mass0"]    = {line["mass0"]}
 env["p0c"]      = {line["p0c"]}
 env["q0"]       = {line["q0"]}
 env["fshift"]   = {line["fshift"]}
@@ -87,7 +117,7 @@ env["fshift"]   = {line["fshift"]}
 # Reference Particle
 ########################################
 env.particle_ref    = xt.Particles(
-    mass0   = env["mass"],
+    mass0   = env["mass0"],
     p0c     = env["p0c"],
     q0      = env["q0"])
 
@@ -207,9 +237,10 @@ env.particle_ref    = xt.Particles(
     ########################################
     # Offset Markers
     ########################################
-    lattice_file_string += create_offset_marker_lattice_file_information(
-        offset_marker_locations = offset_marker_locations,
-        config                  = config)
+    if offset_marker_locations is not None:
+        lattice_file_string += create_offset_marker_lattice_file_information(
+            offset_marker_locations = offset_marker_locations,
+            config                  = config)
 
     ########################################
     # Write to file

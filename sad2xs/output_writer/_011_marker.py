@@ -22,7 +22,7 @@ from ..types import ConfigLike
 def create_marker_lattice_file_information(
         line:                       xt.Line,
         line_table:                 xd.table.Table,
-        offset_marker_locations:    dict,
+        offset_marker_locations:    dict | None,
         config:                     ConfigLike) -> str:
 
     ########################################
@@ -38,17 +38,16 @@ def create_marker_lattice_file_information(
     ########################################
     # Get offset marker information
     ########################################
-    unique_offset_marker_names    = []
+    if offset_marker_locations is not None:
+        unique_offset_marker_names    = []
 
-    for marker in offset_marker_locations.keys():
-        parentname  = get_parentname(marker)
-        if parentname not in unique_offset_marker_names:
-            unique_offset_marker_names.append(parentname)
+        for marker in offset_marker_locations.keys():
+            parentname  = get_parentname(marker)
+            if parentname not in unique_offset_marker_names:
+                unique_offset_marker_names.append(parentname)
 
-    ########################################
-    # All markers
-    ########################################
-    unique_marker_names = sorted(list(set(unique_marker_names + unique_offset_marker_names)))
+        unique_marker_names = sorted(list(set(
+            unique_marker_names + unique_offset_marker_names)))
 
     ########################################
     # Ensure there are markers in the line

@@ -32,7 +32,7 @@ def write_optics(
         output_filename:            str,
         output_directory:           str,
         output_header:              str,
-        config:                     ConfigLike):
+        config:                     ConfigLike | None):
     """
     Write the outputs to the specified files.
     
@@ -41,6 +41,13 @@ def write_optics(
     output_filename (str): The base name for the output files.
     header (str): The header for the output files.
     """
+
+    ########################################
+    # If it's not run through the converter, create config
+    ########################################
+    if config is None:
+        from ..config import Config
+        config  = Config()
 
     ########################################
     # Initialise the lattice file

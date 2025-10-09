@@ -37,9 +37,9 @@ def create_offset_marker_lattice_file_information(
 ################################################################################
 
 ############################################################
-# Get circumference
+# Get length of the line
 ############################################################
-circumference   = line.get_length()
+length   = line.get_length()
 
 ############################################################
 # Offset marker locations
@@ -89,7 +89,7 @@ circumference   = line.get_length()
 marker_insertions   = []
 for marker, insert_at_s_values in MARKER_POSITIONS.items():
     for insert_at_s in insert_at_s_values:
-        if (circumference - insert_at_s) > {config.MARKER_INSERTION_TOLERANCE:.2E}:
+        if (length - insert_at_s) > {config.MARKER_INSERTION_TOLERANCE:.2E}:
             marker_insertions.append(
                 env.place(name = marker, at = insert_at_s))
         else:
