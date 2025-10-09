@@ -23,6 +23,7 @@ class ConfigLike(Protocol):
     _verbose:                       bool
     _test_mode:                     bool
     _replace_repeated_elements:     bool
+    _install_offset_markers:        bool
 
     ASCII_LOGO:                     str
 

@@ -82,8 +82,9 @@ length   = line.get_length()
     ########################################
     # Write installation section
     ########################################
-    output_string += f"""
-############################################################
+    if config._install_offset_markers:
+        output_string += f"""
+#########################################
 # Install Markers
 ############################################################
 marker_insertions   = []
@@ -103,15 +104,15 @@ except AssertionError as err:
 
 """
 
+        ########################################
+        # Replace repeated elements
+        ########################################
+        if config._replace_repeated_elements:
+            output_string += f"""
     ########################################
     # Replace repeated elements
     ########################################
-    if config._replace_repeated_elements:
-        output_string += f"""
-########################################
-# Replace repeated elements
-########################################
-line.replace_all_repeated_elements()"""
+    line.replace_all_repeated_elements()"""
 
     ########################################
     # Return
