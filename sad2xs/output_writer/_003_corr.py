@@ -254,7 +254,14 @@ def create_corrector_optics_file_information(
     for corr_variable in unique_corr_variables:
         k0 = None
 
-        k0  = line[corr_variable].k0
+        try:
+            k0  = line[corr_variable].k0
+        except KeyError:
+            try:
+                k0  = line[f"-{corr_variable}"].k0
+            except KeyError:
+                raise KeyError(f"Could not find bend variable {corr_variable} or -{corr_variable} in line.")
+
         if k0 == 0:
             k0 = None
 

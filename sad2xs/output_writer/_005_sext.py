@@ -163,10 +163,26 @@ def create_sextupole_optics_file_information(
         k2          = None
         k2s         = None
 
-        if line[sext].k2 != 0:
-            k2			= line[sext].k2
-        if line[sext].k2s != 0:
-            k2s			= line[sext].k2s
+        try:
+            k2  = line[sext].k2
+        except KeyError:
+            try:
+                k2  = line[f"-{sext}"].k2
+            except KeyError:
+                raise KeyError(f"Could not find sext variable {sext} or -{sext} in line.")
+            
+        try:
+            k2s     = line[sext].k2s
+        except KeyError:
+            try:
+                k2s = line[f"-{sext}"].k2s
+            except KeyError:
+                raise KeyError(f"Could not find sext variable {sext} or -{sext} in line.")
+            
+        if k2 == 0:
+            k2 = None
+        if k2s == 0:
+            k2s = None
 
         if k2 is not None:
             output_string += f"""

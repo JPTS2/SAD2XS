@@ -255,7 +255,14 @@ def create_bend_optics_file_information(
     for bend_variable in unique_bend_variables:
         k0 = None
 
-        k0  = line[bend_variable].k0
+        try:
+            k0  = line[bend_variable].k0
+        except KeyError:
+            try:
+                k0  = line[f"-{bend_variable}"].k0
+            except KeyError:
+                raise KeyError(f"Could not find bend variable {bend_variable} or -{bend_variable} in line.")
+
         if k0 == 0:
             k0 = None
 
