@@ -101,11 +101,17 @@ except AssertionError as err:
     print(err)
     pass
 
-########################################
-# Replace repeated elements (again, to account for new markers)
-########################################
-line.replace_all_repeated_elements()    
 """
+
+    ########################################
+    # Replace repeated elements
+    ########################################
+    if config._replace_repeated_elements:
+        output_string += f"""
+########################################
+# Replace repeated elements
+########################################
+line.replace_all_repeated_elements()"""
 
     ########################################
     # Return

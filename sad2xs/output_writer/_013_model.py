@@ -17,7 +17,7 @@ from ..types import ConfigLike
 ################################################################################
 def create_model_lattice_file_information(config: ConfigLike) -> str:
 
-    output_string = f'''
+    output_string = f"""
 ################################################################################
 # Configure Modelling
 ################################################################################
@@ -74,11 +74,17 @@ line.set(
 # Set bend edges
 ########################################
 line.configure_bend_model(edge = "{config.EDGE_MODEL_BEND}")
+"""
 
+    ########################################
+    # Replace repeated elements
+    ########################################
+    if config._replace_repeated_elements:
+        output_string += f"""
 ########################################
 # Replace repeated elements
 ########################################
-line.replace_all_repeated_elements()'''
+line.replace_all_repeated_elements()"""
 
     ########################################
     # Return

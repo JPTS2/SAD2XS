@@ -25,6 +25,7 @@ class Config:
     ############################################################################
     _verbose:                       bool            = True
     _test_mode:                     bool            = False
+    _replace_repeated_elements:     bool            = True
 
     ############################################################################
     # Constants
