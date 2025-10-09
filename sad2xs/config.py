@@ -102,7 +102,7 @@ class Config:
     ########################################
     # KNL, KSL array order
     ########################################
-    MAX_KNL_ORDER:                  int             = 25
+    MAX_KNL_ORDER:                  int             = 21
     KNL_ZERO_TOL:                   float           = 1E-12
 
     ########################################
@@ -151,4 +151,4 @@ class Config:
     ########################################
     # Marker Insertion Tolerance
     ########################################
-    MARKER_INSERTION_TOLERANCE:     float       = 1E-9
+    MARKER_INSERTION_TOLERANCE:     float           = 1E-9
