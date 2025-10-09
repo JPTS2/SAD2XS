@@ -285,10 +285,9 @@ def convert_sad_to_xsuite(
     ############################################################################
     # Breakpoint for testing
     ############################################################################
-    if config._verbose:
-        print_section_heading("Converter Breakpoint: Test mode active", mode = 'section')
-
     if config._test_mode:
+        if config._verbose:
+            print_section_heading("Converter Breakpoint: Test mode active", mode = 'section')
         return line
 
     ############################################################################
