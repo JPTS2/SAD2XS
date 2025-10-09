@@ -1,7 +1,9 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Solenoid Converter
+(Unofficial) SAD to XSuite Converter: Solenoid Converter
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
@@ -12,7 +14,8 @@ import xtrack as xt
 
 from tqdm import tqdm
 
-from .._globals import print_section_heading, MAX_KNL_ORDER, N_MULTIPOLE_KICKS_SOL
+from ..types import ConfigLike
+from ..helpers import print_section_heading
 
 ################################################################################
 # Conversion Function
@@ -20,7 +23,7 @@ from .._globals import print_section_heading, MAX_KNL_ORDER, N_MULTIPOLE_KICKS_S
 def convert_solenoids(
         parsed_lattice_data:    dict,
         environment:            xt.Environment,
-        verbose:                bool                = False) -> None:
+        config:                 ConfigLike) -> None:
 
     ########################################
     # Get the required data
@@ -31,7 +34,7 @@ def convert_solenoids(
     # Check if there are any solenoids
     ########################################
     if 'sol' not in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("No solenoids in line", mode = 'subsection')
         return
     else:
@@ -237,7 +240,7 @@ def convert_solenoids(
                             ks      = ks)
                     line.element_names[idx] = new_element_name
 
-                    if verbose:
+                    if config._verbose:
                         print(f"Converted drift {element} to solenoid {new_element_name} with ks = {ks}")
                     continue
 
@@ -263,14 +266,13 @@ def convert_solenoids(
                             length				= length,
                             ks					= ks,
                             knl					= knl,
-                            num_multipole_kicks	= N_MULTIPOLE_KICKS_SOL,
-                            order				= MAX_KNL_ORDER,
+                            order				= config.MAX_KNL_ORDER,
                             mult_shift_x		= shift_x,
                             mult_shift_y		= shift_y,
                             rot_s_rad           = rotation)
                     line.element_names[idx] = new_element_name
 
-                    if verbose:
+                    if config._verbose:
                         print(f"Converted Bend {element} to solenoid {new_element_name} with ks = {ks}")
                     continue
                     
@@ -296,14 +298,13 @@ def convert_solenoids(
                             ks					= ks,
                             knl					= knl,
                             ksl					= ksl,
-                            num_multipole_kicks	= N_MULTIPOLE_KICKS_SOL,
-                            order				= MAX_KNL_ORDER,
+                            order				= config.MAX_KNL_ORDER,
                             mult_shift_x		= shift_x,
                             mult_shift_y		= shift_y,
                             rot_s_rad           = rotation)
                     line.element_names[idx] = new_element_name
 
-                    if verbose:
+                    if config._verbose:
                         print(f"Converted Quadrupole {element} to solenoid {new_element_name} with ks = {ks}")
                     continue
                     
@@ -329,14 +330,13 @@ def convert_solenoids(
                             ks					= ks,
                             knl					= knl,
                             ksl					= ksl,
-                            num_multipole_kicks	= N_MULTIPOLE_KICKS_SOL,
-                            order				= MAX_KNL_ORDER,
+                            order				= config.MAX_KNL_ORDER,
                             mult_shift_x		= shift_x,
                             mult_shift_y		= shift_y,
                             rot_s_rad           = rotation)
                     line.element_names[idx] = new_element_name
 
-                    if verbose:
+                    if config._verbose:
                         print(f"Converted Sextupole {element} to solenoid {new_element_name} with ks = {ks}")
                     continue
 
@@ -362,14 +362,13 @@ def convert_solenoids(
                             ks					= ks,
                             knl					= knl,
                             ksl					= ksl,
-                            num_multipole_kicks	= N_MULTIPOLE_KICKS_SOL,
-                            order				= MAX_KNL_ORDER,
+                            order				= config.MAX_KNL_ORDER,
                             mult_shift_x		= shift_x,
                             mult_shift_y		= shift_y,
                             rot_s_rad           = rotation)
                     line.element_names[idx] = new_element_name
 
-                    if verbose:
+                    if config._verbose:
                         print(f"Converted Octupole {element} to solenoid {new_element_name} with ks = {ks}")
                     continue
 
@@ -391,13 +390,12 @@ def convert_solenoids(
                         ks					= ks,
                         knl					= knl,
                         ksl					= ksl,
-                        num_multipole_kicks	= N_MULTIPOLE_KICKS_SOL,
-                        order				= MAX_KNL_ORDER,
+                        order				= config.MAX_KNL_ORDER,
                         mult_shift_x		= shift_x,
                         mult_shift_y		= shift_y,
                         rot_s_rad           = rotation)
 
-                    if verbose:
+                    if config._verbose:
                         print(f"Converted Multipole {element} to solenoid with ks = {ks}")
                     continue
 
@@ -419,13 +417,12 @@ def convert_solenoids(
                         ks					= ks,
                         knl					= knl,
                         ksl					= ksl,
-                        num_multipole_kicks	= N_MULTIPOLE_KICKS_SOL,
-                        order               = MAX_KNL_ORDER,
+                        order               = config.MAX_KNL_ORDER,
                         mult_shift_x		= shift_x,
                         mult_shift_y		= shift_y,
                         rot_s_rad           = rotation)
 
-                    if verbose:
+                    if config._verbose:
                         print(f"Converted Multipole {element} to solenoid with ks = {ks}")
                     continue
                 
@@ -441,7 +438,7 @@ def convert_solenoids(
                         xt.LimitEllipse)):  
                     # Known elements that don't need conversion
                     continue
-                elif verbose:
+                elif config._verbose:
                     print(f"Element {element} in line {line_name} has not been converted")
 
 ###############################################################################
@@ -451,8 +448,8 @@ def solenoid_reference_shift_corrections(
         line:                   xt.Line,
         parsed_lattice_data:    dict,
         environment:            xt.Environment,
-        reverse_line:           bool                = False,
-        verbose:                bool                = False) -> None:
+        reverse_line:           bool,
+        config:                 ConfigLike) -> None:
 
     ########################################
     # Get the required data
@@ -463,7 +460,7 @@ def solenoid_reference_shift_corrections(
     # Check if there are any solenoids
     ########################################
     if 'sol' not in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("No solenoids in line", mode = 'subsection')
         return
     else:
@@ -576,7 +573,7 @@ def solenoid_reference_shift_corrections(
     geometric_solenoids     = sorted(geometric_solenoids)
     non_geometric_solenoids = sorted(non_geometric_solenoids)
 
-    if verbose:
+    if config._verbose:
         print_section_heading("Reference Shift Solenoids:", mode = 'subsection')
         print(f"Inbound solenoids with ref transforms: {inbound_solenoids}")
         print(f"Outbound solenoids with ref transforms: {outbound_solenoids}")
@@ -681,7 +678,7 @@ def solenoid_reference_shift_corrections(
     outbound_nongeo_reverse_forward_solenoids   = list(set(outbound_nongeo_reverse_forward_solenoids))
     outbound_nongeo_reverse_reverse_solenoids   = list(set(outbound_nongeo_reverse_reverse_solenoids))
 
-    if verbose:
+    if config._verbose:
         print(f"inbound_geo_forward_forward_solenoids     = {inbound_geo_forward_forward_solenoids}")
         print(f"inbound_geo_forward_reverse_solenoids     = {inbound_geo_forward_reverse_solenoids}")
         print(f"inbound_geo_reverse_forward_solenoids     = {inbound_geo_reverse_forward_solenoids}")

@@ -1,25 +1,34 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Output Writer: Line
+(Unofficial) SAD to XSuite Converter: Output Writer - Line
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
+import xtrack as xt
+import xdeps as xd
 import textwrap
+
 from ._000_helpers import *
+from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
-def create_line_lattice_file_information(line, line_table):
+def create_line_lattice_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
 
     ########################################
     # Get allowed elements
     ########################################
     valid_elements  = line_table.rows[
-        np.isin(line_table.element_type, ALLOWED_ELEMENTS)]
+        np.isin(line_table.element_type, list(config.ALLOWED_ELEMENTS))]
 
     ########################################
     # Get parent names
@@ -47,7 +56,7 @@ env.new_line(
     components  = [
 {textwrap.fill(
     text                = line_string,
-    width               = OUTPUT_STRING_LENGTH,
+    width               = config.OUTPUT_STRING_LENGTH,
     initial_indent      = '        ',
     subsequent_indent   = '        ',
     break_on_hyphens    = False)}])"""

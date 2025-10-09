@@ -1,18 +1,28 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Output Writer: Sextupoles
+(Unofficial) SAD to XSuite Converter: Output Writer - Sextupoles
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
+import xtrack as xt
+import xdeps as xd
+import textwrap
+
 from ._000_helpers import *
+from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
-def create_sextupole_lattice_file_information(line, line_table):
+def create_sextupole_lattice_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
 
     ########################################
     # Get information
@@ -122,7 +132,10 @@ env.new(
 ################################################################################
 # Optics File
 ################################################################################
-def create_sextupole_optics_file_information(line, line_table):
+def create_sextupole_optics_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
 
     ########################################
     # Get information
@@ -157,10 +170,10 @@ def create_sextupole_optics_file_information(line, line_table):
 
         if k2 is not None:
             output_string += f"""
-    {f'k2_{sext}'}{' ' * (OUTPUT_STRING_SEP - len(f'k2_{sext}') + 4)}{'= '}{k2:.12f},"""
+    {f'k2_{sext}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k2_{sext}') + 4)}{'= '}{k2:.12f},"""
         if k2s is not None:
             output_string += f"""
-    {f'k2s_{sext}'}{' ' * (OUTPUT_STRING_SEP - len(f'k2s_{sext}') + 4)}{'= '}{k2s:.12f},"""
+    {f'k2s_{sext}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k2s_{sext}') + 4)}{'= '}{k2s:.12f},"""
 
     ########################################
     # Return

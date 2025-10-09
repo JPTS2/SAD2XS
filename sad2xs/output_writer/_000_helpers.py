@@ -1,12 +1,15 @@
 """
-(Unofficial) SAD to XSuite Converter
+(Unofficial) SAD to XSuite Converter: Output Writer Helpers
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
 import numpy as np
-from .._globals import *
 
 ################################################################################
 # Naming

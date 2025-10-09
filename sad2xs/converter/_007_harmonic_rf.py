@@ -1,7 +1,9 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-User Specified Element Exclusion
+(Unofficial) SAD to XSuite Converter: Harmonic RF Converter
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
@@ -9,7 +11,8 @@ User Specified Element Exclusion
 ################################################################################
 from scipy.constants import c as clight
 
-from .._globals import print_section_heading
+from ..types import ConfigLike
+from ..helpers import print_section_heading
 
 ################################################################################
 # Exclude particular elements
@@ -17,12 +20,12 @@ from .._globals import print_section_heading
 def convert_harmonic_rf(
         line,
         parsed_lattice_data:    dict,
-        verbose:                bool                = False) -> dict:
+        config:                 ConfigLike):
     
     ########################################
     # Check if the RF uses Harmonic Number
     ########################################
-    if verbose:
+    if config._verbose:
         print_section_heading("Checking for RF using Harmonic Number", mode = 'subsection')
 
     has_cavities = 'cavi' in parsed_lattice_data["elements"]
@@ -58,7 +61,7 @@ def convert_harmonic_rf(
             harmonic_number    = properties['harm']
             frequency          = harmonic_number * f_rev
 
-            if verbose:
+            if config._verbose:
                 print(f"Converting cavity {cavity} with harmonic number {harmonic_number} to frequency {frequency:.3f} Hz")
 
             # Update in the line

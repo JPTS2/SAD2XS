@@ -1,19 +1,28 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Output Writer: Solenoids
+(Unofficial) SAD to XSuite Converter: Output Writer - Solenoids
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
+import xtrack as xt
+import xdeps as xd
 import textwrap
+
 from ._000_helpers import *
+from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
-def create_solenoid_lattice_file_information(line, line_table):
+def create_solenoid_lattice_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
 
     ########################################
     # Get information
@@ -55,8 +64,7 @@ env.new(
     name                = '{sol_name}',
     parent              = xt.Solenoid,
     length              = {sol_length},
-    order               = {MAX_KNL_ORDER},
-    num_multipole_kicks = {N_MULTIPOLE_KICKS_SOL})"""
+    order               = {config.MAX_KNL_ORDER})"""
 
     output_string += "\n"
 
@@ -91,10 +99,10 @@ env.new(
     ks          = {ks}"""
             if knl != "[]":
                 sol_generation += f""",
-{textwrap.fill(f'knl                 = {knl}', width = OUTPUT_STRING_LENGTH)}"""
+{textwrap.fill(f'knl                 = {knl}', width = config.OUTPUT_STRING_LENGTH)}"""
             if ksl != "[]":
                 sol_generation += f""",
-{textwrap.fill(f'ksl                 = {ksl}', width = OUTPUT_STRING_LENGTH)}"""
+{textwrap.fill(f'ksl                 = {ksl}', width = config.OUTPUT_STRING_LENGTH)}"""
 
             # Misalignments
             if shift_x != 0:

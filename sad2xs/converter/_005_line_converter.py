@@ -1,13 +1,18 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Line Converter
+(Unofficial) SAD to XSuite Converter: Line Converter
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Required Packages
 ################################################################################
 import xtrack as xt
+
+from ..types import ConfigLike
+from ..helpers import print_section_heading
 
 ################################################################################
 # Component Reversal

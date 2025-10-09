@@ -1,7 +1,9 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-SAD Lattice Text File Parser
+(Unofficial) SAD to XSuite Converter: SAD File Parser
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
@@ -10,7 +12,8 @@ SAD Lattice Text File Parser
 import xtrack as xt
 import numpy as np
 
-from .._globals import print_section_heading, SAD_ALLOWED_ELEMENTS
+from ..types import ConfigLike
+from ..helpers import print_section_heading
 
 ################################################################################
 # Electron Volt Conversion
@@ -91,10 +94,7 @@ def load_and_clean_whitespace(
 ################################################################################
 def parse_sad_file(
         sad_lattice_path:       str,
-        ref_particle_mass0:     float | None        = None,
-        ref_particle_q0:        float | None        = None,
-        ref_particle_p0c:       float | None        = None,
-        verbose:                bool                = False) -> dict:
+        config:                 ConfigLike) -> dict:
     """
     Parse lattice definitions from SAD
     Convert a particle accelerator lattice defined in Stratgeic Accelerator 
@@ -124,7 +124,7 @@ def parse_sad_file(
     ############################################################################
     # Load lattice and clean whitespace
     ############################################################################
-    if verbose:
+    if config._verbose:
         print_section_heading('Loading and Cleaning SAD File', mode = 'subsection')
     
     sad_sections = load_and_clean_whitespace(sad_lattice_path)
@@ -132,7 +132,7 @@ def parse_sad_file(
     ############################################################################
     # Clean each different section of the file
     ############################################################################
-    if verbose:
+    if config._verbose:
         print_section_heading('Cleaning Element Sections', mode = 'subsection')
 
     for section in sad_sections:
@@ -193,7 +193,7 @@ def parse_sad_file(
     ############################################################################
     # Global Variables
     ############################################################################
-    if verbose:
+    if config._verbose:
         print_section_heading('Parsing Global Variables', mode = 'subsection')
 
     for section in parsed_sections[:]:
@@ -213,7 +213,7 @@ def parse_sad_file(
 
             momentum    = ev_text_to_float(momentum)
 
-            cleaned_globals['momentum'] = momentum
+            cleaned_globals['p0c'] = momentum
 
             parsed_sections.remove(section)
             continue
@@ -232,7 +232,7 @@ def parse_sad_file(
 
             mass    = ev_text_to_float(mass)
 
-            cleaned_globals['mass'] = mass
+            cleaned_globals['mass0'] = mass
 
             parsed_sections.remove(section)
             continue
@@ -251,7 +251,7 @@ def parse_sad_file(
 
             charge  = ev_text_to_float(charge)
 
-            cleaned_globals['charge'] = charge
+            cleaned_globals['q0'] = charge
 
             parsed_sections.remove(section)
             continue
@@ -278,7 +278,7 @@ def parse_sad_file(
     ############################################################################
     # Lines
     ############################################################################
-    if verbose:
+    if config._verbose:
         print_section_heading('Parsing Lines', mode = 'subsection')
 
     for section in parsed_sections[:]:
@@ -323,13 +323,13 @@ def parse_sad_file(
     ############################################################################
     # Elements
     ############################################################################
-    if verbose:
+    if config._verbose:
         print_section_heading('Parsing Elements', mode = 'subsection')
 
     for section in parsed_sections[:]:
         section_command = section.split()[0]
 
-        if section_command in SAD_ALLOWED_ELEMENTS:
+        if section_command in config.SAD_ALLOWED_ELEMENTS:
             section_dict    = {}
 
             ########################################
@@ -428,7 +428,7 @@ def parse_sad_file(
     ############################################################################
     # Deferred expressions
     ############################################################################
-    if verbose:
+    if config._verbose:
         print_section_heading('Parsing Deferred Expressions', mode = 'subsection')
 
     for section in parsed_sections[:]:
@@ -438,7 +438,7 @@ def parse_sad_file(
         # If no equals sign, skip the section
         ########################################
         if '=' not in section:
-            if verbose:
+            if config._verbose:
                 print('Unknown Section Includes the following information:')
                 print(section)
 
@@ -490,47 +490,47 @@ def parse_sad_file(
     ############################################################################
     # Address missing momentum and mass and charge
     ############################################################################
-    if 'mass' not in cleaned_globals and ref_particle_mass0 is None:
-        cleaned_globals['mass'] = xt.ELECTRON_MASS_EV
-        if verbose:
+    if 'mass0' not in cleaned_globals and config.ref_particle_mass0 is None:
+        cleaned_globals['mass0'] = xt.ELECTRON_MASS_EV
+        if config._verbose:
             print('Notice! No mass found in SAD file or function input: Using electron mass')
-    if 'mass' not in cleaned_globals:
-        cleaned_globals['mass'] = ref_particle_mass0
-        if verbose:
+    if 'mass0' not in cleaned_globals:
+        cleaned_globals['mass0'] = config.ref_particle_mass0
+        if config._verbose:
             print('Notice! No mass found in SAD file: Using user provided value')
-    elif 'mass' in cleaned_globals and ref_particle_mass0 is not None:
-        cleaned_globals['mass'] = ref_particle_mass0
-        if verbose:
+    elif 'mass0' in cleaned_globals and config.ref_particle_mass0 is not None:
+        cleaned_globals['mass0'] = config.ref_particle_mass0
+        if config._verbose:
             print('Warning! Mass found in SAD file and function input: Using user provided value')
 
-    if 'momentum' not in cleaned_globals and ref_particle_p0c is None:
+    if 'p0c' not in cleaned_globals and config.ref_particle_p0c is None:
         # TODO: From SAD find what the nominal value is
         raise ValueError('Notice! No momentum found in SAD file or function input')
-    if 'momentum' not in cleaned_globals:
-        cleaned_globals['momentum'] = ref_particle_p0c
-        if verbose:
+    if 'p0c' not in cleaned_globals:
+        cleaned_globals['p0c'] = config.ref_particle_p0c
+        if config._verbose:
             print('Notice! No momentum found in SAD file: Using user provided value')
-    elif 'momentum' in cleaned_globals and ref_particle_p0c is not None:
-        cleaned_globals['momentum'] = ref_particle_p0c
-        if verbose:
+    elif 'p0c' in cleaned_globals and config.ref_particle_p0c is not None:
+        cleaned_globals['p0c'] = config.ref_particle_p0c
+        if config._verbose:
             print('Warning! Momentum found in SAD file and function input: Using user provided value')
 
-    if 'charge' not in cleaned_globals and ref_particle_q0 is None:
-        cleaned_globals['charge']   = +1
-        if verbose:
+    if 'q0' not in cleaned_globals and config.ref_particle_q0 is None:
+        cleaned_globals['q0']   = +1
+        if config._verbose:
             print('Notice! No charge found in SAD file or function input: Using charge of +e')
-    if 'charge' not in cleaned_globals:
-        cleaned_globals['charge'] = ref_particle_q0
-        if verbose:
+    if 'q0' not in cleaned_globals:
+        cleaned_globals['q0'] = config.ref_particle_q0
+        if config._verbose:
             print('Notice! No charge found in SAD file: Using user provided value')
-    elif 'charge' in cleaned_globals and ref_particle_q0 is not None:
-        cleaned_globals['charge'] = ref_particle_q0
-        if verbose:
+    elif 'q0' in cleaned_globals and config.ref_particle_q0 is not None:
+        cleaned_globals['q0'] = config.ref_particle_q0
+        if config._verbose:
             print('Warning! Charge found in SAD file and function input: Using user provided value')
 
     if 'fshift' not in cleaned_globals:
         cleaned_globals['fshift']   = 0.0
-        if verbose:
+        if config._verbose:
             print('Notice! No fshift found in SAD file or function input: Using fshift of 0.0')
 
     ############################################################################

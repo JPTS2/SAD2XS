@@ -1,29 +1,32 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-User Specified Element Exclusion
+(Unofficial) SAD to XSuite Converter: User Defined Element Exclusion
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Required Packages
 ################################################################################
-from .._globals import print_section_heading
+from ..types import ConfigLike
+from ..helpers import print_section_heading
 
 ################################################################################
 # Exclude particular elements
 ################################################################################
 def exclude_elements(
         parsed_lattice_data:    dict,
-        excluded_elements:      list[str] | None    = None,
-        verbose:                bool                = False) -> dict:
+        excluded_elements:      list[str] | None,
+        config:                 ConfigLike) -> dict:
     
     ########################################
     # Check if there are excluded elements
     ########################################
-    if verbose:
+    if config._verbose:
         print_section_heading("Checking for Excluded Elements", mode = 'subsection')
     if excluded_elements is None or len(excluded_elements) == 0:
-        if verbose:
+        if config._verbose:
             print("No excluded elements found. Skipping exclusion.")
         return parsed_lattice_data
     
@@ -49,7 +52,7 @@ def exclude_elements(
         for element in list(elems_dict.keys()):
             if element in excluded_elements:
                 del elems_dict[element]
-                if verbose:
+                if config._verbose:
                     print(f"Element {element} excluded from conversion")
 
     ########################################

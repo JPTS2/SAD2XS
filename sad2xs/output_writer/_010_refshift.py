@@ -1,18 +1,28 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Output Writer: Reference Shifts
+(Unofficial) SAD to XSuite Converter: Output Writer - Reference Shifts
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
+import xtrack as xt
+import xdeps as xd
+import textwrap
+
 from ._000_helpers import *
+from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
-def create_refshift_lattice_file_information(line, line_table):
+def create_refshift_lattice_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
 
     ########################################
     # Get information
@@ -181,7 +191,10 @@ env.new(
 ################################################################################
 # Optics File
 ################################################################################
-def create_refshift_optics_file_information(line, line_table):
+def create_refshift_optics_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
 
     ########################################
     # Get information
@@ -282,10 +295,10 @@ def create_refshift_optics_file_information(line, line_table):
             
             if dx != 0:
                 output_string += f"""
-    {f'dx_{xyshift_variable_name}'}{' ' * (OUTPUT_STRING_SEP - len(f'dx_{xyshift_variable_name}') + 4)}{'= '}{dx:.12f},"""
+    {f'dx_{xyshift_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dx_{xyshift_variable_name}') + 4)}{'= '}{dx:.12f},"""
             if dy != 0:
                 output_string += f"""
-    {f'dy_{xyshift_variable_name}'}{' ' * (OUTPUT_STRING_SEP - len(f'dy_{xyshift_variable_name}') + 4)}{'= '}{dy:.12f},"""
+    {f'dy_{xyshift_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dy_{xyshift_variable_name}') + 4)}{'= '}{dy:.12f},"""
 
         output_string += "\n"
 
@@ -304,7 +317,7 @@ def create_refshift_optics_file_information(line, line_table):
             
             if dz != 0:
                 output_string += f"""
-    {f'dz_{zetashift_variable_name}'}{' ' * (OUTPUT_STRING_SEP - len(f'dz_{zetashift_variable_name}') + 4)}{'= '}{dz:.12f},"""
+    {f'dz_{zetashift_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dz_{zetashift_variable_name}') + 4)}{'= '}{dz:.12f},"""
 
         output_string += "\n"
 
@@ -323,7 +336,7 @@ def create_refshift_optics_file_information(line, line_table):
 
             if chi1 != 0:
                 output_string += f"""
-    {f'chi1_{yrotation_variable_name}'}{' ' * (OUTPUT_STRING_SEP - len(f'chi1_{yrotation_variable_name}') + 4)}{'= '}{chi1:.12f},"""
+    {f'chi1_{yrotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi1_{yrotation_variable_name}') + 4)}{'= '}{chi1:.12f},"""
 
         output_string += "\n"
 
@@ -342,7 +355,7 @@ def create_refshift_optics_file_information(line, line_table):
 
             if chi2 != 0:
                 output_string += f"""
-    {f'chi2_{xrotation_variable_name}'}{' ' * (OUTPUT_STRING_SEP - len(f'chi2_{xrotation_variable_name}') + 4)}{'= '}{chi2:.12f},"""
+    {f'chi2_{xrotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi2_{xrotation_variable_name}') + 4)}{'= '}{chi2:.12f},"""
 
         output_string += "\n"
 
@@ -361,7 +374,7 @@ def create_refshift_optics_file_information(line, line_table):
 
             if chi3 != 0:
                 output_string += f"""
-    {f'chi3_{srotation_variable_name}'}{' ' * (OUTPUT_STRING_SEP - len(f'chi3_{srotation_variable_name}') + 4)}{'= '}{chi3:.12f},"""
+    {f'chi3_{srotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi3_{srotation_variable_name}') + 4)}{'= '}{chi3:.12f},"""
 
     ########################################
     # Return

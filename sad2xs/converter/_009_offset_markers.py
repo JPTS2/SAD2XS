@@ -1,7 +1,9 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Marker Converter
+(Unofficial) SAD to XSuite Converter: Offset Marker Converter
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################

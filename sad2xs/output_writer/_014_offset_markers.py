@@ -1,19 +1,26 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Output Writer: Model
+(Unofficial) SAD to XSuite Converter: Output Writer - Offset Markers
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
+import xtrack as xt
 import textwrap
+
 from ._000_helpers import *
+from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
-def create_offset_marker_lattice_file_information(offset_marker_locations):
+def create_offset_marker_lattice_file_information(
+        offset_marker_locations:    dict,
+        config:                     ConfigLike) -> str:
 
     ########################################
     # Ensure there are offset markers in the line
@@ -49,13 +56,13 @@ circumference   = line.get_length()
 
         offset_marker           = get_parentname(offset_marker)
         insert_s_values_string  = "[" + ", ".join([f"{s:.12f}" for s in insert_at_s_values]) + "]"
-        insertion_string        = f"""'{offset_marker}':{' ' * (OUTPUT_STRING_SEP - len(offset_marker) + 4)}{insert_s_values_string}"""
+        insertion_string        = f"""'{offset_marker}':{' ' * (config.OUTPUT_STRING_SEP - len(offset_marker) + 4)}{insert_s_values_string}"""
 
         if i == 0:
             output_string += f"""
 {textwrap.fill(
     text                = insertion_string,
-    width               = OUTPUT_STRING_LENGTH,
+    width               = config.OUTPUT_STRING_LENGTH,
     initial_indent      = '    ',
     subsequent_indent   = '        ',
     break_on_hyphens    = False)}"""
@@ -63,7 +70,7 @@ circumference   = line.get_length()
             output_string += f""",
 {textwrap.fill(
     text                = insertion_string,
-    width               = OUTPUT_STRING_LENGTH,
+    width               = config.OUTPUT_STRING_LENGTH,
     initial_indent      = '    ',
     subsequent_indent   = '        ',
     break_on_hyphens    = False)}"""
@@ -82,13 +89,13 @@ circumference   = line.get_length()
 marker_insertions   = []
 for marker, insert_at_s_values in MARKER_POSITIONS.items():
     for insert_at_s in insert_at_s_values:
-        if (circumference - insert_at_s) > {MARKER_INSERTION_TOLERANCE:.2E}:
+        if (circumference - insert_at_s) > {config.MARKER_INSERTION_TOLERANCE:.2E}:
             marker_insertions.append(
                 env.place(name = marker, at = insert_at_s))
         else:
             line.append_element(name = marker)
 try:
-    line.insert(marker_insertions, s_tol = {MARKER_INSERTION_TOLERANCE:.2E})
+    line.insert(marker_insertions, s_tol = {config.MARKER_INSERTION_TOLERANCE:.2E})
 except AssertionError as err:
     print("Couldn't insert all the markers. Usually this is because of negative drifts")
     print(err)

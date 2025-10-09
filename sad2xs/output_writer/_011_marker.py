@@ -1,19 +1,29 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Output Writer: Markers
+(Unofficial) SAD to XSuite Converter: Output Writer - Markers
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
+import xtrack as xt
+import xdeps as xd
 import textwrap
+
 from ._000_helpers import *
+from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
-def create_marker_lattice_file_information(line, line_table, offset_marker_locations):
+def create_marker_lattice_file_information(
+        line:                       xt.Line,
+        line_table:                 xd.table.Table,
+        offset_marker_locations:    dict,
+        config:                     ConfigLike) -> str:
 
     ########################################
     # Get normal marker information
@@ -61,7 +71,7 @@ def create_marker_lattice_file_information(line, line_table, offset_marker_locat
 ALL_MARKERS = [
 {textwrap.fill(
         text                = str(unique_marker_names)[1:-1],
-        width               = OUTPUT_STRING_LENGTH,
+        width               = config.OUTPUT_STRING_LENGTH,
         initial_indent      = '    ',
         subsequent_indent   = '    ',
         break_on_hyphens    = False)}]

@@ -1,7 +1,9 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Reversal
+(Unofficial) SAD to XSuite Converter: Line Reversals
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################

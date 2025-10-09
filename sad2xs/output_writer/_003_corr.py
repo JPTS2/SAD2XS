@@ -1,18 +1,29 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Output Writer: Correctors
+(Unofficial) SAD to XSuite Converter: Output Writer - Correctors
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
+import xtrack as xt
+import xdeps as xd
+import textwrap
+
 from ._000_helpers import *
+from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
-def create_corrector_lattice_file_information(line, line_table):
+def create_corrector_lattice_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
+
 
     ########################################
     # Get information
@@ -211,7 +222,10 @@ env.new(
 ################################################################################
 # Optics File
 ################################################################################
-def create_corrector_optics_file_information(line, line_table):
+def create_corrector_optics_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:    
 
     ########################################
     # Get information
@@ -246,7 +260,7 @@ def create_corrector_optics_file_information(line, line_table):
 
         if k0 is not None:
             output_string += f"""
-    {f'k0_{corr_variable}'}{' ' * (OUTPUT_STRING_SEP - len(f'k0_{corr_variable}') + 4)}{'= '}{k0:.12f},"""
+    {f'k0_{corr_variable}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k0_{corr_variable}') + 4)}{'= '}{k0:.12f},"""
 
     ########################################
     # Return

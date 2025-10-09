@@ -1,18 +1,28 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Output Writer: Cavities
+(Unofficial) SAD to XSuite Converter: Output Writer - Cavities
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
+import xtrack as xt
+import xdeps as xd
+import textwrap
+
 from ._000_helpers import *
+from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
-def create_cavity_lattice_file_information(line, line_table):
+def create_cavity_lattice_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
 
     ########################################
     # Get information
@@ -80,7 +90,10 @@ env.new(
 ################################################################################
 # Optics File
 ################################################################################
-def create_cavity_optics_file_information(line, line_table):
+def create_cavity_optics_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
 
     ########################################
     # Get information
@@ -122,11 +135,11 @@ def create_cavity_optics_file_information(line, line_table):
         lag     = line[cavi].lag
 
         output_string += f"""
-    {f'freq_{variable_name}'}{' ' * (OUTPUT_STRING_SEP - len(f'freq_{variable_name}') + 4)}{'= '}{freq:.12f},"""
+    {f'freq_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'freq_{variable_name}') + 4)}{'= '}{freq:.12f},"""
         output_string += f"""
-    {f'volt_{variable_name}'}{' ' * (OUTPUT_STRING_SEP - len(f'volt_{variable_name}') + 4)}{'= '}{volt:.12f},"""
+    {f'volt_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'volt_{variable_name}') + 4)}{'= '}{volt:.12f},"""
         output_string += f"""
-    {f'lag_{variable_name}'}{' ' * (OUTPUT_STRING_SEP - len(f'lag_{variable_name}') + 4)}{'= '}{lag:.12f},"""
+    {f'lag_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'lag_{variable_name}') + 4)}{'= '}{lag:.12f},"""
 
     ########################################
     # Return
