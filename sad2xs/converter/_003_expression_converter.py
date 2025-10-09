@@ -1,7 +1,9 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Global and Deferred Expression Converter
+(Unofficial) SAD to XSuite Converter: Expression Converter
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
@@ -9,7 +11,8 @@ Global and Deferred Expression Converter
 ################################################################################
 import xtrack as xt
 
-from .._globals import print_section_heading
+from ..types import ConfigLike
+from ..helpers import print_section_heading
 
 ################################################################################
 # Parsing of strings and floats
@@ -37,7 +40,7 @@ def parse_expression(expression):
 def convert_expressions(
         parsed_lattice_data:    dict,
         environment:            xt.Environment,
-        verbose:                bool                = False) -> None:
+        config:                 ConfigLike) -> None:
 
     ########################################
     # Get the required data
@@ -48,7 +51,7 @@ def convert_expressions(
     ########################################
     # Create global variables
     ########################################
-    if verbose:
+    if config._verbose:
         print_section_heading("Converting Global Variable Expressions", mode = 'subsection')
 
     # Variables may depend on other variables, so have to parse them in order
@@ -73,7 +76,7 @@ def convert_expressions(
     ########################################
     # Create expressions
     ########################################
-    if verbose:
+    if config._verbose:
         print_section_heading("Converting Deferred Expressions", mode = 'subsection')
 
     # Variables may depend on other variables, so have to parse them in order

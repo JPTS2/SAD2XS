@@ -1,20 +1,22 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Element Converter
+(Unofficial) SAD to XSuite Converter: Element Converter
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Required Packages
 ################################################################################
-from tabnanny import verbose
 import xtrack as xt
 import numpy as np
 
 from scipy.constants import c as clight
 from scipy.constants import e as qe
 
-from .._globals import print_section_heading, COORD_SIGNS, TRANSFORM_SHIFT_TOL, TRANSFORM_ROT_TOL, MAX_KNL_ORDER
+from ..types import ConfigLike
+from ..helpers import print_section_heading
 
 ################################################################################
 # RAD2DEG Constant
@@ -49,7 +51,7 @@ def only_index_nonzero(
     knl:    list,
     ksl:    list,
     idx:    int,
-    tol:    float = 1E-12) -> bool:
+    tol:    float) -> bool:
     """
     Check that:
       1. length != 0 (within tol)
@@ -149,122 +151,150 @@ def get_element_misalignments(ele_vars, rotation_correction = 0.0):
 def convert_elements(
         parsed_lattice_data:            dict,
         environment:                    xt.Environment,
-        user_multipole_replacements:    dict | None = None,
-        verbose:                        bool                = False) -> None:
+        user_multipole_replacements:    dict | None,
+        config:                         ConfigLike) -> None:
     
     ########################################
     # Get the required data
     ########################################
-    parsed_globals  = parsed_lattice_data['globals']
     parsed_elements = parsed_lattice_data['elements']
 
     ########################################
     # Drifts
     ########################################
     if 'drift' in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("Converting Drifts", mode = 'subsection')
-        convert_drifts(parsed_elements, environment)
+        convert_drifts(
+            parsed_elements = parsed_elements,
+            environment     = environment)
 
     ########################################
     # Bends
     ########################################
     if 'bend' in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("Converting Bends", mode = 'subsection')
-        convert_bends(parsed_elements, environment)
-        convert_correctors(parsed_elements, environment)
+        convert_bends(
+            parsed_elements = parsed_elements,
+            environment     = environment)
+        convert_correctors(
+            parsed_elements = parsed_elements,
+            environment     = environment)
 
     ########################################
     # Quadrupoles
     ########################################
     if 'quad' in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("Converting Quadrupoles", mode = 'subsection')
-        convert_quadrupoles(parsed_elements, environment)
+        convert_quadrupoles(
+            parsed_elements = parsed_elements,
+            environment     = environment)
 
     ########################################
     # Sextupoles
     ########################################
     if 'sext' in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("Converting Sextupoles", mode = 'subsection')
-        convert_sextupoles(parsed_elements, environment)
+        convert_sextupoles(
+            parsed_elements = parsed_elements,
+            environment     = environment)
 
     ########################################
     # Octupoles
     ########################################
     if 'oct' in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("Converting Octupoles", mode = 'subsection')
-        convert_octupoles(parsed_elements, environment)
+        convert_octupoles(
+            parsed_elements = parsed_elements,
+            environment     = environment)
 
     ########################################
     # Multipoles
     ########################################
     if 'mult' in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("Converting Multipoles", mode = 'subsection')
         convert_multipoles(
             parsed_elements             = parsed_elements,
             environment                 = environment,
-            user_multipole_replacements = user_multipole_replacements)
+            user_multipole_replacements = user_multipole_replacements,
+            config                      = config)
 
     ########################################
     # Cavities
     ########################################
     if 'cavi' in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("Converting Cavities", mode = 'subsection')
-        convert_cavities(parsed_elements, environment)
+        convert_cavities(
+            parsed_elements = parsed_elements,
+            environment     = environment)
 
     ########################################
     # Apertures
     ########################################
     if 'apert' in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("Converting Apertures", mode = 'subsection')
-        convert_apertures(parsed_elements, environment)
+        convert_apertures(
+            parsed_elements = parsed_elements,
+            environment     = environment)
 
     ########################################
     # Solenoids
     ########################################
     if 'sol' in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("Converting Solenoids", mode = 'subsection')
-        convert_solenoids(parsed_elements, parsed_globals, environment)
+        convert_solenoids(
+            parsed_elements = parsed_elements,
+            environment     = environment,
+            config          = config)
 
     ########################################
     # Coordinate Transformations
     ########################################
     if 'coord' in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("Converting Coordinate Transformations", mode = 'subsection')
-        convert_coordinate_transformations(parsed_elements, environment)
+        convert_coordinate_transformations(
+            parsed_elements = parsed_elements,
+            environment     = environment,
+            config          = config)
 
     ########################################
     # Markers
     ########################################
     if 'mark' in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("Converting Markers", mode = 'subsection')
-        convert_markers(parsed_elements, environment)
+        convert_markers(
+            parsed_elements = parsed_elements,
+            environment     = environment)
 
     ########################################
     # Monitors
     ########################################
     if 'moni' in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("Converting Monitors", mode = 'subsection')
-        convert_monitors(parsed_elements, environment)
+        convert_monitors(
+            parsed_elements = parsed_elements,
+            environment     = environment)
 
     ########################################
     # Beam-Beam Interactions
     ########################################
     if 'beambeam' in parsed_elements:
-        if verbose:
+        if config._verbose:
             print_section_heading("Converting Beam-Beam Interactions", mode = 'subsection')
-        convert_beam_beam(parsed_elements, environment)
+        convert_beam_beam(
+            parsed_elements = parsed_elements,
+            environment     = environment)
 
 ################################################################################
 # Convert drift
@@ -750,8 +780,8 @@ def convert_octupoles(parsed_elements, environment):
 def convert_multipoles(
         parsed_elements,
         environment,
-        user_multipole_replacements = None,
-        simplify_multipoles         = True):
+        user_multipole_replacements,
+        config) -> None:
     """
     Convert multipoles from the SAD parsed data
     """
@@ -774,13 +804,13 @@ def convert_multipoles(
         shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
         knl = []
-        for kn in range(0, MAX_KNL_ORDER):
+        for kn in range(0, config.MAX_KNL_ORDER):
             knl.append(0.0)
             if f'k{kn}' in ele_vars:
                 knl[kn] = parse_expression(ele_vars[f'k{kn}'])
 
         ksl = []
-        for ks in range(0, MAX_KNL_ORDER):
+        for ks in range(0, config.MAX_KNL_ORDER):
             ksl.append(0.0)
             if f'sk{ks}' in ele_vars:
                 ksl[ks] = parse_expression(ele_vars[f'sk{ks}'])
@@ -978,7 +1008,7 @@ def convert_multipoles(
         ########################################
         # Automatic Simplification
         ########################################
-        if simplify_multipoles:
+        if config.SIMPLIFY_MULTIPOLES:
 
             ########################################
             # Correctors stored as multipoles
@@ -987,8 +1017,9 @@ def convert_multipoles(
                     length  = float(length),
                     knl     = knl,
                     ksl     = ksl,
-                    idx     = 0):
-                
+                    idx     = 0,
+                    tol     = config.KNL_ZERO_TOL):
+
                 if knl[0] != 0 and ksl[0] != 0:
                     if type(knl[0]) is float or type(ksl[0]) is float:
                         k0l         = f"sqrt({knl[0]}**2 + {ksl[0]}**2)"
@@ -1040,7 +1071,8 @@ def convert_multipoles(
                     length  = float(length),
                     knl     = knl,
                     ksl     = ksl,
-                    idx     = 1):
+                    idx     = 1,
+                    tol     = config.KNL_ZERO_TOL):
 
                 k1l     = knl[1]
                 k1sl    = ksl[1]
@@ -1085,7 +1117,8 @@ def convert_multipoles(
                     length  = float(length),
                     knl     = knl,
                     ksl     = ksl,
-                    idx     = 2):
+                    idx     = 2,
+                    tol     = config.KNL_ZERO_TOL):
 
                 k2l     = knl[2]
                 k2sl    = ksl[2]
@@ -1130,7 +1163,8 @@ def convert_multipoles(
                     length  = float(length),
                     knl     = knl,
                     ksl     = ksl,
-                    idx     = 3):
+                    idx     = 3,
+                    tol     = config.KNL_ZERO_TOL):
 
                 k3l     = knl[3]
                 k3sl    = ksl[3]
@@ -1178,7 +1212,7 @@ def convert_multipoles(
             length      = length,
             knl         = knl,
             ksl         = ksl,
-            order       = MAX_KNL_ORDER,
+            order       = config.MAX_KNL_ORDER,
             shift_x     = shift_x,
             shift_y     = shift_y,
             rot_s_rad   = rotation)
@@ -1290,13 +1324,16 @@ def convert_apertures(parsed_elements, environment):
 ################################################################################
 # Convert Solenoids
 ################################################################################
-def convert_solenoids(parsed_elements, parsed_globals, environment):
+def convert_solenoids(
+        parsed_elements,
+        environment,
+        config) -> None:
     """
     Convert solenoids from the SAD parsed data
     """
 
-    P0_J    = parsed_globals['momentum'] * qe / clight
-    BRHO    = P0_J / qe / parsed_globals['charge']
+    P0_J    = environment['p0c'] * qe / clight
+    BRHO    = P0_J / qe / environment["q0"]
 
     solenoids   = parsed_elements['sol']
 
@@ -1357,31 +1394,31 @@ def convert_solenoids(parsed_elements, parsed_globals, environment):
 
         # Should not have dz in geo sol
         if geo and 'dz' in ele_vars:
-            if verbose:
+            if config._verbose:
                 print(f"Warning! Solenoid {ele_name} is a geo solenoid but with dz defined: ignoring dz")
             offset_z = 0.0
 
         ########################################
         # Zero small values
         ########################################
-        if isinstance(offset_x, float) and np.abs(offset_x) < TRANSFORM_SHIFT_TOL:
+        if isinstance(offset_x, float) and np.abs(offset_x) < config.TRANSFORM_SHIFT_TOL:
             offset_x = 0.0
-        if isinstance(offset_y, float) and np.abs(offset_y) < TRANSFORM_SHIFT_TOL:
+        if isinstance(offset_y, float) and np.abs(offset_y) < config.TRANSFORM_SHIFT_TOL:
             offset_y = 0.0
-        if isinstance(offset_z, float) and np.abs(offset_z) < TRANSFORM_SHIFT_TOL:
+        if isinstance(offset_z, float) and np.abs(offset_z) < config.TRANSFORM_SHIFT_TOL:
             offset_z = 0.0
-        if isinstance(rot_chi1, float) and np.abs(rot_chi1) < TRANSFORM_ROT_TOL:
+        if isinstance(rot_chi1, float) and np.abs(rot_chi1) < config.TRANSFORM_ROT_TOL:
             rot_chi1 = 0.0
-        if isinstance(rot_chi2, float) and np.abs(rot_chi2) < TRANSFORM_ROT_TOL:
+        if isinstance(rot_chi2, float) and np.abs(rot_chi2) < config.TRANSFORM_ROT_TOL:
             rot_chi2 = 0.0
-        if isinstance(rot_chi3, float) and np.abs(rot_chi3) < TRANSFORM_ROT_TOL:
+        if isinstance(rot_chi3, float) and np.abs(rot_chi3) < config.TRANSFORM_ROT_TOL:
             rot_chi3 = 0.0
 
         ########################################
         # Shift Transforms
         ########################################
-        SOL_DX_FACTOR   = -1 * COORD_SIGNS['dx']
-        SOL_DY_FACTOR   = -1 * COORD_SIGNS['dy']
+        SOL_DX_FACTOR   = -1 * config.COORD_SIGNS['dx']
+        SOL_DY_FACTOR   = -1 * config.COORD_SIGNS['dy']
         SOL_DZ_FACTOR   = -1
 
         if type(offset_x) is float:
@@ -1408,9 +1445,9 @@ def convert_solenoids(parsed_elements, parsed_globals, environment):
         ########################################
         # Angle Transforms
         ########################################
-        SOL_CHI1_FACTOR = -1 * COORD_SIGNS['chi1']
-        SOL_CHI2_FACTOR = -1 * COORD_SIGNS['chi2']
-        SOL_CHI3_FACTOR = -1 * COORD_SIGNS['chi3']
+        SOL_CHI1_FACTOR = -1 * config.COORD_SIGNS['chi1']
+        SOL_CHI2_FACTOR = -1 * config.COORD_SIGNS['chi2']
+        SOL_CHI3_FACTOR = -1 * config.COORD_SIGNS['chi3']
 
         if type(rot_chi1) is float:
             rot_chi1    = np.rad2deg(SOL_CHI1_FACTOR * rot_chi1)
@@ -1472,11 +1509,8 @@ def convert_solenoids(parsed_elements, parsed_globals, environment):
                 parent  = xt.SRotation,
                 angle   = rot_chi3)
 
-            # ds kills things w.r.t sad
-            # Considering the survey, it breaks everything
-            # There is a discrepancy in s when it is removed
-            # This is just because SAD takes dz into account with s
-            # SAD s is based on particle path!
+            # No ds shift: is ruins the survey
+            # The ds difference is because SAD takes dz into account with s
 
             ########################################
             # Order the elements (reordered later)
@@ -1562,7 +1596,10 @@ def convert_beam_beam(parsed_elements, environment):
 ################################################################################
 # Convert Coordinate Transformations
 ################################################################################
-def convert_coordinate_transformations(parsed_elements, environment):
+def convert_coordinate_transformations(
+        parsed_elements,
+        environment,
+        config) -> None:
     """
     Convert coordinate transformations from the SAD parsed data
     """
@@ -1598,15 +1635,15 @@ def convert_coordinate_transformations(parsed_elements, environment):
         ########################################
         # Zero small values
         ########################################
-        if isinstance(offset_x, float) and np.abs(offset_x) < TRANSFORM_SHIFT_TOL:
+        if isinstance(offset_x, float) and np.abs(offset_x) < config.TRANSFORM_SHIFT_TOL:
             offset_x = 0.0
-        if isinstance(offset_y, float) and np.abs(offset_y) < TRANSFORM_SHIFT_TOL:
+        if isinstance(offset_y, float) and np.abs(offset_y) < config.TRANSFORM_SHIFT_TOL:
             offset_y = 0.0
-        if isinstance(rot_chi1, float) and np.abs(rot_chi1) < TRANSFORM_ROT_TOL:
+        if isinstance(rot_chi1, float) and np.abs(rot_chi1) < config.TRANSFORM_ROT_TOL:
             rot_chi1 = 0.0
-        if isinstance(rot_chi2, float) and np.abs(rot_chi2) < TRANSFORM_ROT_TOL:
+        if isinstance(rot_chi2, float) and np.abs(rot_chi2) < config.TRANSFORM_ROT_TOL:
             rot_chi2 = 0.0
-        if isinstance(rot_chi3, float) and np.abs(rot_chi3) < TRANSFORM_ROT_TOL:
+        if isinstance(rot_chi3, float) and np.abs(rot_chi3) < config.TRANSFORM_ROT_TOL:
             rot_chi3 = 0.0
 
         ########################################
@@ -1626,8 +1663,8 @@ def convert_coordinate_transformations(parsed_elements, environment):
         ########################################
         # Shift Transforms
         ########################################
-        COORD_DX_FACTOR   = COORD_SIGNS['dx']
-        COORD_DY_FACTOR   = COORD_SIGNS['dy']
+        COORD_DX_FACTOR   = config.COORD_SIGNS['dx']
+        COORD_DY_FACTOR   = config.COORD_SIGNS['dy']
 
         if type(offset_x) is float:
             offset_x    = COORD_DX_FACTOR * offset_x
@@ -1646,9 +1683,9 @@ def convert_coordinate_transformations(parsed_elements, environment):
         ########################################
         # Angle Transforms
         ########################################
-        COORD_CHI1_FACTOR   = COORD_SIGNS['chi1']
-        COORD_CHI2_FACTOR   = COORD_SIGNS['chi2']
-        COORD_CHI3_FACTOR   = COORD_SIGNS['chi3']
+        COORD_CHI1_FACTOR   = config.COORD_SIGNS['chi1']
+        COORD_CHI2_FACTOR   = config.COORD_SIGNS['chi2']
+        COORD_CHI3_FACTOR   = config.COORD_SIGNS['chi3']
 
         if type(rot_chi1) is float:
             rot_chi1    = np.rad2deg(COORD_CHI1_FACTOR * rot_chi1)

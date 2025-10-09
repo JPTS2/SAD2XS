@@ -3,7 +3,7 @@ Unofficial SAD to XSuite Lattice Converter
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       01-10-2025
+Date:       09-10-2025
 """
 
 ################################################################################
@@ -11,7 +11,8 @@ Date:       01-10-2025
 ################################################################################
 import xtrack as xt
 
-from ._globals import print_section_heading, ASCII_LOGO, N_INTEGRATOR_KICKS
+from .config import Config
+from .helpers import print_section_heading
 
 from .converter._001_parser import parse_sad_file
 from .converter._002_element_exclusion import exclude_elements
@@ -29,54 +30,55 @@ from .converter._011_write_optics import write_optics
 # Overall Function
 ################################################################################
 def convert_sad_to_xsuite(
-        sad_lattice_path,
-        output_directory,
-        output_filename             = None,
-        line_name                   = None,
-        output_header               = "SAD to XSuite Lattice Conversion",
-        excluded_elements           = None,
-        user_multipole_replacements = None,
-        reverse_element_order       = False,
-        reverse_bend_direction      = False,
-        reverse_charge              = False,
-        _verbose                    = True,
-        _test_mode                  = False):
+        sad_lattice_path:               str,
+        output_directory:               str,
+        output_filename:                str | None  = None,
+        line_name:                      str | None  = None,
+        output_header:                  str         = "SAD to XSuite Lattice Conversion",
+        excluded_elements:              list | None = None,
+        user_multipole_replacements:    dict | None = None,
+        reverse_element_order:          bool        = False,
+        reverse_bend_direction:         bool        = False,
+        reverse_charge:                 bool        = False,
+        **kwargs):
+    
+    ############################################################################
+    # Load config
+    ############################################################################
+    config  = Config(**kwargs)
 
     ############################################################################
     # Introduction Printout
     ############################################################################
-    if _verbose:
-        print(ASCII_LOGO)
+    if config._verbose:
+        print(config.ASCII_LOGO)
         print(f"Processing SAD file: {sad_lattice_path}")
 
     ############################################################################
     # Parse Lattice
     ############################################################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Parsing SAD File", mode = 'section')
 
     parsed_lattice_data = parse_sad_file(
         sad_lattice_path    = sad_lattice_path,
-        ref_particle_mass0  = None,
-        ref_particle_q0     = None,
-        ref_particle_p0c    = None,
-        verbose             = _verbose)
+        config              = config)
 
     ############################################################################
     # Remove Excluded elements
     ############################################################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Removing Excluded Elements", mode = 'section')
 
     parsed_lattice_data = exclude_elements(
         parsed_lattice_data = parsed_lattice_data,
         excluded_elements   = excluded_elements,
-        verbose             = _verbose)
+        config              = config)
 
     ############################################################################
     # Build Environment
     ############################################################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Building Environment", mode = 'section')
 
     env = xt.Environment()
@@ -84,38 +86,40 @@ def convert_sad_to_xsuite(
     ############################################################################
     # Convert Expressions
     ############################################################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Converting Expressions", mode = 'section')
 
     convert_expressions(
         parsed_lattice_data = parsed_lattice_data,
         environment         = env,
-        verbose             = _verbose)
+        config              = config)
+    
+    print(env.vars)
 
     ########################################
     # Add reference particle from globals
     ########################################
     env.particle_ref    = xt.Particles(
-        p0c     = parsed_lattice_data['globals']['momentum'],
-        q0      = parsed_lattice_data['globals']['charge'],
-        mass0   = parsed_lattice_data['globals']['mass'])
+        p0c     = env['p0c'],
+        q0      = env['q0'],
+        mass0   = env['mass0'])
 
     ############################################################################
     # Convert Elements
     ############################################################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Converting Elements", mode = 'section')
 
     convert_elements(
         parsed_lattice_data         = parsed_lattice_data,
         environment                 = env,
         user_multipole_replacements = user_multipole_replacements,
-        verbose                     = _verbose)
+        config                      = config)
 
     ############################################################################
     # Convert Lines
     ############################################################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Converting Lines", mode = 'section')
 
     convert_lines(
@@ -125,12 +129,12 @@ def convert_sad_to_xsuite(
     ########################################
     # Select the line
     ########################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Selecting Line", mode = 'subsection')
     
     if line_name is not None:
         line = env.lines[line_name.lower()]
-        if _verbose:
+        if config._verbose:
             print(f"Selected line: {line_name}")
     else:
         line_lengths    = {line: env.lines[line].get_length() for line in env.lines}
@@ -144,65 +148,57 @@ def convert_sad_to_xsuite(
         
         line            = env.lines[longest_line]
 
-        if _verbose:
+        if config._verbose:
             print(f"Selected line: {longest_line}")
 
     ############################################################################
     # Solenoid Corrections
     ############################################################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Performing Solenoid Corrections", mode = 'section')
 
     ########################################
     # Convert elements between solenoids
     ########################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Converting Elements between Solenoids", mode = 'subsection')
     convert_solenoids(
         parsed_lattice_data = parsed_lattice_data,
         environment         = env,
-        verbose             = _verbose)
+        config              = config)
     
     ########################################
     # Correct solenoid reference shifts
     ########################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Correcting Solenoid Reference Shifts", mode = 'subsection')
     solenoid_reference_shift_corrections(
         line                    = line,
         parsed_lattice_data     = parsed_lattice_data,
         environment             = env,
         reverse_line            = reverse_element_order,
-        verbose                 = _verbose)
+        config                  = config)
     
     ############################################################################
     # Harmonic Cavity Correction
     ############################################################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Converting Harmonic Cavities", mode = 'section')
     convert_harmonic_rf(
         line                = line,
         parsed_lattice_data = parsed_lattice_data,
-        verbose             = _verbose)
+        config              = config)
 
     ################################################################################
     # Configure Modelling Mode
     ################################################################################
-    if _verbose:
-        print_section_heading("Configuring Modelling Mode", mode = 'section')
-
-    ########################################
-    # Set bend model
-    ########################################
-    if _verbose:
-        print_section_heading("Configuring Bend Model", mode = 'subsection')
-    
-    line.configure_bend_model(edge = 'full')
+    if config._verbose:
+        print_section_heading("Configuring Element Modelling", mode = 'section')
 
     ########################################
     # Set integrators
     ########################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Configuring Integrators", mode = 'subsection')
     
     tt          = line.get_table()
@@ -211,51 +207,75 @@ def convert_sad_to_xsuite(
     tt_quad     = tt.rows[tt.element_type == 'Quadrupole']
     tt_sext     = tt.rows[tt.element_type == 'Sextupole']
     tt_oct      = tt.rows[tt.element_type == 'Octupole']
+    tt_mult     = tt.rows[tt.element_type == 'Multipole']
+    tt_sol      = tt.rows[tt.element_type == 'Solenoid']
+    tt_cavi     = tt.rows[tt.element_type == 'Cavity']
 
     line.set(
         tt_drift,
-        model               = 'exact')
+        model               = config.MODEL_DRIFT)
     line.set(
         tt_bend,
-        integrator          = 'uniform',
-        num_multipole_kicks = N_INTEGRATOR_KICKS,
-        model               = 'mat-kick-mat')
+        model               = config.MODEL_BEND,
+        integrator          = config.INTEGRATOR_BEND,
+        num_multipole_kicks = config.N_INTEGRATOR_KICKS_BEND)
     line.set(
         tt_quad,
-        integrator          = 'uniform',
-        num_multipole_kicks = N_INTEGRATOR_KICKS,
-        model               = 'mat-kick-mat')
+        model               = config.MODEL_QUAD,
+        integrator          = config.INTEGRATOR_QUAD,
+        num_multipole_kicks = config.N_INTEGRATOR_KICKS_QUAD)
     line.set(
         tt_sext,
-        integrator          = 'yoshida4',
-        num_multipole_kicks = N_INTEGRATOR_KICKS)
+        model               = config.MODEL_SEXT,
+        integrator          = config.INTEGRATOR_SEXT,
+        num_multipole_kicks = config.N_INTEGRATOR_KICKS_SEXT)
     line.set(
         tt_oct,
-        integrator          = 'yoshida4',
-        num_multipole_kicks = N_INTEGRATOR_KICKS)
+        model               = config.MODEL_OCT,
+        integrator          = config.INTEGRATOR_OCT,
+        num_multipole_kicks = config.N_INTEGRATOR_KICKS_OCT)
+    line.set(
+        tt_mult,
+        num_multipole_kicks = config.N_INTEGRATOR_KICKS_MULT)
+    line.set(
+        tt_sol,
+        num_multipole_kicks = config.N_INTEGRATOR_KICKS_SOL)
+    line.set(
+        tt_cavi,
+        model               = config.MODEL_CAVI,
+        integrator          = config.INTEGRATOR_CAVI,
+        absolute_time       = config.ABSOLUTE_TIME_CAVI)
+    
+    ########################################
+    # Set bend edges
+    ########################################
+    if config._verbose:
+        print_section_heading("Configuring Bend Model", mode = 'subsection')
+
+    line.configure_bend_model(edge = config.EDGE_MODEL_BEND)
 
     ############################################################################
     # Line reversals
     ############################################################################
     if reverse_element_order:
-        if _verbose:
+        if config._verbose:
             print_section_heading("Reversing Element order of Line", mode = 'section')
         line = reverse_line_element_order(line)
 
     if reverse_bend_direction:
-        if _verbose:
+        if config._verbose:
             print_section_heading("Reversing Bend Directions of Line", mode = 'section')
         line = reverse_line_bend_direction(line)
 
     if reverse_charge:
-        if _verbose:
+        if config._verbose:
             print_section_heading("Reversing Charge of Line", mode = 'section')
         line = reverse_line_charge(line)
 
     ############################################################################
     # Handle Offset Markers
     ############################################################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Converting Offset Markers", mode = 'section')
 
     line, offset_marker_locations   = convert_offset_markers(
@@ -265,10 +285,9 @@ def convert_sad_to_xsuite(
     ############################################################################
     # Breakpoint for testing
     ############################################################################
-    if _verbose:
-        print_section_heading("Converter Breakpoint: Test mode active", mode = 'section')
-    
-    if _test_mode:
+    if config._test_mode:
+        if config._verbose:
+            print_section_heading("Converter Breakpoint: Test mode active", mode = 'section')
         return line
 
     ############################################################################
@@ -286,7 +305,7 @@ def convert_sad_to_xsuite(
     ########################################
     # Lattice
     ########################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Generating Lattice File", mode = 'section')
 
     write_lattice(
@@ -294,19 +313,21 @@ def convert_sad_to_xsuite(
         offset_marker_locations     = offset_marker_locations,
         output_filename             = output_filename,
         output_directory            = output_directory,
-        output_header               = output_header)
+        output_header               = output_header,
+        config                      = config)
     
     ########################################
     # Import optics
     ########################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Generating Optics File", mode = 'section')
 
     write_optics(
         line                        = line,
         output_filename             = output_filename,
         output_directory            = output_directory,
-        output_header               = output_header)
+        output_header               = output_header,
+        config                      = config)
 
     ############################################################################
     # Delete and re-initialise
@@ -329,7 +350,7 @@ def convert_sad_to_xsuite(
     ############################################################################
     # Complete message
     ############################################################################
-    if _verbose:
+    if config._verbose:
         print_section_heading("Conversion Complete", mode = 'section')
 
     ############################################################################

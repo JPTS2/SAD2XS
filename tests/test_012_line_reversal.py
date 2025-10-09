@@ -67,7 +67,7 @@ def test_line_reversal():
     ########################################################################
     line    = s2x.convert_sad_to_xsuite(
         sad_lattice_path    = 'test_lattice.sad',
-        output_directory    = None,
+        output_directory    = "N/A",
         _verbose            = False,
         _test_mode          = True)
 

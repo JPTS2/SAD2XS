@@ -1,18 +1,28 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Output Writer: Drifts
+(Unofficial) SAD to XSuite Converter: Output Writer - Drifts
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
+import xtrack as xt
+import xdeps as xd
+import textwrap
+
 from ._000_helpers import *
+from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
-def create_drift_lattice_file_information(line, line_table):
+def create_drift_lattice_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
 
     ########################################
     # Get unique drifts

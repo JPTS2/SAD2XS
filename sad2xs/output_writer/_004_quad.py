@@ -1,18 +1,28 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Output Writer: Quadrupoles
+(Unofficial) SAD to XSuite Converter: Output Writer - Quadrupoles
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
+import xtrack as xt
+import xdeps as xd
+import textwrap
+
 from ._000_helpers import *
+from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
-def create_quadrupole_lattice_file_information(line, line_table):
+def create_quadrupole_lattice_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
 
     ########################################
     # Get information
@@ -122,7 +132,10 @@ env.new(
 ################################################################################
 # Optics File
 ################################################################################
-def create_quadrupole_optics_file_information(line, line_table):
+def create_quadrupole_optics_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
 
     ########################################
     # Get information
@@ -157,10 +170,10 @@ def create_quadrupole_optics_file_information(line, line_table):
 
         if k1 is not None:
             output_string += f"""
-    {f'k1_{quad}'}{' ' * (OUTPUT_STRING_SEP - len(f'k1_{quad}') + 4)}{'= '}{k1:.12f},"""
+    {f'k1_{quad}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1_{quad}') + 4)}{'= '}{k1:.12f},"""
         if k1s is not None:
             output_string += f"""
-    {f'k1s_{quad}'}{' ' * (OUTPUT_STRING_SEP - len(f'k1s_{quad}') + 4)}{'= '}{k1s:.12f},"""
+    {f'k1s_{quad}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1s_{quad}') + 4)}{'= '}{k1s:.12f},"""
 
     ########################################
     # Return

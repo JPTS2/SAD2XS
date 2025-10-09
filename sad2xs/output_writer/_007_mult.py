@@ -1,18 +1,28 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Output Writer: Multipoles
+(Unofficial) SAD to XSuite Converter: Output Writer - Multipoles
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
+import xtrack as xt
+import xdeps as xd
+import textwrap
+
 from ._000_helpers import *
+from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
-def create_multipole_lattice_file_information(line, line_table):
+def create_multipole_lattice_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
 
     ########################################
     # Get information
@@ -55,8 +65,7 @@ env.new(
     parent              = xt.Multipole,
     length              = {mult_length},
     _isthick            = True,
-    order               = {MAX_KNL_ORDER},
-    num_multipole_kicks = {N_MULTIPOLE_KICKS_SOL})"""
+    order               = {config.MAX_KNL_ORDER})"""
 
     output_string += "\n"
 

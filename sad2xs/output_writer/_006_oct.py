@@ -1,18 +1,28 @@
 """
-(Unofficial) SAD to XSuite Converter
-
-Output Writer: Octupoles
+(Unofficial) SAD to XSuite Converter: Output Writer - Octupoles
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       09-10-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
+import xtrack as xt
+import xdeps as xd
+import textwrap
+
 from ._000_helpers import *
+from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
-def create_octupole_lattice_file_information(line, line_table):
+def create_octupole_lattice_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
 
     ########################################
     # Get information
@@ -122,7 +132,10 @@ env.new(
 ################################################################################
 # Optics File
 ################################################################################
-def create_octupole_optics_file_information(line, line_table):
+def create_octupole_optics_file_information(
+        line:       xt.Line,
+        line_table: xd.table.Table,
+        config:     ConfigLike) -> str:
 
     ########################################
     # Get information
@@ -157,10 +170,10 @@ def create_octupole_optics_file_information(line, line_table):
 
         if k3 is not None:
             output_string += f"""
-    {f'k3_{oct}'}{' ' * (OUTPUT_STRING_SEP - len(f'k3_{oct}') + 4)}{'= '}{k3:.12f},"""
+    {f'k3_{oct}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k3_{oct}') + 4)}{'= '}{k3:.12f},"""
         if k3s is not None:
             output_string += f"""
-    {f'k3s_{oct}'}{' ' * (OUTPUT_STRING_SEP - len(f'k3s_{oct}') + 4)}{'= '}{k3s:.12f},"""
+    {f'k3s_{oct}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k3s_{oct}') + 4)}{'= '}{k3s:.12f},"""
 
     ########################################
     # Return
