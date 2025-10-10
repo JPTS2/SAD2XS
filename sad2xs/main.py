@@ -324,7 +324,7 @@ def convert_sad_to_xsuite(
 
     write_optics(
         line                        = line,
-        output_filename             = output_filename,
+        output_filename             = f"{output_filename}_import_optics",
         output_directory            = output_directory,
         output_header               = output_header,
         config                      = config)
