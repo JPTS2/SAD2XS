@@ -99,10 +99,20 @@ env.new(
     ks          = {ks}"""
             if knl != "[]":
                 sol_generation += f""",
-{textwrap.fill(f'knl                 = {knl}', width = config.OUTPUT_STRING_LENGTH)}"""
+{textwrap.fill(
+    text                = f"knl         = {knl}",
+    width               = config.OUTPUT_STRING_LENGTH,
+    initial_indent      = '    ',
+    subsequent_indent   = '        ',
+    break_on_hyphens    = False)}"""
             if ksl != "[]":
                 sol_generation += f""",
-{textwrap.fill(f'ksl                 = {ksl}', width = config.OUTPUT_STRING_LENGTH)}"""
+{textwrap.fill(
+    text                = f"ksl         = {ksl}",
+    width               = config.OUTPUT_STRING_LENGTH,
+    initial_indent      = '    ',
+    subsequent_indent   = '        ',
+    break_on_hyphens    = False)}"""
 
             # Misalignments
             if shift_x != 0:
