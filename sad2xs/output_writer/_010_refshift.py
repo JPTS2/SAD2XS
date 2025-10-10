@@ -259,16 +259,24 @@ def create_refshift_optics_file_information(
     ########################################
     # Sort the lists
     ########################################
-    unique_xyshift_variable_names, unique_xyshift_names = map(
-        list, zip(*sorted(zip(unique_xyshift_variable_names, unique_xyshift_names))))
-    unique_zetashift_variable_names, unique_zetashift_names = map(
-        list, zip(*sorted(zip(unique_zetashift_variable_names, unique_zetashift_names))))
-    unique_xrotation_variable_names, unique_xrotation_names = map(
-        list, zip(*sorted(zip(unique_xrotation_variable_names, unique_xrotation_names))))
-    unique_yrotation_variable_names, unique_yrotation_names = map(
-        list, zip(*sorted(zip(unique_yrotation_variable_names, unique_yrotation_names))))
-    unique_srotation_variable_names, unique_srotation_names = map(
-        list, zip(*sorted(zip(unique_srotation_variable_names, unique_srotation_names))))
+    if len(unique_xyshift_names) != 0:
+        unique_xyshift_variable_names, unique_xyshift_names = map(
+            list, zip(*sorted(zip(
+                unique_xyshift_variable_names, unique_xyshift_names))))
+    if len(unique_zetashift_names) != 0:
+        unique_zetashift_variable_names, unique_zetashift_names = map(
+            list, zip(*sorted(zip(
+                unique_zetashift_variable_names, unique_zetashift_names))))
+    if len(unique_xrotation_names) != 0:
+        unique_xrotation_variable_names, unique_xrotation_names = map(
+            list, zip(*sorted(zip(
+                unique_xrotation_variable_names, unique_xrotation_names))))
+    if len(unique_yrotation_names) != 0:
+        unique_yrotation_variable_names, unique_yrotation_names = map(
+            list, zip(*sorted(zip(unique_yrotation_variable_names, unique_yrotation_names))))
+    if len(unique_srotation_names) != 0:
+        unique_srotation_variable_names, unique_srotation_names = map(
+            list, zip(*sorted(zip(unique_srotation_variable_names, unique_srotation_names))))
 
     ########################################
     # Create Output string
