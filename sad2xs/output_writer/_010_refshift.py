@@ -303,10 +303,10 @@ def create_refshift_optics_file_information(
             
             if dx != 0:
                 output_string += f"""
-    {f'dx_{xyshift_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dx_{xyshift_variable_name}') + 4)}{'= '}{dx:.12f},"""
+    {f'dx_{xyshift_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dx_{xyshift_variable_name}') + 4)}{'= '}{dx:.24f},"""
             if dy != 0:
                 output_string += f"""
-    {f'dy_{xyshift_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dy_{xyshift_variable_name}') + 4)}{'= '}{dy:.12f},"""
+    {f'dy_{xyshift_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dy_{xyshift_variable_name}') + 4)}{'= '}{dy:.24f},"""
 
         output_string += "\n"
 
@@ -325,7 +325,7 @@ def create_refshift_optics_file_information(
             
             if dz != 0:
                 output_string += f"""
-    {f'dz_{zetashift_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dz_{zetashift_variable_name}') + 4)}{'= '}{dz:.12f},"""
+    {f'dz_{zetashift_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dz_{zetashift_variable_name}') + 4)}{'= '}{dz:.24f},"""
 
         output_string += "\n"
 
@@ -344,7 +344,7 @@ def create_refshift_optics_file_information(
 
             if chi1 != 0:
                 output_string += f"""
-    {f'chi1_{yrotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi1_{yrotation_variable_name}') + 4)}{'= '}{chi1:.12f},"""
+    {f'chi1_{yrotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi1_{yrotation_variable_name}') + 4)}{'= '}{chi1:.24f},"""
 
         output_string += "\n"
 
@@ -363,7 +363,7 @@ def create_refshift_optics_file_information(
 
             if chi2 != 0:
                 output_string += f"""
-    {f'chi2_{xrotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi2_{xrotation_variable_name}') + 4)}{'= '}{chi2:.12f},"""
+    {f'chi2_{xrotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi2_{xrotation_variable_name}') + 4)}{'= '}{chi2:.24f},"""
 
         output_string += "\n"
 
@@ -382,7 +382,7 @@ def create_refshift_optics_file_information(
 
             if chi3 != 0:
                 output_string += f"""
-    {f'chi3_{srotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi3_{srotation_variable_name}') + 4)}{'= '}{chi3:.12f},"""
+    {f'chi3_{srotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi3_{srotation_variable_name}') + 4)}{'= '}{chi3:.24f},"""
 
     ########################################
     # Return

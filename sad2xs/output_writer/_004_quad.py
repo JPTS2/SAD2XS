@@ -186,10 +186,10 @@ def create_quadrupole_optics_file_information(
 
         if k1 is not None:
             output_string += f"""
-    {f'k1_{quad}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1_{quad}') + 4)}{'= '}{k1:.12f},"""
+    {f'k1_{quad}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1_{quad}') + 4)}{'= '}{k1:.24f},"""
         if k1s is not None:
             output_string += f"""
-    {f'k1s_{quad}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1s_{quad}') + 4)}{'= '}{k1s:.12f},"""
+    {f'k1s_{quad}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1s_{quad}') + 4)}{'= '}{k1s:.24f},"""
 
     ########################################
     # Return

@@ -267,7 +267,7 @@ def create_corrector_optics_file_information(
 
         if k0 is not None:
             output_string += f"""
-    {f'k0_{corr_variable}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k0_{corr_variable}') + 4)}{'= '}{k0:.12f},"""
+    {f'k0_{corr_variable}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k0_{corr_variable}') + 4)}{'= '}{k0:.24f},"""
 
     ########################################
     # Return
