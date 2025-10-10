@@ -135,7 +135,7 @@ class Config:
     N_INTEGRATOR_KICKS_MULT:        int             = 3
     N_INTEGRATOR_KICKS_SOL:         int             = 3
 
-    ABSOLUTE_TIME_CAVI:             bool            = True
+    ABSOLUTE_TIME_CAVI:             bool            = False
 
     EDGE_MODEL_BEND:                str             = 'full'
 
