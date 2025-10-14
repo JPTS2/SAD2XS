@@ -270,7 +270,9 @@ def convert_sad_to_xsuite(
     if reverse_charge:
         if config._verbose:
             print_section_heading("Reversing Charge of Line", mode = 'section')
-        line = reverse_line_charge(line)
+        # line = reverse_line_charge(line)
+        line.particle_ref.q0    *= -1
+        env.particle_ref.q0     *= -1
 
     ############################################################################
     # Handle Offset Markers
