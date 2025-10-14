@@ -270,7 +270,9 @@ def convert_sad_to_xsuite(
     if reverse_charge:
         if config._verbose:
             print_section_heading("Reversing Charge of Line", mode = 'section')
-        line = reverse_line_charge(line)
+        # line = reverse_line_charge(line)
+        line.particle_ref.q0    *= -1
+        env.particle_ref.q0     *= -1
 
     ############################################################################
     # Handle Offset Markers
@@ -324,7 +326,7 @@ def convert_sad_to_xsuite(
 
     write_optics(
         line                        = line,
-        output_filename             = output_filename,
+        output_filename             = f"{output_filename}_import_optics",
         output_directory            = output_directory,
         output_header               = output_header,
         config                      = config)

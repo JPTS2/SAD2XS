@@ -95,7 +95,7 @@ def get_knl_string(knl_array):
         if knl == 0:
             knl_substring   = f"0"
         else:
-            knl_substring   = f"{knl:.10e}"
+            knl_substring   = f"{knl:.24e}"
         
         # Append to the string
         if i == 0:

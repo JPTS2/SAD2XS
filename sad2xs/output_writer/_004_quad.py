@@ -163,17 +163,33 @@ def create_quadrupole_optics_file_information(
         k1          = None
         k1s         = None
 
-        if line[quad].k1 != 0:
-            k1			= line[quad].k1
-        if line[quad].k1s != 0:
-            k1s			= line[quad].k1s
+        try:
+            k1  = line[quad].k1
+        except KeyError:
+            try:
+                k1  = line[f"-{quad}"].k1
+            except KeyError:
+                raise KeyError(f"Could not find quad variable {quad} or -{quad} in line.")
+            
+        try:
+            k1s     = line[quad].k1s
+        except KeyError:
+            try:
+                k1s = line[f"-{quad}"].k1s
+            except KeyError:
+                raise KeyError(f"Could not find quad variable {quad} or -{quad} in line.")
+            
+        if k1 == 0:
+            k1 = None
+        if k1s == 0:
+            k1s = None
 
         if k1 is not None:
             output_string += f"""
-    {f'k1_{quad}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1_{quad}') + 4)}{'= '}{k1:.12f},"""
+    {f'k1_{quad}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1_{quad}') + 4)}{'= '}{k1:.24f},"""
         if k1s is not None:
             output_string += f"""
-    {f'k1s_{quad}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1s_{quad}') + 4)}{'= '}{k1s:.12f},"""
+    {f'k1s_{quad}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1s_{quad}') + 4)}{'= '}{k1s:.24f},"""
 
     ########################################
     # Return

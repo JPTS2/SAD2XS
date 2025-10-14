@@ -98,13 +98,23 @@ env.new(
     name        = '{replica_name}',
     parent      = '{mult}'"""
                 
-                # Strength information
+                # Strength information                    
                 if knl != "[]":
                     mult_generation += f""",
-    knl         = {knl}"""
+    {textwrap.fill(
+        text                = f"knl         = {knl}",
+        width               = config.OUTPUT_STRING_LENGTH,
+        initial_indent      = '    ',
+        subsequent_indent   = '        ',
+        break_on_hyphens    = False)}"""
                 if ksl != "[]":
                     mult_generation += f""",
-    ksl         = {ksl}"""
+    {textwrap.fill(
+        text                = f"ksl         = {ksl}",
+        width               = config.OUTPUT_STRING_LENGTH,
+        initial_indent      = '    ',
+        subsequent_indent   = '        ',
+        break_on_hyphens    = False)}"""
 
                 # Misalignments
                 if shift_x != 0:

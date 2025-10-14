@@ -147,8 +147,8 @@ def create_comparison_plots(
         linestyle   = "--")
     
     axs[0].legend()
-    axs[0].set_ylabel(r'$p_{x}$ [m]')
-    axs[1].set_ylabel(r'$p_{y}$ [m]')
+    axs[0].set_ylabel(r'$p_{x}$ [1]')
+    axs[1].set_ylabel(r'$p_{y}$ [1]')
     axs[1].set_xlabel('s [m]')
 
     if suptitle is not None:
@@ -187,7 +187,7 @@ def create_comparison_plots(
     
     axs[0].legend()
     axs[0].set_ylabel(r'$\zeta$ [m]')
-    axs[1].set_ylabel(r'$\delta$ [m]')
+    axs[1].set_ylabel(r'$\delta$ [1]')
     axs[1].set_xlabel('s [m]')
 
     if suptitle is not None:
@@ -264,8 +264,8 @@ def create_comparison_plots(
         linestyle   = "--")
 
     axs[0].legend()
-    axs[0].set_ylabel(r'$\alpha_{x}$ [m]')
-    axs[1].set_ylabel(r'$\alpha_{y}$ [m]')
+    axs[0].set_ylabel(r'$\alpha_{x}$ [1]')
+    axs[1].set_ylabel(r'$\alpha_{y}$ [1]')
     axs[1].set_xlabel('s [m]')
 
     if suptitle is not None:
@@ -342,8 +342,8 @@ def create_comparison_plots(
         linestyle   = "--")
 
     axs[0].legend()
-    axs[0].set_ylabel(r'$D_{x}$ [m]')
-    axs[1].set_ylabel(r'$D_{y}$ [m]')
+    axs[0].set_ylabel(r'$D_{px}$ [1]')
+    axs[1].set_ylabel(r'$D_{py}$ [1]')
     axs[1].set_xlabel('s [m]')
 
     if suptitle is not None:

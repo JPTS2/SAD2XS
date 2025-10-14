@@ -130,16 +130,36 @@ def create_cavity_optics_file_information(
         volt    = 0
         lag     = 180
 
-        freq    = line[cavi].frequency
-        volt    = line[cavi].voltage
-        lag     = line[cavi].lag
+        try:
+            freq  = line[cavi].frequency
+        except KeyError:
+            try:
+                freq  = line[f"-{cavi}"].frequency
+            except KeyError:
+                raise KeyError(f"Could not find cavity variable {cavi} or -{cavi} in line.")
+            
+        try:
+            volt  = line[cavi].voltage
+        except KeyError:
+            try:
+                volt  = line[f"-{cavi}"].voltage
+            except KeyError:
+                raise KeyError(f"Could not find cavity variable {cavi} or -{cavi} in line.")
+            
+        try:
+            lag   = line[cavi].lag
+        except KeyError:
+            try:
+                lag  = line[f"-{cavi}"].lag
+            except KeyError:
+                raise KeyError(f"Could not find cavity variable {cavi} or -{cavi} in line.")
 
         output_string += f"""
-    {f'freq_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'freq_{variable_name}') + 4)}{'= '}{freq:.12f},"""
+    {f'freq_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'freq_{variable_name}') + 4)}{'= '}{freq:.24f},"""
         output_string += f"""
-    {f'volt_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'volt_{variable_name}') + 4)}{'= '}{volt:.12f},"""
+    {f'volt_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'volt_{variable_name}') + 4)}{'= '}{volt:.24f},"""
         output_string += f"""
-    {f'lag_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'lag_{variable_name}') + 4)}{'= '}{lag:.12f},"""
+    {f'lag_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'lag_{variable_name}') + 4)}{'= '}{lag:.24f},"""
 
     ########################################
     # Return

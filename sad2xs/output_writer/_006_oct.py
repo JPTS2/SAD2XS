@@ -163,17 +163,33 @@ def create_octupole_optics_file_information(
         k3          = None
         k3s         = None
 
-        if line[oct].k3 != 0:
-            k3			= line[oct].k3
-        if line[oct].k3s != 0:
-            k3s			= line[oct].k3s
+        try:
+            k3  = line[oct].k3
+        except KeyError:
+            try:
+                k3  = line[f"-{oct}"].k3
+            except KeyError:
+                raise KeyError(f"Could not find oct variable {oct} or -{oct} in line.")
+
+        try:
+            k3s = line[oct].k3s
+        except KeyError:
+            try:
+                k3s = line[f"-{oct}"].k3s
+            except KeyError:
+                raise KeyError(f"Could not find oct variable {oct} or -{oct} in line.")
+
+        if k3 == 0:
+            k3 = None
+        if k3s == 0:
+            k3s = None
 
         if k3 is not None:
             output_string += f"""
-    {f'k3_{oct}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k3_{oct}') + 4)}{'= '}{k3:.12f},"""
+    {f'k3_{oct}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k3_{oct}') + 4)}{'= '}{k3:.24f},"""
         if k3s is not None:
             output_string += f"""
-    {f'k3s_{oct}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k3s_{oct}') + 4)}{'= '}{k3s:.12f},"""
+    {f'k3s_{oct}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k3s_{oct}') + 4)}{'= '}{k3s:.24f},"""
 
     ########################################
     # Return
