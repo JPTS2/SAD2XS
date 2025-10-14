@@ -371,28 +371,3 @@ def reverse_line_bend_direction(line):
             env[chi3].angle *= -1
 
     return line
-
-################################################################################
-# Charge Reversal
-################################################################################
-def reverse_line_charge(line):
-    """ Reverse the order of elements in a line and adjust their parameters
-    accordingly to maintain the same physics but in the opposite direction.
-
-    Parameters
-    ----------
-    line : xt.Line
-        The original line to be reversed.
-
-    Returns
-    -------
-    xt.Line
-        A new line with elements in reverse order and adjusted parameters.
-    """
-
-    ########################################
-    # Flip the charge
-    ########################################
-    line.particle_ref.q0  *= -1
-
-    return line
