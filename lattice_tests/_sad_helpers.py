@@ -7,9 +7,9 @@
 ################################################################################
 import os
 import subprocess
-import ast
 import numpy as np
 import tfs
+import ast
 import xtrack as xt
 
 ################################################################################
@@ -243,6 +243,7 @@ NOFLUC;"""
         RADCOMP_FLAG    = 'RADCOD;'
     else:
         RADCOMP_FLAG    = 'NORADCOD;'
+
     if rad_taper:
         TAPER_FLAG      = 'RADTAPER;'
     else:
@@ -350,7 +351,7 @@ abort;
         tw_sad.y        *= +1
         tw_sad.py       *= +1 * -1
         tw_sad.zeta     = tw_sad.zeta[-1] - tw_sad.zeta
-        tw_sad.delta    *= +1
+        tw_sad.delta    = tw_sad.delta[-1] - tw_sad.delta
         tw_sad.betx     *= +1
         tw_sad.bety     *= +1
         tw_sad.alfx     *= +1 * -1
@@ -536,7 +537,7 @@ SAVE ALL;
 
 of=OpenWrite["./{output_filename}"];
 WriteString[of, "MOMENTUM = "//MOMENTUM//";\\n"];
-WriteString[of, "FSHIFT = 0;\\n"];
+WriteString[of, "FSHIFT = "//FSHIFT//";\\n"];
 FFS["output "//of//" type"];                     (* Write element definition *)
 WriteBeamLine[of, ExtractBeamLine[], Format->"MAIN", Name->{{"{line_name}"}}];  (* Write lattice order *)
 Close[of];
