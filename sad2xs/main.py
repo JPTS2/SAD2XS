@@ -273,6 +273,7 @@ def convert_sad_to_xsuite(
         # line = reverse_line_charge(line)
         line.particle_ref.q0    *= -1
         env.particle_ref.q0     *= -1
+        env["q0"]               *= -1
 
     ############################################################################
     # Handle Offset Markers
