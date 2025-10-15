@@ -124,14 +124,14 @@ class Config:
 
     INTEGRATOR_BEND:                str             = 'uniform'
     INTEGRATOR_QUAD:                str             = 'uniform'
-    INTEGRATOR_SEXT:                str             = 'yoshida4'
-    INTEGRATOR_OCT:                 str             = 'yoshida4'
+    INTEGRATOR_SEXT:                str             = 'uniform'
+    INTEGRATOR_OCT:                 str             = 'uniform'
     INTEGRATOR_CAVI:                str             = 'yoshida4'
 
     N_INTEGRATOR_KICKS_BEND:        int             = 3
     N_INTEGRATOR_KICKS_QUAD:        int             = 3
-    N_INTEGRATOR_KICKS_SEXT:        int             = 1
-    N_INTEGRATOR_KICKS_OCT:         int             = 1
+    N_INTEGRATOR_KICKS_SEXT:        int             = 3
+    N_INTEGRATOR_KICKS_OCT:         int             = 3
     N_INTEGRATOR_KICKS_MULT:        int             = 3
     N_INTEGRATOR_KICKS_SOL:         int             = 3
 
