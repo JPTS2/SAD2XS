@@ -21,7 +21,7 @@ from .converter._004_element_converter import convert_elements
 from .converter._005_line_converter import convert_lines
 from .converter._006_solenoid_converter import convert_solenoids, solenoid_reference_shift_corrections
 from .converter._007_harmonic_rf import convert_harmonic_rf
-from .converter._008_reversals import reverse_line_bend_direction, reverse_line_element_order, reverse_line_charge
+from .converter._008_reversals import reverse_line_bend_direction, reverse_line_element_order
 from .converter._009_offset_markers import convert_offset_markers
 from .converter._010_write_lattice import write_lattice
 from .converter._011_write_optics import write_optics
@@ -270,9 +270,9 @@ def convert_sad_to_xsuite(
     if reverse_charge:
         if config._verbose:
             print_section_heading("Reversing Charge of Line", mode = 'section')
-        # line = reverse_line_charge(line)
         line.particle_ref.q0    *= -1
         env.particle_ref.q0     *= -1
+        env["q0"]               *= -1
 
     ############################################################################
     # Handle Offset Markers

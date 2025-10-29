@@ -249,7 +249,7 @@ def parse_sad_file(
             charge  = charge.replace(" ", "")
             charge  = charge.replace("=", "")
 
-            charge  = ev_text_to_float(charge)
+            charge  = float(charge)
 
             cleaned_globals['q0'] = charge
 
@@ -268,7 +268,7 @@ def parse_sad_file(
             fshift  = fshift.replace(" ", "")
             fshift  = fshift.replace("=", "")
 
-            fshift  = ev_text_to_float(fshift)
+            fshift  = float(fshift)
 
             cleaned_globals['fshift'] = fshift
 
