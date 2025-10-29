@@ -1627,8 +1627,6 @@ def convert_coordinate_transformations(
             dir_val = parse_expression(ele_vars['dir'])
             if dir_val != 0.0:
                 dir = True
-            else:
-                dir = False
 
         if 'dx' in ele_vars:
             offset_x    = parse_expression(ele_vars['dx'])
@@ -1673,8 +1671,8 @@ def convert_coordinate_transformations(
         # Shift Transforms
         ########################################
         if dir:
-            COORD_DX_FACTOR   = +1 * config.COORD_SIGNS['dx']
-            COORD_DY_FACTOR   = -1 * config.COORD_SIGNS['dy']
+            COORD_DX_FACTOR   = -1 * config.COORD_SIGNS['dx']
+            COORD_DY_FACTOR   = +1 * config.COORD_SIGNS['dy']
         else:
             COORD_DX_FACTOR   = +1 * config.COORD_SIGNS['dx']
             COORD_DY_FACTOR   = +1 * config.COORD_SIGNS['dy']
