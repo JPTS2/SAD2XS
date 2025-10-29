@@ -1612,6 +1612,8 @@ def convert_coordinate_transformations(
         ########################################
         n_transforms    = 0
 
+        dir         = False
+
         offset_x    = 0.0
         offset_y    = 0.0
         rot_chi1    = 0.0
@@ -1621,6 +1623,13 @@ def convert_coordinate_transformations(
         ########################################
         # Read values
         ########################################
+        if "dir" in ele_vars:
+            dir_val = parse_expression(ele_vars['dir'])
+            if dir_val != 0.0:
+                dir = True
+            else:
+                dir = False
+
         if 'dx' in ele_vars:
             offset_x    = parse_expression(ele_vars['dx'])
         if 'dy' in ele_vars:
@@ -1663,8 +1672,12 @@ def convert_coordinate_transformations(
         ########################################
         # Shift Transforms
         ########################################
-        COORD_DX_FACTOR   = config.COORD_SIGNS['dx']
-        COORD_DY_FACTOR   = config.COORD_SIGNS['dy']
+        if dir:
+            COORD_DX_FACTOR   = +1 * config.COORD_SIGNS['dx']
+            COORD_DY_FACTOR   = -1 * config.COORD_SIGNS['dy']
+        else:
+            COORD_DX_FACTOR   = +1 * config.COORD_SIGNS['dx']
+            COORD_DY_FACTOR   = +1 * config.COORD_SIGNS['dy']
 
         if type(offset_x) is float:
             offset_x    = COORD_DX_FACTOR * offset_x
@@ -1683,9 +1696,14 @@ def convert_coordinate_transformations(
         ########################################
         # Angle Transforms
         ########################################
-        COORD_CHI1_FACTOR   = config.COORD_SIGNS['chi1']
-        COORD_CHI2_FACTOR   = config.COORD_SIGNS['chi2']
-        COORD_CHI3_FACTOR   = config.COORD_SIGNS['chi3']
+        if dir:
+            COORD_CHI1_FACTOR   = +1 * config.COORD_SIGNS['chi1']
+            COORD_CHI2_FACTOR   = -1 * config.COORD_SIGNS['chi2']
+            COORD_CHI3_FACTOR   = +1 * config.COORD_SIGNS['chi3']
+        else:
+            COORD_CHI1_FACTOR   = +1 * config.COORD_SIGNS['chi1']
+            COORD_CHI2_FACTOR   = +1 * config.COORD_SIGNS['chi2']
+            COORD_CHI3_FACTOR   = +1 * config.COORD_SIGNS['chi3']
 
         if type(rot_chi1) is float:
             rot_chi1    = np.rad2deg(COORD_CHI1_FACTOR * rot_chi1)
@@ -1754,37 +1772,73 @@ def convert_coordinate_transformations(
             compound_coord_transform_components = []
             # Order from testing and agrees with the SAD manual online
 
-            # Transverse Shifts First
-            if offset_x != 0 or offset_y != 0:
-                environment.new(
-                    name    = f'{ele_name}_dxy',
-                    parent  = xt.XYShift,
-                    dx      = offset_x,
-                    dy      = offset_y)
-                compound_coord_transform_components.append(f'{ele_name}_dxy')
-            # YRotation Second
-            if rot_chi1 != 0:
-                environment.new(
-                    name    = f'{ele_name}_chi1',
-                    parent  = xt.YRotation,
-                    angle   = rot_chi1)
-                compound_coord_transform_components.append(f'{ele_name}_chi1')
-            # XRotation Third
-            if rot_chi2 != 0:
-                environment.new(
-                    name    = f'{ele_name}_chi2',
-                    parent  = xt.XRotation,
-                    angle   = rot_chi2)
-                compound_coord_transform_components.append(f'{ele_name}_chi2')
-            # SRotation Fourth
-            if rot_chi3 != 0:
-                environment.new(
-                    name    = f'{ele_name}_chi3',
-                    parent  = xt.SRotation,
-                    angle   = rot_chi3)
-                compound_coord_transform_components.append(f'{ele_name}_chi3')
+            if dir:
+                # YRotation First
+                if rot_chi1 != 0:
+                    environment.new(
+                        name    = f'{ele_name}_chi1',
+                        parent  = xt.YRotation,
+                        angle   = rot_chi1)
+                    compound_coord_transform_components.append(f'{ele_name}_chi1')
+                # XRotation Second
+                if rot_chi2 != 0:
+                    environment.new(
+                        name    = f'{ele_name}_chi2',
+                        parent  = xt.XRotation,
+                        angle   = rot_chi2)
+                    compound_coord_transform_components.append(f'{ele_name}_chi2')
+                # SRotation Third
+                if rot_chi3 != 0:
+                    environment.new(
+                        name    = f'{ele_name}_chi3',
+                        parent  = xt.SRotation,
+                        angle   = rot_chi3)
+                    compound_coord_transform_components.append(f'{ele_name}_chi3')
+                # Transverse Shifts Last
+                if offset_x != 0 or offset_y != 0:
+                    environment.new(
+                        name    = f'{ele_name}_dxy',
+                        parent  = xt.XYShift,
+                        dx      = offset_x,
+                        dy      = offset_y)
+                    compound_coord_transform_components.append(f'{ele_name}_dxy')
 
-            environment.new_line(
-                name        = ele_name,
-                components  = compound_coord_transform_components)
-            continue
+                environment.new_line(
+                    name        = ele_name,
+                    components  = compound_coord_transform_components)
+                continue
+            else:
+                # Transverse Shifts First
+                if offset_x != 0 or offset_y != 0:
+                    environment.new(
+                        name    = f'{ele_name}_dxy',
+                        parent  = xt.XYShift,
+                        dx      = offset_x,
+                        dy      = offset_y)
+                    compound_coord_transform_components.append(f'{ele_name}_dxy')
+                # YRotation Second
+                if rot_chi1 != 0:
+                    environment.new(
+                        name    = f'{ele_name}_chi1',
+                        parent  = xt.YRotation,
+                        angle   = rot_chi1)
+                    compound_coord_transform_components.append(f'{ele_name}_chi1')
+                # XRotation Third
+                if rot_chi2 != 0:
+                    environment.new(
+                        name    = f'{ele_name}_chi2',
+                        parent  = xt.XRotation,
+                        angle   = rot_chi2)
+                    compound_coord_transform_components.append(f'{ele_name}_chi2')
+                # SRotation Fourth
+                if rot_chi3 != 0:
+                    environment.new(
+                        name    = f'{ele_name}_chi3',
+                        parent  = xt.SRotation,
+                        angle   = rot_chi3)
+                    compound_coord_transform_components.append(f'{ele_name}_chi3')
+
+                environment.new_line(
+                    name        = ele_name,
+                    components  = compound_coord_transform_components)
+                continue
