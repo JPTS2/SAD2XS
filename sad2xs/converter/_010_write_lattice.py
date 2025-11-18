@@ -132,6 +132,24 @@ env.particle_ref    = xt.Particles(
     line_table  = line.get_table(attr = True)
 
     ########################################
+    # Prepare for removal of - signs where not needed
+    ########################################
+    element_names   = line_table.name
+
+    minus_elements  = line_table.rows["-.*"].name
+    for minus_element in minus_elements:
+        root_name   = minus_element.split("::")[0][1:]
+        plus_eles   = [name.startswith(root_name) for name in element_names]
+
+        if any(plus_eles):
+            plus_name   = element_names[plus_eles][0]
+            type_minus  = line_table["element_type", minus_element]
+            type_plus   = line_table["element_type", plus_name]
+
+            assert type_minus == type_plus, \
+                f"Element types for element and its negative do not match"
+
+    ########################################
     # Drifts
     ########################################
     lattice_file_string += create_drift_lattice_file_information(

@@ -86,6 +86,12 @@ env.new(name = '{scorr_name}', parent = xt.Bend, length = {scorr_length})"""
         for replica_name in hcorrs[hcorr_length]:
             replica_variable    = corr_name_dict[replica_name]
 
+            # Remove the minus sign if no non minus version exists
+            if replica_name.startswith("-"):
+                root_name   = replica_name[1:]
+                if root_name not in hcorrs[hcorr_length]:
+                    replica_name        = root_name
+
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):
                 corr_generation = f"""
@@ -129,6 +135,12 @@ env.new(
         for replica_name in vcorrs[vcorr_length]:
             replica_variable    = corr_name_dict[replica_name]
 
+            # Remove the minus sign if no non minus version exists
+            if replica_name.startswith("-"):
+                root_name   = replica_name[1:]
+                if root_name not in vcorrs[vcorr_length]:
+                    replica_name        = root_name
+
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):
                 corr_generation = f"""
@@ -170,6 +182,12 @@ env.new(
     for scorr, scorr_length in zip(scorr_names, scorr_lengths):
         for replica_name in scorrs[scorr_length]:
             replica_variable    = corr_name_dict[replica_name]
+
+            # Remove the minus sign if no non minus version exists
+            if replica_name.startswith("-"):
+                root_name   = replica_name[1:]
+                if root_name not in scorrs[scorr_length]:
+                    replica_name        = root_name
 
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):
