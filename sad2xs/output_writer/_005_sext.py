@@ -75,6 +75,12 @@ env.new(name = '{sext_name}', parent = xt.Sextupole, length = {sext_length})"""
     for sext, sext_length in zip(sext_names, sext_lengths):
         for replica_name in sexts[sext_length]:
 
+            # Remove the minus sign if no non minus version exists
+            if replica_name.startswith("-"):
+                root_name   = replica_name[1:]
+                if root_name not in sexts[sext_length]:
+                    replica_name        = root_name
+
             if check_is_simple_quad_sext_oct(line, replica_name, "Sextupole"):
 
                 if not check_is_skew_quad_sext_oct(line, replica_name, "Sextupole"):

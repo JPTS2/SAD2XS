@@ -24,10 +24,11 @@ from ..output_writer._007_mult import create_multipole_lattice_file_information
 from ..output_writer._008_sol import create_solenoid_lattice_file_information
 from ..output_writer._009_cavity import create_cavity_lattice_file_information
 from ..output_writer._010_refshift import create_refshift_lattice_file_information
-from ..output_writer._011_marker import create_marker_lattice_file_information
-from ..output_writer._012_line import create_line_lattice_file_information
-from ..output_writer._013_model import create_model_lattice_file_information
-from ..output_writer._014_offset_markers import create_offset_marker_lattice_file_information
+from ..output_writer._011_aperture import create_aperture_lattice_file_information
+from ..output_writer._012_marker import create_marker_lattice_file_information
+from ..output_writer._013_line import create_line_lattice_file_information
+from ..output_writer._014_model import create_model_lattice_file_information
+from ..output_writer._015_offset_markers import create_offset_marker_lattice_file_information
 
 today   = date.today()
 
@@ -132,6 +133,24 @@ env.particle_ref    = xt.Particles(
     line_table  = line.get_table(attr = True)
 
     ########################################
+    # Prepare for removal of - signs where not needed
+    ########################################
+    element_names   = line_table.name
+
+    minus_elements  = line_table.rows["-.*"].name
+    for minus_element in minus_elements:
+        root_name   = minus_element.split("::")[0][1:]
+        plus_eles   = [name.startswith(root_name) for name in element_names]
+
+        if any(plus_eles):
+            plus_name   = element_names[plus_eles][0]
+            type_minus  = line_table["element_type", minus_element]
+            type_plus   = line_table["element_type", plus_name]
+
+            assert type_minus == type_plus, \
+                f"Element types for element and its negative do not match"
+
+    ########################################
     # Drifts
     ########################################
     lattice_file_string += create_drift_lattice_file_information(
@@ -207,6 +226,14 @@ env.particle_ref    = xt.Particles(
     # Reference Shifts
     ########################################
     lattice_file_string += create_refshift_lattice_file_information(
+        line        = line,
+        line_table  = line_table,
+        config      = config)
+    
+    ########################################
+    # Apertures
+    ########################################
+    lattice_file_string += create_aperture_lattice_file_information(
         line        = line,
         line_table  = line_table,
         config      = config)

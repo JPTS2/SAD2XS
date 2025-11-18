@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       18-11-2025
 """
 
 ################################################################################
@@ -1300,25 +1300,132 @@ def convert_apertures(parsed_elements, environment):
         ########################################
         # Initialise parameters
         ########################################
-        a       = 1.0
-        b       = 1.0
+        offset_x    = 0.0
+        offset_y    = 0.0
+        a           = None
+        b           = None
+        dx1         = None
+        dx2         = None
+        dy1         = None
+        dy2         = None
+        aper_type   = None
 
         ########################################
         # Read values
         ########################################
+        if 'dx' in ele_vars:
+            offset_x    = parse_expression(ele_vars['dx'])
+        if 'dy' in ele_vars:
+            offset_y    = parse_expression(ele_vars['dy'])
         if 'ax' in ele_vars:
             a = parse_expression(ele_vars['ax'])
         if 'ay' in ele_vars:
             b = parse_expression(ele_vars['ay'])
+        if "dx1" in ele_vars:
+            dx1 = parse_expression(ele_vars['dx1'])
+        if "dx2" in ele_vars:
+            dx2 = parse_expression(ele_vars['dx2'])
+        if "dy1" in ele_vars:
+            dy1 = parse_expression(ele_vars['dy1'])
+        if "dy2" in ele_vars:
+            dy2 = parse_expression(ele_vars['dy2'])
+
+        ########################################
+        # Determine type of aperture
+        ########################################
+        if any(v is not None for v in [dx1, dx2, dy1, dy2]) and \
+                any(v is not None for v in [a, b]):
+            raise ValueError(
+                f"Error! Aperture {ele_name} has both rectangular and elliptical definitions. This is not supported.")
+        elif any(v is not None for v in [dx1, dx2, dy1, dy2]):
+            aper_type   = 'LimitRect'
+            
+            if dx1 is None and dx2 is None:
+                dx1 = -1.0
+                dx2 = +1.0
+            elif dx1 is None and isinstance(dx2, float):
+                if dx2 < 0:
+                    dx1 = dx2
+                    dx2 = +1.0
+                else:
+                    dx1 = -1.0
+            elif dx2 is None and isinstance(dx1, float):
+                if dx1 < 0:
+                    dx2 = +1.0
+                else:
+                    dx2 = dx1
+                    dx1 = -1.0
+            elif isinstance(dx1, float) and isinstance(dx2, float):
+                if dx1 > dx2:
+                    tmp = dx1
+                    dx1 = dx2
+                    dx2 = tmp
+            else:
+                # At least one is expression, cannot compare
+                # This might cause issues
+                pass
+
+            if dy1 is None and dy2 is None:
+                dy1 = -1.0
+                dy2 = +1.0
+            elif dy1 is None and isinstance(dy2, float):
+                if dy2 < 0:
+                    dy1 = dy2
+                    dy2 = +1.0
+                else:
+                    dy1 = -1.0
+            elif dy2 is None and isinstance(dy1, float):
+                if dy1 < 0:
+                    dy2 = +1.0
+                else:
+                    dy2 = dy1
+                    dy1 = -1.0
+            elif isinstance(dy1, float) and isinstance(dy2, float):
+                if dy1 > dy2:
+                    tmp = dy1
+                    dy1 = dy2
+                    dy2 = tmp
+            else:
+                # At least one is expression, cannot compare
+                # This might cause issues
+                pass
+
+            
+        elif any(v is not None for v in [a, b]):
+            aper_type   = 'LimitEllipse'
+
+            if a is None:
+                a = 1.0
+            if b is None:
+                b = 1.0
+
+        else:
+            raise ValueError(f"Error! Aperture {ele_name} has no valid definition.")
 
         ########################################
         # Create Element
         ########################################
-        environment.new(
-            name    = ele_name,
-            parent  = xt.LimitEllipse,
-            a       = a,
-            b       = b)
+        if aper_type == 'LimitRect':
+            environment.new(
+                name    = ele_name,
+                parent  = xt.LimitRect,
+                min_x   = dx1,
+                max_x   = dx2,
+                min_y   = dy1,
+                max_y   = dy2,
+                shift_x = offset_x,
+                shift_y = offset_y)
+            continue
+        elif aper_type == 'LimitEllipse':
+            environment.new(
+                name    = ele_name,
+                parent  = xt.LimitEllipse,
+                a       = a,
+                b       = b,
+                shift_x = offset_x,
+                shift_y = offset_y)
+        else:
+            raise ValueError(f"Error! Aperture {ele_name} has unsupported definition.")
         continue
 
 ################################################################################

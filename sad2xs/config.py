@@ -148,7 +148,8 @@ class Config:
         default_factory = lambda: {
         "Marker", "Drift",
         "Bend", "Quadrupole", "Sextupole", "Octupole", "Multipole", "Solenoid",
-        "Cavity", "XYShift", "ZetaShift", "XRotation", "YRotation", "SRotation"})
+        "Cavity", "XYShift", "ZetaShift", "XRotation", "YRotation", "SRotation",
+        "LimitEllipse", "LimitRect"})
 
     ########################################
     # Marker Insertion Tolerance

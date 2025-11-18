@@ -22,8 +22,8 @@ with open("README.md", "r") as f:
 ################################################################################
 setup(
     name                            = "sad2xs",
-    version                         = "0.1.8",
-    date                            = "29-10-2025",
+    version                         = "0.1.9",
+    date                            = "18-11-2025",
     description                     = "Conversion of SAD lattices to Xtrack format",
     long_description                = description,
     long_description_content_type   = "text/markdown",

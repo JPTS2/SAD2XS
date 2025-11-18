@@ -57,9 +57,12 @@ def create_cavity_lattice_file_information(
 
         # Get the information
         length      = line[cavi_name].length
-        frequency   = line[cavi_name].frequency
-        voltage     = line[cavi_name].voltage
-        lag         = line[cavi_name].lag
+
+        # Remove the minus sign if no non minus version exists
+        if cavi_name.startswith("-"):
+            root_name   = cavi_name[1:]
+            if root_name not in unique_cavi_names:
+                cavi_name        = root_name
 
         cavity_generation   = f"""
 env.new(

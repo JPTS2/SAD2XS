@@ -27,7 +27,8 @@ def create_bend_lattice_file_information(
     ########################################
     # Get information
     ########################################
-    hbends, vbends, sbends, unique_bend_variables, bend_name_dict = extract_bend_information(line, line_table)
+    hbends, vbends, sbends, unique_bend_variables, bend_name_dict = \
+        extract_bend_information(line, line_table)
     
     hbend_lengths       = np.array(sorted(hbends.keys()))
     hbend_names         = generate_magnet_for_replication_names(hbends, "hbend")
@@ -85,6 +86,12 @@ env.new(name = '{sbend_name}', parent = xt.Bend, length = {sbend_length})"""
         for replica_name in hbends[hbend_length]:
             replica_variable    = bend_name_dict[replica_name]
 
+            # Remove the minus sign if no non minus version exists
+            if replica_name.startswith("-"):
+                root_name   = replica_name[1:]
+                if root_name not in hbends[hbend_length]:
+                    replica_name        = root_name
+
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):
                 bend_generation = f"""
@@ -129,6 +136,12 @@ env.new(
         for replica_name in vbends[vbend_length]:
             replica_variable    = bend_name_dict[replica_name]
 
+            # Remove the minus sign if no non minus version exists
+            if replica_name.startswith("-"):
+                root_name   = replica_name[1:]
+                if root_name not in vbends[vbend_length]:
+                    replica_name        = root_name
+
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):
                 bend_generation = f"""
@@ -171,6 +184,12 @@ env.new(
     for sbend, sbend_length in zip(sbend_names, sbend_lengths):
         for replica_name in sbends[sbend_length]:
             replica_variable    = bend_name_dict[replica_name]
+
+            # Remove the minus sign if no non minus version exists
+            if replica_name.startswith("-"):
+                root_name   = replica_name[1:]
+                if root_name not in sbends[sbend_length]:
+                    replica_name        = root_name
 
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):

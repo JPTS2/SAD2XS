@@ -103,6 +103,13 @@ def create_refshift_lattice_file_information(
 ########################################"""
 
         for xyshift_name, xyshift_variable_name in zip(unique_xyshift_names, unique_xyshift_variable_names):
+
+            # Remove the minus sign if no non minus version exists
+            if xyshift_name.startswith("-"):
+                root_name   = xyshift_name[1:]
+                if root_name not in unique_xyshift_names:
+                    xyshift_name        = root_name
+
             output_string += f"""
 env.new(
     name        = '{xyshift_name}',
@@ -122,6 +129,13 @@ env.new(
 ########################################"""
 
         for zetashift_name, zetashift_variable_name in zip(unique_zetashift_names, unique_zetashift_variable_names):
+
+            # Remove the minus sign if no non minus version exists
+            if zetashift_name.startswith("-"):
+                root_name   = zetashift_name[1:]
+                if root_name not in unique_zetashift_names:
+                    zetashift_name        = root_name
+
             output_string += f"""
 env.new(
     name        = '{zetashift_name}',
@@ -140,6 +154,13 @@ env.new(
 ########################################"""
 
         for yrotation_name, yrotation_variable_name in zip(unique_yrotation_names, unique_yrotation_variable_names):
+
+            # Remove the minus sign if no non minus version exists
+            if yrotation_name.startswith("-"):
+                root_name   = yrotation_name[1:]
+                if root_name not in unique_yrotation_names:
+                    yrotation_name        = root_name
+
             output_string += f"""
 env.new(
     name        = '{yrotation_name}',
@@ -158,6 +179,13 @@ env.new(
 ########################################"""
 
         for xrotation_name, xrotation_variable_name in zip(unique_xrotation_names, unique_xrotation_variable_names):
+
+            # Remove the minus sign if no non minus version exists
+            if xrotation_name.startswith("-"):
+                root_name   = xrotation_name[1:]
+                if root_name not in unique_xrotation_names:
+                    xrotation_name        = root_name
+
             output_string += f"""
 env.new(
     name        = '{xrotation_name}',
@@ -176,6 +204,13 @@ env.new(
 ########################################"""
 
         for srotation_name, srotation_variable_name in zip(unique_srotation_names, unique_srotation_variable_names):
+
+            # Remove the minus sign if no non minus version exists
+            if srotation_name.startswith("-"):
+                root_name   = srotation_name[1:]
+                if root_name not in unique_srotation_names:
+                    srotation_name        = root_name
+
             output_string += f"""
 env.new(
     name        = '{srotation_name}',
