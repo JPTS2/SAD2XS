@@ -40,6 +40,7 @@ def convert_sad_to_xsuite(
         reverse_element_order:          bool        = False,
         reverse_bend_direction:         bool        = False,
         reverse_charge:                 bool        = False,
+        install_apertures_as_markers:   bool        = False,
         **kwargs):
     
     ############################################################################
@@ -74,6 +75,25 @@ def convert_sad_to_xsuite(
         parsed_lattice_data = parsed_lattice_data,
         excluded_elements   = excluded_elements,
         config              = config)
+    
+    ############################################################################
+    # Check if apertures should become markers
+    ############################################################################
+    if install_apertures_as_markers:
+        if config._verbose:
+            print_section_heading("Converting apertures to markers", mode = 'section')
+                    
+            if "apert" in parsed_lattice_data['elements']:
+                if "mark" in parsed_lattice_data['elements']:
+                    merged = {
+                        **parsed_lattice_data['elements']["apert"],
+                        **parsed_lattice_data['elements']["mark"]}    # Mark takes precedence
+                    parsed_lattice_data['elements']["mark"] = merged
+                else:
+                    parsed_lattice_data['elements']["mark"] = \
+                        parsed_lattice_data['elements']["apert"]
+                
+                parsed_lattice_data['elements'].pop("apert")
 
     ############################################################################
     # Build Environment
