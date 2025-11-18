@@ -75,6 +75,12 @@ env.new(name = '{quad_name}', parent = xt.Quadrupole, length = {quad_length})"""
     for quad, quad_length in zip(quad_names, quad_lengths):
         for replica_name in quads[quad_length]:
 
+            # Remove the minus sign if no non minus version exists
+            if replica_name.startswith("-"):
+                root_name   = replica_name[1:]
+                if root_name not in quads[quad_length]:
+                    replica_name        = root_name
+
             if check_is_simple_quad_sext_oct(line, replica_name, "Quadrupole"):
 
                 if not check_is_skew_quad_sext_oct(line, replica_name, "Quadrupole"):

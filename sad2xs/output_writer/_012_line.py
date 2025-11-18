@@ -39,6 +39,18 @@ def create_line_lattice_file_information(
         parent_names.append(parentname)
 
     ########################################
+    # Account for the removal of unnecessary minus signs in other scripts
+    ########################################
+    minus_names = [name for name in parent_names if name.startswith('-')]
+    for minus_name in minus_names:
+        non_minus_name = minus_name[1:]
+        if non_minus_name not in parent_names:
+            # Correct all instances in the parent names list
+            parent_names = [
+                name if name != minus_name else non_minus_name
+                for name in parent_names]
+
+    ########################################
     # Convert to single string
     ########################################
     line_string = parent_names

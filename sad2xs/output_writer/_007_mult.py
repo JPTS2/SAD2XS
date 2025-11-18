@@ -80,6 +80,12 @@ env.new(
     for mult, mult_length in zip(mult_names, mult_lengths):
         for replica_name in mults[mult_length]:
 
+            # Remove the minus sign if no non minus version exists
+            if replica_name.startswith("-"):
+                root_name   = replica_name[1:]
+                if root_name not in mults[mult_length]:
+                    replica_name        = root_name
+
             if check_is_simple_unpowered_multipole(line, replica_name):
                 output_string += f"""
 env.new(name = '{replica_name}', parent = '{mult}')"""

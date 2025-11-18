@@ -87,6 +87,12 @@ env.new(
             shift_y     = line[replica_name].mult_shift_y
             rot_s_rad   = line[replica_name].rot_s_rad
 
+            # Remove the minus sign if no non minus version exists
+            if replica_name.startswith("-"):
+                root_name   = replica_name[1:]
+                if root_name not in sols[sol_length]:
+                    replica_name        = root_name
+
             # Basic information
             sol_generation = f"""
 env.new(
