@@ -24,10 +24,11 @@ from ..output_writer._007_mult import create_multipole_lattice_file_information
 from ..output_writer._008_sol import create_solenoid_lattice_file_information
 from ..output_writer._009_cavity import create_cavity_lattice_file_information
 from ..output_writer._010_refshift import create_refshift_lattice_file_information
-from ..output_writer._011_marker import create_marker_lattice_file_information
-from ..output_writer._012_line import create_line_lattice_file_information
-from ..output_writer._013_model import create_model_lattice_file_information
-from ..output_writer._014_offset_markers import create_offset_marker_lattice_file_information
+from ..output_writer._011_aperture import create_aperture_lattice_file_information
+from ..output_writer._012_marker import create_marker_lattice_file_information
+from ..output_writer._013_line import create_line_lattice_file_information
+from ..output_writer._014_model import create_model_lattice_file_information
+from ..output_writer._015_offset_markers import create_offset_marker_lattice_file_information
 
 today   = date.today()
 
@@ -225,6 +226,14 @@ env.particle_ref    = xt.Particles(
     # Reference Shifts
     ########################################
     lattice_file_string += create_refshift_lattice_file_information(
+        line        = line,
+        line_table  = line_table,
+        config      = config)
+    
+    ########################################
+    # Apertures
+    ########################################
+    lattice_file_string += create_aperture_lattice_file_information(
         line        = line,
         line_table  = line_table,
         config      = config)
