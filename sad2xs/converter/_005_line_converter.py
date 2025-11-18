@@ -163,20 +163,23 @@ def convert_lines(
             # This is done to handle solenoids, ref shifts, thick cavities etc
             if '-' in component \
                     and component[1:] not in parsed_lines \
-                    and component[1:] in environment.lines \
-                    and component[1:] + '_reversed' not in environment.lines:
+                    and component[1:] in environment.lines:
                 # Checks for:
                 #   - negative sign
                 #   - The line is generated, not imported (parsed lines)
                 #   - The line exists in the environment (to be reversed)
-                #   - The line hasn't already been reversed (duplicate element)
-                
+
                 reversed_line_name      = component[1:] + '_reversed'
+                
+                # Check if the line hasn't already been reversed (duplicate element)
+                if reversed_line_name in environment.lines:
+                    components[i] = reversed_line_name
+                    continue
+                
                 reversed_line_elements  = environment.lines[component[1:]].element_names
                 
                 # If it is a generated subline, do not reverse the order of the elements
-
-                # Negate the individual elements
+                # Just negate the individual elements
                 reversed_line_elements  = [f'-{elem}' for elem in reversed_line_elements]
 
                 reverse_handled_components  = []
