@@ -3,7 +3,7 @@ Package setup for SAD2XS Converter
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       07-10-2025
+Date:       20-11-2025
 """
 
 ################################################################################
@@ -14,7 +14,7 @@ from setuptools import setup, find_packages
 ################################################################################
 # Load README data for long description
 ################################################################################
-with open("README.md", "r") as f:
+with open("README.md", "r", encoding = "utf-8") as f:
     description = f.read()
 
 ################################################################################
@@ -23,7 +23,7 @@ with open("README.md", "r") as f:
 setup(
     name                            = "sad2xs",
     version                         = "0.1.11",
-    date                            = "18-11-2025",
+    date                            = "20-11-2025",
     description                     = "Conversion of SAD lattices to Xtrack format",
     long_description                = description,
     long_description_content_type   = "text/markdown",
