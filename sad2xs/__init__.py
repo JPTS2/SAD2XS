@@ -12,7 +12,7 @@ Date:       09-10-2025
 from .main import convert_sad_to_xsuite
 
 ################################################################################
-# Output writers
+# Lattice and Optics writers
 ################################################################################
 from .converter._010_write_lattice import write_lattice
 from .converter._011_write_optics import write_optics
