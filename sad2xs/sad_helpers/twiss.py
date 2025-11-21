@@ -386,7 +386,9 @@ def compute_second_order_dispersions(
         wall_time:              int                     = 60,
         sad_path:               str                     = "sad"):
     """
-    Generate a SAD command to compute the twiss parameters of a lattice.
+    Compute the second order dispersions and add them to the provided twiss table.
+
+    With thanks to G. Broggi for the method.
     """
 
     ########################################
@@ -508,7 +510,9 @@ def compute_chromatic_functions(
         wall_time:              int                     = 60,
         sad_path:               str                     = "sad"):
     """
-    Generate a SAD command to compute the twiss parameters of a lattice.
+    Compute the chromatic functions and add them to the provided twiss table.
+
+    With thanks to G. Broggi for the method.
     """
 
     ########################################
@@ -607,6 +611,7 @@ def compute_chromatic_functions(
     ########################################
     # Compute chromatic functions
     ########################################
+    # See MAD8 physics manual section 6.3
     dbetx      = (betx_plus - betx_minus) / (2 * ddelta)
     dbety      = (bety_plus - bety_minus) / (2 * ddelta)
     dalfx      = (alfx_plus - alfx_minus) / (2 * ddelta)
