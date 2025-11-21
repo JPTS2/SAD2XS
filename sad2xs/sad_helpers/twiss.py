@@ -137,7 +137,7 @@ Close[fn];
     return twiss_command
 
 ################################################################################
-# Closed Ring 4D Twiss Function
+# Twiss
 ################################################################################
 def twiss_sad(
         lattice_filepath:       str,
@@ -364,3 +364,282 @@ abort;
     # Return the TwissTable
     ########################################
     return tw_sad
+
+################################################################################
+# Add second order dispersions to twiss
+################################################################################
+def compute_second_order_dispersions(
+        lattice_filepath:       str,
+        line_name:              str,
+        sad_twiss:              xt.TwissTable | None    = None,
+        reverse_element_order:  bool                    = False,
+        reverse_bend_direction: bool                    = False,
+        closed:                 bool                    = True,
+        calc6d:                 bool                    = False,
+        rfsw:                   bool                    = True,
+        rad:                    bool                    = False,
+        radcod:                 bool                    = False,
+        radtaper:               bool                    = False,
+        delta0:                 float                   = 0.0,
+        ddelta:                 float                   = 1E-4,
+        additional_commands:    str                     = "",
+        wall_time:              int                     = 60,
+        sad_path:               str                     = "sad"):
+    """
+    Compute the second order dispersions and add them to the provided twiss table.
+
+    With thanks to G. Broggi for the method.
+    """
+
+    ########################################
+    # Compute twiss at delta0
+    ########################################
+    tw_on   = twiss_sad(
+        lattice_filepath        = lattice_filepath,
+        line_name               = line_name,
+        reverse_element_order   = reverse_element_order,
+        reverse_bend_direction  = reverse_bend_direction,
+        closed                  = closed,
+        calc6d                  = calc6d,
+        rfsw                    = rfsw,
+        rad                     = rad,
+        radcod                  = radcod,
+        radtaper                = radtaper,
+        delta0                  = delta0,
+        additional_commands     = additional_commands,
+        wall_time               = wall_time,
+        sad_path                = sad_path)
+
+    # If a reference twiss is provided, check consistency
+    if sad_twiss is not None:
+        assert np.allclose(tw_on.s, sad_twiss.s), \
+            "Twiss s positions do not match!"
+        assert np.allclose(tw_on.x, sad_twiss.x), \
+            "Twiss x positions do not match!"
+        assert np.allclose(tw_on.px, sad_twiss.px), \
+            "Twiss px positions do not match!"
+        assert np.allclose(tw_on.y, sad_twiss.y), \
+            "Twiss y positions do not match!"
+        assert np.allclose(tw_on.py, sad_twiss.py), \
+            "Twiss py positions do not match!"
+        assert np.allclose(tw_on.zeta, sad_twiss.zeta), \
+            "Twiss zeta positions do not match!"
+        assert np.allclose(tw_on.delta, sad_twiss.delta), \
+            "Twiss delta positions do not match!"
+
+    ########################################
+    # Compute off momentum twiss at delta0 + ddelta
+    ########################################
+    tw_off  = twiss_sad(
+        lattice_filepath        = lattice_filepath,
+        line_name               = line_name,
+        reverse_element_order   = reverse_element_order,
+        reverse_bend_direction  = reverse_bend_direction,
+        closed                  = closed,
+        calc6d                  = calc6d,
+        rfsw                    = rfsw,
+        rad                     = rad,
+        radcod                  = radcod,
+        radtaper                = radtaper,
+        delta0                  = delta0 + ddelta,
+        additional_commands     = additional_commands,
+        wall_time               = wall_time,
+        sad_path                = sad_path)
+
+    ########################################
+    # Obtain required data
+    ########################################
+    x_on    = tw_on.x
+    x_off   = tw_off.x
+    dx_on   = tw_on.dx
+
+    px_on   = tw_on.px
+    px_off  = tw_off.px
+    dpx_on  = tw_on.dpx
+
+    y_on    = tw_on.y
+    y_off   = tw_off.y
+    dy_on   = tw_on.dy
+
+    py_on   = tw_on.py
+    py_off  = tw_off.py
+    dpy_on  = tw_on.dpy
+
+    ########################################
+    # Compute second order dispersions
+    ########################################
+    ddx     = 2 * (x_off - x_on - dx_on * ddelta) / (ddelta**2)
+    ddpx    = 2 * (px_off - px_on - dpx_on * ddelta) / (ddelta**2)
+    ddy     = 2 * (y_off - y_on - dy_on * ddelta) / (ddelta**2)
+    ddpy    = 2 * (py_off - py_on - dpy_on * ddelta) / (ddelta**2)
+
+    ########################################
+    # Add these values to the twiss
+    ########################################
+    if sad_twiss is None:
+        sad_twiss   = tw_on
+
+    sad_twiss["ddx"]    = ddx
+    sad_twiss["ddpx"]   = ddpx
+    sad_twiss["ddy"]    = ddy
+    sad_twiss["ddpy"]   = ddpy
+
+    ########################################
+    # Return the twiss
+    ########################################
+    return sad_twiss
+
+################################################################################
+# Add chromatic functions
+################################################################################
+def compute_chromatic_functions(
+        lattice_filepath:       str,
+        line_name:              str,
+        sad_twiss:              xt.TwissTable | None    = None,
+        reverse_element_order:  bool                    = False,
+        reverse_bend_direction: bool                    = False,
+        closed:                 bool                    = True,
+        calc6d:                 bool                    = False,
+        rfsw:                   bool                    = True,
+        rad:                    bool                    = False,
+        radcod:                 bool                    = False,
+        radtaper:               bool                    = False,
+        delta0:                 float                   = 0.0,
+        ddelta:                 float                   = 1E-4,
+        additional_commands:    str                     = "",
+        wall_time:              int                     = 60,
+        sad_path:               str                     = "sad"):
+    """
+    Compute the chromatic functions and add them to the provided twiss table.
+
+    With thanks to G. Broggi for the method.
+    """
+
+    ########################################
+    # Compute twiss at delta0
+    ########################################
+    tw_on   = twiss_sad(
+        lattice_filepath        = lattice_filepath,
+        line_name               = line_name,
+        reverse_element_order   = reverse_element_order,
+        reverse_bend_direction  = reverse_bend_direction,
+        closed                  = closed,
+        calc6d                  = calc6d,
+        rfsw                    = rfsw,
+        rad                     = rad,
+        radcod                  = radcod,
+        radtaper                = radtaper,
+        delta0                  = delta0,
+        additional_commands     = additional_commands,
+        wall_time               = wall_time,
+        sad_path                = sad_path)
+
+    # If a reference twiss is provided, check consistency
+    if sad_twiss is not None:
+        assert np.allclose(tw_on.s, sad_twiss.s), \
+            "Twiss s positions do not match!"
+        assert np.allclose(tw_on.x, sad_twiss.x), \
+            "Twiss x positions do not match!"
+        assert np.allclose(tw_on.px, sad_twiss.px), \
+            "Twiss px positions do not match!"
+        assert np.allclose(tw_on.y, sad_twiss.y), \
+            "Twiss y positions do not match!"
+        assert np.allclose(tw_on.py, sad_twiss.py), \
+            "Twiss py positions do not match!"
+        assert np.allclose(tw_on.zeta, sad_twiss.zeta), \
+            "Twiss zeta positions do not match!"
+        assert np.allclose(tw_on.delta, sad_twiss.delta), \
+            "Twiss delta positions do not match!"
+
+    ########################################
+    # Compute off momentum twiss at delta0 + ddelta
+    ########################################
+    tw_plus  = twiss_sad(
+        lattice_filepath        = lattice_filepath,
+        line_name               = line_name,
+        reverse_element_order   = reverse_element_order,
+        reverse_bend_direction  = reverse_bend_direction,
+        closed                  = closed,
+        calc6d                  = calc6d,
+        rfsw                    = rfsw,
+        rad                     = rad,
+        radcod                  = radcod,
+        radtaper                = radtaper,
+        delta0                  = delta0 + ddelta,
+        additional_commands     = additional_commands,
+        wall_time               = wall_time,
+        sad_path                = sad_path)
+
+    ########################################
+    # Compute off momentum twiss at delta0 - ddelta
+    ########################################
+    tw_minus    = twiss_sad(
+        lattice_filepath        = lattice_filepath,
+        line_name               = line_name,
+        reverse_element_order   = reverse_element_order,
+        reverse_bend_direction  = reverse_bend_direction,
+        closed                  = closed,
+        calc6d                  = calc6d,
+        rfsw                    = rfsw,
+        rad                     = rad,
+        radcod                  = radcod,
+        radtaper                = radtaper,
+        delta0                  = delta0 - ddelta,
+        additional_commands     = additional_commands,
+        wall_time               = wall_time,
+        sad_path                = sad_path)
+
+    ########################################
+    # Obtain required data
+    ########################################
+    betx_on     = tw_on.betx
+    betx_plus   = tw_plus.betx
+    betx_minus  = tw_minus.betx
+
+    bety_on     = tw_on.bety
+    bety_plus   = tw_plus.bety
+    bety_minus  = tw_minus.bety
+
+    alfx_on     = tw_on.alfx
+    alfx_plus   = tw_plus.alfx
+    alfx_minus  = tw_minus.alfx
+
+    alfy_on     = tw_on.alfy
+    alfy_plus   = tw_plus.alfy
+    alfy_minus  = tw_minus.alfy
+
+    ########################################
+    # Compute chromatic functions
+    ########################################
+    # See MAD8 physics manual section 6.3
+    dbetx      = (betx_plus - betx_minus) / (2 * ddelta)
+    dbety      = (bety_plus - bety_minus) / (2 * ddelta)
+    dalfx      = (alfx_plus - alfx_minus) / (2 * ddelta)
+    dalfy      = (alfy_plus - alfy_minus) / (2 * ddelta)
+
+    bx_chrom   = dbetx / betx_on
+    by_chrom   = dbety / bety_on
+
+    ax_chrom   = dalfx - dbetx * alfx_on / betx_on
+    ay_chrom   = dalfy - dbety * alfy_on / bety_on
+
+    wx_chrom   = np.sqrt(ax_chrom**2 + bx_chrom**2)
+    wy_chrom   = np.sqrt(ay_chrom**2 + by_chrom**2)
+
+    ########################################
+    # Add these values to the twiss
+    ########################################
+    if sad_twiss is None:
+        sad_twiss   = tw_on
+
+    sad_twiss["bx_chrom"]    = bx_chrom
+    sad_twiss["by_chrom"]    = by_chrom
+    sad_twiss["ax_chrom"]    = ax_chrom
+    sad_twiss["ay_chrom"]    = ay_chrom
+    sad_twiss["wx_chrom"]    = wx_chrom
+    sad_twiss["wy_chrom"]    = wy_chrom
+
+    ########################################
+    # Return the twiss
+    ########################################
+    return sad_twiss
