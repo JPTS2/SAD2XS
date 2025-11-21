@@ -288,7 +288,7 @@ WriteString[6,"TRACKING COMPLETE \\n"];
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Save to file
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-Put[beam, "temp_sad_track.dat"];
+Put[beam[[2]], "temp_sad_track.dat"];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -306,7 +306,7 @@ WriteString[6,"TRACKING COMPLETE \\n"];
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Save to file
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-Put[beam, "temp_sad_track.dat"];
+Put[beam[[2]], "temp_sad_track.dat"];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -384,7 +384,7 @@ abort;
     ########################################
     print("Loading output file")
     with open("temp_sad_track.dat", "r", encoding = "utf-8") as f:
-        output   = f.read()
+        raw_output  = f.read()
 
     ########################################
     # Remove temporary data
@@ -398,7 +398,7 @@ abort;
     print("Processing outputs")
 
     # Fix Mathematica"s ".00123" → "0.00123"
-    output  = re.sub(r"(?<![\d])\.(\d+)", r"0.\1", output)
+    output  = re.sub(r"(?<![\d])\.(\d+)", r"0.\1", raw_output)
 
     # Extract all floats in a single pass
     output  = np.fromstring(
