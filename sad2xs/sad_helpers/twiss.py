@@ -403,7 +403,7 @@ def compute_second_order_dispersions(
         rad                     = rad,
         radcod                  = radcod,
         radtaper                = radtaper,
-        delta0                  = delta0 + ddelta,
+        delta0                  = delta0,
         additional_commands     = additional_commands,
         wall_time               = wall_time,
         sad_path                = sad_path)
@@ -525,7 +525,7 @@ def compute_chromatic_functions(
         rad                     = rad,
         radcod                  = radcod,
         radtaper                = radtaper,
-        delta0                  = delta0 + ddelta,
+        delta0                  = delta0,
         additional_commands     = additional_commands,
         wall_time               = wall_time,
         sad_path                = sad_path)
