@@ -140,16 +140,10 @@ def convert_offset_markers(
                 insert_ele_length * (offset % 1)
 
             ########################################
-            # Exclusions!
+            # Exclude slicing solenoids
             ########################################
-            if isinstance(line[insert_at_ele], xt.Magnet):
-                print("Cannot slice xt.Magnet element")
-                print(f"Marker {base_marker} Ignored at {s_to_insert}")
-                continue
-
-            # TODO: Slicing solenoids causes issues
-            if isinstance(line[insert_at_ele], xt.Solenoid):
-                print("Slicing xt.Solenoid elements causes issues")
+            if isinstance(line[insert_at_ele], xt.UniformSolenoid):
+                print("Slicing Solenoid elements causes issues")
                 print(f"Marker {base_marker} Ignored at {s_to_insert}")
                 continue
 

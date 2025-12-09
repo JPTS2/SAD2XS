@@ -10,6 +10,7 @@ Date:       09-12-2025
 # Required Packages
 ################################################################################
 import xtrack as xt
+import numpy as np
 
 from tqdm import tqdm
 
@@ -79,7 +80,7 @@ def convert_solenoids(
         for idx, element in enumerate(line.element_names):
 
             # Element must actually be a solenoid
-            if not isinstance(environment.element_dict[element], xt.Solenoid):  # type: ignore
+            if not isinstance(environment.element_dict[element], xt.UniformSolenoid):  # type: ignore
                 continue
 
             # Case where the element is a bound solenoid with the right name
@@ -164,7 +165,7 @@ def convert_solenoids(
                     ks              = ks_previous
 
                 # If the element is a solenoid, update the current solenoidal field
-                if isinstance(environment.element_dict[element], xt.Solenoid):  # type: ignore
+                if isinstance(environment.element_dict[element], xt.UniformSolenoid):  # type: ignore
 
                     # Start calculating new segment length
                     segment_length = ele_length
@@ -185,7 +186,7 @@ def convert_solenoids(
                     # Get the information about the ahead solenoid
                     for ahead_element in line.element_names[idx + 1:]:
                         # If the element is a solenoid, update the solenoidal field
-                        if isinstance(environment.element_dict[ahead_element], xt.Solenoid):    # type: ignore
+                        if isinstance(environment.element_dict[ahead_element], xt.UniformSolenoid):    # type: ignore
                             if ahead_element.endswith("_bound"):
                                 # If the element is a bound solenoid clip this bit
                                 ahead_solenoid      = ahead_element[:-6]
@@ -211,7 +212,7 @@ def convert_solenoids(
                     if new_element_name not in environment.element_dict:        # type: ignore
                         environment.new(
                             name    = new_element_name,
-                            parent  = xt.Solenoid,
+                            parent  = xt.UniformSolenoid,
                             length  = length,
                             ks      = ks)
                     line.element_names[idx] = new_element_name
@@ -235,19 +236,27 @@ def convert_solenoids(
                     rotation    = line[element].rot_s_rad
                     knl         = [f"{k0} * {length}", f"{k1} * {length}"]
 
+                    x0          = -1 * (shift_x * np.cos(rotation) + \
+                        shift_y * np.sin(rotation))
+                    y0          = -1 * (shift_y * np.cos(rotation) - \
+                        shift_x * np.sin(rotation))
+
                     new_element_name    = f"{element}_{solenoid_suffix}"
 
                     if new_element_name not in environment.element_dict:        # type: ignore
                         environment.new(
-                            name				= new_element_name,
-                            parent				= xt.Solenoid,
-                            length				= length,
-                            ks					= ks,
-                            knl					= knl,
-                            order				= config.MAX_KNL_ORDER,
-                            mult_shift_x		= shift_x,
-                            mult_shift_y		= shift_y,
-                            rot_s_rad           = rotation)
+                            name        = new_element_name,
+                            parent      = xt.UniformSolenoid,
+                            length      = length,
+                            ks          = ks,
+                            knl         = knl,
+                            order       = config.MAX_KNL_ORDER,
+                            shift_x     = shift_x,
+                            shift_y     = shift_y,
+                            rot_s_rad   = rotation,
+                            x0          = x0,
+                            y0          = y0)
+
                     line.element_names[idx] = new_element_name
 
                     if config._verbose:
@@ -268,20 +277,27 @@ def convert_solenoids(
                     knl         = [0, f"{k1} * {length}"]
                     ksl         = [0, f"{k1s} * {length}"]
 
+                    x0          = -1 * (shift_x * np.cos(rotation) + \
+                        shift_y * np.sin(rotation))
+                    y0          = -1 * (shift_y * np.cos(rotation) - \
+                        shift_x * np.sin(rotation))
+
                     new_element_name    = f"{element}_{solenoid_suffix}"
 
                     if new_element_name not in environment.element_dict:        # type: ignore
                         environment.new(
                             name				= new_element_name,
-                            parent				= xt.Solenoid,
+                            parent				= xt.UniformSolenoid,
                             length				= length,
                             ks					= ks,
                             knl					= knl,
                             ksl					= ksl,
                             order				= config.MAX_KNL_ORDER,
-                            mult_shift_x		= shift_x,
-                            mult_shift_y		= shift_y,
-                            rot_s_rad           = rotation)
+                            shift_x		        = shift_x,
+                            shift_y		        = shift_y,
+                            rot_s_rad           = rotation,
+                            x0                  = x0,
+                            y0                  = y0)
                     line.element_names[idx] = new_element_name
 
                     if config._verbose:
@@ -302,20 +318,27 @@ def convert_solenoids(
                     knl         = [0, 0, f"{k2} * {length}"]
                     ksl         = [0, 0, f"{k2s} * {length}"]
 
+                    x0          = -1 * (shift_x * np.cos(rotation) + \
+                        shift_y * np.sin(rotation))
+                    y0          = -1 * (shift_y * np.cos(rotation) - \
+                        shift_x * np.sin(rotation))
+
                     new_element_name    = f"{element}_{solenoid_suffix}"
 
                     if new_element_name not in environment.element_dict:     # type: ignore
                         environment.new(
                             name				= new_element_name,
-                            parent				= xt.Solenoid,
+                            parent				= xt.UniformSolenoid,
                             length				= length,
                             ks					= ks,
                             knl					= knl,
                             ksl					= ksl,
                             order				= config.MAX_KNL_ORDER,
-                            mult_shift_x		= shift_x,
-                            mult_shift_y		= shift_y,
-                            rot_s_rad           = rotation)
+                            shift_x		        = shift_x,
+                            shift_y		        = shift_y,
+                            rot_s_rad           = rotation,
+                            x0                  = x0,
+                            y0                  = y0)
                     line.element_names[idx] = new_element_name
 
                     if config._verbose:
@@ -336,20 +359,27 @@ def convert_solenoids(
                     knl         = [0, 0, 0, f"{k3} * {length}"]
                     ksl         = [0, 0, 0, f"{k3s} * {length}"]
 
+                    x0          = -1 * (shift_x * np.cos(rotation) + \
+                        shift_y * np.sin(rotation))
+                    y0          = -1 * (shift_y * np.cos(rotation) - \
+                        shift_x * np.sin(rotation))
+
                     new_element_name    = f"{element}_{solenoid_suffix}"
 
                     if new_element_name not in environment.element_dict:    # type: ignore
                         environment.new(
                             name				= new_element_name,
-                            parent				= xt.Solenoid,
+                            parent				= xt.UniformSolenoid,
                             length				= length,
                             ks					= ks,
                             knl					= knl,
                             ksl					= ksl,
                             order				= config.MAX_KNL_ORDER,
-                            mult_shift_x		= shift_x,
-                            mult_shift_y		= shift_y,
-                            rot_s_rad           = rotation)
+                            shift_x		        = shift_x,
+                            shift_y		        = shift_y,
+                            rot_s_rad           = rotation,
+                            x0                  = x0,
+                            y0                  = y0)
                     line.element_names[idx] = new_element_name
 
                     if config._verbose:
@@ -368,45 +398,25 @@ def convert_solenoids(
                     shift_y     = line[element].shift_y
                     rotation    = line[element].rot_s_rad
 
+                    x0          = -1 * (shift_x * np.cos(rotation) + \
+                        shift_y * np.sin(rotation))
+                    y0          = -1 * (shift_y * np.cos(rotation) - \
+                        shift_x * np.sin(rotation))
+
                     environment.element_dict.pop(element)                       # type: ignore
                     environment.new(
                         name				= element,
-                        parent				= xt.Solenoid,
+                        parent				= xt.UniformSolenoid,
                         length				= length,
                         ks					= ks,
                         knl					= knl,
                         ksl					= ksl,
                         order				= config.MAX_KNL_ORDER,
-                        mult_shift_x		= shift_x,
-                        mult_shift_y		= shift_y,
-                        rot_s_rad           = rotation)
-
-                    if config._verbose:
-                        print(f"Converted Multipole {element} to solenoid with ks = {ks}")
-                    continue
-
-                # Generic Magnet conversion (currently unused)
-                elif isinstance(environment.element_dict[element], xt.Magnet):  # type: ignore
-
-                    length      = line[element].length
-                    knl         = line[element].knl
-                    ksl         = line[element].ksl
-                    shift_x     = line[element].shift_x
-                    shift_y     = line[element].shift_y
-                    rotation    = line[element].rot_s_rad
-
-                    environment.element_dict.pop(element)                       # type: ignore
-                    environment.new(
-                        name				= element,
-                        parent				= xt.Solenoid,
-                        length				= length,
-                        ks					= ks,
-                        knl					= knl,
-                        ksl					= ksl,
-                        order               = config.MAX_KNL_ORDER,
-                        mult_shift_x		= shift_x,
-                        mult_shift_y		= shift_y,
-                        rot_s_rad           = rotation)
+                        shift_x		        = shift_x,
+                        shift_y		        = shift_y,
+                        rot_s_rad           = rotation,
+                        x0                  = x0,
+                        y0                  = y0)
 
                     if config._verbose:
                         print(f"Converted Multipole {element} to solenoid with ks = {ks}")
@@ -484,7 +494,7 @@ def solenoid_reference_shift_corrections(
     geo_sols_in_line    = []
     for element in line.element_names:
         # Element must actually be a solenoid
-        if not isinstance(environment.element_dict[element], xt.Solenoid):  # type: ignore
+        if not isinstance(environment.element_dict[element], xt.UniformSolenoid):  # type: ignore
             continue
 
         # Case where the element is a bound solenoid with the right name

@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
@@ -31,7 +31,7 @@ class Config:
     ############################################################################
     # Constants
     ############################################################################
-    
+
     ########################################
     # ASCII Art
     ########################################
@@ -147,7 +147,8 @@ class Config:
     ALLOWED_ELEMENTS:               set[str]        = field(
         default_factory = lambda: {
         "Marker", "Drift",
-        "Bend", "Quadrupole", "Sextupole", "Octupole", "Multipole", "Solenoid",
+        "Bend", "Quadrupole", "Sextupole", "Octupole", "Multipole",
+        "UniformSolenoid",
         "Cavity", "XYShift", "ZetaShift", "XRotation", "YRotation", "SRotation",
         "LimitEllipse", "LimitRect"})
 

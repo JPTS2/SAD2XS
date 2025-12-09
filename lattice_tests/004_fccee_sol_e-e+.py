@@ -6,11 +6,9 @@
 ################################################################################
 import os
 import sad2xs as s2x
-import xtrack as xt
 import numpy as np
 import matplotlib.pyplot as plt
 
-from _sad_helpers import twiss_sad, rebuild_sad_lattice
 from _misc_helpers import create_comparison_plots
 
 ################################################################################
@@ -23,8 +21,8 @@ LINE_NAME                   = 'RING'
 ################################################################################
 # Load Reference Data
 ################################################################################
-rebuild_sad_lattice(
-    lattice_filename    = SAD_LATTICE_PATH,
+s2x.sad_helpers.rebuild_sad_lattice(
+    lattice_filepath    = SAD_LATTICE_PATH,
     line_name           = LINE_NAME,
     additional_commands = """
 LINE["DISFRIN", "ESL*"]     = 1;
@@ -35,20 +33,20 @@ LINE["F1", "ESL*"]          = 0;
 LINE["F1", "ESR*"]          = 0;
 LINE["F1", "ESCL*"]         = 0;
 LINE["F1", "ESCR*"]         = 0;""",
-    output_filename     = REBUILT_SAD_LATTICE_PATH)
+    output_filepath     = REBUILT_SAD_LATTICE_PATH)
 
-twp_sad  = twiss_sad(
-    lattice_filename        = REBUILT_SAD_LATTICE_PATH,
+twp_sad  = s2x.sad_helpers.twiss_sad(
+    lattice_filepath        = REBUILT_SAD_LATTICE_PATH,
     line_name               = LINE_NAME,
-    method                  = "4d",
+    calc6d                  = False,
     closed                  = True,
     reverse_element_order   = False,
     reverse_bend_direction  = False,
     additional_commands     = "")
-twe_sad  = twiss_sad(
-    lattice_filename        = REBUILT_SAD_LATTICE_PATH,
+twe_sad  = s2x.sad_helpers.twiss_sad(
+    lattice_filepath        = REBUILT_SAD_LATTICE_PATH,
     line_name               = LINE_NAME,
-    method                  = "4d",
+    calc6d                  = False,
     closed                  = True,
     reverse_element_order   = False,
     reverse_bend_direction  = True,

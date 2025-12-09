@@ -5,10 +5,8 @@
 # Required Packages
 ################################################################################
 import sad2xs as s2x
-import xtrack as xt
 import matplotlib.pyplot as plt
 
-from _sad_helpers import twiss_sad
 from _misc_helpers import create_comparison_plots
 
 ################################################################################
@@ -20,10 +18,10 @@ LINE_NAME                   = 'RING'
 ################################################################################
 # Load Reference Data
 ################################################################################
-tw_sad  = twiss_sad(
-    lattice_filename        = SAD_LATTICE_PATH,
+tw_sad  = s2x.sad_helpers.twiss_sad(
+    lattice_filepath        = SAD_LATTICE_PATH,
     line_name               = LINE_NAME,
-    method                  = "4d",
+    calc6d                  = False,
     closed                  = True,
     reverse_element_order   = False,
     reverse_bend_direction  = False,
