@@ -34,7 +34,7 @@ tt_quad     = tt.rows[tt.element_type == "Quadrupole"]
 tt_sext     = tt.rows[tt.element_type == "Sextupole"]
 tt_oct      = tt.rows[tt.element_type == "Octupole"]
 tt_mult     = tt.rows[tt.element_type == "Multipole"]
-tt_sol      = tt.rows[tt.element_type == "Solenoid"]
+tt_sol      = tt.rows[tt.element_type == "UniformSolenoid"]
 tt_cavi     = tt.rows[tt.element_type == "Cavity"]
 
 line.set(

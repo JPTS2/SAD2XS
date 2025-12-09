@@ -99,7 +99,6 @@ try:
 except AssertionError as err:
     print("Couldn't insert all the markers. Usually this is because of negative drifts")
     print(err)
-    pass
 
 """
 

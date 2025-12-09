@@ -126,25 +126,25 @@ def get_element_misalignments(ele_vars, rotation_correction = 0.0):
     else:
         raise TypeError(f"Error reading rotation: type {type(rotation)}")
 
-    ########################################
-    # Composition of rotations is different in SAD
-    ########################################
-    if isinstance(rotation, float) and isinstance(shift_x, float) and isinstance(shift_y, float):
-        shift_r     = np.sqrt(shift_x**2 + shift_y**2)
-        theta_rot   = np.arctan2(shift_y, shift_x)
+    # ########################################
+    # # Composition of rotations is different in SAD
+    # ########################################
+    # if isinstance(rotation, float) and isinstance(shift_x, float) and isinstance(shift_y, float):
+    #     shift_r     = np.sqrt(shift_x**2 + shift_y**2)
+    #     theta_rot   = np.arctan2(shift_y, shift_x)
 
-        shift_x  = shift_r * np.cos(theta_rot - rotation)
-        shift_y  = shift_r * np.sin(theta_rot - rotation)
-    else:
-        shift_x     = str(shift_x)
-        shift_y     = str(shift_y)
-        rotation    = str(rotation)
+    #     shift_x  = shift_r * np.cos(theta_rot - rotation)
+    #     shift_y  = shift_r * np.sin(theta_rot - rotation)
+    # else:
+    #     shift_x     = str(shift_x)
+    #     shift_y     = str(shift_y)
+    #     rotation    = str(rotation)
 
-        shift_r     = f"sqrt({shift_x}**2 + {shift_y}**2)"
-        theta_rot   = f"arctan2({shift_y}, {shift_x})"
+    #     shift_r     = f"sqrt({shift_x}**2 + {shift_y}**2)"
+    #     theta_rot   = f"arctan2({shift_y}, {shift_x})"
 
-        shift_x  = f"{shift_r} * cos({theta_rot} - {rotation})"
-        shift_y  = f"{shift_r} * sin({theta_rot} - {rotation})"
+    #     shift_x  = f"{shift_r} * cos({theta_rot} - {rotation})"
+    #     shift_y  = f"{shift_r} * sin({theta_rot} - {rotation})"
 
     return shift_x, shift_y, rotation
 
@@ -1601,7 +1601,7 @@ def convert_solenoids(
             ########################################
             environment.new(
                 name    = f"{ele_name}_bound",
-                parent  = xt.Solenoid,
+                parent  = xt.UniformSolenoid,
                 ks      = ks)
 
             environment.new(
@@ -1650,7 +1650,7 @@ def convert_solenoids(
         else:
             environment.new(
                 name    = f"{ele_name}",
-                parent  = xt.Solenoid,
+                parent  = xt.UniformSolenoid,
                 ks      = ks)
             continue
 

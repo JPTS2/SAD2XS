@@ -46,7 +46,7 @@ def reverse_line_element_order(line):
     tt      = line.get_table(attr = True)
     tt_bend = tt.rows[
         (tt.element_type == "Bend") | (tt.element_type == "RBend")]
-    tt_sol  = tt.rows[tt.element_type == "Solenoid"]
+    tt_sol  = tt.rows[tt.element_type == "UniformSolenoid"]
     tt_dxy  = tt.rows[tt.element_type == "XYShift"]
 
     ########################################
@@ -147,7 +147,7 @@ def reverse_line_bend_direction(line):
     tt_sext = tt.rows[tt.element_type == "Sextupole"]
     tt_oct  = tt.rows[tt.element_type == "Octupole"]
     tt_mult = tt.rows[tt.element_type == "Multipole"]
-    tt_sol  = tt.rows[tt.element_type == "Solenoid"]
+    tt_sol  = tt.rows[tt.element_type == "UniformSolenoid"]
     tt_dxy  = tt.rows[tt.element_type == "XYShift"]
     tt_chi1 = tt.rows[tt.element_type == "YRotation"]
     tt_chi2 = tt.rows[tt.element_type == "XRotation"]
@@ -329,9 +329,16 @@ def reverse_line_bend_direction(line):
                 env[sol].ksl[odd_order]   *= -1
 
             # Offset adjustments
-            env[sol].mult_shift_x   *= -1
-            env[sol].mult_shift_y   *= +1
-            env[sol].rot_s_rad      *= -1
+            env[sol].shift_x    *= -1
+            env[sol].shift_y    *= +1
+            env[sol].rot_s_rad  *= -1
+
+            x0          = -1 * (env[sol].shift_x * np.cos(env[sol].rot_s_rad) + \
+                env[sol].shift_y * np.sin(env[sol].rot_s_rad))
+            y0          = -1 * (env[sol].shift_y * np.cos(env[sol].rot_s_rad) - \
+                env[sol].shift_x * np.sin(env[sol].rot_s_rad))
+            env[sol].x0         = x0
+            env[sol].y0         = y0
 
     ########################################
     # Reference Shifts

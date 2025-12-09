@@ -44,7 +44,7 @@ def create_solenoid_lattice_file_information(
     sols, unique_sol_names = extract_multipole_information(
         line        = line,
         line_table  = line_table,
-        mode        = "Solenoid")
+        mode        = "UniformSolenoid")
 
     sol_lengths    = np.array(sorted(sols.keys()))
     sol_names      = generate_magnet_for_replication_names(sols, "sol")
@@ -76,7 +76,7 @@ def create_solenoid_lattice_file_information(
         output_string += f"""
 env.new(
     name                = '{sol_name}',
-    parent              = xt.Solenoid,
+    parent              = xt.UniformSolenoid,
     length              = {sol_length},
     order               = {config.MAX_KNL_ORDER})"""
 
@@ -97,15 +97,23 @@ env.new(
             ks          = line[replica_name].ks
             knl         = get_knl_string(line[replica_name].knl)
             ksl         = get_knl_string(line[replica_name].ksl)
-            shift_x     = line[replica_name].mult_shift_x
-            shift_y     = line[replica_name].mult_shift_y
+            shift_x     = line[replica_name].shift_x
+            shift_y     = line[replica_name].shift_y
             rot_s_rad   = line[replica_name].rot_s_rad
+            x0          = line[replica_name].x0
+            y0          = line[replica_name].y0
 
             # Remove the minus sign if no non minus version exists
             if replica_name.startswith("-"):
                 root_name   = replica_name[1:]
                 if root_name not in sols[sol_length]:
                     replica_name        = root_name
+            elif "-" in replica_name:
+                assert len(replica_name.split("-")) == 2
+                suffix_name = replica_name.split("-")[-1]
+                if suffix_name not in sols[sol_length]:
+                    replica_name        = replica_name.split("-")[0] + \
+                        replica_name.split("-")[-1]
 
             # Basic information
             sol_generation = f"""
@@ -137,13 +145,19 @@ env.new(
             # Misalignments
             if shift_x != 0:
                 sol_generation += f""",
-    mult_shift_x     = '{shift_x}'"""
+    shift_x     = '{shift_x}'"""
             if shift_y != 0:
                 sol_generation += f""",
-    mult_shift_y     = '{shift_y}'"""
+    shift_y     = '{shift_y}'"""
             if rot_s_rad != 0:
                 sol_generation += f""",
     rot_s_rad   = '{rot_s_rad}'"""
+            if x0 != 0:
+                sol_generation += f""",
+    x0          = '{x0}'"""
+            if y0 != 0:
+                sol_generation += f""",
+    y0          = '{y0}'"""
 
             # Close the element definition
             sol_generation += """)"""

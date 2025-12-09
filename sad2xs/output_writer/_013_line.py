@@ -59,6 +59,19 @@ def create_line_lattice_file_information(
                 name if name != minus_name else non_minus_name
                 for name in parent_names]
 
+    # Ones that start with - are handled above
+    minus_names = [name for name in parent_names if "-" in name and not name.startswith("-")]
+    for minus_name in minus_names:
+        assert len(minus_name.split("-")) == 2
+        suffix_name = "-" + minus_name.split("-")[-1]
+        if suffix_name not in parent_names:
+            non_minus_name = minus_name.split("-")[0] + \
+                minus_name.split("-")[-1]
+            # Correct all instances in the parent names list
+            parent_names = [
+                name if name != minus_name else non_minus_name
+                for name in parent_names]
+
     ########################################
     # Convert to single string
     ########################################
