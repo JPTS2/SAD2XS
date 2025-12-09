@@ -3,16 +3,15 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
-import xtrack as xt
 import textwrap
 
-from ._000_helpers import *
+from ._000_helpers import get_parentname
 from ..types import ConfigLike
 
 ################################################################################
@@ -31,7 +30,7 @@ def create_offset_marker_lattice_file_information(
     ########################################
     # Set up output string
     ########################################
-    output_string = f'''
+    output_string = '''
 ################################################################################
 # Offset markers
 ################################################################################
@@ -50,7 +49,7 @@ length   = line.get_length()
     # Write offset marker locations
     ########################################
     # Open the dictionary
-    output_string += f"""MARKER_POSITIONS = {{"""
+    output_string += """MARKER_POSITIONS = {"""
 
     for i, (offset_marker, insert_at_s_values) in enumerate(offset_marker_locations.items()):
 
@@ -76,7 +75,7 @@ length   = line.get_length()
     break_on_hyphens    = False)}"""
 
     # Close the dictionary
-    output_string += f"""}}"""
+    output_string += """}"""
     output_string += "\n"
 
     ########################################
@@ -108,7 +107,7 @@ except AssertionError as err:
         # Replace repeated elements
         ########################################
         if config._replace_repeated_elements:
-            output_string += f"""
+            output_string += """
 ########################################
 # Replace repeated elements
 ########################################

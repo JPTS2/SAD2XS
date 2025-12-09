@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
@@ -11,9 +11,11 @@ Date:       09-10-2025
 ################################################################################
 import xtrack as xt
 import xdeps as xd
-import textwrap
+import numpy as np
 
-from ._000_helpers import *
+from ._000_helpers import extract_multipole_information, \
+    generate_magnet_for_replication_names, check_is_simple_quad_sext_oct, \
+    check_is_skew_quad_sext_oct
 from ..types import ConfigLike
 
 ################################################################################
@@ -23,6 +25,18 @@ def create_quadrupole_lattice_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Docstring for create_quadrupole_lattice_file_information
+    
+    :param line: Description
+    :type line: xt.Line
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get information
@@ -44,7 +58,7 @@ def create_quadrupole_lattice_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string   = f"""
+    output_string   = """
 ############################################################
 # Quadrupoles
 ############################################################
@@ -53,11 +67,11 @@ def create_quadrupole_lattice_file_information(
     ########################################
     # Create base elements
     ########################################
-    output_string += f"""
+    output_string += """
 ########################################
 # Base Elements
 ########################################"""
-    
+
     for quad_name, quad_length in zip(quad_names, quad_lengths):
         output_string += f"""
 env.new(name = '{quad_name}', parent = xt.Quadrupole, length = {quad_length})"""
@@ -67,7 +81,7 @@ env.new(name = '{quad_name}', parent = xt.Quadrupole, length = {quad_length})"""
     ########################################
     # Clone Elements
     ########################################
-    output_string += f"""
+    output_string += """
 ########################################
 # Cloned Elements
 ########################################"""
@@ -89,7 +103,7 @@ env.new(name = '{replica_name}', parent = '{quad}', k1 = 'k1_{replica_name}')"""
                 else:
                     output_string += f"""
 env.new(name = '{replica_name}', parent = '{quad}', k1s = 'k1s_{replica_name}')"""
-            
+
             else:
                 # Get the replica information
                 k1          = line[replica_name].k1
@@ -142,15 +156,27 @@ def create_quadrupole_optics_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Docstring for create_quadrupole_optics_file_information
+    
+    :param line: Description
+    :type line: xt.Line
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get information
     ########################################
-    quads, unique_quad_names = extract_multipole_information(
+    _, unique_quad_names = extract_multipole_information(
         line        = line,
         line_table  = line_table,
         mode        = "Quadrupole")
-    
+
     ########################################
     # Ensure there are quadrupoles in the line
     ########################################
@@ -160,7 +186,7 @@ def create_quadrupole_optics_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string = f"""
+    output_string = """
     ############################################################
     # Quadrupoles
     ############################################################"""
@@ -176,7 +202,7 @@ def create_quadrupole_optics_file_information(
                 k1  = line[f"-{quad}"].k1
             except KeyError:
                 raise KeyError(f"Could not find quad variable {quad} or -{quad} in line.")
-            
+
         try:
             k1s     = line[quad].k1s
         except KeyError:
@@ -184,7 +210,7 @@ def create_quadrupole_optics_file_information(
                 k1s = line[f"-{quad}"].k1s
             except KeyError:
                 raise KeyError(f"Could not find quad variable {quad} or -{quad} in line.")
-            
+
         if k1 == 0:
             k1 = None
         if k1s == 0:

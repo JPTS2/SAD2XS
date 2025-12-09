@@ -3,27 +3,37 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
-import xtrack as xt
-import xdeps as xd
 import textwrap
+import xdeps as xd
 
-from ._000_helpers import *
+from ._000_helpers import get_parentname
 from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
 def create_marker_lattice_file_information(
-        line:                       xt.Line,
         line_table:                 xd.table.Table,
         offset_marker_locations:    dict | None,
         config:                     ConfigLike) -> str:
+    """
+    Docstring for create_marker_lattice_file_information
+    
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param offset_marker_locations: Description
+    :type offset_marker_locations: dict | None
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get normal marker information
@@ -58,11 +68,11 @@ def create_marker_lattice_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string   = f"""
+    output_string   = """
 ############################################################
 # Markers
 ############################################################"""
-        
+
     ########################################
     # Create elements
     ########################################

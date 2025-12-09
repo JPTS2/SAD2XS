@@ -3,26 +3,35 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
-import xtrack as xt
-import xdeps as xd
 import textwrap
+import xdeps as xd
+import numpy as np
 
-from ._000_helpers import *
+from ._000_helpers import get_parentname
 from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
 def create_line_lattice_file_information(
-        line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Docstring for create_line_lattice_file_information
+    
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get allowed elements
@@ -76,7 +85,7 @@ env.new_line(
     ########################################
     # Set line attributes
     ########################################
-    output_string   += f"""
+    output_string   += """
 line = env.lines['line']
 line.particle_ref = env.particle_ref.copy()"""
 

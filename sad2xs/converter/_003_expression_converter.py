@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
@@ -21,11 +21,11 @@ def parse_expression(expression):
     """
     Try to convert s to float; if that fails, return s stripped
     """
-    if type(expression) is float:
+    if isinstance(expression, float):
         return expression
-    elif type(expression) is int:
+    elif isinstance(expression, int):
         return float(expression)
-    elif type(expression) is str:
+    elif isinstance(expression, str):
         expression_stripped  = expression.strip()
         try:
             return float(expression_stripped)
@@ -41,28 +41,38 @@ def convert_expressions(
         parsed_lattice_data:    dict,
         environment:            xt.Environment,
         config:                 ConfigLike) -> None:
+    """
+    Docstring for convert_expressions
+    
+    :param parsed_lattice_data: Description
+    :type parsed_lattice_data: dict
+    :param environment: Description
+    :type environment: xt.Environment
+    :param config: Description
+    :type config: ConfigLike
+    """
 
     ########################################
     # Get the required data
     ########################################
-    parsed_globals      = parsed_lattice_data['globals']
-    parsed_expressions  = parsed_lattice_data['expressions']
-    
+    parsed_globals      = parsed_lattice_data["globals"]
+    parsed_expressions  = parsed_lattice_data["expressions"]
+
     ########################################
     # Create global variables
     ########################################
     if config._verbose:
-        print_section_heading("Converting Global Variable Expressions", mode = 'subsection')
+        print_section_heading("Converting Global Variable Expressions", mode = "subsection")
 
     # Variables may depend on other variables, so have to parse them in order
     # Here, just try a few times to parse them
     converted_globals = []
-    for i in range(10):
+    for _ in range(10):
         for var_name, var_value in parsed_globals.items():
-            
+
             if var_name in converted_globals:
                 continue
-            
+
             var_value   = parse_expression(var_value)
             try:
                 environment[var_name] = var_value
@@ -77,7 +87,7 @@ def convert_expressions(
     # Create expressions
     ########################################
     if config._verbose:
-        print_section_heading("Converting Deferred Expressions", mode = 'subsection')
+        print_section_heading("Converting Deferred Expressions", mode = "subsection")
 
     # Variables may depend on other variables, so have to parse them in order
     # Here, just try a few times to parse them
@@ -87,7 +97,7 @@ def convert_expressions(
 
             if var_name in converted_expressions:
                 continue
-            
+
             var_value   = parse_expression(var_value)
             try:
                 environment[var_name] = var_value

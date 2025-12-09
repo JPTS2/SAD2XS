@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
@@ -11,9 +11,9 @@ Date:       09-10-2025
 ################################################################################
 import xtrack as xt
 import xdeps as xd
-import textwrap
 
-from ._000_helpers import *
+
+from ._000_helpers import get_parentname, get_variablename
 from ..types import ConfigLike
 
 ################################################################################
@@ -23,6 +23,18 @@ def create_cavity_lattice_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Docstring for create_cavity_lattice_file_information
+    
+    :param line: Description
+    :type line: xt.Line
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get information
@@ -45,7 +57,7 @@ def create_cavity_lattice_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string   = f"""
+    output_string   = """
 ############################################################
 # Cavities
 ############################################################"""
@@ -77,7 +89,7 @@ env.new(
     voltage     = 'volt_{cavi_variable_name}'"""
         cavity_generation += f""",
     lag         = 'lag_{cavi_variable_name}'"""
-            
+
         # Close the element definition
         cavity_generation += """)"""
 
@@ -97,6 +109,18 @@ def create_cavity_optics_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Docstring for create_cavity_optics_file_information
+    
+    :param line: Description
+    :type line: xt.Line
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get information
@@ -119,7 +143,7 @@ def create_cavity_optics_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string = f"""
+    output_string = """
     ############################################################
     # Cavities
     ############################################################"""
@@ -138,24 +162,27 @@ def create_cavity_optics_file_information(
         except KeyError:
             try:
                 freq  = line[f"-{cavi}"].frequency
-            except KeyError:
-                raise KeyError(f"Could not find cavity variable {cavi} or -{cavi} in line.")
-            
+            except KeyError as exc:
+                raise KeyError(
+                    f"Could not find cavity variable {cavi} or -{cavi} in line.") from exc
+
         try:
             volt  = line[cavi].voltage
         except KeyError:
             try:
                 volt  = line[f"-{cavi}"].voltage
-            except KeyError:
-                raise KeyError(f"Could not find cavity variable {cavi} or -{cavi} in line.")
-            
+            except KeyError as exc:
+                raise KeyError(
+                    f"Could not find cavity variable {cavi} or -{cavi} in line.") from exc
+
         try:
             lag   = line[cavi].lag
         except KeyError:
             try:
                 lag  = line[f"-{cavi}"].lag
-            except KeyError:
-                raise KeyError(f"Could not find cavity variable {cavi} or -{cavi} in line.")
+            except KeyError as exc:
+                raise KeyError(
+                    f"Could not find cavity variable {cavi} or -{cavi} in line.") from exc
 
         output_string += f"""
     {f'freq_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'freq_{variable_name}') + 4)}{'= '}{freq:.24f},"""

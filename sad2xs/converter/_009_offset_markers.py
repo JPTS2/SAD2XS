@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
@@ -26,7 +26,7 @@ def convert_offset_markers(
     ########################################
     # Get the required data
     ########################################
-    parsed_elements = parsed_lattice_data['elements']
+    parsed_elements = parsed_lattice_data["elements"]
 
     ########################################
     # Create output dictionary for the markers
@@ -37,30 +37,30 @@ def convert_offset_markers(
     # Get the offsets for each marker
     ########################################
     if verbose:
-        print('Calculating offset marker positions')
-    
+        print("Calculating offset marker positions")
+
     # Markers in Xsuite can come from mark, moni or beam-beam elements
-    for marker_type in ['mark', 'moni', 'beambeam']:
+    for marker_type in ["mark", "moni", "beambeam"]:
         if marker_type in parsed_elements:
             for marker_name, marker in parsed_elements[marker_type].items():
-                if 'offset' in marker:
-                    offset_marker_offsets[marker_name] = marker['offset']
+                if "offset" in marker:
+                    offset_marker_offsets[marker_name] = marker["offset"]
 
     ########################################
     # Return if there are no offset markers
     ########################################
     if len(offset_marker_offsets) == 0:
-        
+
         if verbose:
-            print('No offset markers found')
-        
+            print("No offset markers found")
+
         return line, {}
 
     ########################################
     # Get line table
     ########################################
     if verbose:
-        print('Getting line table')
+        print("Getting line table")
 
     line.build_tracker()
     tt      = line.get_table(attr = True)
@@ -69,7 +69,7 @@ def convert_offset_markers(
     ########################################
     # Get the names of the inserted markers in the line
     ########################################
-    inserted_markers    = list(tt.rows[tt.element_type == 'Marker'].name)
+    inserted_markers    = list(tt.rows[tt.element_type == "Marker"].name)
     element_names       = list(tt.name)
 
     ########################################
@@ -79,11 +79,11 @@ def convert_offset_markers(
 
     for marker in inserted_markers:
 
-        base_marker     = marker.split('::')[0]
+        base_marker     = marker.split("::")[0]
 
-        if base_marker.startswith('-'):
+        if base_marker.startswith("-"):
             base_marker = base_marker[1:]
-        
+
         ########################################
         # Only consider the offset markers
         ########################################
@@ -106,7 +106,7 @@ def convert_offset_markers(
             marker_idx = element_names.index(marker)
             try:
                 insert_at_ele   = element_names[marker_idx + 1]
-                s_to_insert     = tt['s', insert_at_ele]
+                s_to_insert     = tt["s", insert_at_ele]
             except IndexError:  # Next element is the end of the line
                 s_to_insert = tt.s[-1]
             except KeyError:    # Next element is a marker
@@ -115,7 +115,7 @@ def convert_offset_markers(
                     relative_idx += 1
                     try:
                         insert_at_ele   = element_names[marker_idx + relative_idx]
-                        s_to_insert     = tt['s', insert_at_ele]
+                        s_to_insert     = tt["s", insert_at_ele]
                         break
                     except KeyError:   # Next element is a marker
                         pass
@@ -133,16 +133,15 @@ def convert_offset_markers(
             insert_at_ele   = element_names[marker_idx + relative_idx]
 
             # Get the length of the element to insert at
-            insert_ele_length   = tt['length', insert_at_ele]
+            insert_ele_length   = tt["length", insert_at_ele]
 
             # Add the fraction of element length
-            s_to_insert     = tt['s', insert_at_ele] +\
+            s_to_insert     = tt["s", insert_at_ele] +\
                 insert_ele_length * (offset % 1)
 
             ########################################
             # Exclusions!
             ########################################
-            # TODO: Cannot slice magnets (currently unused)
             if isinstance(line[insert_at_ele], xt.Magnet):
                 print("Cannot slice xt.Magnet element")
                 print(f"Marker {base_marker} Ignored at {s_to_insert}")
@@ -165,8 +164,8 @@ def convert_offset_markers(
     ############################################################################
     removed_markers = []
     for marker in inserted_markers:
-        base_marker     = marker.split('::')[0]
-        if base_marker.startswith('-'):
+        base_marker     = marker.split("::")[0]
+        if base_marker.startswith("-"):
             base_marker = base_marker[1:]
         if base_marker not in offset_marker_offsets:
             continue

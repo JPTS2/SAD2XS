@@ -11,9 +11,11 @@ Date:       09-10-2025
 ################################################################################
 import xtrack as xt
 import xdeps as xd
-import textwrap
+import numpy as np
 
-from ._000_helpers import *
+from ._000_helpers import extract_multipole_information, \
+    generate_magnet_for_replication_names, check_is_simple_quad_sext_oct, \
+    check_is_skew_quad_sext_oct
 from ..types import ConfigLike
 
 ################################################################################
@@ -23,6 +25,18 @@ def create_sextupole_lattice_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Docstring for create_sextupole_lattice_file_information
+    
+    :param line: Description
+    :type line: xt.Line
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get information
@@ -44,7 +58,7 @@ def create_sextupole_lattice_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string   = f"""
+    output_string   = """
 ############################################################
 # Sextupoles
 ############################################################
@@ -53,11 +67,11 @@ def create_sextupole_lattice_file_information(
     ########################################
     # Create base elements
     ########################################
-    output_string += f"""
+    output_string += """
 ########################################
 # Base Elements
 ########################################"""
-    
+
     for sext_name, sext_length in zip(sext_names, sext_lengths):
         output_string += f"""
 env.new(name = '{sext_name}', parent = xt.Sextupole, length = {sext_length})"""
@@ -67,7 +81,7 @@ env.new(name = '{sext_name}', parent = xt.Sextupole, length = {sext_length})"""
     ########################################
     # Clone Elements
     ########################################
-    output_string += f"""
+    output_string += """
 ########################################
 # Cloned Elements
 ########################################"""
@@ -142,11 +156,23 @@ def create_sextupole_optics_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Docstring for create_sextupole_optics_file_information
+    
+    :param line: Description
+    :type line: xt.Line
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get information
     ########################################
-    sexts, unique_sext_names = extract_multipole_information(
+    _, unique_sext_names = extract_multipole_information(
         line        = line,
         line_table  = line_table,
         mode        = "Sextupole")
@@ -160,7 +186,7 @@ def create_sextupole_optics_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string = f"""
+    output_string = """
     ############################################################
     # Sextupoles
     ############################################################"""
@@ -176,7 +202,7 @@ def create_sextupole_optics_file_information(
                 k2  = line[f"-{sext}"].k2
             except KeyError:
                 raise KeyError(f"Could not find sext variable {sext} or -{sext} in line.")
-            
+
         try:
             k2s     = line[sext].k2s
         except KeyError:
@@ -184,7 +210,7 @@ def create_sextupole_optics_file_information(
                 k2s = line[f"-{sext}"].k2s
             except KeyError:
                 raise KeyError(f"Could not find sext variable {sext} or -{sext} in line.")
-            
+
         if k2 == 0:
             k2 = None
         if k2s == 0:

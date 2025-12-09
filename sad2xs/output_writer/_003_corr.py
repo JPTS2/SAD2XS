@@ -11,9 +11,10 @@ Date:       09-10-2025
 ################################################################################
 import xtrack as xt
 import xdeps as xd
-import textwrap
+import numpy as np
 
-from ._000_helpers import *
+from ._000_helpers import extract_corrector_information, \
+    generate_magnet_for_replication_names, check_is_simple_bend_corr
 from ..types import ConfigLike
 
 ################################################################################
@@ -28,8 +29,8 @@ def create_corrector_lattice_file_information(
     ########################################
     # Get information
     ########################################
-    hcorrs, vcorrs, scorrs, unique_corr_variables, corr_name_dict = extract_corrector_information(line, line_table)
-    
+    hcorrs, vcorrs, scorrs, _, corr_name_dict = extract_corrector_information(line, line_table)
+
     hcorr_lengths       = np.array(sorted(hcorrs.keys()))
     hcorr_names         = generate_magnet_for_replication_names(hcorrs, "hcorr")
     vcorr_lengths       = np.array(sorted(vcorrs.keys()))
@@ -46,7 +47,7 @@ def create_corrector_lattice_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string   = f"""
+    output_string   = """
 ############################################################
 # Correctors
 ############################################################
@@ -55,7 +56,7 @@ def create_corrector_lattice_file_information(
     ########################################
     # Create base elements
     ########################################
-    output_string += f"""
+    output_string += """
 ########################################
 # Base Elements
 ########################################"""
@@ -77,7 +78,7 @@ env.new(name = '{scorr_name}', parent = xt.Bend, length = {scorr_length})"""
     ########################################
     # Clone Elements
     ########################################
-    output_string += f"""
+    output_string += """
 ########################################
 # Cloned Elements
 ########################################"""
@@ -96,7 +97,7 @@ env.new(name = '{scorr_name}', parent = xt.Bend, length = {scorr_length})"""
             if check_is_simple_bend_corr(line, replica_name):
                 corr_generation = f"""
 env.new(name = '{replica_name}', parent = '{hcorr}', k0 = 'k0_{replica_variable}')"""
-            
+
             # Otherwise do the full version
             else:
                 corr_generation = f"""
@@ -126,7 +127,7 @@ env.new(
     shift_y                 = '{line[replica_name].shift_y}'"""
             # Append the missing parenthesis
                 corr_generation += """)"""
-            
+
             # Write to the file
             output_string += corr_generation
 
@@ -145,7 +146,7 @@ env.new(
             if check_is_simple_bend_corr(line, replica_name):
                 corr_generation = f"""
 env.new(name = '{replica_name}', parent = '{vcorr}', k0 = 'k0_{replica_variable}')"""
-            
+
             # Otherwise do the full version
             else:
                 corr_generation = f"""
@@ -175,7 +176,7 @@ env.new(
     shift_y                 = '{line[replica_name].shift_y}'"""
             # Append the missing parenthesis
                 corr_generation += """)"""
-            
+
             # Write to the file
             output_string += corr_generation
 
@@ -193,7 +194,7 @@ env.new(
             if check_is_simple_bend_corr(line, replica_name):
                 corr_generation = f"""
 env.new(name = '{replica_name}', parent = '{scorr}', k0 = 'k0_{replica_variable}', rot_s_rad = '{line[replica_name].rot_s_rad}')"""
-            
+
             # Otherwise do the full version
             else:
                 corr_generation = f"""
@@ -226,7 +227,7 @@ env.new(
     rot_s_rad               = '{line[replica_name].rot_s_rad}'"""
             # Append the missing parenthesis
                 corr_generation += """)"""
-            
+
             # Write to the file
             output_string += corr_generation
 
@@ -243,12 +244,24 @@ env.new(
 def create_corrector_optics_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
-        config:     ConfigLike) -> str:    
+        config:     ConfigLike) -> str:
+    """
+    Docstring for create_corrector_optics_file_information
+    
+    :param line: Description
+    :type line: xt.Line
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get information
     ########################################
-    hcorrs, vcorrs, scorrs, unique_corr_variables, corr_name_dict = extract_corrector_information(line, line_table)
+    hcorrs, vcorrs, scorrs, unique_corr_variables, _ = extract_corrector_information(line, line_table)
 
     hcorr_names         = generate_magnet_for_replication_names(hcorrs, "hcorr")
     vcorr_names         = generate_magnet_for_replication_names(vcorrs, "vcorr")
@@ -264,7 +277,7 @@ def create_corrector_optics_file_information(
     # Create Output string
     ########################################
     # TODO: This still gives an empty section is they are all set to 0
-    output_string   = f"""
+    output_string   = """
     ############################################################
     # Correctors
     ############################################################"""

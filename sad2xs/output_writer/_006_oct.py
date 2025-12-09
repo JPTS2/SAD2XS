@@ -11,9 +11,11 @@ Date:       09-10-2025
 ################################################################################
 import xtrack as xt
 import xdeps as xd
-import textwrap
+import numpy as np
 
-from ._000_helpers import *
+from ._000_helpers import extract_multipole_information, \
+    generate_magnet_for_replication_names, check_is_simple_quad_sext_oct, \
+    check_is_skew_quad_sext_oct
 from ..types import ConfigLike
 
 ################################################################################
@@ -23,6 +25,18 @@ def create_octupole_lattice_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Docstring for create_octupole_lattice_file_information
+    
+    :param line: Description
+    :type line: xt.Line
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get information
@@ -44,7 +58,7 @@ def create_octupole_lattice_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string   = f"""
+    output_string   = """
 ############################################################
 # Octupoles
 ############################################################
@@ -53,11 +67,11 @@ def create_octupole_lattice_file_information(
     ########################################
     # Create base elements
     ########################################
-    output_string += f"""
+    output_string += """
 ########################################
 # Base Elements
 ########################################"""
-    
+
     for oct_name, oct_length in zip(oct_names, oct_lengths):
         output_string += f"""
 env.new(name = '{oct_name}', parent = xt.Octupole, length = {oct_length})"""
@@ -67,7 +81,7 @@ env.new(name = '{oct_name}', parent = xt.Octupole, length = {oct_length})"""
     ########################################
     # Clone Elements
     ########################################
-    output_string += f"""
+    output_string += """
 ########################################
 # Cloned Elements
 ########################################"""
@@ -142,15 +156,27 @@ def create_octupole_optics_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Docstring for create_octupole_optics_file_information
+    
+    :param line: Description
+    :type line: xt.Line
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get information
     ########################################
-    octs, unique_oct_names = extract_multipole_information(
+    _, unique_oct_names = extract_multipole_information(
         line        = line,
         line_table  = line_table,
         mode        = "Octupole")
-    
+
     ########################################
     # Ensure there are octupoles in the line
     ########################################
@@ -160,7 +186,7 @@ def create_octupole_optics_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string = f"""
+    output_string = """
     ############################################################
     # Octupoles
     ############################################################"""

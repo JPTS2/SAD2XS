@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
@@ -11,18 +11,26 @@ Date:       09-10-2025
 ################################################################################
 import xtrack as xt
 import xdeps as xd
-import textwrap
 
-from ._000_helpers import *
+from ._000_helpers import get_parentname, get_variablename
 from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
 def create_refshift_lattice_file_information(
-        line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Docstring for create_refshift_lattice_file_information
+    
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get information
@@ -87,7 +95,7 @@ def create_refshift_lattice_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string   = f"""
+    output_string   = """
 ############################################################
 # Reference Shifts
 ############################################################
@@ -97,12 +105,13 @@ def create_refshift_lattice_file_information(
     # XYShifts
     ########################################
     if len(unique_xyshift_names) != 0:
-        output_string += f"""
+        output_string += """
 ########################################
 # XYShifts
 ########################################"""
 
-        for xyshift_name, xyshift_variable_name in zip(unique_xyshift_names, unique_xyshift_variable_names):
+        for xyshift_name, xyshift_variable_name in zip(
+                unique_xyshift_names, unique_xyshift_variable_names):
 
             # Remove the minus sign if no non minus version exists
             if xyshift_name.startswith("-"):
@@ -123,12 +132,13 @@ env.new(
     # ZetaShifts
     ########################################
     if len(unique_zetashift_names) != 0:
-        output_string += f"""
+        output_string += """
 ########################################
 # ZetaShifts
 ########################################"""
 
-        for zetashift_name, zetashift_variable_name in zip(unique_zetashift_names, unique_zetashift_variable_names):
+        for zetashift_name, zetashift_variable_name in zip(
+                unique_zetashift_names, unique_zetashift_variable_names):
 
             # Remove the minus sign if no non minus version exists
             if zetashift_name.startswith("-"):
@@ -148,12 +158,13 @@ env.new(
     # YRotations
     ########################################
     if len(unique_yrotation_names) != 0:
-        output_string += f"""
+        output_string += """
 ########################################
 # YRotations (CHI1)
 ########################################"""
 
-        for yrotation_name, yrotation_variable_name in zip(unique_yrotation_names, unique_yrotation_variable_names):
+        for yrotation_name, yrotation_variable_name in zip(
+                unique_yrotation_names, unique_yrotation_variable_names):
 
             # Remove the minus sign if no non minus version exists
             if yrotation_name.startswith("-"):
@@ -173,12 +184,13 @@ env.new(
     # XRotations
     ########################################
     if len(unique_xrotation_names) != 0:
-        output_string += f"""
+        output_string += """
 ########################################
 # XRotations (CHI2)
 ########################################"""
 
-        for xrotation_name, xrotation_variable_name in zip(unique_xrotation_names, unique_xrotation_variable_names):
+        for xrotation_name, xrotation_variable_name in zip(
+                unique_xrotation_names, unique_xrotation_variable_names):
 
             # Remove the minus sign if no non minus version exists
             if xrotation_name.startswith("-"):
@@ -198,12 +210,13 @@ env.new(
     # SRotations
     ########################################
     if len(unique_srotation_names) != 0:
-        output_string += f"""
+        output_string += """
 ########################################
 # SRotations (CHI3)
 ########################################"""
 
-        for srotation_name, srotation_variable_name in zip(unique_srotation_names, unique_srotation_variable_names):
+        for srotation_name, srotation_variable_name in zip(
+                unique_srotation_names, unique_srotation_variable_names):
 
             # Remove the minus sign if no non minus version exists
             if srotation_name.startswith("-"):
@@ -230,6 +243,18 @@ def create_refshift_optics_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Docstring for create_refshift_optics_file_information
+    
+    :param line: Description
+    :type line: xt.Line
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get information
@@ -316,7 +341,7 @@ def create_refshift_optics_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string = f"""
+    output_string = """
     ############################################################
     # Reference Shifts
     ############################################################
@@ -326,16 +351,17 @@ def create_refshift_optics_file_information(
     # XYShifts
     ########################################
     if len(unique_xyshift_names) != 0:
-        output_string += f"""
+        output_string += """
     ########################################
     # XYShifts
     ########################################"""
 
-        for xyshift_name, xyshift_variable_name in zip(unique_xyshift_names, unique_xyshift_variable_names):
+        for xyshift_name, xyshift_variable_name in zip(
+                unique_xyshift_names, unique_xyshift_variable_names):
 
             dx  = line[xyshift_name].dx
             dy  = line[xyshift_name].dy
-            
+
             if dx != 0:
                 output_string += f"""
     {f'dx_{xyshift_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dx_{xyshift_variable_name}') + 4)}{'= '}{dx:.24f},"""
@@ -349,12 +375,13 @@ def create_refshift_optics_file_information(
     # ZetaShifts
     ########################################
     if len(unique_zetashift_names) != 0:
-        output_string += f"""
+        output_string += """
     ########################################
     # ZetaShifts
     ########################################"""
 
-        for zetashift_name, zetashift_variable_name in zip(unique_zetashift_names, unique_zetashift_variable_names):
+        for zetashift_name, zetashift_variable_name in zip(
+                unique_zetashift_names, unique_zetashift_variable_names):
 
             dz  = line[zetashift_name].dzeta
             
@@ -368,12 +395,13 @@ def create_refshift_optics_file_information(
     # YRotations
     ########################################
     if len(unique_yrotation_names) != 0:
-        output_string += f"""
+        output_string += """
     ########################################
     # YRotations (CHI1)
     ########################################"""
 
-        for yrotation_name, yrotation_variable_name in zip(unique_yrotation_names, unique_yrotation_variable_names):
+        for yrotation_name, yrotation_variable_name in zip(
+                unique_yrotation_names, unique_yrotation_variable_names):
 
             chi1    = line[yrotation_name].angle
 
@@ -387,12 +415,13 @@ def create_refshift_optics_file_information(
     # XRotations
     ########################################
     if len(unique_xrotation_names) != 0:
-        output_string += f"""
+        output_string += """
     ########################################
     # XRotations (CHI2)
     ########################################"""
 
-        for xrotation_name, xrotation_variable_name in zip(unique_xrotation_names, unique_xrotation_variable_names):
+        for xrotation_name, xrotation_variable_name in zip(
+                unique_xrotation_names, unique_xrotation_variable_names):
 
             chi2    = line[xrotation_name].angle
 
@@ -406,12 +435,13 @@ def create_refshift_optics_file_information(
     # XRotations
     ########################################
     if len(unique_srotation_names) != 0:
-        output_string += f"""
+        output_string += """
     ########################################
     # SRotations (CHI3)
     ########################################"""
 
-        for srotation_name, srotation_variable_name in zip(unique_srotation_names, unique_srotation_variable_names):
+        for srotation_name, srotation_variable_name in zip(
+                unique_srotation_names, unique_srotation_variable_names):
 
             chi3    = line[srotation_name].angle
 

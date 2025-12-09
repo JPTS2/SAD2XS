@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       18-11-2025
+Date:       09-12-2025
 """
 
 ################################################################################
@@ -30,11 +30,11 @@ def parse_expression(expression: str):
     """
     Try to convert s to float; if that fails, return s stripped
     """
-    if type(expression) is float:
+    if isinstance(expression, float):
         return expression
-    elif type(expression) is int:
+    elif isinstance(expression, int):
         return float(expression)
-    elif type(expression) is str:
+    elif isinstance(expression, str):
         expression_stripped  = expression.strip()
         try:
             return float(expression_stripped)
@@ -93,57 +93,60 @@ def only_index_nonzero(
 # Get element misalignments
 ################################################################################
 def get_element_misalignments(ele_vars, rotation_correction = 0.0):
-        ########################################
-        # Define as float zero
-        ########################################
-        shift_x     = 0.0
-        shift_y     = 0.0
-        rotation    = 0.0
+    """
+    Docstring for get_element_misalignments
+    
+    :param ele_vars: Description
+    :param rotation_correction: Description
+    """
+    ########################################
+    # Define as float zero
+    ########################################
+    shift_x     = 0.0
+    shift_y     = 0.0
+    rotation    = 0.0
 
-        ########################################
-        # Read values
-        ########################################
-        if 'dx' in ele_vars:
-            shift_x     = parse_expression(ele_vars['dx'])
-        if 'dy' in ele_vars:
-            shift_y     = parse_expression(ele_vars['dy'])
-        if 'rotate' in ele_vars:
-            rotation    = parse_expression(ele_vars['rotate'])
+    ########################################
+    # Read values
+    ########################################
+    if "dx" in ele_vars:
+        shift_x     = parse_expression(ele_vars["dx"])
+    if "dy" in ele_vars:
+        shift_y     = parse_expression(ele_vars["dy"])
+    if "rotate" in ele_vars:
+        rotation    = parse_expression(ele_vars["rotate"])
 
-        ########################################
-        # Rotations in SAD are negative w.r.t. Xsuite
-        ########################################
-        if isinstance(rotation, str):
-            rotation    = f"-{rotation} + {rotation_correction}"
-        elif isinstance(rotation, (float, int)):
-            rotation    = -rotation + rotation_correction
-        else:
-            raise TypeError(f"Error reading rotation: type {type(rotation)}")
-        
+    ########################################
+    # Rotations in SAD are negative w.r.t. Xsuite
+    ########################################
+    if isinstance(rotation, str):
+        rotation    = f"-{rotation} + {rotation_correction}"
+    elif isinstance(rotation, (float, int)):
+        rotation    = -rotation + rotation_correction
+    else:
+        raise TypeError(f"Error reading rotation: type {type(rotation)}")
 
-        ########################################
-        # Composition of rotations is different in SAD
-        ########################################
-        if isinstance(rotation, float) and isinstance(shift_x, float) and isinstance(shift_y, float):
-            shift_r     = np.sqrt(shift_x**2 + shift_y**2)
-            theta_rot   = np.arctan2(shift_y, shift_x)
+    ########################################
+    # Composition of rotations is different in SAD
+    ########################################
+    if isinstance(rotation, float) and isinstance(shift_x, float) and isinstance(shift_y, float):
+        shift_r     = np.sqrt(shift_x**2 + shift_y**2)
+        theta_rot   = np.arctan2(shift_y, shift_x)
 
-            shift_x  = shift_r * np.cos(theta_rot - rotation)
-            shift_y  = shift_r * np.sin(theta_rot - rotation)
-            rotation = rotation
-        else:
-            shift_x     = str(shift_x)
-            shift_y     = str(shift_y)
-            rotation    = str(rotation)
+        shift_x  = shift_r * np.cos(theta_rot - rotation)
+        shift_y  = shift_r * np.sin(theta_rot - rotation)
+    else:
+        shift_x     = str(shift_x)
+        shift_y     = str(shift_y)
+        rotation    = str(rotation)
 
-            shift_r     = f"sqrt({shift_x}**2 + {shift_y}**2)"
-            theta_rot   = f"arctan2({shift_y}, {shift_x})"
+        shift_r     = f"sqrt({shift_x}**2 + {shift_y}**2)"
+        theta_rot   = f"arctan2({shift_y}, {shift_x})"
 
-            shift_x  = f"{shift_r} * cos({theta_rot} - {rotation})"
-            shift_y  = f"{shift_r} * sin({theta_rot} - {rotation})"
-            rotation = rotation
-        
-        return shift_x, shift_y, rotation
+        shift_x  = f"{shift_r} * cos({theta_rot} - {rotation})"
+        shift_y  = f"{shift_r} * sin({theta_rot} - {rotation})"
+
+    return shift_x, shift_y, rotation
 
 ################################################################################
 # Convert all
@@ -153,18 +156,30 @@ def convert_elements(
         environment:                    xt.Environment,
         user_multipole_replacements:    dict | None,
         config:                         ConfigLike) -> None:
+    """
+    Docstring for convert_elements
     
+    :param parsed_lattice_data: Description
+    :type parsed_lattice_data: dict
+    :param environment: Description
+    :type environment: xt.Environment
+    :param user_multipole_replacements: Description
+    :type user_multipole_replacements: dict | None
+    :param config: Description
+    :type config: ConfigLike
+    """
+
     ########################################
     # Get the required data
     ########################################
-    parsed_elements = parsed_lattice_data['elements']
+    parsed_elements = parsed_lattice_data["elements"]
 
     ########################################
     # Drifts
     ########################################
-    if 'drift' in parsed_elements:
+    if "drift" in parsed_elements:
         if config._verbose:
-            print_section_heading("Converting Drifts", mode = 'subsection')
+            print_section_heading("Converting Drifts", mode = "subsection")
         convert_drifts(
             parsed_elements = parsed_elements,
             environment     = environment)
@@ -172,9 +187,9 @@ def convert_elements(
     ########################################
     # Bends
     ########################################
-    if 'bend' in parsed_elements:
+    if "bend" in parsed_elements:
         if config._verbose:
-            print_section_heading("Converting Bends", mode = 'subsection')
+            print_section_heading("Converting Bends", mode = "subsection")
         convert_bends(
             parsed_elements = parsed_elements,
             environment     = environment)
@@ -185,9 +200,9 @@ def convert_elements(
     ########################################
     # Quadrupoles
     ########################################
-    if 'quad' in parsed_elements:
+    if "quad" in parsed_elements:
         if config._verbose:
-            print_section_heading("Converting Quadrupoles", mode = 'subsection')
+            print_section_heading("Converting Quadrupoles", mode = "subsection")
         convert_quadrupoles(
             parsed_elements = parsed_elements,
             environment     = environment)
@@ -195,9 +210,9 @@ def convert_elements(
     ########################################
     # Sextupoles
     ########################################
-    if 'sext' in parsed_elements:
+    if "sext" in parsed_elements:
         if config._verbose:
-            print_section_heading("Converting Sextupoles", mode = 'subsection')
+            print_section_heading("Converting Sextupoles", mode = "subsection")
         convert_sextupoles(
             parsed_elements = parsed_elements,
             environment     = environment)
@@ -205,9 +220,9 @@ def convert_elements(
     ########################################
     # Octupoles
     ########################################
-    if 'oct' in parsed_elements:
+    if "oct" in parsed_elements:
         if config._verbose:
-            print_section_heading("Converting Octupoles", mode = 'subsection')
+            print_section_heading("Converting Octupoles", mode = "subsection")
         convert_octupoles(
             parsed_elements = parsed_elements,
             environment     = environment)
@@ -215,9 +230,9 @@ def convert_elements(
     ########################################
     # Multipoles
     ########################################
-    if 'mult' in parsed_elements:
+    if "mult" in parsed_elements:
         if config._verbose:
-            print_section_heading("Converting Multipoles", mode = 'subsection')
+            print_section_heading("Converting Multipoles", mode = "subsection")
         convert_multipoles(
             parsed_elements             = parsed_elements,
             environment                 = environment,
@@ -227,9 +242,9 @@ def convert_elements(
     ########################################
     # Cavities
     ########################################
-    if 'cavi' in parsed_elements:
+    if "cavi" in parsed_elements:
         if config._verbose:
-            print_section_heading("Converting Cavities", mode = 'subsection')
+            print_section_heading("Converting Cavities", mode = "subsection")
         convert_cavities(
             parsed_elements = parsed_elements,
             environment     = environment)
@@ -237,9 +252,9 @@ def convert_elements(
     ########################################
     # Apertures
     ########################################
-    if 'apert' in parsed_elements:
+    if "apert" in parsed_elements:
         if config._verbose:
-            print_section_heading("Converting Apertures", mode = 'subsection')
+            print_section_heading("Converting Apertures", mode = "subsection")
         convert_apertures(
             parsed_elements = parsed_elements,
             environment     = environment)
@@ -247,9 +262,9 @@ def convert_elements(
     ########################################
     # Solenoids
     ########################################
-    if 'sol' in parsed_elements:
+    if "sol" in parsed_elements:
         if config._verbose:
-            print_section_heading("Converting Solenoids", mode = 'subsection')
+            print_section_heading("Converting Solenoids", mode = "subsection")
         convert_solenoids(
             parsed_elements = parsed_elements,
             environment     = environment,
@@ -258,9 +273,9 @@ def convert_elements(
     ########################################
     # Coordinate Transformations
     ########################################
-    if 'coord' in parsed_elements:
+    if "coord" in parsed_elements:
         if config._verbose:
-            print_section_heading("Converting Coordinate Transformations", mode = 'subsection')
+            print_section_heading("Converting Coordinate Transformations", mode = "subsection")
         convert_coordinate_transformations(
             parsed_elements = parsed_elements,
             environment     = environment,
@@ -269,9 +284,9 @@ def convert_elements(
     ########################################
     # Markers
     ########################################
-    if 'mark' in parsed_elements:
+    if "mark" in parsed_elements:
         if config._verbose:
-            print_section_heading("Converting Markers", mode = 'subsection')
+            print_section_heading("Converting Markers", mode = "subsection")
         convert_markers(
             parsed_elements = parsed_elements,
             environment     = environment)
@@ -279,9 +294,9 @@ def convert_elements(
     ########################################
     # Monitors
     ########################################
-    if 'moni' in parsed_elements:
+    if "moni" in parsed_elements:
         if config._verbose:
-            print_section_heading("Converting Monitors", mode = 'subsection')
+            print_section_heading("Converting Monitors", mode = "subsection")
         convert_monitors(
             parsed_elements = parsed_elements,
             environment     = environment)
@@ -289,9 +304,9 @@ def convert_elements(
     ########################################
     # Beam-Beam Interactions
     ########################################
-    if 'beambeam' in parsed_elements:
+    if "beambeam" in parsed_elements:
         if config._verbose:
-            print_section_heading("Converting Beam-Beam Interactions", mode = 'subsection')
+            print_section_heading("Converting Beam-Beam Interactions", mode = "subsection")
         convert_beam_beam(
             parsed_elements = parsed_elements,
             environment     = environment)
@@ -304,15 +319,15 @@ def convert_drifts(parsed_elements, environment):
     Convert drifts from the SAD parsed data
     """
 
-    drifts  = parsed_elements['drift']
+    drifts  = parsed_elements["drift"]
 
     for ele_name, ele_vars in drifts.items():
 
         ########################################
         # Assert Length
         ########################################
-        if 'l' in ele_vars:
-            length = ele_vars['l']
+        if "l" in ele_vars:
+            length = ele_vars["l"]
         else:
             raise ValueError(f"Drift {ele_name} missing length.")
 
@@ -332,18 +347,18 @@ def convert_bends(parsed_elements, environment):
     Convert bends from the SAD parsed data
     """
 
-    bends  = parsed_elements['bend']
+    bends  = parsed_elements["bend"]
 
     for ele_name, ele_vars in bends.items():
-        if 'angle' in ele_vars:
-            
-            angle   = parse_expression(ele_vars['angle'])
+        if "angle" in ele_vars:
+
+            angle   = parse_expression(ele_vars["angle"])
             if angle == 0:
                 continue
 
             if "l" not in ele_vars:
                 # TODO: Improve the handling of this
-                k0l             = parse_expression(ele_vars['angle'])
+                k0l             = parse_expression(ele_vars["angle"])
                 if k0l != 0:
                     raise ValueError(f"Error! Bend {ele_name} missing length.")
                 else:
@@ -369,28 +384,28 @@ def convert_bends(parsed_elements, environment):
             ########################################
             # Read values
             ########################################
-            length          = float(parse_expression(ele_vars['l']))
-            k0l             = parse_expression(ele_vars['angle'])
-            
-            if 'k1' in ele_vars:
-                k1l         = parse_expression(ele_vars['k1'])
-            if 'e1' in ele_vars:
-                e1          = parse_expression(ele_vars['e1'])
-            if 'e2' in ele_vars:
-                e2          = parse_expression(ele_vars['e2'])
-            if 'ae1' in ele_vars:
-                ae1         = parse_expression(ele_vars['ae1'])
-            if 'ae2' in ele_vars:
-                ae2         = parse_expression(ele_vars['ae2'])
+            length          = float(parse_expression(ele_vars["l"]))
+            k0l             = parse_expression(ele_vars["angle"])
+
+            if "k1" in ele_vars:
+                k1l         = parse_expression(ele_vars["k1"])
+            if "e1" in ele_vars:
+                e1          = parse_expression(ele_vars["e1"])
+            if "e2" in ele_vars:
+                e2          = parse_expression(ele_vars["e2"])
+            if "ae1" in ele_vars:
+                ae1         = parse_expression(ele_vars["ae1"])
+            if "ae2" in ele_vars:
+                ae2         = parse_expression(ele_vars["ae2"])
 
             shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
-            if type(k0l) is float:
+            if isinstance(k0l, float):
                 k0  = k0l / length
             else:
                 k0  = f"{k0l} / {length}"
 
-            if type(k1l) is float:
+            if isinstance(k1l, float):
                 k1  = k1l / length
             else:
                 k1  = f"{k1l} / {length}"
@@ -401,11 +416,12 @@ def convert_bends(parsed_elements, environment):
             ########################################
             # Create variables
             ########################################
-            environment[f'k0_{ele_name}']   = k0
+            environment[f"k0_{ele_name}"]   = k0
             k0                              = f"k0_{ele_name}"
-            
+            angle                           = f"k0_{ele_name} * {length}"
+
             if k1 != 0:
-                environment[f'k1_{ele_name}']   = k1
+                environment[f"k1_{ele_name}"]   = k1
                 k1                              = f"k1_{ele_name}"
 
             ########################################
@@ -415,9 +431,8 @@ def convert_bends(parsed_elements, environment):
                 name                = ele_name,
                 parent              = xt.Bend,
                 length              = length,
-                k0                  = k0,
+                angle               = angle,
                 k1                  = k1,
-                h                   = k0,
                 edge_entry_angle    = edge_entry_angle,
                 edge_exit_angle     = edge_exit_angle,
                 shift_x             = shift_x,
@@ -433,16 +448,16 @@ def convert_correctors(parsed_elements, environment):
     Convert correctors from the SAD parsed data
     """
 
-    bends  = parsed_elements['bend']
+    bends  = parsed_elements["bend"]
 
     for ele_name, ele_vars in bends.items():
 
         is_corrector    = False
-        if 'angle' in ele_vars:
-            angle   = parse_expression(ele_vars['angle'])
+        if "angle" in ele_vars:
+            angle   = parse_expression(ele_vars["angle"])
             if angle == 0:
                 is_corrector    = True
-        if 'angle' not in ele_vars:
+        if "angle" not in ele_vars:
             is_corrector    = True
 
         if is_corrector:
@@ -456,8 +471,8 @@ def convert_correctors(parsed_elements, environment):
             ########################################
             # Read values
             ########################################
-            if 'l' in ele_vars:
-                length      = parse_expression(ele_vars['l'])
+            if "l" in ele_vars:
+                length      = parse_expression(ele_vars["l"])
 
             shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
@@ -469,17 +484,17 @@ def convert_correctors(parsed_elements, environment):
                     parent  = xt.Marker)
                 continue
 
-            if 'k0' in ele_vars:
-                k0l             = parse_expression(ele_vars['k0'])
-            if type(k0l) is float:
-                k0  = k0l / ele_vars['l']
+            if "k0" in ele_vars:
+                k0l             = parse_expression(ele_vars["k0"])
+            if isinstance(k0l, float):
+                k0  = k0l / ele_vars["l"]
             else:
-                k0  = f"{k0l} / {ele_vars['l']}"
+                k0  = f"{k0l} / {ele_vars["l"]}"
 
             ########################################
             # Create variables
             ########################################
-            environment[f'k0_{ele_name}']   = k0
+            environment[f"k0_{ele_name}"]   = k0
             k0                              = f"k0_{ele_name}"
 
             ########################################
@@ -491,7 +506,6 @@ def convert_correctors(parsed_elements, environment):
                 length              = length,
                 k0                  = k0,
                 k1                  = 0.0,
-                h                   = 0.0,
                 edge_entry_angle    = 0.0,
                 edge_exit_angle     = 0.0,
                 shift_x             = shift_x,
@@ -507,7 +521,7 @@ def convert_quadrupoles(parsed_elements, environment):
     Convert quadrupoles from the SAD parsed data
     """
 
-    quads  = parsed_elements['quad']
+    quads  = parsed_elements["quad"]
 
     for ele_name, ele_vars in quads.items():
 
@@ -521,57 +535,57 @@ def convert_quadrupoles(parsed_elements, environment):
         ########################################
         # Read values
         ########################################
-        if 'l' in ele_vars:
-            length      = parse_expression(ele_vars['l'])
+        if "l" in ele_vars:
+            length      = parse_expression(ele_vars["l"])
         else:
             raise ValueError(f"Error! Quadrupole {ele_name} missing length.")
 
         shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
-        if 'k1' in ele_vars:
+        if "k1" in ele_vars:
             if not isinstance(rotation, float):
-                k1l     = f"{ele_vars['k1']}"
+                k1l     = f"{ele_vars["k1"]}"
             else:
 
                 if np.isclose(rotation, +np.pi / 4, atol = 1E-6):
-                    if isinstance(ele_vars['k1'], (float, int)):
-                        k1sl    = -ele_vars['k1']
+                    if isinstance(ele_vars["k1"], (float, int)):
+                        k1sl    = -ele_vars["k1"]
                     else:
-                        k1sl    = f"-{ele_vars['k1']}"
+                        k1sl    = f"-{ele_vars["k1"]}"
                     shift_x, shift_y, rotation  = get_element_misalignments(
                         ele_vars            = ele_vars,
                         rotation_correction = -np.pi / 4)
 
                 elif np.isclose(rotation, -np.pi / 4, atol = 1E-6):
-                    if isinstance(ele_vars['k1'], (float, int)):
-                        k1sl    = +ele_vars['k1']
+                    if isinstance(ele_vars["k1"], (float, int)):
+                        k1sl    = +ele_vars["k1"]
                     else:
-                        k1sl    = f"+{ele_vars['k1']}"
+                        k1sl    = f"+{ele_vars["k1"]}"
                     shift_x, shift_y, rotation  = get_element_misalignments(
                         ele_vars            = ele_vars,
                         rotation_correction = +np.pi / 4)
 
                 else:
-                    k1l     = ele_vars['k1']
+                    k1l     = ele_vars["k1"]
 
         if isinstance(k1l, float):
-            k1  = k1l / ele_vars['l']
+            k1  = k1l / ele_vars["l"]
         else:
-            k1  = f"{k1l} / {ele_vars['l']}"
-        
+            k1  = f"{k1l} / {ele_vars["l"]}"
+
         if isinstance(k1sl, float):
-            k1s = k1sl / ele_vars['l']
+            k1s = k1sl / ele_vars["l"]
         else:
-            k1s = f"{k1sl} / {ele_vars['l']}"
+            k1s = f"{k1sl} / {ele_vars["l"]}"
 
         ########################################
         # Create variables
         ########################################
         if k1 != 0:
-            environment[f'k1_{ele_name}']   = k1
+            environment[f"k1_{ele_name}"]   = k1
             k1                              = f"k1_{ele_name}"
         if k1s != 0:
-            environment[f'k1s_{ele_name}']  = k1s
+            environment[f"k1s_{ele_name}"]  = k1s
             k1s                             = f"k1s_{ele_name}"
 
         ########################################
@@ -596,7 +610,7 @@ def convert_sextupoles(parsed_elements, environment):
     Convert sextupoles from the SAD parsed data
     """
 
-    sexts  = parsed_elements['sext']
+    sexts  = parsed_elements["sext"]
 
     for ele_name, ele_vars in sexts.items():
 
@@ -610,57 +624,57 @@ def convert_sextupoles(parsed_elements, environment):
         ########################################
         # Read values
         ########################################
-        if 'l' in ele_vars:
-            length      = parse_expression(ele_vars['l'])
+        if "l" in ele_vars:
+            length      = parse_expression(ele_vars["l"])
         else:
             raise ValueError(f"Error! Sextupole {ele_name} missing length.")
 
         shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
-        if 'k2' in ele_vars:
+        if "k2" in ele_vars:
             if not isinstance(rotation, float):
-                k2l     = f"{ele_vars['k2']}"
+                k2l     = f"{ele_vars["k2"]}"
             else:
 
                 if np.isclose(rotation, +np.pi / 6, atol = 1E-6):
-                    if isinstance(ele_vars['k2'], (float, int)):
-                        k2sl    = -ele_vars['k2']
+                    if isinstance(ele_vars["k2"], (float, int)):
+                        k2sl    = -ele_vars["k2"]
                     else:
-                        k2sl    = f"-{ele_vars['k2']}"
+                        k2sl    = f"-{ele_vars["k2"]}"
                     shift_x, shift_y, rotation  = get_element_misalignments(
                         ele_vars            = ele_vars,
                         rotation_correction = -np.pi / 6)
 
                 elif np.isclose(rotation, -np.pi / 6, atol = 1E-6):
-                    if isinstance(ele_vars['k2'], (float, int)):
-                        k2sl    = +ele_vars['k2']
+                    if isinstance(ele_vars["k2"], (float, int)):
+                        k2sl    = +ele_vars["k2"]
                     else:
-                        k2sl    = f"+{ele_vars['k2']}"
+                        k2sl    = f"+{ele_vars["k2"]}"
                     shift_x, shift_y, rotation  = get_element_misalignments(
                         ele_vars            = ele_vars,
                         rotation_correction = +np.pi / 6)
 
                 else:
-                    k2l     = ele_vars['k2']
+                    k2l     = ele_vars["k2"]
 
         if isinstance(k2l, float):
-            k2  = k2l / ele_vars['l']
+            k2  = k2l / ele_vars["l"]
         else:
-            k2  = f"{k2l} / {ele_vars['l']}"
+            k2  = f"{k2l} / {ele_vars["l"]}"
 
         if isinstance(k2sl, float):
-            k2s = k2sl / ele_vars['l']
+            k2s = k2sl / ele_vars["l"]
         else:
-            k2s = f"{k2sl} / {ele_vars['l']}"
+            k2s = f"{k2sl} / {ele_vars["l"]}"
 
         ########################################
         # Create variables
         ########################################
         if k2 != 0:
-            environment[f'k2_{ele_name}']   = k2
+            environment[f"k2_{ele_name}"]   = k2
             k2                              = f"k2_{ele_name}"
         if k2s != 0:
-            environment[f'k2s_{ele_name}']  = k2s
+            environment[f"k2s_{ele_name}"]  = k2s
             k2s                             = f"k2s_{ele_name}"
 
         ########################################
@@ -685,7 +699,7 @@ def convert_octupoles(parsed_elements, environment):
     Convert octupoles from the SAD parsed data
     """
 
-    octs    = parsed_elements['oct']
+    octs    = parsed_elements["oct"]
 
     for ele_name, ele_vars in octs.items():
 
@@ -707,57 +721,57 @@ def convert_octupoles(parsed_elements, environment):
         ########################################
         # Read values
         ########################################
-        if 'l' in ele_vars:
-            length      = parse_expression(ele_vars['l'])
+        if "l" in ele_vars:
+            length      = parse_expression(ele_vars["l"])
         else:
             raise ValueError(f"Error! Octupole {ele_name} missing length.")
 
         shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
-        if 'k3' in ele_vars:
+        if "k3" in ele_vars:
             if not isinstance(rotation, float):
-                k3l     = f"{ele_vars['k3']}"
+                k3l     = f"{ele_vars["k3"]}"
             else:
 
                 if np.isclose(rotation, +np.pi / 8, atol = 1E-6):
-                    if isinstance(ele_vars['k3'], (float, int)):
-                        k3sl    = -ele_vars['k3']
+                    if isinstance(ele_vars["k3"], (float, int)):
+                        k3sl    = -ele_vars["k3"]
                     else:
-                        k3sl    = f"-{ele_vars['k3']}"
+                        k3sl    = f"-{ele_vars["k3"]}"
                     shift_x, shift_y, rotation  = get_element_misalignments(
                         ele_vars            = ele_vars,
                         rotation_correction = -np.pi / 8)
 
                 elif np.isclose(rotation, -np.pi / 8, atol = 1E-6):
-                    if isinstance(ele_vars['k3'], (float, int)):
-                        k3sl    = +ele_vars['k3']
+                    if isinstance(ele_vars["k3"], (float, int)):
+                        k3sl    = +ele_vars["k3"]
                     else:
-                        k3sl    = f"+{ele_vars['k3']}"
+                        k3sl    = f"+{ele_vars["k3"]}"
                     shift_x, shift_y, rotation  = get_element_misalignments(
                         ele_vars            = ele_vars,
                         rotation_correction = +np.pi / 8)
 
                 else:
-                    k3l     = ele_vars['k3']
+                    k3l     = ele_vars["k3"]
 
         if isinstance(k3l, float):
-            k3  = k3l / ele_vars['l']
+            k3  = k3l / ele_vars["l"]
         else:
-            k3  = f"{k3l} / {ele_vars['l']}"
+            k3  = f"{k3l} / {ele_vars["l"]}"
 
         if isinstance(k3sl, float):
-            k3s = k3sl / ele_vars['l']
+            k3s = k3sl / ele_vars["l"]
         else:
-            k3s = f"{k3sl} / {ele_vars['l']}"
+            k3s = f"{k3sl} / {ele_vars["l"]}"
 
         ########################################
         # Create variables
         ########################################
         if k3 != 0:
-            environment[f'k3_{ele_name}']   = k3
+            environment[f"k3_{ele_name}"]   = k3
             k3                              = f"k3_{ele_name}"
         if k3s != 0:
-            environment[f'k3s_{ele_name}']  = k3s
+            environment[f"k3s_{ele_name}"]  = k3s
             k3s                             = f"k3s_{ele_name}"
 
         ########################################
@@ -786,7 +800,7 @@ def convert_multipoles(
     Convert multipoles from the SAD parsed data
     """
 
-    mults   = parsed_elements['mult']
+    mults   = parsed_elements["mult"]
 
     for ele_name, ele_vars in mults.items():
 
@@ -798,22 +812,22 @@ def convert_multipoles(
         ########################################
         # Read values
         ########################################
-        if 'l' in ele_vars:
-            length      = parse_expression(ele_vars['l'])
+        if "l" in ele_vars:
+            length      = parse_expression(ele_vars["l"])
 
         shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
         knl = []
         for kn in range(0, config.MAX_KNL_ORDER):
             knl.append(0.0)
-            if f'k{kn}' in ele_vars:
-                knl[kn] = parse_expression(ele_vars[f'k{kn}'])
+            if f"k{kn}" in ele_vars:
+                knl[kn] = parse_expression(ele_vars[f"k{kn}"])
 
         ksl = []
         for ks in range(0, config.MAX_KNL_ORDER):
             ksl.append(0.0)
-            if f'sk{ks}' in ele_vars:
-                ksl[ks] = parse_expression(ele_vars[f'sk{ks}'])
+            if f"sk{ks}" in ele_vars:
+                ksl[ks] = parse_expression(ele_vars[f"sk{ks}"])
 
         ########################################
         # User Defined Multipole Replacements
@@ -822,8 +836,10 @@ def convert_multipoles(
             if any(ele_name.startswith(test_key) for test_key in user_multipole_replacements):
                 replace_type    = None
 
-                if not 'l' in ele_vars:
-                    print(f'Warning! Multipole {ele_name} is a thin lens, replacement not supported for thin lens')
+                if not "l" in ele_vars:
+                    print(
+                        f"Warning! Multipole {ele_name} is a thin lens" +\
+                        "replacement not supported for thin lens")
                     continue
 
                 # Search the multipole replacements dict for the type of element
@@ -834,10 +850,10 @@ def convert_multipoles(
                 ########################################
                 # Bend Replacement (kick)
                 ########################################
-                if replace_type == 'Bend':
+                if replace_type == "Bend":
 
                     if knl[0] != 0 and ksl[0] != 0:
-                        if type(knl[0]) is float or type(ksl[0]) is float:
+                        if isinstance(knl[0], float) or isinstance(ksl[0], float):
                             k0l         = f"sqrt({knl[0]}**2 + {ksl[0]}**2)"
                             rotation    = f"{rotation} + arctan2({ksl[0]}, {knl[0]})"
                         else:
@@ -845,26 +861,25 @@ def convert_multipoles(
                             rotation    = rotation + np.arctan2(ksl[0], knl[0])
                     elif knl[0] != 0:
                         k0l         = knl[0]
-                        rotation    = rotation
                     elif ksl[0] != 0:
                         k0l         = ksl[0]
-                        if type(rotation) is float:
+                        if isinstance(rotation, float):
                             rotation    = rotation + np.pi / 2
                         else:
                             rotation    = f"{rotation} + np.pi / 2"
                     else:
                         k0l = 0.0
-                    
-                    if type(k0l) is float:
-                        k0  = k0l / ele_vars['l']
+
+                    if isinstance(k0l, float):
+                        k0  = k0l / ele_vars["l"]
                     else:
-                        k0  = f"{k0l} / {ele_vars['l']}"
+                        k0  = f"{k0l} / {ele_vars["l"]}"
 
                     ####################
                     # Create variables
                     ####################
                     if k0 != 0:
-                        environment[f'k0_{ele_name}']   = k0
+                        environment[f"k0_{ele_name}"]   = k0
                         k0                              = f"k0_{ele_name}"
 
                     ####################
@@ -883,28 +898,28 @@ def convert_multipoles(
                 ########################################
                 # Quadrupole Replacement
                 ########################################
-                elif replace_type == 'Quadrupole':
+                elif replace_type == "Quadrupole":
 
                     k1l     = knl[1]
                     k1sl    = ksl[1]
 
-                    if type(k1l) is float:
-                        k1  = k1l / ele_vars['l']
+                    if isinstance(k1l, float):
+                        k1  = k1l / ele_vars["l"]
                     else:
-                        k1  = f"{k1l} / {ele_vars['l']}"
-                    if type(k1sl) is float:
-                        k1s = k1sl / ele_vars['l']
+                        k1  = f"{k1l} / {ele_vars["l"]}"
+                    if isinstance(k1sl, float):
+                        k1s = k1sl / ele_vars["l"]
                     else:
-                        k1s = f"{k1sl} / {ele_vars['l']}"
+                        k1s = f"{k1sl} / {ele_vars["l"]}"
 
                     ####################
                     # Create variables
                     ####################
                     if k1 != 0:
-                        environment[f'k1_{ele_name}']   = k1
+                        environment[f"k1_{ele_name}"]   = k1
                         k1                              = f"k1_{ele_name}"
                     if k1s != 0:
-                        environment[f'k1s_{ele_name}']  = k1s
+                        environment[f"k1s_{ele_name}"]  = k1s
                         k1s                             = f"k1s_{ele_name}"
 
                     ####################
@@ -924,28 +939,28 @@ def convert_multipoles(
                 ########################################
                 # Sextupole Replacement
                 ########################################
-                elif replace_type == 'Sextupole':
+                elif replace_type == "Sextupole":
 
                     k2l     = knl[2]
                     k2sl    = ksl[2]
 
-                    if type(k2l) is float:
-                        k2  = k2l / ele_vars['l']
+                    if isinstance(k2l, float):
+                        k2  = k2l / ele_vars["l"]
                     else:
-                        k2  = f"{k2l} / {ele_vars['l']}"
-                    if type(k2sl) is float:
-                        k2s = k2sl / ele_vars['l']
+                        k2  = f"{k2l} / {ele_vars["l"]}"
+                    if isinstance(k2sl, float):
+                        k2s = k2sl / ele_vars["l"]
                     else:
-                        k2s = f"{k2sl} / {ele_vars['l']}"
+                        k2s = f"{k2sl} / {ele_vars["l"]}"
 
                     ####################
                     # Create variables
                     ####################
                     if k2 != 0:
-                        environment[f'k2_{ele_name}']   = k2
+                        environment[f"k2_{ele_name}"]   = k2
                         k2                              = f"k2_{ele_name}"
                     if k2s != 0:
-                        environment[f'k2s_{ele_name}']  = k2s
+                        environment[f"k2s_{ele_name}"]  = k2s
                         k2s                             = f"k2s_{ele_name}"
 
                     ####################
@@ -965,28 +980,28 @@ def convert_multipoles(
                 ########################################
                 # Octupole Replacement
                 ########################################
-                elif replace_type == 'Octupole':
+                elif replace_type == "Octupole":
 
                     k3l     = knl[3]
                     k3sl    = ksl[3]
 
-                    if type(k3l) is float:
-                        k3  = k3l / ele_vars['l']
+                    if isinstance(k3l, float):
+                        k3  = k3l / ele_vars["l"]
                     else:
-                        k3  = f"{k3l} / {ele_vars['l']}"
-                    if type(k3sl) is float:
-                        k3s = k3sl / ele_vars['l']
+                        k3  = f"{k3l} / {ele_vars["l"]}"
+                    if isinstance(k3sl, float):
+                        k3s = k3sl / ele_vars["l"]
                     else:
-                        k3s = f"{k3sl} / {ele_vars['l']}"
+                        k3s = f"{k3sl} / {ele_vars["l"]}"
 
                     ####################
                     # Create variables
                     ####################
                     if k3 != 0:
-                        environment[f'k3_{ele_name}']   = k3
+                        environment[f"k3_{ele_name}"]   = k3
                         k3                              = f"k3_{ele_name}"
                     if k3s != 0:
-                        environment[f'k3s_{ele_name}']  = k3s
+                        environment[f"k3s_{ele_name}"]  = k3s
                         k3s                             = f"k3s_{ele_name}"
 
                     ####################
@@ -1003,7 +1018,7 @@ def convert_multipoles(
                         rot_s_rad           = rotation)
                     continue
                 else:
-                    raise ValueError('Error: Unknown element replacement')
+                    raise ValueError("Error: Unknown element replacement")
 
         ########################################
         # Automatic Simplification
@@ -1021,7 +1036,7 @@ def convert_multipoles(
                     tol     = config.KNL_ZERO_TOL):
 
                 if knl[0] != 0 and ksl[0] != 0:
-                    if type(knl[0]) is float or type(ksl[0]) is float:
+                    if isinstance(knl[0], float) or isinstance(ksl[0], float):
                         k0l         = f"sqrt({knl[0]}**2 + {ksl[0]}**2)"
                         rotation    = f"{rotation} + arctan2({ksl[0]}, {knl[0]})"
                     else:
@@ -1029,26 +1044,25 @@ def convert_multipoles(
                         rotation    = rotation + np.arctan2(ksl[0], knl[0])
                 elif knl[0] != 0:
                     k0l         = knl[0]
-                    rotation    = rotation
                 elif ksl[0] != 0:
                     k0l         = ksl[0]
-                    if type(rotation) is float:
+                    if isinstance(rotation, float):
                         rotation    = rotation + np.pi / 2
                     else:
                         rotation    = f"{rotation} + np.pi / 2"
                 else:
                     k0l = 0
-                
-                if type(k0l) is float:
-                    k0  = k0l / ele_vars['l']
+
+                if isinstance(k0l, float):
+                    k0  = k0l / ele_vars["l"]
                 else:
-                    k0  = f"{k0l} / {ele_vars['l']}"
+                    k0  = f"{k0l} / {ele_vars["l"]}"
 
                 ####################
                 # Create variables
                 ####################
                 if k0 != 0:
-                    environment[f'k0_{ele_name}']   = k0
+                    environment[f"k0_{ele_name}"]   = k0
                     k0                              = f"k0_{ele_name}"
 
                 ####################
@@ -1077,23 +1091,23 @@ def convert_multipoles(
                 k1l     = knl[1]
                 k1sl    = ksl[1]
 
-                if type(k1l) is float:
-                    k1  = k1l / ele_vars['l']
+                if isinstance(k1l, float):
+                    k1  = k1l / ele_vars["l"]
                 else:
-                    k1  = f"{k1l} / {ele_vars['l']}"
-                if type(k1sl) is float:
-                    k1s = k1sl / ele_vars['l']
+                    k1  = f"{k1l} / {ele_vars["l"]}"
+                if isinstance(k1sl, float):
+                    k1s = k1sl / ele_vars["l"]
                 else:
-                    k1s = f"{k1sl} / {ele_vars['l']}"
+                    k1s = f"{k1sl} / {ele_vars["l"]}"
 
                 ####################
                 # Create variables
                 ####################
                 if k1 != 0:
-                    environment[f'k1_{ele_name}']   = k1
+                    environment[f"k1_{ele_name}"]   = k1
                     k1                              = f"k1_{ele_name}"
                 if k1s != 0:
-                    environment[f'k1s_{ele_name}']  = k1s
+                    environment[f"k1s_{ele_name}"]  = k1s
                     k1s                             = f"k1s_{ele_name}"
 
                 ####################
@@ -1123,23 +1137,23 @@ def convert_multipoles(
                 k2l     = knl[2]
                 k2sl    = ksl[2]
 
-                if type(k2l) is float:
-                    k2  = k2l / ele_vars['l']
+                if isinstance(k2l, float):
+                    k2  = k2l / ele_vars["l"]
                 else:
-                    k2  = f"{k2l} / {ele_vars['l']}"
-                if type(k2sl) is float:
-                    k2s = k2sl / ele_vars['l']
+                    k2  = f"{k2l} / {ele_vars["l"]}"
+                if isinstance(k2sl, float):
+                    k2s = k2sl / ele_vars["l"]
                 else:
-                    k2s = f"{k2sl} / {ele_vars['l']}"
+                    k2s = f"{k2sl} / {ele_vars["l"]}"
 
                 ####################
                 # Create variables
                 ####################
                 if k2 != 0:
-                    environment[f'k2_{ele_name}']   = k2
+                    environment[f"k2_{ele_name}"]   = k2
                     k2                              = f"k2_{ele_name}"
                 if k2s != 0:
-                    environment[f'k2s_{ele_name}']  = k2s
+                    environment[f"k2s_{ele_name}"]  = k2s
                     k2s                             = f"k2s_{ele_name}"
 
                 ####################
@@ -1169,23 +1183,23 @@ def convert_multipoles(
                 k3l     = knl[3]
                 k3sl    = ksl[3]
 
-                if type(k3l) is float:
-                    k3  = k3l / ele_vars['l']
+                if isinstance(k3l, float):
+                    k3  = k3l / ele_vars["l"]
                 else:
-                    k3  = f"{k3l} / {ele_vars['l']}"
-                if type(k3sl) is float:
-                    k3s = k3sl / ele_vars['l']
+                    k3  = f"{k3l} / {ele_vars["l"]}"
+                if isinstance(k3sl, float):
+                    k3s = k3sl / ele_vars["l"]
                 else:
-                    k3s = f"{k3sl} / {ele_vars['l']}"
+                    k3s = f"{k3sl} / {ele_vars["l"]}"
 
                 ####################
                 # Create variables
                 ####################
                 if k3 != 0:
-                    environment[f'k3_{ele_name}']   = k3
+                    environment[f"k3_{ele_name}"]   = k3
                     k3                              = f"k3_{ele_name}"
                 if k3s != 0:
-                    environment[f'k3s_{ele_name}']  = k3s
+                    environment[f"k3s_{ele_name}"]  = k3s
                     k3s                             = f"k3s_{ele_name}"
 
                 ####################
@@ -1226,7 +1240,7 @@ def convert_cavities(parsed_elements, environment):
     Convert cavities from the SAD parsed data
     """
 
-    cavis   = parsed_elements['cavi']
+    cavis   = parsed_elements["cavi"]
 
     for ele_name, ele_vars in cavis.items():
 
@@ -1241,36 +1255,36 @@ def convert_cavities(parsed_elements, environment):
         ########################################
         # Read values
         ########################################
-        if 'l' in ele_vars:
-            length      = parse_expression(ele_vars['l'])
-        if 'volt' in ele_vars:
-            voltage = parse_expression(ele_vars['volt'])
-        if 'freq' in ele_vars:
-            freq = parse_expression(ele_vars['freq'])
-        if 'phi' in ele_vars:
-            phi_offset = parse_expression(ele_vars['phi'])
-            if type(phi_offset) is float:
+        if "l" in ele_vars:
+            length      = parse_expression(ele_vars["l"])
+        if "volt" in ele_vars:
+            voltage = parse_expression(ele_vars["volt"])
+        if "freq" in ele_vars:
+            freq = parse_expression(ele_vars["freq"])
+        if "phi" in ele_vars:
+            phi_offset = parse_expression(ele_vars["phi"])
+            if isinstance(phi_offset, float):
                 phi_offset  = np.rad2deg(phi_offset)
                 phi         += phi_offset
-            elif type(phi_offset) is str:
+            elif isinstance(phi_offset, str):
                 phi_offset  = f"({RAD2DEG} * {phi_offset})"
                 phi         = f"{phi} + {phi_offset}"
             else:
                 raise ValueError(f"Unsupported type for phi offset: {type(phi_offset)}")
 
-        if 'harm' in ele_vars:
+        if "harm" in ele_vars:
             print(f"Cavity {ele_name} is harmonic and addressed later")
 
         ########################################
         # Create variables
         ########################################
-        environment[f'vol_{ele_name}']      = voltage
-        
+        environment[f"vol_{ele_name}"]      = voltage
+
         if freq != 0:
-            environment[f'freq_{ele_name}'] = freq
+            environment[f"freq_{ele_name}"] = freq
             freq                            = f"freq_{ele_name} * (1 + fshift)"
         if phi != 0:
-            environment[f'lag_{ele_name}']  = phi
+            environment[f"lag_{ele_name}"]  = phi
             phi                             = f"lag_{ele_name}"
 
         ########################################
@@ -1293,7 +1307,7 @@ def convert_apertures(parsed_elements, environment):
     Convert apertures from the SAD parsed data
     """
 
-    aperts  = parsed_elements['apert']
+    aperts  = parsed_elements["apert"]
 
     for ele_name, ele_vars in aperts.items():
 
@@ -1313,22 +1327,22 @@ def convert_apertures(parsed_elements, environment):
         ########################################
         # Read values
         ########################################
-        if 'dx' in ele_vars:
-            offset_x    = parse_expression(ele_vars['dx'])
-        if 'dy' in ele_vars:
-            offset_y    = parse_expression(ele_vars['dy'])
-        if 'ax' in ele_vars:
-            a = parse_expression(ele_vars['ax'])
-        if 'ay' in ele_vars:
-            b = parse_expression(ele_vars['ay'])
+        if "dx" in ele_vars:
+            offset_x    = parse_expression(ele_vars["dx"])
+        if "dy" in ele_vars:
+            offset_y    = parse_expression(ele_vars["dy"])
+        if "ax" in ele_vars:
+            a = parse_expression(ele_vars["ax"])
+        if "ay" in ele_vars:
+            b = parse_expression(ele_vars["ay"])
         if "dx1" in ele_vars:
-            dx1 = parse_expression(ele_vars['dx1'])
+            dx1 = parse_expression(ele_vars["dx1"])
         if "dx2" in ele_vars:
-            dx2 = parse_expression(ele_vars['dx2'])
+            dx2 = parse_expression(ele_vars["dx2"])
         if "dy1" in ele_vars:
-            dy1 = parse_expression(ele_vars['dy1'])
+            dy1 = parse_expression(ele_vars["dy1"])
         if "dy2" in ele_vars:
-            dy2 = parse_expression(ele_vars['dy2'])
+            dy2 = parse_expression(ele_vars["dy2"])
 
         ########################################
         # Determine type of aperture
@@ -1336,21 +1350,22 @@ def convert_apertures(parsed_elements, environment):
         if any(v is not None for v in [dx1, dx2, dy1, dy2]) and \
                 any(v is not None for v in [a, b]):
             raise ValueError(
-                f"Error! Aperture {ele_name} has both rectangular and elliptical definitions. This is not supported.")
+                f"Error! Aperture {ele_name} has both rectangular and elliptical definitions." +\
+                "This is not supported.")
         elif any(v is not None for v in [dx1, dx2, dy1, dy2]):
-            aper_type   = 'LimitRect'
-            
+            aper_type   = "LimitRect"
+
             if dx1 is None and dx2 is None:
                 dx1 = -1.0
                 dx2 = +1.0
             elif dx1 is None and isinstance(dx2, float):
-                if dx2 < 0:
+                if float(dx2) < 0:
                     dx1 = dx2
                     dx2 = +1.0
                 else:
                     dx1 = -1.0
             elif dx2 is None and isinstance(dx1, float):
-                if dx1 < 0:
+                if float(dx1) < 0:
                     dx2 = +1.0
                 else:
                     dx2 = dx1
@@ -1369,13 +1384,13 @@ def convert_apertures(parsed_elements, environment):
                 dy1 = -1.0
                 dy2 = +1.0
             elif dy1 is None and isinstance(dy2, float):
-                if dy2 < 0:
+                if float(dy2) < 0:
                     dy1 = dy2
                     dy2 = +1.0
                 else:
                     dy1 = -1.0
             elif dy2 is None and isinstance(dy1, float):
-                if dy1 < 0:
+                if float(dy1) < 0:
                     dy2 = +1.0
                 else:
                     dy2 = dy1
@@ -1390,9 +1405,8 @@ def convert_apertures(parsed_elements, environment):
                 # This might cause issues
                 pass
 
-            
         elif any(v is not None for v in [a, b]):
-            aper_type   = 'LimitEllipse'
+            aper_type   = "LimitEllipse"
 
             if a is None:
                 a = 1.0
@@ -1405,7 +1419,7 @@ def convert_apertures(parsed_elements, environment):
         ########################################
         # Create Element
         ########################################
-        if aper_type == 'LimitRect':
+        if aper_type == "LimitRect":
             environment.new(
                 name    = ele_name,
                 parent  = xt.LimitRect,
@@ -1416,7 +1430,7 @@ def convert_apertures(parsed_elements, environment):
                 shift_x = offset_x,
                 shift_y = offset_y)
             continue
-        elif aper_type == 'LimitEllipse':
+        elif aper_type == "LimitEllipse":
             environment.new(
                 name    = ele_name,
                 parent  = xt.LimitEllipse,
@@ -1439,10 +1453,10 @@ def convert_solenoids(
     Convert solenoids from the SAD parsed data
     """
 
-    P0_J    = environment['p0c'] * qe / clight
-    BRHO    = P0_J / qe / environment["q0"]
+    p0j     = environment["p0c"] * qe / clight
+    brho    = p0j / qe / environment["q0"]
 
-    solenoids   = parsed_elements['sol']
+    solenoids   = parsed_elements["sol"]
 
     for ele_name, ele_vars in solenoids.items():
 
@@ -1458,51 +1472,51 @@ def convert_solenoids(
         rot_chi1    = 0.0
         rot_chi2    = 0.0
         rot_chi3    = 0.0
-
         # Per Oide, there is no offset s
 
         ########################################
         # Read values
         ########################################
-        bz  = parse_expression(ele_vars['bz'])
-        ks  = bz / BRHO
+        bz  = parse_expression(ele_vars["bz"])
+        ks  = bz / brho
 
-        if 'bound' in ele_vars:
+        if "bound" in ele_vars:
             bound   = True
         else:
             bound   = False
 
-        if 'geo' in ele_vars:
+        if "geo" in ele_vars:
             geo     = True
         else:
             geo     = False
 
         # Based on testing, when geo, use the dpx, dpy etc
-        if 'dx' in ele_vars:
-            offset_x    = parse_expression(ele_vars['dx'])
-        if 'dy' in ele_vars:
-            offset_y    = parse_expression(ele_vars['dy'])
-        if 'dz' in ele_vars:
-            offset_z    = parse_expression(ele_vars['dz'])
-            offset_s    = parse_expression(ele_vars['dz'])
-        if 'dpx' in ele_vars:
-            rot_chi1    = parse_expression(ele_vars['dpx'])
-        if 'dpy' in ele_vars:
-            rot_chi2    = parse_expression(ele_vars['dpy'])
+        if "dx" in ele_vars:
+            offset_x    = parse_expression(ele_vars["dx"])
+        if "dy" in ele_vars:
+            offset_y    = parse_expression(ele_vars["dy"])
+        if "dz" in ele_vars:
+            offset_z    = parse_expression(ele_vars["dz"])
+        if "dpx" in ele_vars:
+            rot_chi1    = parse_expression(ele_vars["dpx"])
+        if "dpy" in ele_vars:
+            rot_chi2    = parse_expression(ele_vars["dpy"])
 
         if not geo:
             # Then use the other rotations
-            if ('dpx' not in ele_vars) and ('chi1' in ele_vars):
-                rot_chi1    = parse_expression(ele_vars['chi1'])
-            if ('dpy' not in ele_vars) and ('chi2' in ele_vars):
-                rot_chi2    = parse_expression(ele_vars['chi2'])
-            if ('dpz' not in ele_vars) and ('chi3' in ele_vars):
-                rot_chi3    = parse_expression(ele_vars['chi3'])
+            if ("dpx" not in ele_vars) and ("chi1" in ele_vars):
+                rot_chi1    = parse_expression(ele_vars["chi1"])
+            if ("dpy" not in ele_vars) and ("chi2" in ele_vars):
+                rot_chi2    = parse_expression(ele_vars["chi2"])
+            if ("dpz" not in ele_vars) and ("chi3" in ele_vars):
+                rot_chi3    = parse_expression(ele_vars["chi3"])
 
         # Should not have dz in geo sol
-        if geo and 'dz' in ele_vars:
+        if geo and "dz" in ele_vars:
             if config._verbose:
-                print(f"Warning! Solenoid {ele_name} is a geo solenoid but with dz defined: ignoring dz")
+                print(
+                    f"Warning! Solenoid {ele_name} is a geo solenoid "
+                    "but with dz defined: ignoring dz")
             offset_z = 0.0
 
         ########################################
@@ -1524,56 +1538,56 @@ def convert_solenoids(
         ########################################
         # Shift Transforms
         ########################################
-        SOL_DX_FACTOR   = -1 * config.COORD_SIGNS['dx']
-        SOL_DY_FACTOR   = -1 * config.COORD_SIGNS['dy']
-        SOL_DZ_FACTOR   = -1
+        sol_dx_factor   = -1 * config.COORD_SIGNS["dx"]
+        sol_dy_factor   = -1 * config.COORD_SIGNS["dy"]
+        sol_dz_factor   = -1
 
-        if type(offset_x) is float:
-            offset_x    = SOL_DX_FACTOR * offset_x
-        elif type(offset_x) is str:
-            offset_x    = f"{SOL_DX_FACTOR} * {offset_x}"
+        if isinstance(offset_x, float):
+            offset_x    = sol_dx_factor * offset_x
+        elif isinstance(offset_x, str):
+            offset_x    = f"{sol_dx_factor} * {offset_x}"
         else:
             raise ValueError(f"Unsupported type for offset_x: {type(offset_x)}")
-        
-        if type(offset_y) is float:
-            offset_y    = SOL_DY_FACTOR * offset_y
-        elif type(offset_y) is str:
-            offset_y    = f"{SOL_DY_FACTOR} * {offset_y}"
+
+        if isinstance(offset_y, float):
+            offset_y    = sol_dy_factor * offset_y
+        elif isinstance(offset_y, str):
+            offset_y    = f"{sol_dy_factor} * {offset_y}"
         else:
             raise ValueError(f"Unsupported type for offset_y: {type(offset_y)}")
 
-        if type(offset_z) is float:
-            offset_z    = SOL_DZ_FACTOR * offset_z
-        elif type(offset_z) is str:
-            offset_z    = f"{SOL_DZ_FACTOR} * {offset_z}"
+        if isinstance(offset_z, float):
+            offset_z    = sol_dz_factor * offset_z
+        elif isinstance(offset_z, str):
+            offset_z    = f"{sol_dz_factor} * {offset_z}"
         else:
             raise ValueError(f"Unsupported type for offset_z: {type(offset_z)}")
 
         ########################################
         # Angle Transforms
         ########################################
-        SOL_CHI1_FACTOR = -1 * config.COORD_SIGNS['chi1']
-        SOL_CHI2_FACTOR = -1 * config.COORD_SIGNS['chi2']
-        SOL_CHI3_FACTOR = -1 * config.COORD_SIGNS['chi3']
+        sol_chi1_factor = -1 * config.COORD_SIGNS["chi1"]
+        sol_chi2_factor = -1 * config.COORD_SIGNS["chi2"]
+        sol_chi3_factor = -1 * config.COORD_SIGNS["chi3"]
 
-        if type(rot_chi1) is float:
-            rot_chi1    = np.rad2deg(SOL_CHI1_FACTOR * rot_chi1)
-        elif type(rot_chi1) is str:
-            rot_chi1    = f"{SOL_CHI1_FACTOR} * {rot_chi1} * {RAD2DEG}"
+        if isinstance(rot_chi1, float):
+            rot_chi1    = np.rad2deg(sol_chi1_factor * rot_chi1)
+        elif isinstance(rot_chi1, str):
+            rot_chi1    = f"{sol_chi1_factor} * {rot_chi1} * {RAD2DEG}"
         else:
             raise ValueError(f"Unsupported type for rot_chi1: {type(rot_chi1)}")
-        
-        if type(rot_chi2) is float:
-            rot_chi2    = np.rad2deg(SOL_CHI2_FACTOR * rot_chi2)
-        elif type(rot_chi2) is str:
-            rot_chi2    = f"{SOL_CHI2_FACTOR} * {rot_chi2} * {RAD2DEG}"
+
+        if isinstance(rot_chi2, float):
+            rot_chi2    = np.rad2deg(sol_chi2_factor * rot_chi2)
+        elif isinstance(rot_chi2, str):
+            rot_chi2    = f"{sol_chi2_factor} * {rot_chi2} * {RAD2DEG}"
         else:
             raise ValueError(f"Unsupported type for rot_chi2: {type(rot_chi2)}")
-        
-        if type(rot_chi3) is float:
-            rot_chi3    = np.rad2deg(SOL_CHI3_FACTOR * rot_chi3)
-        elif type(rot_chi3) is str:
-            rot_chi3    = f"{SOL_CHI3_FACTOR} * {rot_chi3} * {RAD2DEG}"
+
+        if isinstance(rot_chi3, float):
+            rot_chi3    = np.rad2deg(sol_chi3_factor * rot_chi3)
+        elif isinstance(rot_chi3, str):
+            rot_chi3    = f"{sol_chi3_factor} * {rot_chi3} * {RAD2DEG}"
         else:
             raise ValueError(f"Unsupported type for rot_chi3: {type(rot_chi3)}")
 
@@ -1586,33 +1600,33 @@ def convert_solenoids(
             # Create the elements
             ########################################
             environment.new(
-                name    = f'{ele_name}_bound',
+                name    = f"{ele_name}_bound",
                 parent  = xt.Solenoid,
                 ks      = ks)
 
             environment.new(
-                name    = f'{ele_name}_dxy',
+                name    = f"{ele_name}_dxy",
                 parent  = xt.XYShift,
                 dx      = offset_x,
                 dy      = offset_y)
-            
+
             environment.new(
-                name    = f'{ele_name}_dz',
+                name    = f"{ele_name}_dz",
                 parent  = xt.ZetaShift,
                 dzeta   = offset_z)
 
             environment.new(
-                name    = f'{ele_name}_chi2',
+                name    = f"{ele_name}_chi2",
                 parent  = xt.XRotation,
                 angle   = rot_chi2)
 
             environment.new(
-                name    = f'{ele_name}_chi1',
+                name    = f"{ele_name}_chi1",
                 parent  = xt.YRotation,
                 angle   = rot_chi1)
 
             environment.new(
-                name    = f'{ele_name}_chi3',
+                name    = f"{ele_name}_chi3",
                 parent  = xt.SRotation,
                 angle   = rot_chi3)
 
@@ -1623,19 +1637,19 @@ def convert_solenoids(
             # Order the elements (reordered later)
             ########################################
             compound_solenoid_components = [
-                f'{ele_name}_bound',
-                f'{ele_name}_dxy',
-                f'{ele_name}_dz',
-                f'{ele_name}_chi1',
-                f'{ele_name}_chi2',
-                f'{ele_name}_chi3']
+                f"{ele_name}_bound",
+                f"{ele_name}_dxy",
+                f"{ele_name}_dz",
+                f"{ele_name}_chi1",
+                f"{ele_name}_chi2",
+                f"{ele_name}_chi3"]
             environment.new_line(
                 name        = ele_name,
                 components  = compound_solenoid_components)
             continue
         else:
             environment.new(
-                name    = f'{ele_name}',
+                name    = f"{ele_name}",
                 parent  = xt.Solenoid,
                 ks      = ks)
             continue
@@ -1648,9 +1662,9 @@ def convert_markers(parsed_elements, environment):
     Convert markers from the SAD parsed data
     """
 
-    markers   = parsed_elements['mark']
+    markers   = parsed_elements["mark"]
 
-    for ele_name, ele_vars in markers.items():
+    for ele_name, _ in markers.items():
 
         ########################################
         # Create Element
@@ -1668,9 +1682,9 @@ def convert_monitors(parsed_elements, environment):
     Convert monitors from the SAD parsed data
     """
 
-    monitors   = parsed_elements['moni']
+    monitors   = parsed_elements["moni"]
 
-    for ele_name, ele_vars in monitors.items():
+    for ele_name, _ in monitors.items():
 
         ########################################
         # Create Element
@@ -1688,9 +1702,9 @@ def convert_beam_beam(parsed_elements, environment):
     Convert beam-beam interactions from the SAD parsed data
     """
 
-    beam_beams   = parsed_elements['beambeam']
+    beam_beams   = parsed_elements["beambeam"]
 
-    for ele_name, ele_vars in beam_beams.items():
+    for ele_name, _ in beam_beams.items():
 
         ########################################
         # Create Element
@@ -1711,7 +1725,7 @@ def convert_coordinate_transformations(
     Convert coordinate transformations from the SAD parsed data
     """
 
-    coord_transforms   = parsed_elements['coord']
+    coord_transforms   = parsed_elements["coord"]
     for ele_name, ele_vars in coord_transforms.items():
 
         ########################################
@@ -1719,7 +1733,7 @@ def convert_coordinate_transformations(
         ########################################
         n_transforms    = 0
 
-        dir         = False
+        dir_flag    = False
 
         offset_x    = 0.0
         offset_y    = 0.0
@@ -1731,20 +1745,20 @@ def convert_coordinate_transformations(
         # Read values
         ########################################
         if "dir" in ele_vars:
-            dir_val = parse_expression(ele_vars['dir'])
+            dir_val = parse_expression(ele_vars["dir"])
             if dir_val != 0.0:
-                dir = True
+                dir_flag    = True
 
-        if 'dx' in ele_vars:
-            offset_x    = parse_expression(ele_vars['dx'])
-        if 'dy' in ele_vars:
-            offset_y    = parse_expression(ele_vars['dy'])
-        if 'chi1' in ele_vars:
-            rot_chi1    = parse_expression(ele_vars['chi1'])
-        if 'chi2' in ele_vars:
-            rot_chi2    = parse_expression(ele_vars['chi2'])
-        if 'chi3' in ele_vars:
-            rot_chi3    = parse_expression(ele_vars['chi3'])
+        if "dx" in ele_vars:
+            offset_x    = parse_expression(ele_vars["dx"])
+        if "dy" in ele_vars:
+            offset_y    = parse_expression(ele_vars["dy"])
+        if "chi1" in ele_vars:
+            rot_chi1    = parse_expression(ele_vars["chi1"])
+        if "chi2" in ele_vars:
+            rot_chi2    = parse_expression(ele_vars["chi2"])
+        if "chi3" in ele_vars:
+            rot_chi3    = parse_expression(ele_vars["chi3"])
 
         ########################################
         # Zero small values
@@ -1777,57 +1791,57 @@ def convert_coordinate_transformations(
         ########################################
         # Shift Transforms
         ########################################
-        if dir:
-            COORD_DX_FACTOR   = -1 * config.COORD_SIGNS['dx']
-            COORD_DY_FACTOR   = +1 * config.COORD_SIGNS['dy']
+        if dir_flag:
+            coord_dx_factor   = -1 * config.COORD_SIGNS["dx"]
+            coord_dy_factor   = +1 * config.COORD_SIGNS["dy"]
         else:
-            COORD_DX_FACTOR   = +1 * config.COORD_SIGNS['dx']
-            COORD_DY_FACTOR   = +1 * config.COORD_SIGNS['dy']
+            coord_dx_factor   = +1 * config.COORD_SIGNS["dx"]
+            coord_dy_factor   = +1 * config.COORD_SIGNS["dy"]
 
-        if type(offset_x) is float:
-            offset_x    = COORD_DX_FACTOR * offset_x
-        elif type(offset_x) is str:
-            offset_x    = f"{COORD_DX_FACTOR} * {offset_x}"
+        if isinstance(offset_x, float):
+            offset_x    = coord_dx_factor * offset_x
+        elif isinstance(offset_x, str):
+            offset_x    = f"{coord_dx_factor} * {offset_x}"
         else:
             raise ValueError(f"Unsupported type for offset_x: {type(offset_x)}")
-        
-        if type(offset_y) is float:
-            offset_y    = COORD_DY_FACTOR * offset_y
-        elif type(offset_y) is str:
-            offset_y    = f"{COORD_DY_FACTOR} * {offset_y}"
+
+        if isinstance(offset_y, float):
+            offset_y    = coord_dy_factor * offset_y
+        elif isinstance(offset_y, str):
+            offset_y    = f"{coord_dy_factor} * {offset_y}"
         else:
             raise ValueError(f"Unsupported type for offset_y: {type(offset_y)}")
 
         ########################################
         # Angle Transforms
         ########################################
-        if dir:
-            COORD_CHI1_FACTOR   = +1 * config.COORD_SIGNS['chi1']
-            COORD_CHI2_FACTOR   = -1 * config.COORD_SIGNS['chi2']
-            COORD_CHI3_FACTOR   = +1 * config.COORD_SIGNS['chi3']
+        if dir_flag:
+            coord_chi1_factor   = +1 * config.COORD_SIGNS["chi1"]
+            coord_chi2_factor   = -1 * config.COORD_SIGNS["chi2"]
+            coord_chi3_factor   = +1 * config.COORD_SIGNS["chi3"]
         else:
-            COORD_CHI1_FACTOR   = +1 * config.COORD_SIGNS['chi1']
-            COORD_CHI2_FACTOR   = +1 * config.COORD_SIGNS['chi2']
-            COORD_CHI3_FACTOR   = +1 * config.COORD_SIGNS['chi3']
+            coord_chi1_factor   = +1 * config.COORD_SIGNS["chi1"]
+            coord_chi2_factor   = +1 * config.COORD_SIGNS["chi2"]
+            coord_chi3_factor   = +1 * config.COORD_SIGNS["chi3"]
 
-        if type(rot_chi1) is float:
-            rot_chi1    = np.rad2deg(COORD_CHI1_FACTOR * rot_chi1)
-        elif type(rot_chi1) is str:
-            rot_chi1    = f"{COORD_CHI1_FACTOR} * {rot_chi1} * {RAD2DEG}"
+        if isinstance(rot_chi1, float):
+            rot_chi1    = np.rad2deg(coord_chi1_factor * rot_chi1)
+        elif isinstance(rot_chi1, str):
+            rot_chi1    = f"{coord_chi1_factor} * {rot_chi1} * {RAD2DEG}"
         else:
             raise ValueError(f"Unsupported type for rot_chi1: {type(rot_chi1)}")
-        
-        if type(rot_chi2) is float:
-            rot_chi2    = np.rad2deg(COORD_CHI2_FACTOR * rot_chi2)
-        elif type(rot_chi2) is str:
-            rot_chi2    = f"{COORD_CHI2_FACTOR} * {rot_chi2} * {RAD2DEG}"
+
+        if isinstance(rot_chi2, float):
+            rot_chi2    = np.rad2deg(coord_chi2_factor * rot_chi2)
+        elif isinstance(rot_chi2, str):
+            rot_chi2    = f"{coord_chi2_factor} * {rot_chi2} * {RAD2DEG}"
         else:
             raise ValueError(f"Unsupported type for rot_chi2: {type(rot_chi2)}")
-        
-        if type(rot_chi3) is float:
-            rot_chi3    = np.rad2deg(COORD_CHI3_FACTOR * rot_chi3)
-        elif type(rot_chi3) is str:
-            rot_chi3    = f"{COORD_CHI3_FACTOR} * {rot_chi3} * {RAD2DEG}"
+
+        if isinstance(rot_chi3, float):
+            rot_chi3    = np.rad2deg(coord_chi3_factor * rot_chi3)
+        elif isinstance(rot_chi3, str):
+            rot_chi3    = f"{coord_chi3_factor} * {rot_chi3} * {RAD2DEG}"
         else:
             raise ValueError(f"Unsupported type for rot_chi3: {type(rot_chi3)}")
 
@@ -1835,11 +1849,13 @@ def convert_coordinate_transformations(
         # Compound Coordinate Transformation Element
         ########################################
         if n_transforms == 0:
-            # In this case, it is some transform, but we don't know what, so guess this
+            # In this case, it is some transform, but we don"t know what, so guess this
             environment.new(
                 name    = ele_name,
                 parent  = xt.XYShift)
-            print(f'Warning! Coordinate transformation {ele_name} has no transformations defined, installing as XYShift')
+            print(
+                f"Warning! Coordinate transformation {ele_name} has no transformations defined, " +\
+                "installing as XYShift")
             continue
         elif n_transforms == 1:
             if offset_x != 0:
@@ -1877,36 +1893,36 @@ def convert_coordinate_transformations(
             compound_coord_transform_components = []
             # Order from testing and agrees with the SAD manual online
 
-            if dir:
+            if dir_flag:
                 # YRotation First
                 if rot_chi1 != 0:
                     environment.new(
-                        name    = f'{ele_name}_chi1',
+                        name    = f"{ele_name}_chi1",
                         parent  = xt.YRotation,
                         angle   = rot_chi1)
-                    compound_coord_transform_components.append(f'{ele_name}_chi1')
+                    compound_coord_transform_components.append(f"{ele_name}_chi1")
                 # XRotation Second
                 if rot_chi2 != 0:
                     environment.new(
-                        name    = f'{ele_name}_chi2',
+                        name    = f"{ele_name}_chi2",
                         parent  = xt.XRotation,
                         angle   = rot_chi2)
-                    compound_coord_transform_components.append(f'{ele_name}_chi2')
+                    compound_coord_transform_components.append(f"{ele_name}_chi2")
                 # SRotation Third
                 if rot_chi3 != 0:
                     environment.new(
-                        name    = f'{ele_name}_chi3',
+                        name    = f"{ele_name}_chi3",
                         parent  = xt.SRotation,
                         angle   = rot_chi3)
-                    compound_coord_transform_components.append(f'{ele_name}_chi3')
+                    compound_coord_transform_components.append(f"{ele_name}_chi3")
                 # Transverse Shifts Last
                 if offset_x != 0 or offset_y != 0:
                     environment.new(
-                        name    = f'{ele_name}_dxy',
+                        name    = f"{ele_name}_dxy",
                         parent  = xt.XYShift,
                         dx      = offset_x,
                         dy      = offset_y)
-                    compound_coord_transform_components.append(f'{ele_name}_dxy')
+                    compound_coord_transform_components.append(f"{ele_name}_dxy")
 
                 environment.new_line(
                     name        = ele_name,
@@ -1916,32 +1932,32 @@ def convert_coordinate_transformations(
                 # Transverse Shifts First
                 if offset_x != 0 or offset_y != 0:
                     environment.new(
-                        name    = f'{ele_name}_dxy',
+                        name    = f"{ele_name}_dxy",
                         parent  = xt.XYShift,
                         dx      = offset_x,
                         dy      = offset_y)
-                    compound_coord_transform_components.append(f'{ele_name}_dxy')
+                    compound_coord_transform_components.append(f"{ele_name}_dxy")
                 # YRotation Second
                 if rot_chi1 != 0:
                     environment.new(
-                        name    = f'{ele_name}_chi1',
+                        name    = f"{ele_name}_chi1",
                         parent  = xt.YRotation,
                         angle   = rot_chi1)
-                    compound_coord_transform_components.append(f'{ele_name}_chi1')
+                    compound_coord_transform_components.append(f"{ele_name}_chi1")
                 # XRotation Third
                 if rot_chi2 != 0:
                     environment.new(
-                        name    = f'{ele_name}_chi2',
+                        name    = f"{ele_name}_chi2",
                         parent  = xt.XRotation,
                         angle   = rot_chi2)
-                    compound_coord_transform_components.append(f'{ele_name}_chi2')
+                    compound_coord_transform_components.append(f"{ele_name}_chi2")
                 # SRotation Fourth
                 if rot_chi3 != 0:
                     environment.new(
-                        name    = f'{ele_name}_chi3',
+                        name    = f"{ele_name}_chi3",
                         parent  = xt.SRotation,
                         angle   = rot_chi3)
-                    compound_coord_transform_components.append(f'{ele_name}_chi3')
+                    compound_coord_transform_components.append(f"{ele_name}_chi3")
 
                 environment.new_line(
                     name        = ele_name,

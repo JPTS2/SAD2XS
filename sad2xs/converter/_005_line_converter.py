@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
@@ -11,15 +11,18 @@ Date:       09-10-2025
 ################################################################################
 import xtrack as xt
 
-from ..types import ConfigLike
-from ..helpers import print_section_heading
-
 ################################################################################
 # Component Reversal
 ################################################################################
 def create_reversed_component(component, environment):
+    """
+    Docstring for create_reversed_component
+    
+    :param component: Description
+    :param environment: Description
+    """
 
-    assert component.startswith('-'), "Component must start with '-' to be reversed"
+    assert component.startswith("-"), "Component must start with '-' to be reversed"
 
     # Cannot overwrite elements, so must remove and recreate
     if component in environment.element_dict:
@@ -32,7 +35,7 @@ def create_reversed_component(component, environment):
         environment.new(
             name    = component,
             parent  = component[1:],
-            mode    = 'clone')
+            mode    = "clone")
         environment[component].edge_entry_angle  =\
             environment[component[1:]].edge_exit_angle
         environment[component].edge_exit_angle   =\
@@ -45,7 +48,7 @@ def create_reversed_component(component, environment):
         environment.new(
             name    = component,
             parent  = component[1:],
-            mode    = 'clone')
+            mode    = "clone")
         environment[component].ks  *= -1
 
     ########################################
@@ -55,7 +58,7 @@ def create_reversed_component(component, environment):
         environment.new(
             name    = component,
             parent  = component[1:],
-            mode    = 'clone')
+            mode    = "clone")
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
@@ -65,7 +68,7 @@ def create_reversed_component(component, environment):
         environment.new(
             name    = component,
             parent  = component[1:],
-            mode    = 'clone')
+            mode    = "clone")
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
@@ -75,7 +78,7 @@ def create_reversed_component(component, environment):
         environment.new(
             name    = component,
             parent  = component[1:],
-            mode    = 'clone')
+            mode    = "clone")
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
@@ -85,7 +88,7 @@ def create_reversed_component(component, environment):
         environment.new(
             name    = component,
             parent  = component[1:],
-            mode    = 'clone')
+            mode    = "clone")
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
@@ -95,7 +98,7 @@ def create_reversed_component(component, environment):
         environment.new(
             name    = component,
             parent  = component[1:],
-            mode    = 'clone')
+            mode    = "clone")
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
@@ -111,13 +114,19 @@ def create_reversed_component(component, environment):
 ################################################################################
 def convert_lines(
         parsed_lattice_data:    dict,
-        environment:            xt.Environment,
-        verbose:                bool                = False) -> None:
+        environment:            xt.Environment) -> None:
+    """
+    Docstring for convert_lines
     
+    :param parsed_lattice_data: Description
+    :type parsed_lattice_data: dict
+    :param environment: Description
+    :type environment: xt.Environment
+    """
     ########################################
     # Get the required data
     ########################################
-    parsed_lines    = parsed_lattice_data['lines']
+    parsed_lines    = parsed_lattice_data["lines"]
 
     ########################################
     # Convert lines
@@ -131,17 +140,17 @@ def convert_lines(
         for i, component in enumerate(components):
 
             # If the component is negative, and is one of the imported lines, it is a real subline
-            if '-' in component \
+            if "-" in component \
                     and component[1:] in parsed_lines:
-                
-                reversed_line_name      = component[1:] + '_reversed'
+
+                reversed_line_name      = component[1:] + "_reversed"
                 reversed_line_elements  = environment.lines[component[1:]].element_names
 
                 # If it is a real subline, reverse the order of the elements
                 reversed_line_elements  = list(reversed(reversed_line_elements))
 
                 # Negate the individual elements
-                reversed_line_elements  = [f'-{elem}' for elem in reversed_line_elements]
+                reversed_line_elements  = [f"-{elem}" for elem in reversed_line_elements]
 
                 reverse_handled_components  = []
                 for component in reversed_line_elements:
@@ -151,7 +160,7 @@ def convert_lines(
                 environment.new_line(
                     name        = reversed_line_name,
                     components  = reverse_handled_components)
-                
+
                 components[i] = reversed_line_name
 
         ########################################################################
@@ -161,7 +170,7 @@ def convert_lines(
 
             # Line and not from the importer: generated line
             # This is done to handle solenoids, ref shifts, thick cavities etc
-            if '-' in component \
+            if "-" in component \
                     and component[1:] not in parsed_lines \
                     and component[1:] in environment.lines:
                 # Checks for:
@@ -169,18 +178,18 @@ def convert_lines(
                 #   - The line is generated, not imported (parsed lines)
                 #   - The line exists in the environment (to be reversed)
 
-                reversed_line_name      = component[1:] + '_reversed'
-                
-                # Check if the line hasn't already been reversed (duplicate element)
+                reversed_line_name      = component[1:] + "_reversed"
+
+                # Check if the line hasn"t already been reversed (duplicate element)
                 if reversed_line_name in environment.lines:
                     components[i] = reversed_line_name
                     continue
-                
+
                 reversed_line_elements  = environment.lines[component[1:]].element_names
-                
+
                 # If it is a generated subline, do not reverse the order of the elements
                 # Just negate the individual elements
-                reversed_line_elements  = [f'-{elem}' for elem in reversed_line_elements]
+                reversed_line_elements  = [f"-{elem}" for elem in reversed_line_elements]
 
                 reverse_handled_components  = []
                 for component in reversed_line_elements:
@@ -199,13 +208,12 @@ def convert_lines(
         reverse_handled_components  = []
         for component in components:
 
-            if '-' in component:
+            if "-" in component:
                 # Reversed subline
                 if component[1:] in environment.lines:
                     raise ValueError("How did you get here? This should be handled above.")
-                else:
-                    reverse_handled_components.append(
-                        create_reversed_component(component, environment))
+                reverse_handled_components.append(
+                    create_reversed_component(component, environment))
             else:
                 reverse_handled_components.append(component)
 
