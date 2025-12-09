@@ -3,14 +3,14 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
-import xtrack as xt
 from datetime import date
+import xtrack as xt
 
 from ..types import ConfigLike
 
@@ -148,5 +148,5 @@ env.vars.update(default_to_zero = True,
     ########################################
     # Write to file
     ########################################
-    with open(f"{output_directory}/{output_filename}.py", 'w') as f:
+    with open(f"{output_directory}/{output_filename}.py", 'w', encoding = "utf-8") as f:
         f.write(optics_file_string)

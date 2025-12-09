@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
@@ -38,7 +38,7 @@ def convert_offset_markers(
     ########################################
     if verbose:
         print('Calculating offset marker positions')
-    
+
     # Markers in Xsuite can come from mark, moni or beam-beam elements
     for marker_type in ['mark', 'moni', 'beambeam']:
         if marker_type in parsed_elements:
@@ -50,10 +50,10 @@ def convert_offset_markers(
     # Return if there are no offset markers
     ########################################
     if len(offset_marker_offsets) == 0:
-        
+
         if verbose:
             print('No offset markers found')
-        
+
         return line, {}
 
     ########################################
@@ -83,7 +83,7 @@ def convert_offset_markers(
 
         if base_marker.startswith('-'):
             base_marker = base_marker[1:]
-        
+
         ########################################
         # Only consider the offset markers
         ########################################
@@ -142,7 +142,6 @@ def convert_offset_markers(
             ########################################
             # Exclusions!
             ########################################
-            # TODO: Cannot slice magnets (currently unused)
             if isinstance(line[insert_at_ele], xt.Magnet):
                 print("Cannot slice xt.Magnet element")
                 print(f"Marker {base_marker} Ignored at {s_to_insert}")

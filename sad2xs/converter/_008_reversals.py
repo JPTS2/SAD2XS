@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
@@ -194,7 +194,7 @@ def reverse_line_bend_direction(line):
 
             if bend not in env_elements:
                 continue
-            
+
             env[bend].k0  *= -1
             env[bend].k1  *= +1
             env[bend].h   *= -1
@@ -347,7 +347,7 @@ def reverse_line_bend_direction(line):
 
         # Handling trying forward and reverse
         for chi1 in [chi1, '-' + chi1]:
-            
+
             if chi1 not in env_elements:
                 continue
             env[chi1].angle *= -1
@@ -356,7 +356,7 @@ def reverse_line_bend_direction(line):
 
         # Handling trying forward and reverse
         for chi2 in [chi2, '-' + chi2]:
-            
+
             if chi2 not in env_elements:
                 continue
             env[chi2].angle *= +1
@@ -365,7 +365,7 @@ def reverse_line_bend_direction(line):
 
         # Handling trying forward and reverse
         for chi3 in [chi3, '-' + chi3]:
-            
+
             if chi3 not in env_elements:
                 continue
             env[chi3].angle *= -1

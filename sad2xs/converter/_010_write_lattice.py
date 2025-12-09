@@ -3,14 +3,14 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
-import xtrack as xt
 from datetime import date
+import xtrack as xt
 
 from ..types import ConfigLike
 
@@ -126,7 +126,7 @@ env.particle_ref    = xt.Particles(
 # Import lattice
 ################################################################################
 '''
-    
+ 
     ########################################
     # Get the line table
     ########################################
@@ -148,7 +148,7 @@ env.particle_ref    = xt.Particles(
             type_plus   = line_table["element_type", plus_name]
 
             assert type_minus == type_plus, \
-                f"Element types for element and its negative do not match"
+                "Element types for element and its negative do not match"
 
     ########################################
     # Drifts
@@ -157,7 +157,7 @@ env.particle_ref    = xt.Particles(
         line        = line,
         line_table  = line_table,
         config      = config)
-    
+
     ########################################
     # Bends
     ########################################
@@ -165,7 +165,7 @@ env.particle_ref    = xt.Particles(
         line        = line,
         line_table  = line_table,
         config      = config)
-    
+
     ########################################
     # Correctors
     ########################################
@@ -173,7 +173,7 @@ env.particle_ref    = xt.Particles(
         line        = line,
         line_table  = line_table,
         config      = config)
-    
+
     ########################################
     # Quadrupoles
     ########################################
@@ -181,7 +181,7 @@ env.particle_ref    = xt.Particles(
         line        = line,
         line_table  = line_table,
         config      = config)
-    
+
     ########################################
     # Sextupoles
     ########################################
@@ -189,7 +189,7 @@ env.particle_ref    = xt.Particles(
         line        = line,
         line_table  = line_table,
         config      = config)
-    
+
     ########################################
     # Octupoles
     ########################################
@@ -197,7 +197,7 @@ env.particle_ref    = xt.Particles(
         line        = line,
         line_table  = line_table,
         config      = config)
-    
+
     ########################################
     # Multipoles
     ########################################
@@ -205,7 +205,7 @@ env.particle_ref    = xt.Particles(
         line        = line,
         line_table  = line_table,
         config      = config)
-    
+
     ########################################
     # Solenoids
     ########################################
@@ -213,7 +213,7 @@ env.particle_ref    = xt.Particles(
         line        = line,
         line_table  = line_table,
         config      = config)
-    
+
     ########################################
     # Cavities
     ########################################
@@ -229,7 +229,7 @@ env.particle_ref    = xt.Particles(
         line        = line,
         line_table  = line_table,
         config      = config)
-    
+
     ########################################
     # Apertures
     ########################################
@@ -246,7 +246,7 @@ env.particle_ref    = xt.Particles(
         line_table              = line_table,
         offset_marker_locations = offset_marker_locations,
         config                  = config)
-    
+
     ########################################
     # Line
     ########################################
@@ -272,5 +272,5 @@ env.particle_ref    = xt.Particles(
     ########################################
     # Write to file
     ########################################
-    with open(f"{output_directory}/{output_filename}.py", 'w') as f:
+    with open(f"{output_directory}/{output_filename}.py", 'w', encoding = "utf-8") as f:
         f.write(lattice_file_string)

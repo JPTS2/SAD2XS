@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
@@ -19,7 +19,19 @@ def exclude_elements(
         parsed_lattice_data:    dict,
         excluded_elements:      list[str] | None,
         config:                 ConfigLike) -> dict:
+    """
+    Docstring for exclude_elements
     
+    :param parsed_lattice_data: Description
+    :type parsed_lattice_data: dict
+    :param excluded_elements: Description
+    :type excluded_elements: list[str] | None
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: dict[Any, Any]
+    """
+
     ########################################
     # Check if there are excluded elements
     ########################################
@@ -29,7 +41,7 @@ def exclude_elements(
         if config._verbose:
             print("No excluded elements found. Skipping exclusion.")
         return parsed_lattice_data
-    
+
     ########################################
     # When we exclude elements, need to exclude the reverse also
     ########################################
@@ -47,7 +59,7 @@ def exclude_elements(
     ########################################
     # Delete the excluded elements from the elements dictionary
     ########################################
-    for category, elems_dict in parsed_elements.items():
+    for _, elems_dict in parsed_elements.items():
         # iterate over a snapshot of the keys
         for element in list(elems_dict.keys()):
             if element in excluded_elements:
@@ -60,5 +72,5 @@ def exclude_elements(
     ########################################
     for line, components in parsed_lines.items():
         parsed_lines[line] = [comp for comp in components if comp not in excluded_elements]
-    
+
     return parsed_lattice_data
