@@ -3,17 +3,19 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
+import textwrap
 import xtrack as xt
 import xdeps as xd
-import textwrap
+import numpy as np
 
-from ._000_helpers import *
+from ._000_helpers import extract_multipole_information, \
+    generate_magnet_for_replication_names, get_knl_string
 from ..types import ConfigLike
 
 ################################################################################
@@ -23,6 +25,18 @@ def create_solenoid_lattice_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Docstring for create_solenoid_lattice_file_information
+    
+    :param line: Description
+    :type line: xt.Line
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get information
@@ -44,7 +58,7 @@ def create_solenoid_lattice_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string   = f"""
+    output_string   = """
 ############################################################
 # Solenoids
 ############################################################
@@ -53,11 +67,11 @@ def create_solenoid_lattice_file_information(
     ########################################
     # Create base elements
     ########################################
-    output_string += f"""
+    output_string += """
 ########################################
 # Base Elements
 ########################################"""
-    
+
     for sol_name, sol_length in zip(sol_names, sol_lengths):
         output_string += f"""
 env.new(
@@ -71,7 +85,7 @@ env.new(
     ########################################
     # Clone Elements
     ########################################
-    output_string += f"""
+    output_string += """
 ########################################
 # Cloned Elements
 ########################################"""

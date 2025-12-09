@@ -3,19 +3,21 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
 # Import Packages
 ################################################################################
-from ._000_helpers import *
 from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
 def create_model_lattice_file_information(config: ConfigLike) -> str:
+    """
+    Docstring
+    """
 
     output_string = f"""
 ################################################################################
@@ -80,7 +82,7 @@ line.configure_bend_model(edge = "{config.EDGE_MODEL_BEND}")
     # Replace repeated elements
     ########################################
     if config._replace_repeated_elements:
-        output_string += f"""
+        output_string += """
 ########################################
 # Replace repeated elements
 ########################################

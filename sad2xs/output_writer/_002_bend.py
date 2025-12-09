@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       09-12-2025
 """
 
 ################################################################################
@@ -11,8 +11,10 @@ Date:       09-10-2025
 ################################################################################
 import xtrack as xt
 import xdeps as xd
+import numpy as np
 
-from ._000_helpers import *
+from ._000_helpers import extract_bend_information, \
+    generate_magnet_for_replication_names, check_is_simple_bend_corr
 from ..types import ConfigLike
 
 ################################################################################
@@ -38,7 +40,7 @@ def create_bend_lattice_file_information(
     ########################################
     # Get information
     ########################################
-    hbends, vbends, sbends, unique_bend_variables, bend_name_dict = \
+    hbends, vbends, sbends, _, bend_name_dict = \
         extract_bend_information(line, line_table)
 
     hbend_lengths       = np.array(sorted(hbends.keys()))
@@ -254,11 +256,23 @@ def create_bend_optics_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Docstring for create_bend_optics_file_information
+    
+    :param line: Description
+    :type line: xt.Line
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get information
     ########################################
-    hbends, vbends, sbends, unique_bend_variables, bend_name_dict = extract_bend_information(line, line_table)
+    hbends, vbends, sbends, unique_bend_variables, _ = extract_bend_information(line, line_table)
 
     hbend_names         = generate_magnet_for_replication_names(hbends, "hbend")
     vbend_names         = generate_magnet_for_replication_names(vbends, "vbend")

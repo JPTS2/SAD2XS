@@ -242,7 +242,6 @@ env.particle_ref    = xt.Particles(
     # Markers
     ########################################
     lattice_file_string += create_marker_lattice_file_information(
-        line                    = line,
         line_table              = line_table,
         offset_marker_locations = offset_marker_locations,
         config                  = config)
@@ -251,7 +250,6 @@ env.particle_ref    = xt.Particles(
     # Line
     ########################################
     lattice_file_string += create_line_lattice_file_information(
-        line        = line,
         line_table  = line_table,
         config      = config)
 
