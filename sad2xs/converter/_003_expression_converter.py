@@ -55,14 +55,14 @@ def convert_expressions(
     ########################################
     # Get the required data
     ########################################
-    parsed_globals      = parsed_lattice_data['globals']
-    parsed_expressions  = parsed_lattice_data['expressions']
+    parsed_globals      = parsed_lattice_data["globals"]
+    parsed_expressions  = parsed_lattice_data["expressions"]
 
     ########################################
     # Create global variables
     ########################################
     if config._verbose:
-        print_section_heading("Converting Global Variable Expressions", mode = 'subsection')
+        print_section_heading("Converting Global Variable Expressions", mode = "subsection")
 
     # Variables may depend on other variables, so have to parse them in order
     # Here, just try a few times to parse them
@@ -87,7 +87,7 @@ def convert_expressions(
     # Create expressions
     ########################################
     if config._verbose:
-        print_section_heading("Converting Deferred Expressions", mode = 'subsection')
+        print_section_heading("Converting Deferred Expressions", mode = "subsection")
 
     # Variables may depend on other variables, so have to parse them in order
     # Here, just try a few times to parse them

@@ -46,7 +46,7 @@ def create_corrector_lattice_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string   = f"""
+    output_string   = """
 ############################################################
 # Correctors
 ############################################################
@@ -55,7 +55,7 @@ def create_corrector_lattice_file_information(
     ########################################
     # Create base elements
     ########################################
-    output_string += f"""
+    output_string += """
 ########################################
 # Base Elements
 ########################################"""
@@ -77,7 +77,7 @@ env.new(name = '{scorr_name}', parent = xt.Bend, length = {scorr_length})"""
     ########################################
     # Clone Elements
     ########################################
-    output_string += f"""
+    output_string += """
 ########################################
 # Cloned Elements
 ########################################"""
@@ -264,7 +264,7 @@ def create_corrector_optics_file_information(
     # Create Output string
     ########################################
     # TODO: This still gives an empty section is they are all set to 0
-    output_string   = f"""
+    output_string   = """
     ############################################################
     # Correctors
     ############################################################"""

@@ -36,7 +36,7 @@ def exclude_elements(
     # Check if there are excluded elements
     ########################################
     if config._verbose:
-        print_section_heading("Checking for Excluded Elements", mode = 'subsection')
+        print_section_heading("Checking for Excluded Elements", mode = "subsection")
     if excluded_elements is None or len(excluded_elements) == 0:
         if config._verbose:
             print("No excluded elements found. Skipping exclusion.")
@@ -46,15 +46,15 @@ def exclude_elements(
     # When we exclude elements, need to exclude the reverse also
     ########################################
     excluded_elements   += [
-        elem[1:] for elem in excluded_elements if elem.startswith('-')]
+        elem[1:] for elem in excluded_elements if elem.startswith("-")]
     excluded_elements   += [
-        "-" + elem for elem in excluded_elements if not elem.startswith('-')]
+        "-" + elem for elem in excluded_elements if not elem.startswith("-")]
 
     ########################################
     # Get the required data
     ########################################
-    parsed_elements     = parsed_lattice_data['elements']
-    parsed_lines        = parsed_lattice_data['lines']
+    parsed_elements     = parsed_lattice_data["elements"]
+    parsed_lines        = parsed_lattice_data["lines"]
 
     ########################################
     # Delete the excluded elements from the elements dictionary

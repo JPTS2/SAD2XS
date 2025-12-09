@@ -37,16 +37,16 @@ def convert_solenoids(
     ########################################
     # Get the required data
     ########################################
-    parsed_elements = parsed_lattice_data['elements']
+    parsed_elements = parsed_lattice_data["elements"]
 
     ########################################
     # Check if there are any solenoids
     ########################################
-    if 'sol' not in parsed_elements:
+    if "sol" not in parsed_elements:
         if config._verbose:
-            print_section_heading("No solenoids in line", mode = 'subsection')
+            print_section_heading("No solenoids in line", mode = "subsection")
         return
-    solenoids   = parsed_elements['sol']
+    solenoids   = parsed_elements["sol"]
 
     ########################################
     # Get bound and geo solenoids
@@ -55,9 +55,9 @@ def convert_solenoids(
     geo_solenoids   = []
     for ele_name, ele_vars in solenoids.items():
 
-        if 'bound' in ele_vars:
+        if "bound" in ele_vars:
             bound_solenoids.append(ele_name)
-        if 'geo' in ele_vars:
+        if "geo" in ele_vars:
             geo_solenoids.append(ele_name)
 
     ############################################################################
@@ -233,7 +233,7 @@ def convert_solenoids(
                     shift_x     = line[element].shift_x
                     shift_y     = line[element].shift_y
                     rotation    = line[element].rot_s_rad
-                    knl         = [f'{k0} * {length}', f'{k1} * {length}']
+                    knl         = [f"{k0} * {length}", f"{k1} * {length}"]
 
                     new_element_name    = f"{element}_{solenoid_suffix}"
 
@@ -265,8 +265,8 @@ def convert_solenoids(
                     shift_x     = line[element].shift_x
                     shift_y     = line[element].shift_y
                     rotation    = line[element].rot_s_rad
-                    knl         = [0, f'{k1} * {length}']
-                    ksl         = [0, f'{k1s} * {length}']
+                    knl         = [0, f"{k1} * {length}"]
+                    ksl         = [0, f"{k1s} * {length}"]
 
                     new_element_name    = f"{element}_{solenoid_suffix}"
 
@@ -299,8 +299,8 @@ def convert_solenoids(
                     shift_x     = line[element].shift_x
                     shift_y     = line[element].shift_y
                     rotation    = line[element].rot_s_rad
-                    knl         = [0, 0, f'{k2} * {length}']
-                    ksl         = [0, 0, f'{k2s} * {length}']
+                    knl         = [0, 0, f"{k2} * {length}"]
+                    ksl         = [0, 0, f"{k2s} * {length}"]
 
                     new_element_name    = f"{element}_{solenoid_suffix}"
 
@@ -333,8 +333,8 @@ def convert_solenoids(
                     shift_x     = line[element].shift_x
                     shift_y     = line[element].shift_y
                     rotation    = line[element].rot_s_rad
-                    knl         = [0, 0, 0, f'{k3} * {length}']
-                    ksl         = [0, 0, 0, f'{k3s} * {length}']
+                    knl         = [0, 0, 0, f"{k3} * {length}"]
+                    ksl         = [0, 0, 0, f"{k3s} * {length}"]
 
                     new_element_name    = f"{element}_{solenoid_suffix}"
 
@@ -422,7 +422,7 @@ def convert_solenoids(
                         xt.SRotation,
                         xt.Marker,
                         xt.LimitEllipse)):  
-                    # Known elements that don't need conversion
+                    # Known elements that don"t need conversion
                     continue
                 elif config._verbose:
                     print(f"Element {element} in line {line_name} has not been converted")
@@ -454,16 +454,16 @@ def solenoid_reference_shift_corrections(
     ########################################
     # Get the required data
     ########################################
-    parsed_elements = parsed_lattice_data['elements']
+    parsed_elements = parsed_lattice_data["elements"]
 
     ########################################
     # Check if there are any solenoids
     ########################################
-    if 'sol' not in parsed_elements:
+    if "sol" not in parsed_elements:
         if config._verbose:
-            print_section_heading("No solenoids in line", mode = 'subsection')
+            print_section_heading("No solenoids in line", mode = "subsection")
         return
-    solenoids   = parsed_elements['sol']
+    solenoids   = parsed_elements["sol"]
 
     ########################################
     # Get bound and geo solenoids
@@ -472,9 +472,9 @@ def solenoid_reference_shift_corrections(
     geo_solenoids   = []
     for ele_name, ele_vars in solenoids.items():
 
-        if 'bound' in ele_vars:
+        if "bound" in ele_vars:
             bound_solenoids.append(ele_name)
-        if 'geo' in ele_vars:
+        if "geo" in ele_vars:
             geo_solenoids.append(ele_name)
 
     ########################################
@@ -555,10 +555,10 @@ def solenoid_reference_shift_corrections(
 
     # We only care about the compound solenoids (the ones with reference frame transforms)
     # These solenoids must have the _bound suffix
-    inbound_solenoids       = [sol for sol in inbound_solenoids if sol.endswith('_bound')]
-    outbound_solenoids      = [sol for sol in outbound_solenoids if sol.endswith('_bound')]
-    geometric_solenoids     = [sol for sol in geometric_solenoids if sol.endswith('_bound')]
-    non_geometric_solenoids = [sol for sol in non_geometric_solenoids if sol.endswith('_bound')]
+    inbound_solenoids       = [sol for sol in inbound_solenoids if sol.endswith("_bound")]
+    outbound_solenoids      = [sol for sol in outbound_solenoids if sol.endswith("_bound")]
+    geometric_solenoids     = [sol for sol in geometric_solenoids if sol.endswith("_bound")]
+    non_geometric_solenoids = [sol for sol in non_geometric_solenoids if sol.endswith("_bound")]
 
     # Here we need to remove the _sol suffix for the reference shift correction
     inbound_solenoids       = [sol[:-6] for sol in inbound_solenoids]
@@ -572,7 +572,7 @@ def solenoid_reference_shift_corrections(
     non_geometric_solenoids = sorted(non_geometric_solenoids)
 
     if config._verbose:
-        print_section_heading("Reference Shift Solenoids:", mode = 'subsection')
+        print_section_heading("Reference Shift Solenoids:", mode = "subsection")
         print(f"Inbound solenoids with ref transforms: {inbound_solenoids}")
         print(f"Outbound solenoids with ref transforms: {outbound_solenoids}")
         print(f"Geometric solenoids with ref transforms: {geometric_solenoids}")
@@ -603,15 +603,15 @@ def solenoid_reference_shift_corrections(
         # Reversal information
         inbound_reversed    = False
         outbound_reversed   = False
-        if inbound_solenoid.startswith('-'):
+        if inbound_solenoid.startswith("-"):
             inbound_reversed    = True
-        if outbound_solenoid.startswith('-'):
+        if outbound_solenoid.startswith("-"):
             outbound_reversed   = True
 
         # Inbound solnoids
 
         # Only care about the ones with reference shift transformations (should always be true)
-        if inbound_solenoid.endswith('_bound'):
+        if inbound_solenoid.endswith("_bound"):
             inbound_solenoid    = inbound_solenoid[:-6]
             if inbound_solenoid in geometric_solenoids:
 
@@ -635,7 +635,7 @@ def solenoid_reference_shift_corrections(
                     inbound_nongeo_reverse_reverse_solenoids.append(inbound_solenoid)
 
         # Only care about the boundary solenoids
-        if outbound_solenoid.endswith('_bound'):
+        if outbound_solenoid.endswith("_bound"):
             outbound_solenoid    = outbound_solenoid[:-6]
 
             if outbound_solenoid in geometric_solenoids:
@@ -860,11 +860,11 @@ def solenoid_reference_shift_corrections(
     for inbound_solenoid, outbound_solenoid in bound_solenoid_pairs:
 
         # Should always be true, but just in case
-        if not inbound_solenoid.endswith('_bound'):
-            raise ValueError(f"Inbound solenoid {inbound_solenoid} doesn't end with bound?")
+        if not inbound_solenoid.endswith("_bound"):
+            raise ValueError(f"Inbound solenoid {inbound_solenoid} doesn' end with bound?")
         inbound_solenoid    = inbound_solenoid[:-6]
 
-        if not outbound_solenoid.endswith('_bound'):
+        if not outbound_solenoid.endswith("_bound"):
             raise ValueError(f"Outbound solenoid {outbound_solenoid} doesn't end with bound?")
         outbound_solenoid   = outbound_solenoid[:-6]
 
@@ -916,12 +916,12 @@ def solenoid_reference_shift_corrections(
             new_element_names   = []
             new_element_names   += element_names[:start_idx]
             bound_elements      = [
-                f'{inbound_geo_solenoid}_chi3',
-                f'{inbound_geo_solenoid}_chi2',
-                f'{inbound_geo_solenoid}_chi1',
-                f'{inbound_geo_solenoid}_dz',
-                f'{inbound_geo_solenoid}_dxy',
-                f'{inbound_geo_solenoid}_bound']
+                f"{inbound_geo_solenoid}_chi3",
+                f"{inbound_geo_solenoid}_chi2",
+                f"{inbound_geo_solenoid}_chi1",
+                f"{inbound_geo_solenoid}_dz",
+                f"{inbound_geo_solenoid}_dxy",
+                f"{inbound_geo_solenoid}_bound"]
             new_element_names   += bound_elements
             new_element_names   += element_names[end_idx + 1:]
 
@@ -946,20 +946,20 @@ def solenoid_reference_shift_corrections(
             new_element_names   += element_names[:start_idx]
             if not reverse_line:
                 bound_elements      = [
-                    f'{inbound_nongeo_solenoid}_chi1',
-                    f'{inbound_nongeo_solenoid}_chi2',
-                    f'{inbound_nongeo_solenoid}_chi3',
-                    f'{inbound_nongeo_solenoid}_dz',
-                    f'{inbound_nongeo_solenoid}_dxy',
-                    f'{inbound_nongeo_solenoid}_bound']
+                    f"{inbound_nongeo_solenoid}_chi1",
+                    f"{inbound_nongeo_solenoid}_chi2",
+                    f"{inbound_nongeo_solenoid}_chi3",
+                    f"{inbound_nongeo_solenoid}_dz",
+                    f"{inbound_nongeo_solenoid}_dxy",
+                    f"{inbound_nongeo_solenoid}_bound"]
             else:
                 bound_elements      = [
-                    f'{inbound_nongeo_solenoid}_chi3',
-                    f'{inbound_nongeo_solenoid}_chi2',
-                    f'{inbound_nongeo_solenoid}_chi1',
-                    f'{inbound_nongeo_solenoid}_dz',
-                    f'{inbound_nongeo_solenoid}_dxy',
-                    f'{inbound_nongeo_solenoid}_bound']
+                    f"{inbound_nongeo_solenoid}_chi3",
+                    f"{inbound_nongeo_solenoid}_chi2",
+                    f"{inbound_nongeo_solenoid}_chi1",
+                    f"{inbound_nongeo_solenoid}_dz",
+                    f"{inbound_nongeo_solenoid}_dxy",
+                    f"{inbound_nongeo_solenoid}_bound"]
             new_element_names   += bound_elements
             new_element_names   += element_names[end_idx + 1:]
 
@@ -983,12 +983,12 @@ def solenoid_reference_shift_corrections(
             new_element_names   = []
             new_element_names   += element_names[:start_idx]
             bound_elements      = [
-                f'{outbound_geo_solenoid}_bound',
-                f'{outbound_geo_solenoid}_dxy',
-                f'{outbound_geo_solenoid}_dz',
-                f'{outbound_geo_solenoid}_chi1',
-                f'{outbound_geo_solenoid}_chi2',
-                f'{outbound_geo_solenoid}_chi3']
+                f"{outbound_geo_solenoid}_bound",
+                f"{outbound_geo_solenoid}_dxy",
+                f"{outbound_geo_solenoid}_dz",
+                f"{outbound_geo_solenoid}_chi1",
+                f"{outbound_geo_solenoid}_chi2",
+                f"{outbound_geo_solenoid}_chi3"]
             new_element_names   += bound_elements
             new_element_names   += element_names[end_idx + 1:]
 
@@ -1012,12 +1012,12 @@ def solenoid_reference_shift_corrections(
             new_element_names   = []
             new_element_names   += element_names[:start_idx]
             bound_elements      = [
-                f'{outbound_nongeo_solenoid}_bound',
-                f'{outbound_nongeo_solenoid}_dxy',
-                f'{outbound_nongeo_solenoid}_dz',
-                f'{outbound_nongeo_solenoid}_chi1',
-                f'{outbound_nongeo_solenoid}_chi2',
-                f'{outbound_nongeo_solenoid}_chi3']
+                f"{outbound_nongeo_solenoid}_bound",
+                f"{outbound_nongeo_solenoid}_dxy",
+                f"{outbound_nongeo_solenoid}_dz",
+                f"{outbound_nongeo_solenoid}_chi1",
+                f"{outbound_nongeo_solenoid}_chi2",
+                f"{outbound_nongeo_solenoid}_chi3"]
             new_element_names   += bound_elements
             new_element_names   += element_names[end_idx + 1:]
             element_names       = new_element_names

@@ -22,15 +22,15 @@ def ev_text_to_float(value_in_ev: str):
     """
     Convert a string representation of energy in electron volts to a float
     """
-    if 'kev' in value_in_ev:
+    if "kev" in value_in_ev:
         return float(value_in_ev.replace("kev", "")) * 1E3
-    elif 'mev' in value_in_ev:
+    elif "mev" in value_in_ev:
         return float(value_in_ev.replace("mev", "")) * 1E6
-    elif 'gev' in value_in_ev:
+    elif "gev" in value_in_ev:
         return float(value_in_ev.replace("gev", "")) * 1E9
-    elif 'tev' in value_in_ev:
+    elif "tev" in value_in_ev:
         return float(value_in_ev.replace("tev", "")) * 1E12
-    elif 'ev' in value_in_ev:
+    elif "ev" in value_in_ev:
         return float(value_in_ev.replace("ev", ""))
     else:
         try:
@@ -51,7 +51,7 @@ def load_and_clean_whitespace(sad_lattice_path: str):
     ############################################################################
     # Load SAD File to Python
     ############################################################################
-    with open(sad_lattice_path, 'r', encoding = "utf-8") as sad_file:
+    with open(sad_lattice_path, "r", encoding = "utf-8") as sad_file:
         content = sad_file.read()
 
     ############################################################################
@@ -66,28 +66,28 @@ def load_and_clean_whitespace(sad_lattice_path: str):
     ########################################
     # Correct Formatting Issues
     ########################################
-    while ' =' in content:
-        content = content.replace(' =', '=')
-    while '= ' in content:
-        content = content.replace('= ', '=')
-    while '( ' in content:
-        content = content.replace('( ', '(')
-    while ' )' in content:
-        content = content.replace(' )', ')')
-    while '  ' in content:
-        content = content.replace('  ', ' ')
+    while " =" in content:
+        content = content.replace(" =", "=")
+    while "= " in content:
+        content = content.replace("= ", "=")
+    while "( " in content:
+        content = content.replace("( ", "(")
+    while " )" in content:
+        content = content.replace(" )", ")")
+    while "  " in content:
+        content = content.replace("  ", " ")
 
     ########################################
     # Angle Handling
     ########################################
-    # Ensure no spaces between the value and it's unit
-    content     = content.replace(' deg', 'deg')
+    # Ensure no spaces between the value and its unit
+    content     = content.replace(" deg", "deg")
 
     ########################################
     # Split the file into sections
     ########################################
     # Semicolons are used to separate element sections
-    sections    = content.split(';')
+    sections    = content.split(";")
 
     ########################################
     # Return the section information
@@ -130,7 +130,7 @@ def parse_sad_file(
     # Load lattice and clean whitespace
     ############################################################################
     if config._verbose:
-        print_section_heading('Loading and Cleaning SAD File', mode = 'subsection')
+        print_section_heading("Loading and Cleaning SAD File", mode = "subsection")
 
     sad_sections = load_and_clean_whitespace(sad_lattice_path)
 
@@ -138,7 +138,7 @@ def parse_sad_file(
     # Clean each different section of the file
     ############################################################################
     if config._verbose:
-        print_section_heading('Cleaning Element Sections', mode = 'subsection')
+        print_section_heading("Cleaning Element Sections", mode = "subsection")
 
     for section in sad_sections:
         current_section = section
@@ -147,17 +147,17 @@ def parse_sad_file(
         # Remove Commented Lines
         ########################################
         comment_removed_section = []
-        for line in current_section.split('\n'):
-            if not line.startswith('!'):
+        for line in current_section.split("\n"):
+            if not line.startswith("!"):
                 # Lines that do contain content to pass
-                if '!' in line:
+                if "!" in line:
                     # Trim lines that have comment part way through
-                    line = line.split('!')[0]
+                    line = line.split("!")[0]
                 comment_removed_section.append(line)
             else:
                 # Lines that are only comments
                 continue
-        current_section = '\n'.join(comment_removed_section)
+        current_section = "\n".join(comment_removed_section)
 
         ########################################
         # Strip newlines and whitespace
@@ -187,11 +187,11 @@ def parse_sad_file(
     for section in parsed_sections[:]:
         section_command = section.split()[0]
 
-        if section_command.startswith('on'):
+        if section_command.startswith("on"):
             parsed_sections.remove(section)
             continue
 
-        if section_command.startswith('off'):
+        if section_command.startswith("off"):
             parsed_sections.remove(section)
             continue
 
@@ -199,7 +199,7 @@ def parse_sad_file(
     # Global Variables
     ############################################################################
     if config._verbose:
-        print_section_heading('Parsing Global Variables', mode = 'subsection')
+        print_section_heading("Parsing Global Variables", mode = "subsection")
 
     for section in parsed_sections[:]:
         section_command = section.split()[0]
@@ -207,7 +207,7 @@ def parse_sad_file(
         ########################################
         # Momentum
         ########################################
-        if section_command.startswith('momentum'):
+        if section_command.startswith("momentum"):
 
             momentum    = section
             momentum    = momentum.replace("momentum", "")
@@ -218,7 +218,7 @@ def parse_sad_file(
 
             momentum    = ev_text_to_float(momentum)
 
-            cleaned_globals['p0c'] = momentum
+            cleaned_globals["p0c"] = momentum
 
             parsed_sections.remove(section)
             continue
@@ -226,7 +226,7 @@ def parse_sad_file(
         ########################################
         # Mass
         ########################################
-        if section_command.startswith('mass'):
+        if section_command.startswith("mass"):
 
             mass    = section
             mass    = mass.replace("mass", "")
@@ -237,7 +237,7 @@ def parse_sad_file(
 
             mass    = ev_text_to_float(mass)
 
-            cleaned_globals['mass0'] = mass
+            cleaned_globals["mass0"] = mass
 
             parsed_sections.remove(section)
             continue
@@ -245,7 +245,7 @@ def parse_sad_file(
         ########################################
         # Charge
         ########################################
-        if section_command.startswith('charge'):
+        if section_command.startswith("charge"):
 
             charge  = section
             charge  = charge.replace("charge", "")
@@ -256,7 +256,7 @@ def parse_sad_file(
 
             charge  = float(charge)
 
-            cleaned_globals['q0'] = charge
+            cleaned_globals["q0"] = charge
 
             parsed_sections.remove(section)
             continue
@@ -264,7 +264,7 @@ def parse_sad_file(
         ########################################
         # Frequency Shift
         ########################################
-        if section_command.startswith('fshift'):
+        if section_command.startswith("fshift"):
 
             fshift  = section
             fshift  = fshift.replace("fshift", "")
@@ -275,7 +275,7 @@ def parse_sad_file(
 
             fshift  = float(fshift)
 
-            cleaned_globals['fshift'] = fshift
+            cleaned_globals["fshift"] = fshift
 
             parsed_sections.remove(section)
             continue
@@ -284,12 +284,12 @@ def parse_sad_file(
     # Lines
     ############################################################################
     if config._verbose:
-        print_section_heading('Parsing Lines', mode = 'subsection')
+        print_section_heading("Parsing Lines", mode = "subsection")
 
     for section in parsed_sections[:]:
         section_command = section.split()[0]
 
-        if section_command.startswith('line'):
+        if section_command.startswith("line"):
 
             line_section    = section
             line_section    = line_section.replace("line", "")
@@ -299,7 +299,7 @@ def parse_sad_file(
             ########################################
             # Split into lines by closing bracket
             ########################################
-            lines   = line_section.split(')')
+            lines   = line_section.split(")")
 
             ########################################
             # Process each line
@@ -308,12 +308,12 @@ def parse_sad_file(
                 if len(line) == 0:
                     continue
 
-                line_name, line_content = line.split('=')
+                line_name, line_content = line.split("=")
 
-                line_name       = line_name.replace(' ', '')
-                line_content    = line_content.replace('(', '')
-                line_content    = line_content.replace('\n', ' ')
-                line_content    = line_content.replace('\t', ' ')
+                line_name       = line_name.replace(" ", "")
+                line_content    = line_content.replace("(", "")
+                line_content    = line_content.replace("\n", " ")
+                line_content    = line_content.replace("\t", " ")
 
                 line_elements = []
                 for element in line_content.split():
@@ -329,7 +329,7 @@ def parse_sad_file(
     # Elements
     ############################################################################
     if config._verbose:
-        print_section_heading('Parsing Elements', mode = 'subsection')
+        print_section_heading("Parsing Elements", mode = "subsection")
 
     for section in parsed_sections[:]:
         section_command = section.split()[0]
@@ -342,16 +342,16 @@ def parse_sad_file(
             ########################################
             element_section = section
             element_section = element_section.removeprefix(section_command)
-            element_section = element_section.replace('\n ', ' ')
-            element_section = element_section.replace(' \n', ' ')
-            element_section = element_section.replace('\n', ' ')
-            element_section = element_section.replace('\t', ' ')
-            element_section = element_section.replace(')', '),')
+            element_section = element_section.replace("\n ", " ")
+            element_section = element_section.replace(" \n", " ")
+            element_section = element_section.replace("\n", " ")
+            element_section = element_section.replace("\t", " ")
+            element_section = element_section.replace(")", "),")
 
             ########################################
             # Split the section into elements
             ########################################
-            elements    = element_section.split(',')
+            elements    = element_section.split(",")
 
             ########################################
             # Process each element
@@ -359,7 +359,7 @@ def parse_sad_file(
             for element in elements:
                 ele_dict    = {}
 
-                while element.startswith(' '):
+                while element.startswith(" "):
                     element = element[1:]
 
                 if len(element) == 0:
@@ -368,26 +368,26 @@ def parse_sad_file(
                 ########################################
                 # Split the name and variables
                 ########################################
-                ele_name, ele_vars = element.split('(')
+                ele_name, ele_vars = element.split("(")
 
                 ########################################
                 # Handle the element name
                 ########################################
-                ele_name    = ele_name.replace(' ', '')
-                ele_name    = ele_name.replace('=', '')
+                ele_name    = ele_name.replace(" ", "")
+                ele_name    = ele_name.replace("=", "")
 
                 ########################################
                 # Handle the element variables
                 ########################################
-                ele_vars    = ele_vars.replace(')', '')
-                ele_vars    = ele_vars.replace('\n', '')
-                while '= ' in ele_vars:
-                    ele_vars    = ele_vars.replace('= ', '=')
+                ele_vars    = ele_vars.replace(")", "")
+                ele_vars    = ele_vars.replace("\n", "")
+                while "= " in ele_vars:
+                    ele_vars    = ele_vars.replace("= ", "=")
 
                 ########################################
                 # Process data in each element
                 ########################################
-                tokens  = ele_vars.split(' ')
+                tokens  = ele_vars.split(" ")
                 for token in tokens:
 
                     if len(token) == 0:
@@ -396,20 +396,20 @@ def parse_sad_file(
                     ########################################
                     # Angle handling
                     ########################################
-                    if 'deg' in token:
-                        token_name, token_value = token.split('=')
+                    if "deg" in token:
+                        token_name, token_value = token.split("=")
 
-                        token_value = token_value.replace('deg', '')
+                        token_value = token_value.replace("deg", "")
                         token_value = float(token_value)
                         token_value = np.deg2rad(token_value)
-                        token = token_name + '=' + str(token_value)
+                        token = token_name + "=" + str(token_value)
 
                     try:
-                        var_name, var_value = token.split('=')
+                        var_name, var_value = token.split("=")
                     except ValueError:
                         raise ValueError(
                             f"Error parsing token: {token}. "
-                            "Expected format 'name=value'.")
+                            "Expected format 'name = value'.")
 
                     try:
                         var_value = float(var_value)
@@ -434,7 +434,7 @@ def parse_sad_file(
     # Deferred expressions
     ############################################################################
     if config._verbose:
-        print_section_heading('Parsing Deferred Expressions', mode = 'subsection')
+        print_section_heading("Parsing Deferred Expressions", mode = "subsection")
 
     for section in parsed_sections[:]:
         section_command = section.split()[0]
@@ -442,9 +442,9 @@ def parse_sad_file(
         ########################################
         # If no equals sign, skip the section
         ########################################
-        if '=' not in section:
+        if "=" not in section:
             if config._verbose:
-                print('Unknown Section Includes the following information:')
+                print("Unknown Section Includes the following information:")
                 print(section)
 
             parsed_sections.remove(section)
@@ -454,18 +454,18 @@ def parse_sad_file(
         # Split information based on the equals sign
         ########################################
         try:
-            variable, expression = section.split('=')
+            variable, expression = section.split("=")
         except ValueError:
             raise ValueError(
                 f"Error parsing section: {section}. "
-                "Expected format 'name=expression'.")
+                "Expected format 'name = expression'.")
 
         ########################################
         # Convert to Float if Possible
         ########################################
         if all(char in "0123456789-." for char in expression) \
-                and expression.count('.') <= 1 \
-                and expression.count('-') <= 1:
+                and expression.count(".") <= 1 \
+                and expression.count("-") <= 1:
 
             cleaned_expressions[variable] = float(expression)
             continue
@@ -495,56 +495,56 @@ def parse_sad_file(
     ############################################################################
     # Address missing momentum and mass and charge
     ############################################################################
-    if 'mass0' not in cleaned_globals and config.ref_particle_mass0 is None:
-        cleaned_globals['mass0'] = xt.ELECTRON_MASS_EV
+    if "mass0" not in cleaned_globals and config.ref_particle_mass0 is None:
+        cleaned_globals["mass0"] = xt.ELECTRON_MASS_EV
         if config._verbose:
-            print('Notice! No mass found in SAD file or function input: Using electron mass')
-    if 'mass0' not in cleaned_globals:
-        cleaned_globals['mass0'] = config.ref_particle_mass0
+            print("Notice! No mass found in SAD file or function input: Using electron mass")
+    if "mass0" not in cleaned_globals:
+        cleaned_globals["mass0"] = config.ref_particle_mass0
         if config._verbose:
-            print('Notice! No mass found in SAD file: Using user provided value')
-    elif 'mass0' in cleaned_globals and config.ref_particle_mass0 is not None:
-        cleaned_globals['mass0'] = config.ref_particle_mass0
+            print("Notice! No mass found in SAD file: Using user provided value")
+    elif "mass0" in cleaned_globals and config.ref_particle_mass0 is not None:
+        cleaned_globals["mass0"] = config.ref_particle_mass0
         if config._verbose:
-            print('Warning! Mass found in SAD file and function input: Using user provided value')
+            print("Warning! Mass found in SAD file and function input: Using user provided value")
 
-    if 'p0c' not in cleaned_globals and config.ref_particle_p0c is None:
+    if "p0c" not in cleaned_globals and config.ref_particle_p0c is None:
         # TODO: From SAD find what the nominal value is
-        raise ValueError('Notice! No momentum found in SAD file or function input')
-    if 'p0c' not in cleaned_globals:
-        cleaned_globals['p0c'] = config.ref_particle_p0c
+        raise ValueError("Notice! No momentum found in SAD file or function input")
+    if "p0c" not in cleaned_globals:
+        cleaned_globals["p0c"] = config.ref_particle_p0c
         if config._verbose:
-            print('Notice! No momentum found in SAD file: Using user provided value')
-    elif 'p0c' in cleaned_globals and config.ref_particle_p0c is not None:
-        cleaned_globals['p0c'] = config.ref_particle_p0c
+            print("Notice! No momentum found in SAD file: Using user provided value")
+    elif "p0c" in cleaned_globals and config.ref_particle_p0c is not None:
+        cleaned_globals["p0c"] = config.ref_particle_p0c
         if config._verbose:
-            print('Warning! Momentum found in SAD file and function input: Using user provided value')
+            print("Warning! Momentum found in SAD file and function input: Using user provided value")
 
-    if 'q0' not in cleaned_globals and config.ref_particle_q0 is None:
-        cleaned_globals['q0']   = +1
+    if "q0" not in cleaned_globals and config.ref_particle_q0 is None:
+        cleaned_globals["q0"]   = +1
         if config._verbose:
-            print('Notice! No charge found in SAD file or function input: Using charge of +e')
-    if 'q0' not in cleaned_globals:
-        cleaned_globals['q0'] = config.ref_particle_q0
+            print("Notice! No charge found in SAD file or function input: Using charge of +e")
+    if "q0" not in cleaned_globals:
+        cleaned_globals["q0"] = config.ref_particle_q0
         if config._verbose:
-            print('Notice! No charge found in SAD file: Using user provided value')
-    elif 'q0' in cleaned_globals and config.ref_particle_q0 is not None:
-        cleaned_globals['q0'] = config.ref_particle_q0
+            print("Notice! No charge found in SAD file: Using user provided value")
+    elif "q0" in cleaned_globals and config.ref_particle_q0 is not None:
+        cleaned_globals["q0"] = config.ref_particle_q0
         if config._verbose:
-            print('Warning! Charge found in SAD file and function input: Using user provided value')
+            print("Warning! Charge found in SAD file and function input: Using user provided value")
 
-    if 'fshift' not in cleaned_globals:
-        cleaned_globals['fshift']   = 0.0
+    if "fshift" not in cleaned_globals:
+        cleaned_globals["fshift"]   = 0.0
         if config._verbose:
-            print('Notice! No fshift found in SAD file or function input: Using fshift of 0.0')
+            print("Notice! No fshift found in SAD file or function input: Using fshift of 0.0")
 
     ############################################################################
     # Return the Parsed Data
     ############################################################################
     parsed_lattice_data = {
-        'globals':      cleaned_globals,
-        'lines':        cleaned_lines,
-        'elements':     cleaned_elements,
-        'expressions':  cleaned_expressions}
+        "globals":      cleaned_globals,
+        "lines":        cleaned_lines,
+        "elements":     cleaned_elements,
+        "expressions":  cleaned_expressions}
 
     return parsed_lattice_data

@@ -148,5 +148,5 @@ env.vars.update(default_to_zero = True,
     ########################################
     # Write to file
     ########################################
-    with open(f"{output_directory}/{output_filename}.py", 'w', encoding = "utf-8") as f:
+    with open(f"{output_directory}/{output_filename}.py", "w", encoding = "utf-8") as f:
         f.write(optics_file_string)

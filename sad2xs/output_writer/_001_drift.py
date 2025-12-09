@@ -11,9 +11,8 @@ Date:       09-10-2025
 ################################################################################
 import xtrack as xt
 import xdeps as xd
-import textwrap
 
-from ._000_helpers import *
+from ._000_helpers import get_parentname
 from ..types import ConfigLike
 
 ################################################################################
@@ -23,6 +22,18 @@ def create_drift_lattice_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Docstring for create_drift_lattice_file_information
+    
+    :param line: Description
+    :type line: xt.Line
+    :param line_table: Description
+    :type line_table: xd.table.Table
+    :param config: Description
+    :type config: ConfigLike
+    :return: Description
+    :rtype: str
+    """
 
     ########################################
     # Get unique drifts
@@ -42,7 +53,7 @@ def create_drift_lattice_file_information(
     ########################################
     # Create Output string
     ########################################
-    output_string   = f"""
+    output_string   = """
 ############################################################
 # Drifts
 ############################################################"""

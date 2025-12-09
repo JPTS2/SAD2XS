@@ -25,7 +25,7 @@ def get_parentname(element_name):
     """
     # Assume to start that the parent name is the element name excluding replica
     parent_name    = element_name.split('::')[0]
-    
+
     return parent_name
 
 def get_variablename(element_name):
@@ -43,7 +43,7 @@ def get_variablename(element_name):
         variable_name   = parent_name[1:]
     else:
         variable_name   = parent_name
-    
+
     return variable_name
 
 ################################################################################
@@ -82,7 +82,7 @@ def get_knl_string(knl_array):
     # If all zero, just give an empty array
     if np.all(knl_array == 0):
         return "[]"
-    
+
     # Otherwise, iterate through
     knl_string = "["
     for i, knl in enumerate(knl_array):
@@ -93,16 +93,16 @@ def get_knl_string(knl_array):
 
         # Fromat the knl value
         if knl == 0:
-            knl_substring   = f"0"
+            knl_substring   = "0"
         else:
             knl_substring   = f"{knl:.24e}"
-        
+
         # Append to the string
         if i == 0:
             knl_string += knl_substring
         else:
             knl_string += f', {knl_substring}'
-    
+
     # Close the string
     knl_string += "]"
     return knl_string
@@ -115,6 +115,12 @@ def get_knl_string(knl_array):
 # Bends
 ########################################
 def extract_bend_information(line, line_table):
+    """
+    Docstring for extract_bend_information
+    
+    :param line: Description
+    :param line_table: Description
+    """
 
     ########################################
     # Get Bend Element information
@@ -125,7 +131,7 @@ def extract_bend_information(line, line_table):
     for bend in line_table.rows[line_table.element_type == 'Bend'].name:
         parentname      = get_parentname(bend)
         variablename    = get_variablename(bend)
-        
+
         # Ensure the element is a bend not a corrector
         if line[parentname].h != 0:
             if parentname not in unique_bend_names:
@@ -167,7 +173,7 @@ def extract_bend_information(line, line_table):
         for angle, (bend_dict, flip) in angle_map.items():
             if np.isclose(rot_s_rad, angle):
                 angle_matched   = True
-                
+
                 # Handle horizontal and vertical bends rotated by 180 degrees
                 if flip:
                     line[bend].k0               *= -1
@@ -195,6 +201,12 @@ def extract_bend_information(line, line_table):
 # Correctors
 ########################################
 def extract_corrector_information(line, line_table):
+    """
+    Docstring for extract_corrector_information
+    
+    :param line: Description
+    :param line_table: Description
+    """
 
     ########################################
     # Get Corrector Element information
@@ -205,7 +217,7 @@ def extract_corrector_information(line, line_table):
     for corr in line_table.rows[line_table.element_type == 'Bend'].name:
         parentname      = get_parentname(corr)
         variablename    = get_variablename(corr)
-        
+
         # Ensure the element is a corr not a corrector
         if line[parentname].h == 0:
             if parentname not in unique_corr_names:
@@ -275,6 +287,13 @@ def extract_corrector_information(line, line_table):
 # Quadrupole/Sextupole/Octupole information
 ########################################
 def extract_multipole_information(line, line_table, mode):
+    """
+    Docstring for extract_multipole_information
+    
+    :param line: Description
+    :param line_table: Description
+    :param mode: Description
+    """
 
     ########################################
     # Get Magnet Element information
@@ -305,8 +324,14 @@ def extract_multipole_information(line, line_table, mode):
 # Element is simple to clone
 ################################################################################
 def check_is_simple_bend_corr(line, replica_name):
-    is_simple = False
+    """
+    Docstring for check_is_simple_bend_corr
     
+    :param line: Description
+    :param replica_name: Description
+    """
+    is_simple = False
+
     if line[replica_name].edge_entry_angle == 0 and \
             line[replica_name].edge_exit_angle == 0 and \
             line[replica_name].edge_entry_angle_fdown == 0 and \
@@ -314,12 +339,18 @@ def check_is_simple_bend_corr(line, replica_name):
             line[replica_name].shift_x == 0 and \
             line[replica_name].shift_y == 0:
         is_simple = True
-    
+
     return is_simple
 
 def check_is_simple_quad_sext_oct(line, replica_name, mode):
+    """
+    Docstring for check_is_simple_quad_sext_oct
+    
+    :param line: Description
+    :param replica_name: Description
+    :param mode: Description
+    """
     is_simple   = False
-    is_skew     = False
 
     if mode == "Quadrupole":
         # Simple assumes only one of k1 or k1s is non-zero
@@ -348,6 +379,13 @@ def check_is_simple_quad_sext_oct(line, replica_name, mode):
     return is_simple
 
 def check_is_skew_quad_sext_oct(line, replica_name, mode):
+    """
+    Docstring for check_is_skew_quad_sext_oct
+    
+    :param line: Description
+    :param replica_name: Description
+    :param mode: Description
+    """
     is_skew     = False
 
     if mode == "Quadrupole":
@@ -365,6 +403,12 @@ def check_is_skew_quad_sext_oct(line, replica_name, mode):
     return is_skew
 
 def check_is_simple_unpowered_multipole(line, replica_name):
+    """
+    Docstring for check_is_simple_unpowered_multipole
+    
+    :param line: Description
+    :param replica_name: Description
+    """
     is_simple_unpowered = False
 
     if np.all(line[replica_name].knl == 0) and \
@@ -377,6 +421,12 @@ def check_is_simple_unpowered_multipole(line, replica_name):
     return is_simple_unpowered
 
 def check_is_simple_solenoid(line, replica_name):
+    """
+    Docstring for check_is_simple_solenoid
+    
+    :param line: Description
+    :param replica_name: Description
+    """
     is_simple_unpowered = False
 
     if np.all(line[replica_name].knl == 0) and \
