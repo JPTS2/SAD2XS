@@ -68,54 +68,12 @@ line    = s2x.convert_sad_to_xsuite(
 os.remove(REBUILT_SAD_LATTICE_PATH)
 
 ################################################################################
-# Replace Solenoid
+# Swap out solenoids
 ################################################################################
-env         = line.env
-tt_env_ele  = env.elements.get_table()
-tt_env_sol  = tt_env_ele.rows.match(element_type = "Solenoid")
-env.set(tt_env_sol, num_multipole_kicks = 1)
-env.discard_trackers()
-for nn in tt_env_sol.name:
-    old_sol = env.get(nn)
+tt      = line.get_table(attr = True)
+tt_ip2  = tt.rows[(tt.s > tt["s", "ip.2"] - 20) & (tt.s < tt["s", "ip.2"] + 20)]
 
-    LENGTH              = old_sol.length
-    KS                  = old_sol.ks
-    KNL                 = old_sol.knl
-    KSL                 = old_sol.ksl
-    MULT_SHIFT_X        = old_sol.mult_shift_x
-    MULT_SHIFT_Y        = old_sol.mult_shift_y
-    ROT_S_RAD           = old_sol.rot_s_rad
-    N_MULTIPOLE_KICKS   = old_sol.num_multipole_kicks
-
-    COS                 = np.cos(ROT_S_RAD)
-    SIN                 = np.sin(ROT_S_RAD)
-    TAN                 = np.tan(ROT_S_RAD)
-    SHIFT_Y             = (MULT_SHIFT_X * TAN + MULT_SHIFT_Y) / (COS + SIN * TAN)
-    SHIFT_X             = (MULT_SHIFT_X - SHIFT_Y * SIN) / COS
-
-    new_sol = xt.UniformSolenoid(
-        length              = LENGTH,
-        ks                  = KS,
-        knl                 = KNL,
-        ksl                 = KSL,
-        shift_x             = SHIFT_X,
-        shift_y             = SHIFT_Y,
-        rot_s_rad           = ROT_S_RAD,
-        x0                  = -MULT_SHIFT_X,
-        y0                  = -MULT_SHIFT_Y,
-        num_multipole_kicks = N_MULTIPOLE_KICKS)
-
-    env._element_dict[nn]   = new_sol
-
-# ################################################################################
-# # Need Sextupole Offsets- close dispersion
-# ################################################################################
-# tt      = line.get_table()
-# tt_sdy  = tt.rows["sdy.*"]
-# line.set(
-#     tt_sdy,
-#     shift_x = 0,
-#     shift_y = 0)
+pritn()
 
 ################################################################################
 # Match Reference Frame Transforms

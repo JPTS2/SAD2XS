@@ -837,10 +837,10 @@ def convert_multipoles(
                 replace_type    = None
 
                 if not "l" in ele_vars:
-                    print(
-                        f"Warning! Multipole {ele_name} is a thin lens" +\
-                        "replacement not supported for thin lens")
-                    continue
+                    raise TypeError(
+                        f"Warning! Multipole {ele_name} is thin.\n" + \
+                        "Replacement is not supported for thin elements.\n" + \
+                        "Remove this from the multipole replacements to continue")
 
                 # Search the multipole replacements dict for the type of element
                 for replacement in user_multipole_replacements:
