@@ -49,7 +49,7 @@ length   = line.get_length()
     # Write offset marker locations
     ########################################
     # Open the dictionary
-    output_string += """MARKER_POSITIONS = {{"""
+    output_string += """MARKER_POSITIONS = {"""
 
     for i, (offset_marker, insert_at_s_values) in enumerate(offset_marker_locations.items()):
 
@@ -75,7 +75,7 @@ length   = line.get_length()
     break_on_hyphens    = False)}"""
 
     # Close the dictionary
-    output_string += """}}"""
+    output_string += """}"""
     output_string += "\n"
 
     ########################################
