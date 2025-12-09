@@ -226,7 +226,6 @@ env.particle_ref    = xt.Particles(
     # Reference Shifts
     ########################################
     lattice_file_string += create_refshift_lattice_file_information(
-        line        = line,
         line_table  = line_table,
         config      = config)
 

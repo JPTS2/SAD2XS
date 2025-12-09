@@ -418,6 +418,7 @@ def convert_bends(parsed_elements, environment):
             ########################################
             environment[f"k0_{ele_name}"]   = k0
             k0                              = f"k0_{ele_name}"
+            angle                           = f"k0_{ele_name} * {length}"
 
             if k1 != 0:
                 environment[f"k1_{ele_name}"]   = k1
@@ -430,7 +431,7 @@ def convert_bends(parsed_elements, environment):
                 name                = ele_name,
                 parent              = xt.Bend,
                 length              = length,
-                angle               = k0,
+                angle               = angle,
                 k1                  = k1,
                 edge_entry_angle    = edge_entry_angle,
                 edge_exit_angle     = edge_exit_angle,

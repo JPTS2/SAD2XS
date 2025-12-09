@@ -195,9 +195,12 @@ def reverse_line_bend_direction(line):
             if bend not in env_elements:
                 continue
 
-            env[bend].k0  *= -1
+            if env[bend].k0_from_h is True:
+                env[bend].angle *= -1
+            else:
+                assert env[bend].h == 0
+                env[bend].k0  *= -1
             env[bend].k1  *= +1
-            env[bend].h   *= -1
 
             # Reverse entry/exit angles of bends
             env[bend].edge_entry_angle  *= -1

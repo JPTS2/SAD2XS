@@ -64,12 +64,12 @@ def generate_magnet_for_replication_names(length_dict, base_string):
     length_values	= np.array(list(length_dict.keys()))
     length_values	= length_values * 1E9
     length_values	= length_values.astype(int)
-    
+
     for length in length_values:
         name = f"{base_string}{length:011d}"
         names.append(name)
     names = sorted(names)
-    
+
     return names
 
 ################################################################################
@@ -176,8 +176,12 @@ def extract_bend_information(line, line_table):
 
                 # Handle horizontal and vertical bends rotated by 180 degrees
                 if flip:
-                    line[bend].k0               *= -1
-                    line[bend].h                *= -1
+                    if not line[bend].k0_from_h:
+                        assert line[bend].h == 0
+                        line[bend].k0           *= -1
+                    else:
+                        line[bend].angle        *= -1
+
                     line[bend].edge_entry_angle *= -1
                     line[bend].edge_exit_angle  *= -1
                     line[bend].rot_s_rad        *= -1
@@ -262,8 +266,9 @@ def extract_corrector_information(line, line_table):
 
                 # Handle horizontal and vertical corrs rotated by 180 degrees
                 if flip:
+                    assert line[corr].h == 0
                     line[corr].k0               *= -1
-                    line[corr].h                *= -1
+
                     line[corr].edge_entry_angle *= -1
                     line[corr].edge_exit_angle  *= -1
                     line[corr].rot_s_rad        *= -1
