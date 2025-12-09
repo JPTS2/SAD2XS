@@ -41,8 +41,13 @@ def ev_text_to_float(value_in_ev: str):
 ################################################################################
 # Load and Clean Whitespace
 ################################################################################
-def load_and_clean_whitespace(
-        sad_lattice_path:       str):
+def load_and_clean_whitespace(sad_lattice_path: str):
+    """
+    Docstring for load_and_clean_whitespace
+    
+    :param sad_lattice_path: Description
+    :type sad_lattice_path: str
+    """
     ############################################################################
     # Load SAD File to Python
     ############################################################################
@@ -52,7 +57,7 @@ def load_and_clean_whitespace(
     ############################################################################
     # Convert Overall Formatting to Xsuite Style
     ############################################################################
-    
+
     ########################################
     # Make naming lowercase
     ########################################
@@ -115,7 +120,7 @@ def parse_sad_file(
     # Setup
     ############################################################################
     parsed_sections     = []
-    
+
     cleaned_globals     = {}
     cleaned_elements    = {}
     cleaned_expressions = {}
@@ -126,7 +131,7 @@ def parse_sad_file(
     ############################################################################
     if config._verbose:
         print_section_heading('Loading and Cleaning SAD File', mode = 'subsection')
-    
+
     sad_sections = load_and_clean_whitespace(sad_lattice_path)
 
     ############################################################################
@@ -174,7 +179,7 @@ def parse_sad_file(
         # Output the cleaned section
         ########################################
         parsed_sections.append(current_section)
-        
+
     ############################################################################
     # Remove SAD simulation commands
     ############################################################################
@@ -185,7 +190,7 @@ def parse_sad_file(
         if section_command.startswith('on'):
             parsed_sections.remove(section)
             continue
-        
+
         if section_command.startswith('off'):
             parsed_sections.remove(section)
             continue
@@ -316,7 +321,7 @@ def parse_sad_file(
                         line_elements.append(element)
 
                 cleaned_lines[line_name] = line_elements
-            
+
             parsed_sections.remove(section)
             continue
 
@@ -541,5 +546,5 @@ def parse_sad_file(
         'lines':        cleaned_lines,
         'elements':     cleaned_elements,
         'expressions':  cleaned_expressions}
-    
+
     return parsed_lattice_data
