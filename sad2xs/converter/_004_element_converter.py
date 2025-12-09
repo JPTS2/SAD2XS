@@ -505,7 +505,6 @@ def convert_correctors(parsed_elements, environment):
                 length              = length,
                 k0                  = k0,
                 k1                  = 0.0,
-                h                   = 0.0,
                 edge_entry_angle    = 0.0,
                 edge_exit_angle     = 0.0,
                 shift_x             = shift_x,
