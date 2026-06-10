@@ -64,9 +64,10 @@ build_instructions
 /private_lattice_tests
 
 # ==============================================================================
-# Ignore output lattices
+# Ignore example output lattices
 # ==============================================================================
-/lattice_tests/out
+/examples/out
+/examples/lattices/*_rebuilt.sad
 
 # ==============================================================================
 # Ignore local development

@@ -5,17 +5,19 @@
 # Required Packages
 ################################################################################
 import os
+from _example_helpers import configure_example_runtime, create_comparison_plots
+
+OUTPUT_DIR = configure_example_runtime()
+
 import sad2xs as s2x
 import numpy as np
 import matplotlib.pyplot as plt
 
-from _misc_helpers import create_comparison_plots
-
 ################################################################################
 # User Parameters
 ################################################################################
-SAD_LATTICE_PATH            = 'lattices/fccee_sol.sad'
-REBUILT_SAD_LATTICE_PATH    = 'lattices/fccee_sol_rebuilt.sad'
+SAD_LATTICE_PATH            = "lattices/fccee_sol.sad"
+REBUILT_SAD_LATTICE_PATH    = "lattices/fccee_sol_rebuilt.sad"
 LINE_NAME                   = 'RING'
 
 ################################################################################
@@ -67,7 +69,7 @@ linep   = s2x.convert_sad_to_xsuite(
     reverse_element_order       = False,
     reverse_bend_direction      = False,
     reverse_charge              = False,
-    output_directory            = 'out',
+    output_directory            = OUTPUT_DIR,
     output_filename             = "fcc_sol_p",
     output_header               = "FCC-ee LCC Solenoid Positron Ring")
 linep.replace_all_repeated_elements()
@@ -83,7 +85,7 @@ linee   = s2x.convert_sad_to_xsuite(
     reverse_element_order       = False,
     reverse_bend_direction      = True,
     reverse_charge              = True,
-    output_directory            = 'out',
+    output_directory            = OUTPUT_DIR,
     output_filename             = "fcc_sol_e",
     output_header               = "FCC-ee LCC Solenoid Electron Ring")
 linee.replace_all_repeated_elements()

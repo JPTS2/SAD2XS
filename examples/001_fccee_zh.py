@@ -4,39 +4,24 @@
 ################################################################################
 # Required Packages
 ################################################################################
-import os
-import sad2xs as s2x
-import numpy as np
-import matplotlib.pyplot as plt
+from _example_helpers import configure_example_runtime, create_comparison_plots
 
-from _misc_helpers import create_comparison_plots
+OUTPUT_DIR = configure_example_runtime()
+
+import sad2xs as s2x
+import matplotlib.pyplot as plt
 
 ################################################################################
 # User Parameters
 ################################################################################
-SAD_LATTICE_PATH            = 'lattices/fccee_sol.sad'
-REBUILT_SAD_LATTICE_PATH    = 'lattices/fccee_sol_rebuilt.sad'
+SAD_LATTICE_PATH            = "lattices/fccee_zh.sad"
 LINE_NAME                   = 'RING'
 
 ################################################################################
 # Load Reference Data
 ################################################################################
-s2x.sad_helpers.rebuild_sad_lattice(
-    lattice_filepath    = SAD_LATTICE_PATH,
-    line_name           = LINE_NAME,
-    additional_commands = """
-LINE["DISFRIN", "ESL*"]     = 1;
-LINE["DISFRIN", "ESR*"]     = 1;
-LINE["DISFRIN", "ESCR*"]    = 1;
-LINE["DISFRIN", "ESCL*"]    = 1;
-LINE["F1", "ESL*"]          = 0;
-LINE["F1", "ESR*"]          = 0;
-LINE["F1", "ESCL*"]         = 0;
-LINE["F1", "ESCR*"]         = 0;""",
-    output_filepath     = REBUILT_SAD_LATTICE_PATH)
-
 tw_sad  = s2x.sad_helpers.twiss_sad(
-    lattice_filepath        = REBUILT_SAD_LATTICE_PATH,
+    lattice_filepath        = SAD_LATTICE_PATH,
     line_name               = LINE_NAME,
     calc6d                  = False,
     closed                  = True,
@@ -48,21 +33,16 @@ tw_sad  = s2x.sad_helpers.twiss_sad(
 # Convert Lattice
 ################################################################################
 line    = s2x.convert_sad_to_xsuite(
-    sad_lattice_path            = REBUILT_SAD_LATTICE_PATH,
+    sad_lattice_path            = SAD_LATTICE_PATH,
     line_name                   = LINE_NAME,
     excluded_elements           = None,
     user_multipole_replacements = None,
     reverse_element_order       = False,
     reverse_bend_direction      = False,
     reverse_charge              = False,
-    output_directory            = 'out',
-    output_filename             = "fcc_sol",
-    output_header               = "FCC-ee LCC With Solenoid")
-
-########################################
-# Delete rebuilt line
-########################################
-os.remove(REBUILT_SAD_LATTICE_PATH)
+    output_directory            = OUTPUT_DIR,
+    output_filename             = "fcc_h",
+    output_header               = "FCC-ee ZH")
 
 ########################################
 # Get table
@@ -70,24 +50,9 @@ os.remove(REBUILT_SAD_LATTICE_PATH)
 tt = line.get_table(attr = True)
 
 ########################################
-# Initial Twiss
+# Twiss
 ########################################
-tw      = line.twiss4d()
-
-########################################
-# Calculate SAD s
-########################################
-ds              = np.concatenate([[0], tw.s[1:] - tw.s[:-1]])
-dzeta           = np.concatenate([[0], tw.zeta[1:] - tw.zeta[:-1]])
-# Ignore the dzeta at ZetaShift elements
-zeta_shifts     = tt.element_type == "ZetaShift"
-zeta_shifts     = np.concatenate([[0], zeta_shifts[:-1]])
-dzeta           = np.where(zeta_shifts, 0, dzeta)
-
-s_sad           = np.zeros_like(tw.s)
-for i in range(1, len(s_sad)):
-    s_sad[i]    = s_sad[i-1] + ds[i] - dzeta[i]
-tw["s_sad"]     = s_sad
+tw  = line.twiss4d()
 
 ################################################################################
 # Comparison Plots
@@ -108,16 +73,16 @@ tt_ip1      = tt.rows[tt.s < 2.5]
 fig, axs = plt.subplots(3, 2, figsize = (12, 8), sharex = True)
 
 axs[0, 0].plot(tw_sad_ip1.s, tw_sad_ip1.x, label = 'SAD', c = "r")
-axs[0, 0].plot(tw_ip1.s_sad, tw_ip1.x, label = 'XS', c = "b", linestyle = "--")
+axs[0, 0].plot(tw_ip1.s, tw_ip1.x, label = 'XS', c = "b", linestyle = "--")
 
 axs[0, 1].plot(tw_sad_ip1.s, tw_sad_ip1.px, label = 'SAD', c = "r")
-axs[0, 1].plot(tw_ip1.s_sad, tw_ip1.px, label = 'XS', c = "b", linestyle = "--")
+axs[0, 1].plot(tw_ip1.s, tw_ip1.px, label = 'XS', c = "b", linestyle = "--")
 
 axs[1, 0].plot(tw_sad_ip1.s, tw_sad_ip1.y, label = 'SAD', c = "r")
-axs[1, 0].plot(tw_ip1.s_sad, tw_ip1.y, label = 'XS', c = "b", linestyle = "--")
+axs[1, 0].plot(tw_ip1.s, tw_ip1.y, label = 'XS', c = "b", linestyle = "--")
 
 axs[1, 1].plot(tw_sad_ip1.s, tw_sad_ip1.py, label = 'SAD', c = "r")
-axs[1, 1].plot(tw_ip1.s_sad, tw_ip1.py, label = 'XS', c = "b", linestyle = "--")
+axs[1, 1].plot(tw_ip1.s, tw_ip1.py, label = 'XS', c = "b", linestyle = "--")
 
 axs[2, 0].step(tt_ip1.s, tt_ip1.ks, where = 'post', label = 'XS')
 axs[2, 1].step(tt_ip1.s, tt_ip1.ks, where = 'post', label = 'XS')
