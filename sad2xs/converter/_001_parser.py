@@ -41,6 +41,19 @@ def ev_text_to_float(value_in_ev: str):
 ################################################################################
 # Load and Clean Whitespace
 ################################################################################
+def strip_sad_comments(content: str) -> str:
+    """
+    Remove full-line and inline SAD comments before section splitting.
+
+    SAD comments begin with `!`. Removing comments before splitting sections is
+    important because comment text can contain semicolons.
+    """
+    cleaned_lines = []
+    for line in content.splitlines():
+        cleaned_lines.append(line.split("!", 1)[0])
+
+    return "\n".join(cleaned_lines)
+
 def load_and_clean_whitespace(sad_lattice_path: str):
     """
     Docstring for load_and_clean_whitespace
@@ -53,6 +66,11 @@ def load_and_clean_whitespace(sad_lattice_path: str):
     ############################################################################
     with open(sad_lattice_path, "r", encoding = "utf-8") as sad_file:
         content = sad_file.read()
+
+    ############################################################################
+    # Remove comments before section splitting
+    ############################################################################
+    content = strip_sad_comments(content)
 
     ############################################################################
     # Convert Overall Formatting to Xsuite Style
