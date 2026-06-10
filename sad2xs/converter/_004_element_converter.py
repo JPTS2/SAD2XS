@@ -836,16 +836,19 @@ def convert_multipoles(
             if any(ele_name.startswith(test_key) for test_key in user_multipole_replacements):
                 replace_type    = None
 
-                if not "l" in ele_vars:
-                    print(
-                        f"Warning! Multipole {ele_name} is a thin lens" +\
-                        "replacement not supported for thin lens")
-                    continue
-
                 # Search the multipole replacements dict for the type of element
                 for replacement in user_multipole_replacements:
                     if ele_name.startswith(replacement):
                         replace_type    = user_multipole_replacements[replacement]
+
+                if "l" not in ele_vars or \
+                    (isinstance(length, (float, int)) and abs(length) <= config.KNL_ZERO_TOL):
+                    raise ValueError(
+                        f"Cannot replace thin SAD multipole {ele_name} with {replace_type}.\n" + \
+                        "Multipole replacement requires a non-zero length because integrated " + \
+                        "strengths must be divided by length.\n" + \
+                        "Remove this element from user_multipole_replacements or leave it as " + \
+                        "an xt.Multipole.")
 
                 ########################################
                 # Bend Replacement (kick)
