@@ -97,9 +97,15 @@ for marker, insert_at_s_values in MARKER_POSITIONS.items():
 try:
     line.insert(marker_insertions, s_tol = {config.MARKER_INSERTION_TOLERANCE:.2E})
 except AssertionError as err:
+"""
+        if config._verbose:
+            output_string += """\
     print("Couldn't insert all the markers. Usually this is because of negative drifts")
     print(err)
-
+"""
+        else:
+            output_string += """\
+    pass
 """
 
         ########################################

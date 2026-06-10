@@ -192,10 +192,12 @@ def convert_elements(
             print_section_heading("Converting Bends", mode = "subsection")
         convert_bends(
             parsed_elements = parsed_elements,
-            environment     = environment)
+            environment     = environment,
+            config          = config)
         convert_correctors(
             parsed_elements = parsed_elements,
-            environment     = environment)
+            environment     = environment,
+            config          = config)
 
     ########################################
     # Quadrupoles
@@ -225,7 +227,8 @@ def convert_elements(
             print_section_heading("Converting Octupoles", mode = "subsection")
         convert_octupoles(
             parsed_elements = parsed_elements,
-            environment     = environment)
+            environment     = environment,
+            config          = config)
 
     ########################################
     # Multipoles
@@ -247,7 +250,8 @@ def convert_elements(
             print_section_heading("Converting Cavities", mode = "subsection")
         convert_cavities(
             parsed_elements = parsed_elements,
-            environment     = environment)
+            environment     = environment,
+            config          = config)
 
     ########################################
     # Apertures
@@ -342,7 +346,7 @@ def convert_drifts(parsed_elements, environment):
 ################################################################################
 # Convert Bends
 ################################################################################
-def convert_bends(parsed_elements, environment):
+def convert_bends(parsed_elements, environment, config):
     """
     Convert bends from the SAD parsed data
     """
@@ -362,7 +366,8 @@ def convert_bends(parsed_elements, environment):
                 if k0l != 0:
                     raise ValueError(f"Error! Bend {ele_name} missing length.")
                 else:
-                    print(f"Warning! Bend {ele_name} missing length and installed as marker")
+                    if config._verbose:
+                        print(f"Warning! Bend {ele_name} missing length and installed as marker")
                     environment.new(
                         name                = ele_name,
                         parent              = xt.Marker)
@@ -443,7 +448,7 @@ def convert_bends(parsed_elements, environment):
 ################################################################################
 # Convert Correctors
 ################################################################################
-def convert_correctors(parsed_elements, environment):
+def convert_correctors(parsed_elements, environment, config):
     """
     Convert correctors from the SAD parsed data
     """
@@ -477,7 +482,8 @@ def convert_correctors(parsed_elements, environment):
             shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
             if length == 0:
-                print(f"Warning! Corrector {ele_name} missing length and installed as marker")
+                if config._verbose:
+                    print(f"Warning! Corrector {ele_name} missing length and installed as marker")
 
                 environment.new(
                     name    = ele_name,
@@ -694,7 +700,7 @@ def convert_sextupoles(parsed_elements, environment):
 ################################################################################
 # Convert Octupoles
 ################################################################################
-def convert_octupoles(parsed_elements, environment):
+def convert_octupoles(parsed_elements, environment, config):
     """
     Convert octupoles from the SAD parsed data
     """
@@ -705,7 +711,8 @@ def convert_octupoles(parsed_elements, environment):
 
         if "l" not in ele_vars:
             # TODO: Improve the handling of this
-            print(f"Warning! Octupole {ele_name} missing length and installed as marker")
+            if config._verbose:
+                print(f"Warning! Octupole {ele_name} missing length and installed as marker")
             environment.new(
                 name                = ele_name,
                 parent              = xt.Marker)
@@ -1238,7 +1245,7 @@ def convert_multipoles(
 ################################################################################
 # Convert Cavities
 ################################################################################
-def convert_cavities(parsed_elements, environment):
+def convert_cavities(parsed_elements, environment, config):
     """
     Convert cavities from the SAD parsed data
     """
@@ -1275,7 +1282,7 @@ def convert_cavities(parsed_elements, environment):
             else:
                 raise ValueError(f"Unsupported type for phi offset: {type(phi_offset)}")
 
-        if "harm" in ele_vars:
+        if "harm" in ele_vars and config._verbose:
             print(f"Cavity {ele_name} is harmonic and addressed later")
 
         ########################################
@@ -1856,9 +1863,10 @@ def convert_coordinate_transformations(
             environment.new(
                 name    = ele_name,
                 parent  = xt.XYShift)
-            print(
-                f"Warning! Coordinate transformation {ele_name} has no transformations defined, " +\
-                "installing as XYShift")
+            if config._verbose:
+                print(
+                    f"Warning! Coordinate transformation {ele_name} has no transformations defined, " +\
+                    "installing as XYShift")
             continue
         elif n_transforms == 1:
             if offset_x != 0:

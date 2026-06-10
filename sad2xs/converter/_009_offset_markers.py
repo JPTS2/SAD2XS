@@ -143,8 +143,9 @@ def convert_offset_markers(
             # Exclude slicing solenoids
             ########################################
             if isinstance(line[insert_at_ele], xt.UniformSolenoid):
-                print("Slicing Solenoid elements causes issues")
-                print(f"Marker {base_marker} Ignored at {s_to_insert}")
+                if verbose:
+                    print("Slicing Solenoid elements causes issues")
+                    print(f"Marker {base_marker} Ignored at {s_to_insert}")
                 continue
 
         # Produce a dictionary of the s locations that markers are inserted at

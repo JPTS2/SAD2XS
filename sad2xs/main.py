@@ -82,18 +82,18 @@ def convert_sad_to_xsuite(
     if install_apertures_as_markers:
         if config._verbose:
             print_section_heading("Converting apertures to markers", mode = 'section')
-                    
-            if "apert" in parsed_lattice_data['elements']:
-                if "mark" in parsed_lattice_data['elements']:
-                    merged = {
-                        **parsed_lattice_data['elements']["apert"],
-                        **parsed_lattice_data['elements']["mark"]}    # Mark takes precedence
-                    parsed_lattice_data['elements']["mark"] = merged
-                else:
-                    parsed_lattice_data['elements']["mark"] = \
-                        parsed_lattice_data['elements']["apert"]
-                
-                parsed_lattice_data['elements'].pop("apert")
+
+        if "apert" in parsed_lattice_data['elements']:
+            if "mark" in parsed_lattice_data['elements']:
+                merged = {
+                    **parsed_lattice_data['elements']["apert"],
+                    **parsed_lattice_data['elements']["mark"]}    # Mark takes precedence
+                parsed_lattice_data['elements']["mark"] = merged
+            else:
+                parsed_lattice_data['elements']["mark"] = \
+                    parsed_lattice_data['elements']["apert"]
+
+            parsed_lattice_data['elements'].pop("apert")
 
     ############################################################################
     # Build Environment
@@ -113,8 +113,6 @@ def convert_sad_to_xsuite(
         parsed_lattice_data = parsed_lattice_data,
         environment         = env,
         config              = config)
-    
-    print(env.vars)
 
     ########################################
     # Add reference particle from globals
@@ -302,7 +300,8 @@ def convert_sad_to_xsuite(
 
     line, offset_marker_locations   = convert_offset_markers(
         line                = line,
-        parsed_lattice_data = parsed_lattice_data)
+        parsed_lattice_data = parsed_lattice_data,
+        verbose             = config._verbose)
 
     ############################################################################
     # Breakpoint for testing
