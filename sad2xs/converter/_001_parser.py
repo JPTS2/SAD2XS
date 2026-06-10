@@ -9,11 +9,54 @@ Date:       09-12-2025
 ################################################################################
 # Required Packages
 ################################################################################
+import re
+
 import xtrack as xt
 import numpy as np
 
 from ..types import ConfigLike
 from ..helpers import print_section_heading
+
+################################################################################
+# Element Parameter Parsing
+################################################################################
+ELEMENT_PARAMETER_PATTERN = re.compile(r"(?<!\S)([a-z][a-z0-9_]*)\s*=")
+
+def split_element_parameters(ele_vars: str) -> list[tuple[str, str]]:
+    """
+    Split an element parameter string into complete name/value pairs.
+
+    SAD element values can be arithmetic expressions with spaces. Splitting the
+    whole parameter string on whitespace would break expressions such as
+    `l=l0 + dl`. This function instead splits at parameter assignments.
+    """
+    parameters = []
+    matches = list(ELEMENT_PARAMETER_PATTERN.finditer(ele_vars))
+
+    if len(matches) == 0:
+        if ele_vars.strip():
+            raise ValueError(
+                f"Error parsing element variables: {ele_vars}. "
+                "Expected one or more 'name = value' assignments.")
+        return parameters
+
+    for index, match in enumerate(matches):
+        var_name    = match.group(1)
+        value_start = match.end()
+        value_end   = (
+            matches[index + 1].start()
+            if index + 1 < len(matches)
+            else len(ele_vars))
+
+        var_value = ele_vars[value_start:value_end].strip()
+        if len(var_value) == 0:
+            raise ValueError(
+                f"Error parsing element variable: {var_name}. "
+                "Expected a value after '='.")
+
+        parameters.append((var_name, var_value))
+
+    return parameters
 
 ################################################################################
 # Electron Volt Conversion
@@ -406,29 +449,14 @@ def parse_sad_file(
                 ########################################
                 # Process data in each element
                 ########################################
-                tokens  = ele_vars.split(" ")
-                for token in tokens:
-
-                    if len(token) == 0:
-                        continue
+                for var_name, var_value in split_element_parameters(ele_vars):
 
                     ########################################
                     # Angle handling
                     ########################################
-                    if "deg" in token:
-                        token_name, token_value = token.split("=")
-
-                        token_value = token_value.replace("deg", "")
-                        token_value = float(token_value)
-                        token_value = np.deg2rad(token_value)
-                        token = token_name + "=" + str(token_value)
-
-                    try:
-                        var_name, var_value = token.split("=")
-                    except ValueError:
-                        raise ValueError(
-                            f"Error parsing token: {token}. "
-                            "Expected format 'name = value'.")
+                    if "deg" in var_value:
+                        var_value = var_value.replace("deg", "")
+                        var_value = np.deg2rad(float(var_value))
 
                     try:
                         var_value = float(var_value)
