@@ -332,6 +332,7 @@ def parse_sad_file(
                 line_content    = line_content.replace("(", "")
                 line_content    = line_content.replace("\n", " ")
                 line_content    = line_content.replace("\t", " ")
+                line_content    = line_content.replace(",", " ")
 
                 line_elements = []
                 for element in line_content.split():
