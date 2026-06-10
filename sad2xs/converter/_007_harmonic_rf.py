@@ -39,7 +39,8 @@ def convert_harmonic_rf(
 
     has_cavities = "cavi" in parsed_lattice_data["elements"]
     if not has_cavities:
-        print("No cavities in line")
+        if config._verbose:
+            print("No cavities in line")
         return line
 
     has_harmonic_cavities   = any(
@@ -47,7 +48,8 @@ def convert_harmonic_rf(
         for v in parsed_lattice_data["elements"]["cavi"].values())
 
     if not has_harmonic_cavities:
-        print("No harmonic cavities in line")
+        if config._verbose:
+            print("No harmonic cavities in line")
         return line
 
     ########################################

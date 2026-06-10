@@ -223,5 +223,6 @@ def convert_lines(
         converted_lines.append(line)
 
     if len(converted_lines) < len(parsed_lines):
-        print(f"Converted {len(converted_lines)} lines out of {len(parsed_lines)}")
-        raise ValueError("Not all lines could be converted. Check the input data.")
+        raise ValueError(
+            f"Converted {len(converted_lines)} lines out of {len(parsed_lines)}. "
+            "Not all lines could be converted. Check the input data.")
