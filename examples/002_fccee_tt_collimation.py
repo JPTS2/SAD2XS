@@ -4,15 +4,17 @@
 ################################################################################
 # Required Packages
 ################################################################################
+from _example_helpers import configure_example_runtime, create_comparison_plots
+
+OUTPUT_DIR = configure_example_runtime()
+
 import sad2xs as s2x
 import matplotlib.pyplot as plt
-
-from _misc_helpers import create_comparison_plots
 
 ################################################################################
 # User Parameters
 ################################################################################
-SAD_LATTICE_PATH    = 'lattices/fccee_tt_collimation.sad'
+SAD_LATTICE_PATH    = "lattices/fccee_tt_collimation.sad"
 LINE_NAME           = 'RING'
 
 ################################################################################
@@ -38,7 +40,7 @@ line    = s2x.convert_sad_to_xsuite(
     reverse_element_order       = False,
     reverse_bend_direction      = False,
     reverse_charge              = False,
-    output_directory            = 'out',
+    output_directory            = OUTPUT_DIR,
     output_filename             = "fcc_tt_coll",
     output_header               = "FCC-ee tt with collimation insertion")
 

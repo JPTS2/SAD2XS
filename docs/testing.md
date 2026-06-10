@@ -2,10 +2,10 @@
 
 Testing should protect converter behaviour while keeping the public repository shareable and maintainable.
 
-All Python commands should be run inside the `xsuite` conda environment unless there is a specific reason not to:
+Run Python commands in an environment with the SAD2XS development dependencies installed. If using the repository conda environment file, create and activate that environment first.
 
 ```bash
-conda run -n xsuite pytest
+pytest
 ```
 
 ## Public test policy
@@ -38,7 +38,7 @@ Next release target: keep the useful larger checks while adding smaller, more ta
 
 Next release target: tests should use isolated temporary directories, preferably pytest `tmp_path`, for generated SAD files, output files, and helper scripts.
 
-Tests should not write generated files into the repository root, `tests/`, `lattice_tests/`, or committed output folders unless the test is explicitly updating a tracked fixture.
+Tests should not write generated files into the repository root, `tests/`, `examples/`, or committed output folders unless the test is explicitly updating a tracked fixture.
 
 Current status: some tests and helper utilities still write fixed temporary files or output plots into repository paths.
 

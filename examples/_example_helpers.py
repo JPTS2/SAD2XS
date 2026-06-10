@@ -1,5 +1,5 @@
 """
-Helpers for lattice testing
+Helpers for example lattice comparisons.
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
@@ -9,14 +9,56 @@ Date:       30-09-2025
 ################################################################################
 # Required Modules
 ################################################################################
+import os
+import sys
+from pathlib import Path
+
 import xtrack as xt
 import numpy as np
 import matplotlib.pyplot as plt
 
 ################################################################################
+# Runtime Setup
+################################################################################
+def configure_example_runtime() -> str:
+    """
+    Configure paths for running an example script from any working directory.
+
+    The examples and SAD helper functions use paths relative to the examples
+    folder. This function adds the repository root to `sys.path`, changes the
+    working directory to the examples folder, creates the ignored `out` folder,
+    and returns the output directory as a string for `convert_sad_to_xsuite`.
+    """
+    example_dir = Path(__file__).resolve().parent
+    repo_root   = example_dir.parent
+
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    os.chdir(example_dir)
+
+    output_dir = "out"
+    Path(output_dir).mkdir(exist_ok = True)
+
+    return output_dir
+
+################################################################################
 # Check Symplecticity
 ################################################################################
 def check_symplecticity(twiss, line, tt = None):
+    """
+    Print a basic symplecticity check for a Twiss table and line.
+
+    Parameters
+    ----------
+    twiss
+        Xsuite Twiss table containing an `R_matrix` entry.
+    line
+        Xsuite line used to compute element-by-element matrices if the overall
+        matrix is not symplectic at the configured tolerance.
+    tt
+        Optional line table. If omitted, `line.get_table(attr=True)` is used.
+    """
     J   = np.array([
         [0, +1, 0, 0, 0, 0],
         [-1, 0, 0, 0, 0, 0],
@@ -68,6 +110,21 @@ def check_symplecticity(twiss, line, tt = None):
 # Zero small values
 ################################################################################
 def zero_small_values(array, tol = 1E-12):
+    """
+    Set small values in an array to zero for clearer comparison plots.
+
+    Parameters
+    ----------
+    array
+        Array-like object to modify in place.
+    tol
+        Absolute threshold below which values are set to zero.
+
+    Returns
+    -------
+    array
+        The same array object, with small values zeroed.
+    """
     array[np.abs(array) < tol] = 0
     return array
 
@@ -80,6 +137,22 @@ def create_comparison_plots(
         suptitle    = None,
         zero_tol    = 1E-12,
         figsize     = (8, 4)):
+    """
+    Create standard SAD-versus-Xsuite optics comparison plots.
+
+    Parameters
+    ----------
+    twiss_xsuite
+        Xsuite Twiss table to compare.
+    twiss_sad
+        SAD reference Twiss table, usually returned by `twiss_sad`.
+    suptitle
+        Optional prefix added to each figure title.
+    zero_tol
+        Absolute threshold used to hide small numerical noise in plotted data.
+    figsize
+        Matplotlib figure size passed to each generated plot.
+    """
 
     ########################################
     # Orbit (x, y)
@@ -145,7 +218,7 @@ def create_comparison_plots(
         zero_small_values(twiss_xsuite.py, tol = zero_tol),
         color       = "b",
         linestyle   = "--")
-    
+
     axs[0].legend()
     axs[0].set_ylabel(r'$p_{x}$ [1]')
     axs[1].set_ylabel(r'$p_{y}$ [1]')
@@ -191,9 +264,9 @@ def create_comparison_plots(
     axs[1].set_xlabel('s [m]')
 
     if suptitle is not None:
-        fig.suptitle(f"{suptitle}: Longitudinal Plane ($\zeta$, $\delta$)")
+        fig.suptitle(fr"{suptitle}: Longitudinal Plane ($\zeta$, $\delta$)")
     else:
-        fig.suptitle("Longitudinal Plane ($\zeta$, $\delta$)")
+        fig.suptitle(r"Longitudinal Plane ($\zeta$, $\delta$)")
     fig.tight_layout()
     fig.align_labels()
     fig.align_titles()

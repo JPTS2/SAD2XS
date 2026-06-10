@@ -61,19 +61,19 @@ Document Xsuite model as canonical conversion layer
 
 ## Environment
 
-Use the `xsuite` conda environment for Python commands:
+Use a Python environment with the SAD2XS development dependencies installed. The repository environment file can be used if a conda environment is preferred.
 
 ```bash
-conda run -n xsuite pytest
-conda run -n xsuite python -m pytest tests/test_001_drift.py
+pytest
+python -m pytest tests/test_001_drift.py
 ```
 
 For documentation-only changes, Python tests are not normally required unless examples or generated outputs are changed.
 
-GitHub CLI commands can also be run from the same environment when needed:
+GitHub CLI commands can be run from any shell where `gh` is available:
 
 ```bash
-conda run -n xsuite gh issue list
+gh issue list
 ```
 
 ## Public issue policy
