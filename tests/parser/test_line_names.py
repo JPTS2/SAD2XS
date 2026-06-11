@@ -15,31 +15,17 @@ Date:       2026-06-11
 ################################################################################
 # Required Packages
 ################################################################################
-import textwrap
-
 from sad2xs.config import Config
 from sad2xs.converter._001_parser import parse_sad_file
 
 ################################################################################
-# Helpers
-################################################################################
-def write_lattice(tmp_path, content, filename = "test_lattice.sad"):
-    """
-    Write a temporary SAD lattice file for parser tests.
-    """
-    lattice_path = tmp_path / filename
-    lattice_path.write_text(textwrap.dedent(content))
-    return lattice_path
-
-################################################################################
 # Names Containing Line
 ################################################################################
-def test_line_name_containing_line_is_preserved(tmp_path):
+def test_line_name_containing_line_is_preserved(write_lattice):
     """
     Line names containing the substring line should not be altered.
     """
     lattice_path = write_lattice(
-        tmp_path,
         """\
         MOMENTUM = 1.0 GEV;
         LINE MYLINE = (A B);
@@ -53,12 +39,11 @@ def test_line_name_containing_line_is_preserved(tmp_path):
     assert parsed["lines"]["myline"] == ["a", "b"], (
         "Line names containing 'line' should preserve their components.")
 
-def test_line_reference_containing_line_is_preserved(tmp_path):
+def test_line_reference_containing_line_is_preserved(write_lattice):
     """
     References to lines containing the substring line should not be altered.
     """
     lattice_path = write_lattice(
-        tmp_path,
         """\
         MOMENTUM = 1.0 GEV;
         LINE MYLINE = (A B);
@@ -72,12 +57,11 @@ def test_line_reference_containing_line_is_preserved(tmp_path):
         "Parser output should preserve nested line references literally; "
         "flattening belongs in conversion, not parsing.")
 
-def test_reversed_line_reference_containing_line_is_preserved(tmp_path):
+def test_reversed_line_reference_containing_line_is_preserved(write_lattice):
     """
     Reversed line references containing line should keep the minus token.
     """
     lattice_path = write_lattice(
-        tmp_path,
         """\
         MOMENTUM = 1.0 GEV;
         LINE MYLINE = (A B);
