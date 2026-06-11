@@ -18,28 +18,51 @@ Date:       2026-06-11
 import textwrap
 
 from sad2xs.config import Config
-from sad2xs.converter._001_parser import load_and_clean_whitespace, parse_sad_file
-
-################################################################################
-# Helpers
-################################################################################
-def write_lattice(tmp_path, content, filename = "test_lattice.sad"):
-    """
-    Write a temporary SAD lattice file for parser tests.
-    """
-    lattice_path = tmp_path / filename
-    lattice_path.write_text(textwrap.dedent(content))
-    return lattice_path
+from sad2xs.converter._001_parser import (
+    load_and_clean_whitespace,
+    parse_sad_file,
+    strip_sad_comments)
 
 ################################################################################
 # Comment Semicolons
 ################################################################################
-def test_comment_semicolons_do_not_create_sections(tmp_path):
+def test_strip_sad_comments_removes_full_line_and_inline_comments():
+    """
+    Direct comment stripping should remove full-line and inline comments.
+    """
+    cleaned = strip_sad_comments(
+        textwrap.dedent(
+            """\
+            ! full-line comment;
+            DRIFT D1 = (L = 1.0); ! inline comment;
+            LINE RING = (D1);
+            """))
+
+    assert "! full-line comment" not in cleaned, (
+        "Full-line comments should be removed before section splitting.")
+    assert "inline comment" not in cleaned, (
+        "Inline comments should be removed before section splitting.")
+    assert "DRIFT D1 = (L = 1.0);" in cleaned, (
+        "Real SAD content before an inline comment should be preserved.")
+    assert "LINE RING = (D1);" in cleaned, (
+        "Real SAD content on later lines should be preserved.")
+
+def test_strip_sad_comments_removes_comment_semicolons():
+    """
+    Semicolons inside stripped comments should not remain in parser input.
+    """
+    cleaned = strip_sad_comments(
+        "DRIFT D1 = (L = 1.0); ! fake; sections; here;\n")
+
+    assert cleaned.count(";") == 1, (
+        "Only the real SAD section delimiter should remain after stripping "
+        "comments.")
+
+def test_comment_semicolons_do_not_create_sections(write_lattice):
     """
     Semicolons inside full-line or inline comments should not split sections.
     """
     lattice_path = write_lattice(
-        tmp_path,
         """\
         ! full-line comment with ; and fake drift bad = (l = 9.0);
         MOMENTUM = 1.0 GEV; ! inline comment with ; and fake mass = 1.0 gev;
@@ -60,12 +83,11 @@ def test_comment_semicolons_do_not_create_sections(tmp_path):
     assert all("fake" not in section for section in sections)
     assert all("comment" not in section for section in sections)
 
-def test_parser_ignores_comment_semicolons(tmp_path):
+def test_parser_ignores_comment_semicolons(write_lattice):
     """
     Comment semicolons should not affect parsed globals, elements, or lines.
     """
     baseline_path = write_lattice(
-        tmp_path,
         """\
         MOMENTUM = 1.0 GEV;
         DRIFT D1 = (L = 1.0);
@@ -74,7 +96,6 @@ def test_parser_ignores_comment_semicolons(tmp_path):
         """,
         filename = "baseline.sad")
     commented_path = write_lattice(
-        tmp_path,
         """\
         ! ignored full-line comment; including fake content;
         MOMENTUM = 1.0 GEV; ! ignored inline comment; including fake content;
@@ -95,12 +116,11 @@ def test_parser_ignores_comment_semicolons(tmp_path):
 ################################################################################
 # Comment Boundaries
 ################################################################################
-def test_comment_only_file_creates_no_sections(tmp_path):
+def test_comment_only_file_creates_no_sections(write_lattice):
     """
     A file containing only comments should not create parsed SAD sections.
     """
     lattice_path = write_lattice(
-        tmp_path,
         """\
         ! comment-only file;
         ! fake drift bad = (l = 9.0);
@@ -115,12 +135,11 @@ def test_comment_only_file_creates_no_sections(tmp_path):
     assert sections == [], (
         "Comment-only files should not produce non-empty SAD sections.")
 
-def test_inline_comment_without_whitespace_is_removed(tmp_path):
+def test_inline_comment_without_whitespace_is_removed(write_lattice):
     """
     Inline comments should be removed after the SAD section terminator.
     """
     lattice_path = write_lattice(
-        tmp_path,
         """\
         MOMENTUM = 1.0 GEV;
         DRIFT D1 = (L = 1.0);!inline comment; fake drift bad = (l = 9.0);
@@ -138,12 +157,11 @@ def test_inline_comment_without_whitespace_is_removed(tmp_path):
         "commented "
         "element definitions.")
 
-def test_multiline_element_section_ignores_comment_content(tmp_path):
+def test_multiline_element_section_ignores_comment_content(write_lattice):
     """
     Comments inside multi-line element sections should not affect parsing.
     """
     lattice_path = write_lattice(
-        tmp_path,
         """\
         MOMENTUM = 1.0 GEV;
         DRIFT D1 = (L = 1.0) ! fake drift bad = (l = 9.0);
@@ -161,12 +179,11 @@ def test_multiline_element_section_ignores_comment_content(tmp_path):
     assert "bad" not in parsed["elements"]["drift"], (
         "Fake element definitions inside comments should be ignored.")
 
-def test_multiple_elements_ignore_trailing_comment_content(tmp_path):
+def test_multiple_elements_ignore_trailing_comment_content(write_lattice):
     """
     Comment text after a multi-element section should not add elements.
     """
     lattice_path = write_lattice(
-        tmp_path,
         """\
         MOMENTUM = 1.0 GEV;
         DRIFT D1 = (L = 1.0) D2 = (L = 2.0); ! fake drift d3 = (l = 3.0);
@@ -182,12 +199,11 @@ def test_multiple_elements_ignore_trailing_comment_content(tmp_path):
     assert parsed["elements"]["drift"]["d1"]["l"] == 1.0
     assert parsed["elements"]["drift"]["d2"]["l"] == 2.0
 
-def test_commented_malformed_syntax_is_ignored(tmp_path):
+def test_commented_malformed_syntax_is_ignored(write_lattice):
     """
     Malformed SAD syntax inside comments should not raise parser errors.
     """
     lattice_path = write_lattice(
-        tmp_path,
         """\
         MOMENTUM = 1.0 GEV;
         ! DRIFT BAD = (L =);
@@ -203,12 +219,11 @@ def test_commented_malformed_syntax_is_ignored(tmp_path):
     assert parsed["elements"]["drift"]["d1"]["l"] == 1.0, (
         "Valid elements following commented malformed syntax should parse.")
 
-def test_inline_comment_after_global_does_not_override_defaults(tmp_path):
+def test_inline_comment_after_global_does_not_override_defaults(write_lattice):
     """
     Fake globals inside inline comments should not alter parsed globals.
     """
     lattice_path = write_lattice(
-        tmp_path,
         """\
         MOMENTUM = 1.0 GEV; ! MASS = 999.0 GEV; CHARGE = -1;
         DRIFT D1 = (L = 1.0);
