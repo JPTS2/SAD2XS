@@ -53,3 +53,13 @@ def generate_symlog_array(lower_power, upper_power, n_points):
 TEST_VALUES             = generate_symlog_array(-6, -1, 11)
 POSITIVE_TEST_VALUES    = np.logspace(-6, -1, 11)
 STATIC_OFFSET           = float(1E-2)
+
+################################################################################
+# Protected Names
+################################################################################
+PROTECTED_ELEMENT_NAMES = {
+    "fshift",
+    "mass0",
+    "p0c",
+    "q0",
+}
