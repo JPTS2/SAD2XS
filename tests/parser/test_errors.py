@@ -21,6 +21,7 @@ import xtrack as xt
 from sad2xs.config import Config
 from sad2xs.converter._001_parser import parse_sad_file
 from sad2xs.converter._003_expression_converter import convert_expressions
+from tests.support.config import PROTECTED_ELEMENT_NAMES
 
 ################################################################################
 # Expression Errors
@@ -184,6 +185,25 @@ def test_malformed_element_empty_name_raises_clear_error(write_lattice):
         filename = "error_element_empty_name.sad")
 
     with pytest.raises(ValueError):
+        parse_sad_file(str(lattice_path), Config(_verbose = False))
+
+@pytest.mark.parametrize(
+    "protected_name",
+    sorted(PROTECTED_ELEMENT_NAMES))
+def test_protected_element_names_raise_clear_error(
+        write_lattice,
+        protected_name):
+    """
+    Element names that collide with protected SAD2XS names should fail early.
+    """
+    lattice_path = write_lattice(
+        f"""\
+        MOMENTUM = 1.0 GEV;
+        DRIFT {protected_name.upper()} = (L = 1.0);
+        """,
+        filename = f"error_protected_element_name_{protected_name}.sad")
+
+    with pytest.raises(ValueError, match = "protected|reserved|name"):
         parse_sad_file(str(lattice_path), Config(_verbose = False))
 
 ################################################################################
