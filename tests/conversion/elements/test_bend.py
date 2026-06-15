@@ -657,6 +657,71 @@ def test_bend_conversion_matches_sad_twiss_for_angles(
         ])
 
 ########################################
+# Thin Bend Optics
+########################################
+def test_bend_conversion_matches_sad_twiss_for_thin_bend(
+        write_lattice,
+        tmp_path):
+    """
+    Converted thin SAD BEND elements should match SAD optics and dispersion.
+    """
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+
+    try:
+        lattice_text = """\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND        TEST_BEND   = (L = 0.0 ANGLE = 0.1);
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_BEND END);
+        """
+        lattice_path = write_lattice(
+            lattice_text,
+            filename = "bend_twiss_thin_angle.sad")
+
+        tw_sad = twiss_sad(
+            lattice_filename        = lattice_path.name,
+            line_name               = "TEST_LINE",
+            method                  = "4d",
+            closed                  = False,
+            reverse_element_order   = False,
+            reverse_bend_direction  = False,
+            additional_commands     = "")
+
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path    = str(lattice_path),
+            output_directory    = "N/A",
+            _verbose            = False,
+            _test_mode          = True)
+
+        tw_xs = line.twiss4d(
+            _continue_if_lost   = True,
+            start               = xt.START,
+            end                 = xt.END,
+            betx                = 1,
+            bety                = 1)
+
+        sad_values = _bend_twiss_values(tw_sad, "END")
+        xsuite_values = _bend_twiss_values(tw_xs, "end")
+    finally:
+        os.chdir(cwd)
+
+    _assert_bend_twiss_matches_sad(
+        test_name       = "test_bend_conversion_matches_sad_twiss_for_thin_bend",
+        lattice_text    = lattice_text,
+        sad_values      = sad_values,
+        xsuite_values   = xsuite_values,
+        parameters      = {"length": 0.0, "angle": 0.1},
+        notes           = [
+            "Thin BEND coverage should lock down the SAD-to-Xsuite "
+            "representation for integrated bend angle without finite length.",
+        ])
+
+########################################
 # Combined-Function K1 Optics
 ########################################
 @pytest.mark.parametrize(
@@ -1056,6 +1121,99 @@ def test_bend_conversion_matches_sad_tracking_for_angles(
         sad_coordinates         = _bend_sad_coordinates(sad_particles),
         xsuite_coordinates      = _bend_xsuite_coordinates(xs_particles),
         parameters              = {"angle": angle})
+
+########################################
+# Thin Bend Tracking
+########################################
+def test_bend_conversion_matches_sad_tracking_for_thin_bend(
+        write_lattice,
+        tmp_path):
+    """
+    Converted thin SAD BEND elements should match SAD tracking.
+    """
+    x_init     = np.array([0.0, 1E-4, 0.0, 0.0, 1E-4])
+    px_init    = np.array([0.0, 0.0, 1E-4, 0.0, -1E-4])
+    y_init     = np.array([0.0, 0.0, 0.0, 1E-4, -1E-4])
+    py_init    = np.array([0.0, 0.0, 0.0, 1E-4, 1E-4])
+    zeta_init  = np.zeros_like(x_init)
+    delta_init = np.zeros_like(x_init)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+
+    try:
+        lattice_text = """\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND        TEST_BEND   = (L = 0.0 ANGLE = 0.1);
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_BEND END);
+        """
+        lattice_path = write_lattice(
+            lattice_text,
+            filename = "bend_tracking_thin_angle.sad")
+
+        sad_particles = track_sad(
+            lattice_filepath       = lattice_path.name,
+            line_name              = "TEST_LINE",
+            x_init                 = x_init,
+            px_init                = px_init,
+            y_init                 = y_init,
+            py_init                = py_init,
+            zeta_init              = zeta_init,
+            delta_init             = delta_init,
+            n_turns                = 1,
+            rfsw                   = False,
+            rad                    = False,
+            fluc                   = False,
+            radcod                 = False,
+            radtaper               = False,
+            turn_by_turn_monitor   = False,
+            with_progress          = False,
+            wall_time              = 30)
+
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path    = str(lattice_path),
+            output_directory    = "N/A",
+            _verbose            = False,
+            _test_mode          = True)
+
+        xs_particles = xt.Particles(
+            p0c     = 1.0E9,
+            mass0   = xt.ELECTRON_MASS_EV,
+            q0      = 1,
+            x       = x_init.copy(),
+            px      = px_init.copy(),
+            y       = y_init.copy(),
+            py      = py_init.copy(),
+            zeta    = zeta_init.copy(),
+            delta   = delta_init.copy())
+
+        line.track(xs_particles, num_turns = 1)
+    finally:
+        os.chdir(cwd)
+
+    _assert_bend_tracking_matches_sad(
+        test_name               = (
+            "test_bend_conversion_matches_sad_tracking_for_thin_bend"),
+        lattice_text            = lattice_text,
+        initial_coordinates     = _bend_initial_coordinates(
+            x_init,
+            px_init,
+            y_init,
+            py_init,
+            zeta_init,
+            delta_init),
+        sad_coordinates         = _bend_sad_coordinates(sad_particles),
+        xsuite_coordinates      = _bend_xsuite_coordinates(xs_particles),
+        parameters              = {"length": 0.0, "angle": 0.1},
+        notes                   = [
+            "Thin BEND tracking should match SAD before the representation "
+            "is accepted as production behaviour.",
+        ])
 
 ########################################
 # Combined-Function K1 Tracking

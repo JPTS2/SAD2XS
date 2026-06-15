@@ -482,23 +482,38 @@ def test_oct_converter_supports_symbolic_length_and_strength(
         "by symbolic length.")
 
 ########################################
-# Missing-Length Behaviour
+# Thin Element Behaviour
 ########################################
-def test_oct_converter_requires_length(
+@pytest.mark.parametrize(
+    "element_variables",
+    [
+        {"k3": 0.1},
+        {"l": 0.0, "k3": 0.1},
+    ])
+def test_oct_converter_converts_thin_octupole_to_multipole(
         parsed_elements,
         xsuite_environment,
-        sad2xs_config):
+        sad2xs_config,
+        assert_environment_element,
+        element_variables):
     """
-    A SAD OCT without length should fail clearly during element conversion.
+    Thin SAD OCT elements should become active Xsuite Multipole kicks.
     """
-    with pytest.raises(ValueError, match = "missing length"):
-        convert_octupoles(
-            parsed_elements = parsed_elements(
-                element_type        = "oct",
-                element_name        = "test_oct",
-                element_variables   = {"k3": 0.1}),
-            environment     = xsuite_environment,
-            config          = sad2xs_config)
+    convert_octupoles(
+        parsed_elements = parsed_elements(
+            element_type        = "oct",
+            element_name        = "test_oct",
+            element_variables   = element_variables),
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
+
+    multipole = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_oct",
+        element_type    = xt.Multipole)
+
+    assert multipole.knl[3] == pytest.approx(0.1), (
+        "Thin OCT K3 should be preserved as integrated knl[3].")
 
 ########################################
 # Pipeline Behaviour

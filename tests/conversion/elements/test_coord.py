@@ -1,6 +1,6 @@
 """
 ================================================================================
-Tests for SAD parser comment handling
+Tests for SAD COORD conversion
 ================================================================================
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
@@ -9,689 +9,767 @@ See LICENSE.txt for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-11
+Date:       2026-06-15
 ================================================================================
 """
 ################################################################################
 # Required Packages
 ################################################################################
 import os
+
+import numpy as np
+import pytest
 import sad2xs as s2x
 import xtrack as xt
-import numpy as np
-import textwrap
-import matplotlib.pyplot as plt
-from tqdm import tqdm
 
-from _sad_helpers import twiss_sad
-from _config import *
+from sad2xs.config import Config
+from sad2xs.converter._004_element_converter import convert_coordinate_transformations
+from sad2xs.sad_helpers import track_sad
+from tests.support.config import (
+    DELTA_PX_ATOL,
+    DELTA_PX_RTOL,
+    DELTA_PY_ATOL,
+    DELTA_PY_RTOL,
+    DELTA_S_ATOL,
+    DELTA_S_RTOL,
+    DELTA_X_ATOL,
+    DELTA_X_RTOL,
+    DELTA_Y_ATOL,
+    DELTA_Y_RTOL)
+from tests.support.diagnostics import (
+    diagnostic_report_path,
+    write_tracking_failure_report,
+    write_twiss_failure_report)
+from tests.support.sad_helpers import twiss_sad
 
 ################################################################################
-# Reference PyTest Function
+# Diagnostic Helpers
 ################################################################################
-def reference_coord_test(
-        test_name:                  str,
-        sad_elements_line_string:   str,
-        sad_eval_marker:            str         = "END",
-        test_values:                np.ndarray  = TEST_VALUES,
-        static_val:                 float       = STATIC_OFFSET,
-        plot:                       bool        = True):
+COORD_ARTIFACT_CATEGORY = "conversion/elements/coord"
+RAD2DEG = 180.0 / np.pi
+
+def _coord_config():
     """
-    Reference Test the conversion of a SAD COORD element with DX and DY to XSuite.
+    Return a quiet config for deterministic COORD conversion tests.
     """
+    return Config(_verbose = False)
 
-    ############################################################################
-    # Scan
-    ############################################################################
-    S_SAD       = np.zeros_like(test_values)
-    S_XS        = np.zeros_like(test_values)
-    X_SAD       = np.zeros_like(test_values)
-    X_XS        = np.zeros_like(test_values)
-    Y_SAD       = np.zeros_like(test_values)
-    Y_XS        = np.zeros_like(test_values)
-    PX_SAD      = np.zeros_like(test_values)
-    PX_XS       = np.zeros_like(test_values)
-    PY_SAD      = np.zeros_like(test_values)
-    PY_XS       = np.zeros_like(test_values)
+def _coord_tracking_tolerances():
+    """
+    Return coordinate tolerances used by COORD tracking comparisons.
+    """
+    return {
+        "x":  (DELTA_X_ATOL, DELTA_X_RTOL),
+        "px": (DELTA_PX_ATOL, DELTA_PX_RTOL),
+        "y":  (DELTA_Y_ATOL, DELTA_Y_RTOL),
+        "py": (DELTA_PY_ATOL, DELTA_PY_RTOL),
+    }
 
-    for iteration, test_val in enumerate(tqdm(test_values)):
+def _coord_twiss_tolerances():
+    """
+    Return tolerances used by COORD optics comparisons.
+    """
+    return {
+        "s":  (DELTA_S_ATOL, DELTA_S_RTOL),
+        "x":  (DELTA_X_ATOL, DELTA_X_RTOL),
+        "px": (DELTA_PX_ATOL, DELTA_PX_RTOL),
+        "y":  (DELTA_Y_ATOL, DELTA_Y_RTOL),
+        "py": (DELTA_PY_ATOL, DELTA_PY_RTOL),
+    }
 
-        ########################################################################
-        # Write Test Lattice
-        ########################################################################
-        with open("test_lattice.sad", "w") as f:
-            f.write(textwrap.dedent(f"""\
-            MOMENTUM    = 1.0 GEV;
-            TEST_VAL    = {test_val};
-            STATIC_VAL  = {static_val};
-            """))
+def _coord_twiss_values(twiss, element_name):
+    """
+    Pack COORD Twiss values for diagnostic reports.
+    """
+    return {
+        "s":  twiss["s", element_name],
+        "x":  twiss["x", element_name],
+        "px": twiss["px", element_name],
+        "y":  twiss["y", element_name],
+        "py": twiss["py", element_name],
+    }
 
-        with open("test_lattice.sad", "a") as f:
-            f.write(sad_elements_line_string)
+def _coord_initial_coordinates(
+        x_init,
+        px_init,
+        y_init,
+        py_init,
+        zeta_init,
+        delta_init):
+    """
+    Pack initial particle coordinates for diagnostic reports.
+    """
+    return {
+        "x":     x_init,
+        "px":    px_init,
+        "y":     y_init,
+        "py":    py_init,
+        "zeta":  zeta_init,
+        "delta": delta_init,
+    }
 
-        ########################################################################
-        # Twiss SAD Lattice
-        ########################################################################
-        tw_sad  = twiss_sad(
-            lattice_filename        = 'test_lattice.sad',
-            line_name               = 'TEST_LINE',
+def _coord_sad_coordinates(sad_particles):
+    """
+    Pack SAD tracking coordinates for diagnostic reports.
+    """
+    return {
+        "x":  sad_particles["x"],
+        "px": sad_particles["px"],
+        "y":  sad_particles["y"],
+        "py": sad_particles["py"],
+    }
+
+def _coord_xsuite_coordinates(xs_particles):
+    """
+    Pack Xsuite tracking coordinates for diagnostic reports.
+    """
+    return {
+        "x":  xs_particles.x,
+        "px": xs_particles.px,
+        "y":  xs_particles.y,
+        "py": xs_particles.py,
+    }
+
+def _assert_coord_twiss_matches_sad(
+        test_name,
+        lattice_text,
+        sad_values,
+        xsuite_values,
+        parameters,
+        notes = None):
+    """
+    Assert COORD optics equivalence and write a Markdown report on failure.
+    """
+    tolerances = _coord_twiss_tolerances()
+    failed_values = []
+
+    for name, xs_value in xsuite_values.items():
+        atol, rtol = tolerances[name]
+        if not np.isclose(
+                sad_values[name],
+                xs_value,
+                rtol = rtol,
+                atol = atol):
+            failed_values.append(name)
+
+    if failed_values:
+        report_path = diagnostic_report_path(
+            test_name  = test_name,
+            category   = COORD_ARTIFACT_CATEGORY,
+            parameters = parameters)
+        write_twiss_failure_report(
+            report_path   = report_path,
+            title         = f"{test_name} failure",
+            lattice_text  = lattice_text,
+            sad_values    = sad_values,
+            xsuite_values = xsuite_values,
+            tolerances    = tolerances,
+            parameters    = parameters,
+            notes         = notes)
+        pytest.fail(
+            f"Converted COORD optics should match SAD. "
+            f"Failed values: {failed_values}. "
+            f"Diagnostic report: {report_path}")
+
+def _assert_coord_tracking_matches_sad(
+        test_name,
+        lattice_text,
+        initial_coordinates,
+        sad_coordinates,
+        xsuite_coordinates,
+        parameters,
+        notes = None):
+    """
+    Assert COORD tracking equivalence and write a Markdown report on failure.
+    """
+    tolerances = _coord_tracking_tolerances()
+    failed_coordinates = []
+
+    for coord, xs_values in xsuite_coordinates.items():
+        atol, rtol = tolerances[coord]
+        if not np.all(np.isclose(
+                sad_coordinates[coord],
+                xs_values,
+                rtol = rtol,
+                atol = atol)):
+            failed_coordinates.append(coord)
+
+    if failed_coordinates:
+        report_path = diagnostic_report_path(
+            test_name  = test_name,
+            category   = COORD_ARTIFACT_CATEGORY,
+            parameters = parameters)
+        write_tracking_failure_report(
+            report_path         = report_path,
+            title               = f"{test_name} failure",
+            lattice_text        = lattice_text,
+            initial_coordinates = initial_coordinates,
+            sad_coordinates     = sad_coordinates,
+            xsuite_coordinates  = xsuite_coordinates,
+            tolerances          = tolerances,
+            parameters          = parameters,
+            notes               = notes)
+        pytest.fail(
+            f"Converted COORD tracking should match SAD. "
+            f"Failed coordinates: {failed_coordinates}. "
+            f"Diagnostic report: {report_path}")
+
+################################################################################
+# Basic Conversion and Smoke Tests
+################################################################################
+########################################
+# Direct Converter Behaviour
+########################################
+@pytest.mark.parametrize(
+    "element_variables, expected_dx, expected_dy",
+    [
+        ({"dx": 1.0E-3}, 1.0E-3, 0.0),
+        ({"dy": -2.0E-3}, 0.0, -2.0E-3),
+        ({"dx": 1.0E-3, "dy": -2.0E-3}, 1.0E-3, -2.0E-3),
+    ])
+def test_coord_converter_creates_xsuite_xyshift(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element,
+        element_variables,
+        expected_dx,
+        expected_dy):
+    """
+    SAD COORD transverse shifts should become current Xsuite XYShift elements.
+    """
+    convert_coordinate_transformations(
+        parsed_elements = parsed_elements(
+            element_type      = "coord",
+            element_name      = "test_coord",
+            element_variables = element_variables),
+        environment     = xsuite_environment,
+        config          = _coord_config())
+
+    xyshift = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_coord",
+        element_type = xt.XYShift)
+
+    assert xyshift.dx == pytest.approx(expected_dx), (
+        "Converted COORD should preserve SAD DX with the current sign convention.")
+    assert xyshift.dy == pytest.approx(expected_dy), (
+        "Converted COORD should preserve SAD DY with the current sign convention.")
+
+@pytest.mark.parametrize(
+    "element_variables, element_type, expected_angle",
+    [
+        ({"chi1": 0.125}, xt.YRotation, -0.125 * RAD2DEG),
+        ({"chi2": 0.125}, xt.XRotation,  0.125 * RAD2DEG),
+        ({"chi3": 0.125}, xt.SRotation, -0.125 * RAD2DEG),
+    ])
+def test_coord_converter_creates_xsuite_rotations(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element,
+        element_variables,
+        element_type,
+        expected_angle):
+    """
+    SAD COORD rotations should become current Xsuite rotation elements.
+    """
+    convert_coordinate_transformations(
+        parsed_elements = parsed_elements(
+            element_type      = "coord",
+            element_name      = "test_coord",
+            element_variables = element_variables),
+        environment     = xsuite_environment,
+        config          = _coord_config())
+
+    rotation = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_coord",
+        element_type = element_type)
+
+    assert rotation.angle == pytest.approx(expected_angle), (
+        "Converted COORD rotation angle should be stored in degrees with the "
+        "current SAD-to-Xsuite sign convention.")
+
+def test_coord_converter_creates_marker_like_xyshift_for_empty_transform(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
+    """
+    Empty COORD elements currently install a zero XYShift placeholder.
+    """
+    convert_coordinate_transformations(
+        parsed_elements = parsed_elements(
+            element_type      = "coord",
+            element_name      = "test_coord",
+            element_variables = {}),
+        environment     = xsuite_environment,
+        config          = _coord_config())
+
+    xyshift = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_coord",
+        element_type = xt.XYShift)
+
+    assert xyshift.dx == pytest.approx(0.0), (
+        "Empty COORD placeholder should have zero horizontal shift.")
+    assert xyshift.dy == pytest.approx(0.0), (
+        "Empty COORD placeholder should have zero vertical shift.")
+
+########################################
+# Compound Coordinate Transforms
+########################################
+def test_coord_converter_creates_compound_transform_line(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
+    """
+    COORD elements with shifts and rotations should become generated sub-lines.
+    """
+    convert_coordinate_transformations(
+        parsed_elements = parsed_elements(
+            element_type      = "coord",
+            element_name      = "test_coord",
+            element_variables = {
+                "dx":   1.0E-3,
+                "dy":   -2.0E-3,
+                "chi1": 0.125,
+                "chi2": -0.25,
+                "chi3": 0.5,
+            }),
+        environment     = xsuite_environment,
+        config          = _coord_config())
+
+    assert "test_coord" in xsuite_environment.lines, (
+        "Compound COORD should be installed as an Xsuite environment line.")
+    assert xsuite_environment.lines["test_coord"].element_names == [
+        "test_coord_dxy",
+        "test_coord_chi1",
+        "test_coord_chi2",
+        "test_coord_chi3",
+    ], (
+        "Compound COORD should preserve the current shift-then-rotation order.")
+
+    xyshift = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_coord_dxy",
+        element_type = xt.XYShift)
+    chi1 = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_coord_chi1",
+        element_type = xt.YRotation)
+    chi2 = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_coord_chi2",
+        element_type = xt.XRotation)
+    chi3 = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_coord_chi3",
+        element_type = xt.SRotation)
+
+    assert xyshift.dx == pytest.approx(1.0E-3), (
+        "Compound COORD should preserve SAD DX.")
+    assert xyshift.dy == pytest.approx(-2.0E-3), (
+        "Compound COORD should preserve SAD DY.")
+    assert chi1.angle == pytest.approx(-0.125 * RAD2DEG), (
+        "Compound COORD should preserve the CHI1 sign convention.")
+    assert chi2.angle == pytest.approx(-0.25 * RAD2DEG), (
+        "Compound COORD should preserve the CHI2 sign convention.")
+    assert chi3.angle == pytest.approx(-0.5 * RAD2DEG), (
+        "Compound COORD should preserve the CHI3 sign convention.")
+
+########################################
+# Reversed Coordinate Transforms
+########################################
+def test_coord_converter_applies_dir_signs_and_order(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
+    """
+    DIR should apply the current reversed-COORD signs and transform ordering.
+    """
+    convert_coordinate_transformations(
+        parsed_elements = parsed_elements(
+            element_type      = "coord",
+            element_name      = "test_coord",
+            element_variables = {
+                "dir":  1.0,
+                "dx":   1.0E-3,
+                "dy":   -2.0E-3,
+                "chi1": 0.125,
+                "chi2": -0.25,
+                "chi3": 0.5,
+            }),
+        environment     = xsuite_environment,
+        config          = _coord_config())
+
+    assert xsuite_environment.lines["test_coord"].element_names == [
+        "test_coord_chi1",
+        "test_coord_chi2",
+        "test_coord_chi3",
+        "test_coord_dxy",
+    ], (
+        "DIR COORD should preserve the current rotation-then-shift order.")
+
+    chi1 = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_coord_chi1",
+        element_type = xt.YRotation)
+    chi2 = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_coord_chi2",
+        element_type = xt.XRotation)
+    chi3 = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_coord_chi3",
+        element_type = xt.SRotation)
+    xyshift = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_coord_dxy",
+        element_type = xt.XYShift)
+
+    assert xyshift.dx == pytest.approx(-1.0E-3), (
+        "DIR COORD should reverse the current DX convention.")
+    assert xyshift.dy == pytest.approx(-2.0E-3), (
+        "DIR COORD should preserve the current DY convention.")
+    assert chi1.angle == pytest.approx(-0.125 * RAD2DEG), (
+        "DIR COORD should preserve the current CHI1 convention.")
+    assert chi2.angle == pytest.approx(0.25 * RAD2DEG), (
+        "DIR COORD should reverse the current CHI2 convention.")
+    assert chi3.angle == pytest.approx(-0.5 * RAD2DEG), (
+        "DIR COORD should preserve the current CHI3 convention.")
+
+################################################################################
+# Pipeline Behaviour
+################################################################################
+########################################
+# Full Conversion
+########################################
+def test_coord_pipeline_preserves_single_shift(write_lattice):
+    """
+    Full conversion should preserve single COORD shift elements in the line.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        COORD       TEST_COORD  = (DX = 0.001 DY = -0.002);
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_COORD END);
+        """,
+        filename = "coord_pipeline_preserves_single_shift.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = "N/A",
+        _verbose         = False,
+        _test_mode       = True)
+
+    assert line.element_names == ["start", "test_coord", "end"], (
+        "Converted COORD line should preserve marker and COORD order.")
+    assert isinstance(line["test_coord"], xt.XYShift), (
+        "Single DX/DY COORD should remain an Xsuite XYShift in the line.")
+    assert line["test_coord"].dx == pytest.approx(1.0E-3), (
+        "Pipeline conversion should preserve SAD DX.")
+    assert line["test_coord"].dy == pytest.approx(-2.0E-3), (
+        "Pipeline conversion should preserve SAD DY.")
+
+def test_coord_pipeline_expands_compound_transform(write_lattice):
+    """
+    Full conversion should expand compound COORD sub-lines into the final line.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        COORD       TEST_COORD  = (
+            DX      = 0.001
+            DY      = -0.002
+            CHI1    = 0.125
+            CHI2    = -0.25
+            CHI3    = 0.5
+        );
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_COORD END);
+        """,
+        filename = "coord_pipeline_expands_compound_transform.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = "N/A",
+        _verbose         = False,
+        _test_mode       = True)
+
+    expected_names = [
+        "start",
+        "test_coord_dxy",
+        "test_coord_chi1",
+        "test_coord_chi2",
+        "test_coord_chi3",
+        "end",
+    ]
+    assert line.element_names == expected_names, (
+        "Compound COORD should expand to its generated child elements in order.")
+    assert isinstance(line["test_coord_dxy"], xt.XYShift), (
+        "Compound COORD should include an Xsuite XYShift child.")
+    assert isinstance(line["test_coord_chi1"], xt.YRotation), (
+        "Compound COORD should include an Xsuite YRotation child.")
+    assert isinstance(line["test_coord_chi2"], xt.XRotation), (
+        "Compound COORD should include an Xsuite XRotation child.")
+    assert isinstance(line["test_coord_chi3"], xt.SRotation), (
+        "Compound COORD should include an Xsuite SRotation child.")
+
+def test_coord_pipeline_preserves_reversed_compound_transform(write_lattice):
+    """
+    Full conversion should preserve reversed generated COORD sub-line behaviour.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        COORD       TEST_COORD  = (
+            DX      = 0.001
+            DY      = -0.002
+            CHI1    = 0.125
+            CHI2    = -0.25
+            CHI3    = 0.5
+        );
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START -TEST_COORD END);
+        """,
+        filename = "coord_pipeline_preserves_reversed_compound_transform.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = "N/A",
+        _verbose         = False,
+        _test_mode       = True)
+
+    expected_names = [
+        "start",
+        "-test_coord_dxy",
+        "-test_coord_chi1",
+        "-test_coord_chi2",
+        "-test_coord_chi3",
+        "end",
+    ]
+    assert line.element_names == expected_names, (
+        "Reversed generated COORD sub-lines should preserve current cloned "
+        "child-element naming.")
+    assert isinstance(line["-test_coord_dxy"], xt.XYShift), (
+        "Reversed COORD shift should remain a current Xsuite XYShift clone.")
+    assert isinstance(line["-test_coord_chi1"], xt.YRotation), (
+        "Reversed COORD CHI1 should remain a current Xsuite YRotation clone.")
+    assert isinstance(line["-test_coord_chi2"], xt.XRotation), (
+        "Reversed COORD CHI2 should remain a current Xsuite XRotation clone.")
+    assert isinstance(line["-test_coord_chi3"], xt.SRotation), (
+        "Reversed COORD CHI3 should remain a current Xsuite SRotation clone.")
+
+################################################################################
+# Physics Equivalence
+################################################################################
+########################################
+# Coordinate Transform Optics
+########################################
+@pytest.mark.parametrize(
+    "coord_definition, parameters",
+    [
+        ("DX = 0.001 DY = -0.002", {"dx": 1.0E-3, "dy": -2.0E-3}),
+        ("CHI1 = 0.125", {"chi1": 0.125}),
+        ("CHI2 = -0.125", {"chi2": -0.125}),
+        ("CHI3 = 0.125", {"chi3": 0.125}),
+        (
+            "DX = 0.001 DY = -0.002 CHI1 = 0.125 CHI2 = -0.125 CHI3 = 0.25",
+            {
+                "dx":   1.0E-3,
+                "dy":   -2.0E-3,
+                "chi1": 0.125,
+                "chi2": -0.125,
+                "chi3": 0.25,
+            },
+        ),
+    ])
+def test_coord_conversion_matches_sad_twiss(
+        write_lattice,
+        tmp_path,
+        coord_definition,
+        parameters):
+    """
+    Converted SAD COORD transformations should match SAD optics.
+    """
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+
+    try:
+        lattice_text = f"""\
+        MOMENTUM    = 1.0 GEV;
+
+        COORD       TEST_COORD  = ({coord_definition});
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_COORD END);
+        """
+        lattice_path = write_lattice(
+            lattice_text,
+            filename = "coord_twiss.sad")
+
+        tw_sad = twiss_sad(
+            lattice_filename        = lattice_path.name,
+            line_name               = "TEST_LINE",
             method                  = "4d",
             closed                  = False,
             reverse_element_order   = False,
             reverse_bend_direction  = False,
             additional_commands     = "")
 
-        ########################################################################
-        # Convert Lattice
-        ########################################################################
-        line    = s2x.convert_sad_to_xsuite(
-            sad_lattice_path    = 'test_lattice.sad',
-            output_directory    = "N/A",
-            _verbose            = False,
-            _test_mode          = True)
-        
-        ########################################
-        # Twiss XSuite Lattice
-        ########################################
-        tw_xs   = line.twiss4d(
-            _continue_if_lost   = True,
-            start               = xt.START,
-            end                 = xt.END,
-            betx                = 1,
-            bety                = 1)
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path = str(lattice_path),
+            output_directory = "N/A",
+            _verbose         = False,
+            _test_mode       = True)
 
-        ########################################################################
-        # Diagnostics: Outputs if the test fails
-        ########################################################################
-        print("SAD")
-        tw_sad.cols["s x px y py"].show()
-        print("Xsuite")
-        tw_xs.cols["s x px y py"].show()
+        tw_xs = line.twiss4d(
+            _continue_if_lost = True,
+            start             = xt.START,
+            end               = xt.END,
+            betx              = 1,
+            bety              = 1)
 
-        ########################################################################
-        # Save data for comparison
-        ########################################################################
-        xs_eval_marker      = sad_eval_marker.lower()
+        sad_values = _coord_twiss_values(tw_sad, "END")
+        xsuite_values = _coord_twiss_values(tw_xs, "end")
+    finally:
+        os.chdir(cwd)
 
-        S_SAD[iteration]    = tw_sad["s", sad_eval_marker]
-        S_XS[iteration]     = tw_xs["s", xs_eval_marker]
-        X_SAD[iteration]    = tw_sad["x", sad_eval_marker]
-        X_XS[iteration]     = tw_xs["x", xs_eval_marker]
-        Y_SAD[iteration]    = tw_sad["y", sad_eval_marker]
-        Y_XS[iteration]     = tw_xs["y", xs_eval_marker]
-        PX_SAD[iteration]   = tw_sad["px", sad_eval_marker]
-        PX_XS[iteration]    = tw_xs["px", xs_eval_marker]
-        PY_SAD[iteration]   = tw_sad["py", sad_eval_marker]
-        PY_XS[iteration]    = tw_xs["py", xs_eval_marker]
-
-        ########################################################################
-        # Delete test lattice
-        ########################################################################
-        os.remove("test_lattice.sad")
-
-    ############################################################################
-    # Plot
-    ############################################################################
-    if plot:
-
-        symlog_threshold    = np.nanmin(
-            np.where(TEST_VALUES > 0, TEST_VALUES, np.nan))
-
-        if not np.all(np.isclose(S_SAD, S_XS, rtol = DELTA_S_RTOL, atol = DELTA_S_ATOL)):
-            fig, axs    = plt.subplots(
-                nrows       = 2,
-                ncols       = 1,
-                figsize     = (12, 6),
-            sharex      = True,
-            gridspec_kw = {'height_ratios': [3, 1]})
-
-            axs[0].plot(TEST_VALUES, S_SAD, label = "SAD", color = "r")
-            axs[0].plot(TEST_VALUES, S_XS, label = "XS", color = "b", linestyle='--')
-            axs[1].plot(TEST_VALUES, S_XS - S_SAD)
-
-            axs[1].set_xlabel("Drift Length [m]")
-            axs[0].set_ylabel('s [m]')
-            axs[1].set_ylabel('∆s [m]')
-
-            for ax in axs:
-                ax.set_xscale('symlog', linthresh = symlog_threshold)
-                ax.set_yscale('symlog', linthresh = symlog_threshold)
-                ax.grid()
-            axs[0].legend()
-            plt.subplots_adjust(hspace = 0)
-            plt.savefig(f"outputs/{test_name}_s.png", dpi = 300, bbox_inches = 'tight')
-
-        if not (
-                np.all(np.isclose(X_SAD, X_XS, rtol = DELTA_X_RTOL, atol = DELTA_X_ATOL)) and
-                np.all(np.isclose(Y_SAD, Y_XS, rtol = DELTA_Y_RTOL, atol = DELTA_Y_ATOL))):
-            fig, axs    = plt.subplots(
-                nrows       = 2,
-                ncols       = 2,
-                figsize     = (12, 6),
-                sharex      = True,
-            gridspec_kw = {'height_ratios': [3, 1]})
-
-            axs[0, 0].plot(TEST_VALUES, X_SAD, label = "SAD", color = "r")
-            axs[0, 0].plot(TEST_VALUES, X_XS, label = "XS", color = "b", linestyle='--')
-            axs[1, 0].plot(TEST_VALUES, X_XS - X_SAD)
-
-            axs[0, 1].plot(TEST_VALUES, Y_SAD, label = "SAD", color = "r")
-            axs[0, 1].plot(TEST_VALUES, Y_XS, label = "XS", color = "b", linestyle='--')
-            axs[1, 1].plot(TEST_VALUES, Y_XS - Y_SAD)
-
-            axs[1, 0].set_xlabel("Transform Parameter")
-            axs[1, 1].set_xlabel("Transform Parameter")
-            axs[0, 0].set_ylabel('x [m]')
-            axs[1, 0].set_ylabel('∆x [m]')
-            axs[0, 1].set_ylabel('y [m]')
-            axs[1, 1].set_ylabel('∆y [m]')
-
-            for ax in axs.flatten():
-                ax.set_xscale('symlog', linthresh = symlog_threshold)
-                ax.set_yscale('symlog', linthresh = symlog_threshold)
-                ax.grid()
-            axs[0, 0].legend()
-            axs[0, 1].legend()
-            plt.subplots_adjust(hspace = 0)
-            plt.savefig(f"outputs/{test_name}_xy.png", dpi = 300, bbox_inches = 'tight')
-
-        if not (
-                np.all(np.isclose(PX_SAD, PX_XS, rtol = DELTA_X_RTOL, atol = DELTA_X_ATOL)) and
-                np.all(np.isclose(PY_SAD, PY_XS, rtol = DELTA_Y_RTOL, atol = DELTA_Y_ATOL))):
-            fig, axs    = plt.subplots(
-                nrows       = 2,
-                ncols       = 2,
-                figsize     = (12, 6),
-                sharex      = True,
-                gridspec_kw = {'height_ratios': [3, 1]})
-
-            axs[0, 0].plot(TEST_VALUES, PX_SAD, label = "SAD", color = "r")
-            axs[0, 0].plot(TEST_VALUES, PX_XS, label = "XS", color = "b", linestyle='--')
-            axs[1, 0].plot(TEST_VALUES, PX_XS - PX_SAD)
-
-            axs[0, 1].plot(TEST_VALUES, PY_SAD, label = "SAD", color = "r")
-            axs[0, 1].plot(TEST_VALUES, PY_XS, label = "XS", color = "b", linestyle='--')
-            axs[1, 1].plot(TEST_VALUES, PY_XS - PY_SAD)
-
-            axs[1, 0].set_xlabel("Transform Parameter")
-            axs[1, 1].set_xlabel("Transform Parameter")
-            axs[0, 0].set_ylabel('px [m]')
-            axs[1, 0].set_ylabel('∆px [m]')
-            axs[0, 1].set_ylabel('py [m]')
-            axs[1, 1].set_ylabel('∆py [m]')
-
-            for ax in axs.flatten():
-                ax.set_xscale('symlog', linthresh = symlog_threshold)
-                ax.set_yscale('symlog', linthresh = symlog_threshold)
-                ax.grid()
-            axs[0, 0].legend()
-            axs[0, 1].legend()
-            plt.subplots_adjust(hspace = 0)
-            plt.savefig(f"outputs/{test_name}_pxpy.png", dpi = 300, bbox_inches = 'tight')
-
-        plt.close("all")
-
-    ############################################################################
-    # Assertions
-    ############################################################################
-    assert np.all(
-        np.isclose(S_SAD, S_XS, rtol = DELTA_S_RTOL, atol = DELTA_S_ATOL)), \
-        "s values do not match between SAD and XSuite."
-    assert np.all(
-        np.isclose(X_SAD, X_XS, rtol = DELTA_X_RTOL, atol = DELTA_X_ATOL)), \
-        "x values do not match between SAD and XSuite."
-    assert np.all(
-        np.isclose(Y_SAD, Y_XS, rtol = DELTA_Y_RTOL, atol = DELTA_Y_ATOL)), \
-        "y values do not match between SAD and XSuite."
-    assert np.all(
-        np.isclose(PX_SAD, PX_XS, rtol = DELTA_PX_RTOL, atol = DELTA_PX_ATOL)), \
-        "px values do not match between SAD and XSuite."
-    assert np.all(
-        np.isclose(PY_SAD, PY_XS, rtol = DELTA_PY_RTOL, atol = DELTA_PY_ATOL)), \
-        "py values do not match between SAD and XSuite."
-
-################################################################################
-# DXDY
-################################################################################
+    _assert_coord_twiss_matches_sad(
+        test_name     = "test_coord_conversion_matches_sad_twiss",
+        lattice_text  = lattice_text,
+        sad_values    = sad_values,
+        xsuite_values = xsuite_values,
+        parameters    = parameters,
+        notes         = [
+            "COORD tests intentionally assert the current Xsuite reference "
+            "element API. Migration to xt.Translation/xt.Rotation is tracked "
+            "separately in issue #19.",
+        ])
 
 ########################################
-# Forward
+# Coordinate Transform Tracking
 ########################################
-def test_coord_dxdy():
+@pytest.mark.parametrize(
+    "coord_definition, parameters",
+    [
+        ("DX = 0.001 DY = -0.002", {"dx": 1.0E-3, "dy": -2.0E-3}),
+        ("CHI1 = 0.125", {"chi1": 0.125}),
+        ("CHI2 = -0.125", {"chi2": -0.125}),
+        ("CHI3 = 0.125", {"chi3": 0.125}),
+        (
+            "DX = 0.001 DY = -0.002 CHI1 = 0.125 CHI2 = -0.125 CHI3 = 0.25",
+            {
+                "dx":   1.0E-3,
+                "dy":   -2.0E-3,
+                "chi1": 0.125,
+                "chi2": -0.125,
+                "chi3": 0.25,
+            },
+        ),
+    ])
+def test_coord_conversion_matches_sad_tracking(
+        write_lattice,
+        tmp_path,
+        coord_definition,
+        parameters):
     """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
+    Converted SAD COORD transformations should match SAD tracking.
     """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdy",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START TEST_COORD END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-########################################
-# Reversed
-########################################
-def test_coord_dxdy_rev():
-    """
-    Test the conversion of a SAD COORD element with DX and DY to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdy_rev",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START -TEST_COORD END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-################################################################################
-# CHI1
-################################################################################
+    x_init     = np.array([0.0, 1E-4, 0.0, 1E-4, -1E-4])
+    px_init    = np.array([0.0, 0.0, 1E-4, 0.0, -1E-4])
+    y_init     = np.array([0.0, 0.0, 1E-4, 1E-4, -1E-4])
+    py_init    = np.array([0.0, 1E-4, 0.0, -1E-4, 1E-4])
+    zeta_init  = np.zeros_like(x_init)
+    delta_init = np.zeros_like(x_init)
 
-########################################
-# Forward
-########################################
-def test_coord_chi1():
-    """
-    Test the conversion of a SAD COORD element with CHI1 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_chi1",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD  = (CHI1 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START TEST_COORD END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-########################################
-# Reversed
-########################################
-def test_coord_chi1_rev():
-    """
-    Test the conversion of a SAD COORD element with CHI1 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_chi1_rev",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD  = (CHI1 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START -TEST_COORD END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-################################################################################
-# CHI2
-################################################################################
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
 
-########################################
-# Forward
-########################################
-def test_coord_chi2():
-    """
-    Test the conversion of a SAD COORD element with CHI2 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_chi2",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD  = (CHI2 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START TEST_COORD END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-########################################
-# Reversed
-########################################
-def test_coord_chi2_rev():
-    """
-    Test the conversion of a SAD COORD element with CHI2 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_chi2_rev",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD  = (CHI2 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START -TEST_COORD END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-################################################################################
-# DXDY then CHI1
-################################################################################
+    try:
+        lattice_text = f"""\
+        MOMENTUM    = 1.0 GEV;
 
-########################################
-# Forward
-########################################
-def test_coord_dxdy_chi1():
-    """
-    Test the conversion of a SAD COORD element with DX and DY then CHI1 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdy_chi1",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
-                        TEST_COORD2 = (CHI1 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START TEST_COORD1 TEST_COORD2 END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
+        COORD       TEST_COORD  = ({coord_definition});
 
-########################################
-# Reversed
-########################################
-def test_coord_dxdy_chi1_rev():
-    """
-    Test the conversion of a SAD COORD element with DX and DY then CHI1 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdy_chi1_rev",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
-                        TEST_COORD2 = (CHI1 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START TEST_COORD1 -TEST_COORD2 END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
+        MARK        START       = ()
+                    END         = ();
 
-################################################################################
-# DXDY then CHI2
-################################################################################
+        LINE        TEST_LINE   = (START TEST_COORD END);
+        """
+        lattice_path = write_lattice(
+            lattice_text,
+            filename = "coord_tracking.sad")
 
-########################################
-# Forward
-########################################
-def test_coord_dxdy_chi2():
-    """
-    Test the conversion of a SAD COORD element with DX and DY then CHI2 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdy_chi2",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
-                        TEST_COORD2 = (CHI2 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START TEST_COORD1 TEST_COORD2 END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-########################################
-# Reversed
-########################################
-def test_coord_dxdy_chi2_rev():
-    """
-    Test the conversion of a SAD COORD element with DX and DY then CHI2 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdy_chi2_rev",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
-                        TEST_COORD2 = (CHI2 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START TEST_COORD1 -TEST_COORD2 END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-################################################################################
-# DXDY then CHI3
-################################################################################
+        sad_particles = track_sad(
+            lattice_filepath     = lattice_path.name,
+            line_name            = "TEST_LINE",
+            x_init               = x_init,
+            px_init              = px_init,
+            y_init               = y_init,
+            py_init              = py_init,
+            zeta_init            = zeta_init,
+            delta_init           = delta_init,
+            n_turns              = 1,
+            rfsw                 = False,
+            rad                  = False,
+            fluc                 = False,
+            radcod               = False,
+            radtaper             = False,
+            turn_by_turn_monitor = False,
+            with_progress        = False,
+            wall_time            = 30)
 
-########################################
-# Forward
-########################################
-def test_coord_dxdy_chi3():
-    """
-    Test the conversion of a SAD COORD element with DX and DY then CHI3 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdy_chi3",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
-                        TEST_COORD2 = (CHI3 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START TEST_COORD1 TEST_COORD2 END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-########################################
-# Reversed
-########################################
-def test_coord_dxdy_chi3_rev():
-    """
-    Test the conversion of a SAD COORD element with DX and DY then CHI3 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdy_chi3_rev",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD1 = (DX = STATIC_VAL DY = STATIC_VAL)
-                        TEST_COORD2 = (CHI3 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START TEST_COORD1 -TEST_COORD2 END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path = str(lattice_path),
+            output_directory = "N/A",
+            _verbose         = False,
+            _test_mode       = True)
 
-################################################################################
-# DXDYCHI1
-################################################################################
+        xs_particles = xt.Particles(
+            p0c   = 1.0E9,
+            mass0 = xt.ELECTRON_MASS_EV,
+            q0    = 1,
+            x     = x_init.copy(),
+            px    = px_init.copy(),
+            y     = y_init.copy(),
+            py    = py_init.copy(),
+            zeta  = zeta_init.copy(),
+            delta = delta_init.copy())
 
-########################################
-# Forward
-########################################
-def test_coord_dxdychi1():
-    """
-    Test the conversion of a SAD COORD element with DX, DY and CHI1 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdychi1",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START TEST_COORD END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-########################################
-# Reversed
-########################################
-def test_coord_dxdychi1_rev():
-    """
-    Test the conversion of a SAD COORD element with DX, DY and CHI1 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdychi1_rev",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START -TEST_COORD END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-################################################################################
-# DXDYCHI2
-################################################################################
+        line.track(xs_particles, num_turns = 1)
+    finally:
+        os.chdir(cwd)
 
-########################################
-# Forward
-########################################
-def test_coord_dxdychi2():
-    """
-    Test the conversion of a SAD COORD element with DX, DY and CHI2 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdychi2",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI2 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START TEST_COORD END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-########################################
-# Reversed
-########################################
-def test_coord_dxdychi2_rev():
-    """
-    Test the conversion of a SAD COORD element with DX, DY and CHI2 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdychi2_rev",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI2 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START -TEST_COORD END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-################################################################################
-# DXDYCHI3
-################################################################################
-
-########################################
-# Forward
-########################################
-def test_coord_dxdychi3():
-    """
-    Test the conversion of a SAD COORD element with DX, DY and CHI3 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdychi3",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI3 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START TEST_COORD END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-
-########################################
-# Reversed
-########################################
-def test_coord_dxdychi3_rev():
-    """
-    Test the conversion of a SAD COORD element with DX, DY and CHI3 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdychi3_rev",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI3 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START -TEST_COORD END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-
-################################################################################
-# DXDYCHI1CHI2CHI3
-################################################################################
-
-########################################
-# Forward
-########################################
-def test_coord_dxdychi1chi2chi3():
-    """
-    Test the conversion of a SAD COORD element with DX, DY, CHI1, CHI2 and CHI3 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdychi1chi2chi3",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL CHI2 = TEST_VAL CHI3 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START TEST_COORD END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
-    
-########################################
-# Reversed
-########################################
-def test_coord_dxdychi1chi2chi3_rev():
-    """
-    Test the conversion of a SAD COORD element with DX, DY, CHI1, CHI2 and CHI3 to XSuite.
-    """
-    reference_coord_test(
-        test_name                  = "test_010_coord_dxdychi1chi2chi3_rev",
-        sad_elements_line_string   = textwrap.dedent(f"""\
-            COORD       TEST_COORD  = (DX = TEST_VAL DY = TEST_VAL CHI1 = TEST_VAL CHI2 = TEST_VAL CHI3 = TEST_VAL);
-            MARK        START       = ()
-                        END         = ();
-            LINE        TEST_LINE   = (START -TEST_COORD END);
-            """),
-        sad_eval_marker            = "END",
-        test_values                = TEST_VALUES,
-        static_val                 = STATIC_OFFSET,
-        plot                       = True)
+    _assert_coord_tracking_matches_sad(
+        test_name           = "test_coord_conversion_matches_sad_tracking",
+        lattice_text        = lattice_text,
+        initial_coordinates = _coord_initial_coordinates(
+            x_init,
+            px_init,
+            y_init,
+            py_init,
+            zeta_init,
+            delta_init),
+        sad_coordinates     = _coord_sad_coordinates(sad_particles),
+        xsuite_coordinates  = _coord_xsuite_coordinates(xs_particles),
+        parameters          = parameters,
+        notes               = [
+            "COORD tests intentionally assert the current Xsuite reference "
+            "element API. Migration to xt.Translation/xt.Rotation is tracked "
+            "separately in issue #19.",
+        ])

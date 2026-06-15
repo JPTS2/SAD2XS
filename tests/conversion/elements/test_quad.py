@@ -466,19 +466,36 @@ def test_quad_converter_supports_symbolic_length_and_strength(
         "by symbolic length.")
 
 ########################################
-# Missing-Length Behaviour
+# Thin Element Behaviour
 ########################################
-def test_quad_converter_requires_length(parsed_elements, xsuite_environment):
+@pytest.mark.parametrize(
+    "element_variables",
+    [
+        {"k1": 0.1},
+        {"l": 0.0, "k1": 0.1},
+    ])
+def test_quad_converter_converts_thin_quadrupole_to_multipole(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element,
+        element_variables):
     """
-    A SAD QUAD without length should fail clearly during element conversion.
+    Thin SAD QUAD elements should become active Xsuite Multipole kicks.
     """
-    with pytest.raises(ValueError, match = "missing length"):
-        convert_quadrupoles(
-            parsed_elements = parsed_elements(
-                element_type        = "quad",
-                element_name        = "test_quad",
-                element_variables   = {"k1": 0.1}),
-            environment     = xsuite_environment)
+    convert_quadrupoles(
+        parsed_elements = parsed_elements(
+            element_type        = "quad",
+            element_name        = "test_quad",
+            element_variables   = element_variables),
+        environment     = xsuite_environment)
+
+    multipole = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_quad",
+        element_type    = xt.Multipole)
+
+    assert multipole.knl[1] == pytest.approx(0.1), (
+        "Thin QUAD K1 should be preserved as integrated knl[1].")
 
 ########################################
 # Pipeline Behaviour
