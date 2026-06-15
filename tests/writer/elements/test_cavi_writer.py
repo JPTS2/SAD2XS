@@ -1,6 +1,6 @@
 """
 ================================================================================
-<Example file header here>
+<Placeholder file header>
 ================================================================================
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 

@@ -20,10 +20,13 @@ Parser tests should not assert on:
 - full SAD-to-Xsuite pipeline behaviour;
 - output writer formatting;
 - generated lattice or optics files;
-- external SAD helper execution.
+- SAD helper command construction or output parsing.
 
 Those behaviours belong in `tests/conversion`, `tests/writer`,
 `tests/roundtrip`, `tests/examples`, or `tests/sad_helpers`.
+
+Parser tests should remain focused on parser ownership even though the broader
+test suite is expected to run in a SAD-capable environment.
 
 ## File ownership
 
