@@ -466,19 +466,36 @@ def test_sext_converter_supports_symbolic_length_and_strength(
         "by symbolic length.")
 
 ########################################
-# Missing-Length Behaviour
+# Thin Element Behaviour
 ########################################
-def test_sext_converter_requires_length(parsed_elements, xsuite_environment):
+@pytest.mark.parametrize(
+    "element_variables",
+    [
+        {"k2": 0.1},
+        {"l": 0.0, "k2": 0.1},
+    ])
+def test_sext_converter_converts_thin_sextupole_to_multipole(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element,
+        element_variables):
     """
-    A SAD SEXT without length should fail clearly during element conversion.
+    Thin SAD SEXT elements should become active Xsuite Multipole kicks.
     """
-    with pytest.raises(ValueError, match = "missing length"):
-        convert_sextupoles(
-            parsed_elements = parsed_elements(
-                element_type        = "sext",
-                element_name        = "test_sext",
-                element_variables   = {"k2": 0.1}),
-            environment     = xsuite_environment)
+    convert_sextupoles(
+        parsed_elements = parsed_elements(
+            element_type        = "sext",
+            element_name        = "test_sext",
+            element_variables   = element_variables),
+        environment     = xsuite_environment)
+
+    multipole = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_sext",
+        element_type    = xt.Multipole)
+
+    assert multipole.knl[2] == pytest.approx(0.1), (
+        "Thin SEXT K2 should be preserved as integrated knl[2].")
 
 ########################################
 # Pipeline Behaviour
