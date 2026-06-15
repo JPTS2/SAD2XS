@@ -36,7 +36,7 @@ from tests.support.diagnostics import (
     diagnostic_report_path,
     write_tracking_failure_report,
     write_twiss_failure_report)
-from tests.support.sad_helpers import twiss_sad
+from sad2xs.sad_helpers import twiss_sad
 
 ################################################################################
 # Diagnostic Helpers
@@ -571,13 +571,13 @@ def test_cavi_conversion_matches_sad_twiss_for_phase(
             filename = "cavi_twiss_phase.sad")
 
         tw_sad = twiss_sad(
-            lattice_filename        = lattice_path.name,
+            lattice_filepath        = lattice_path.name,
             line_name               = "TEST_LINE",
-            method                  = "6d",
+            calc6d                  = True,
             closed                  = False,
             reverse_element_order   = False,
             reverse_bend_direction  = False,
-            rf_enabled              = True,
+            rfsw              = True,
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(

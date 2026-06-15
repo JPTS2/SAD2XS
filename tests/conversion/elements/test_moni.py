@@ -23,7 +23,7 @@ import xtrack as xt
 
 from sad2xs.converter._004_element_converter import convert_monitors
 from tests.support.config import DELTA_S_ATOL, DELTA_S_RTOL
-from tests.support.sad_helpers import twiss_sad
+from sad2xs.sad_helpers import twiss_sad
 
 ################################################################################
 # Basic Conversion and Smoke Tests
@@ -155,9 +155,9 @@ def test_moni_conversion_matches_sad_zero_length_line(write_lattice, tmp_path):
             filename = "moni_zero_length_line.sad")
 
         tw_sad = twiss_sad(
-            lattice_filename        = lattice_path.name,
+            lattice_filepath        = lattice_path.name,
             line_name               = "TEST_LINE",
-            method                  = "4d",
+            calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
             reverse_bend_direction  = False,

@@ -1,7 +1,7 @@
 # SAD2XS Test Suite
 
-This directory contains the public tests, test support modules, fixtures, and
-diagnostic artifacts for SAD2XS.
+This directory contains the public tests, test support modules, local test data,
+and diagnostic artifacts for SAD2XS.
 
 The suite is organised by responsibility. New tests should be placed in the
 narrowest folder that describes the behaviour being protected.
@@ -30,12 +30,12 @@ one consistent environment.
 - `sad_helpers/`: tests for `sad2xs.sad_helpers` command construction,
   temporary-file handling, SAD output parsing, and smoke behaviour.
 - `examples/`: tests for public examples and example lattices.
-- `installation/`: installer and installation helper tests.
+- `installation/`: installer and installation helper tests, plus
+  installation-specific SAD smoke-test input data.
 - `packaging/`: package metadata, import boundary, and release metadata tests.
 - `ci/`: tests for repository CI workflow configuration.
 - `observability/`: tests for terminal output, quiet mode, and logging policy.
 - `support/`: reusable test support modules. These are not test files.
-- `fixtures/`: committed fixture files used by tests.
 - `artifacts/`: generated diagnostic Markdown reports from selected physics
   comparison tests.
 
