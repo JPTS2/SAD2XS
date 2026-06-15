@@ -26,7 +26,6 @@ one consistent environment.
 - `writer/elements/`: element-specific serialisation.
 - `writer/features/`: writer behaviour that crosses element families.
 - `writer/pipeline/`: whole-writer entry points and supported-element policy.
-- `roundtrip/`: generated file import and write/reload equivalence.
 - `sad_helpers/`: tests for `sad2xs.sad_helpers` command construction,
   temporary-file handling, SAD output parsing, and smoke behaviour.
 - `examples/`: tests for public examples and example lattices.
@@ -64,6 +63,6 @@ Artifact paths should mirror the test area that produced them, for example
 
 ## Transitional Notes
 
-The test tree is being reorganised. Some tests still import legacy support
-module names such as `_config` and `_sad_helpers`; update those imports when
-each file is reviewed.
+The test tree is being reorganised. Placeholder files in incomplete folders are
+intentional markers for planned coverage and should be filled or removed as the
+associated issues are tackled.
