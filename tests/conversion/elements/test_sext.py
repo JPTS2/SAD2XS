@@ -39,7 +39,7 @@ from tests.support.diagnostics import (
     diagnostic_report_path,
     write_tracking_failure_report,
     write_twiss_failure_report)
-from tests.support.sad_helpers import twiss_sad
+from sad2xs.sad_helpers import twiss_sad
 
 ################################################################################
 # Diagnostic Helpers
@@ -611,9 +611,9 @@ def test_sext_conversion_matches_sad_twiss(write_lattice, tmp_path, k2l):
             filename = f"sext_twiss_k2l_{k2l:+.3f}.sad")
 
         tw_sad = twiss_sad(
-            lattice_filename        = lattice_path.name,
+            lattice_filepath        = lattice_path.name,
             line_name               = "TEST_LINE",
-            method                  = "4d",
+            calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
             reverse_bend_direction  = False,

@@ -33,7 +33,8 @@ line, and how converted lines compare with SAD optics or tracking.
   checks, and SAD comparison checks for that element.
 - `pipeline/`: public conversion pipeline behaviour that is not owned by one
   element family, such as excluded elements, offset markers, reference
-  particles, line reversal, reverse charge, and user options.
+  particles, line selection, write/reload behaviour, line reversal, reverse
+  charge, and user options.
 
 ## Element Test Shape
 
@@ -53,16 +54,19 @@ as small isolated tests.
 
 ## Shared Fixtures
 
-`elements/conftest.py` provides conversion-focused fixtures:
+`conftest.py` provides conversion-wide fixtures:
 
 - `write_lattice`: writes a dedented temporary SAD lattice;
-- `sad2xs_config`: quiet config for deterministic tests;
+- `sad2xs_config`: quiet config for deterministic conversion tests.
+
+`elements/conftest.py` provides element-converter fixtures:
+
 - `xsuite_environment`: empty Xsuite environment for direct converter tests;
 - `parsed_elements`: helper for minimal parsed element dictionaries;
 - `assert_environment_element`: assertion helper for environment contents.
 
-Use `tests.support.diagnostics` for Markdown failure reports and
-`tests.support.sad_helpers` for SAD Twiss helper calls.
+Use `tests.support.diagnostics` for Markdown failure reports. SAD reference
+calls should use the public `sad2xs.sad_helpers` API.
 
 ## Artifacts
 

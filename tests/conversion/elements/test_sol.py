@@ -40,7 +40,7 @@ from tests.support.diagnostics import (
     diagnostic_report_path,
     write_tracking_failure_report,
     write_twiss_failure_report)
-from tests.support.sad_helpers import twiss_sad
+from sad2xs.sad_helpers import twiss_sad
 
 ################################################################################
 # Diagnostic Helpers
@@ -319,16 +319,16 @@ def _compare_sol_orbit_twiss(
         lattice_path = write_lattice(lattice_text, filename = filename)
 
         tw_sad = twiss_sad(
-            lattice_filename        = lattice_path.name,
+            lattice_filepath        = lattice_path.name,
             line_name               = "TEST_LINE",
-            method                  = "4d",
+            calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
             reverse_bend_direction  = False,
-            rf_enabled              = False,
-            radiation               = False,
-            rad_compensation        = False,
-            rad_taper               = False,
+            rfsw              = False,
+            rad               = False,
+            radcod        = False,
+            radtaper               = False,
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
@@ -689,16 +689,16 @@ def test_sol_orbit_matches_sad_twiss_at_end(write_lattice, tmp_path, bz):
             filename = f"sol_twiss_bz_{bz:+.3f}.sad")
 
         tw_sad = twiss_sad(
-            lattice_filename        = lattice_path.name,
+            lattice_filepath        = lattice_path.name,
             line_name               = "TEST_LINE",
-            method                  = "4d",
+            calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
             reverse_bend_direction  = False,
-            rf_enabled              = False,
-            radiation               = False,
-            rad_compensation        = False,
-            rad_taper               = False,
+            rfsw              = False,
+            rad               = False,
+            radcod        = False,
+            radtaper               = False,
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
@@ -749,16 +749,16 @@ def test_sol_optics_matches_sad_twiss_at_end(write_lattice, tmp_path, bz):
             filename = f"sol_optics_twiss_bz_{bz:+.3f}.sad")
 
         tw_sad = twiss_sad(
-            lattice_filename        = lattice_path.name,
+            lattice_filepath        = lattice_path.name,
             line_name               = "TEST_LINE",
-            method                  = "4d",
+            calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
             reverse_bend_direction  = False,
-            rf_enabled              = False,
-            radiation               = False,
-            rad_compensation        = False,
-            rad_taper               = False,
+            rfsw              = False,
+            rad               = False,
+            radcod        = False,
+            radtaper               = False,
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
@@ -1026,16 +1026,16 @@ def test_sol_reference_transform_orbit_matches_sad_twiss(
             filename = "sol_reference_transform_legacy_matrix.sad")
 
         tw_sad = twiss_sad(
-            lattice_filename        = lattice_path.name,
+            lattice_filepath        = lattice_path.name,
             line_name               = "TEST_LINE",
-            method                  = "4d",
+            calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
             reverse_bend_direction  = False,
-            rf_enabled              = False,
-            radiation               = False,
-            rad_compensation        = False,
-            rad_taper               = False,
+            rfsw              = False,
+            rad               = False,
+            radcod        = False,
+            radtaper               = False,
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
@@ -1136,16 +1136,16 @@ def test_sol_reference_transform_restores_design_orbit_at_end(
             filename = "sol_reference_transform_end_restoration.sad")
 
         tw_sad = twiss_sad(
-            lattice_filename        = lattice_path.name,
+            lattice_filepath        = lattice_path.name,
             line_name               = "TEST_LINE",
-            method                  = "4d",
+            calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
             reverse_bend_direction  = False,
-            rf_enabled              = False,
-            radiation               = False,
-            rad_compensation        = False,
-            rad_taper               = False,
+            rfsw              = False,
+            rad               = False,
+            radcod        = False,
+            radtaper               = False,
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(

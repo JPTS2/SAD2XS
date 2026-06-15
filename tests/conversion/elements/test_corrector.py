@@ -39,7 +39,7 @@ from tests.support.diagnostics import (
     diagnostic_report_path,
     write_twiss_failure_report,
     write_tracking_failure_report)
-from tests.support.sad_helpers import twiss_sad
+from sad2xs.sad_helpers import twiss_sad
 
 ################################################################################
 # Diagnostic Helpers
@@ -593,9 +593,9 @@ def test_corrector_conversion_matches_sad_twiss_for_horizontal_kicks(
             filename = f"corrector_twiss_hkick_k0l_{k0l:+.3f}.sad")
 
         tw_sad = twiss_sad(
-            lattice_filename        = lattice_path.name,
+            lattice_filepath        = lattice_path.name,
             line_name               = "TEST_LINE",
-            method                  = "4d",
+            calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
             reverse_bend_direction  = False,
@@ -658,9 +658,9 @@ def test_corrector_conversion_matches_sad_twiss_for_thin_kick(
             filename = "corrector_twiss_thin_k0l.sad")
 
         tw_sad = twiss_sad(
-            lattice_filename        = lattice_path.name,
+            lattice_filepath        = lattice_path.name,
             line_name               = "TEST_LINE",
-            method                  = "4d",
+            calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
             reverse_bend_direction  = False,
@@ -733,9 +733,9 @@ def test_corrector_conversion_matches_sad_twiss_for_rotated_kicks(
             filename = f"corrector_twiss_rotate_{rotation:+.6f}.sad")
 
         tw_sad = twiss_sad(
-            lattice_filename        = lattice_path.name,
+            lattice_filepath        = lattice_path.name,
             line_name               = "TEST_LINE",
-            method                  = "4d",
+            calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
             reverse_bend_direction  = False,
@@ -815,9 +815,9 @@ def test_corrector_conversion_matches_sad_twiss_for_element_offsets(
             filename = f"corrector_twiss_dx_{dx:+.3e}_dy_{dy:+.3e}.sad")
 
         tw_sad = twiss_sad(
-            lattice_filename        = lattice_path.name,
+            lattice_filepath        = lattice_path.name,
             line_name               = "TEST_LINE",
-            method                  = "4d",
+            calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
             reverse_bend_direction  = False,
