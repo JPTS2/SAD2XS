@@ -24,7 +24,7 @@ Decision: external SAD helper functionality should remain optional for the core 
 
 Reasoning: helper functions are useful for validation and comparison, but they depend on an external SAD installation. Users should be able to import and use the converter without setting up every helper dependency.
 
-Consequence: helper imports should not make core conversion imports fail. Tests that require external SAD should skip cleanly when SAD is unavailable.
+Consequence: helper imports should not make core conversion imports fail. The public test suite itself is SAD-capable and requires SAD, but package import-boundary tests should still protect core imports from unnecessary helper coupling.
 
 Current status: this is not fully implemented. The top-level package still re-exports `sad_helpers`, so import-time coupling should be reduced in a future packaging change.
 

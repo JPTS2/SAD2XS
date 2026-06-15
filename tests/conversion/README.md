@@ -21,8 +21,6 @@ line, and how converted lines compare with SAD optics or tracking.
 - SAD text parsing rules. Those belong in `tests/parser/`.
 - Generated lattice or optics writer formatting. That belongs in
   `tests/writer/`.
-- Generated-file import and write/reload checks. Those belong in
-  `tests/roundtrip/`.
 - SAD helper command construction and output parsing. Those belong in
   `tests/sad_helpers/`.
 
@@ -33,8 +31,8 @@ line, and how converted lines compare with SAD optics or tracking.
   checks, and SAD comparison checks for that element.
 - `pipeline/`: public conversion pipeline behaviour that is not owned by one
   element family, such as excluded elements, offset markers, reference
-  particles, line selection, write/reload behaviour, line reversal, reverse
-  charge, and user options.
+  particles, line selection, generated-file import, write/reload behaviour,
+  line reversal, reverse charge, and user options.
 
 ## Element Test Shape
 

@@ -4,7 +4,7 @@ Testing should protect converter behaviour while keeping the public repository
 shareable and maintainable.
 
 Run Python commands in an environment with the SAD2XS development dependencies
-installed.
+installed, including the SAD executable.
 
 ```bash
 python -m pytest
@@ -34,10 +34,9 @@ folders:
 
 - `parser/`: SAD text parsing and parser error handling.
 - `conversion/elements/`: individual SAD element conversion.
-- `conversion/features/`: cross-element conversion features.
-- `conversion/pipeline/`: public conversion pipeline and options.
+- `conversion/pipeline/`: public conversion pipeline, options, generated-file
+  import, and write/reload behaviour.
 - `writer/`: generated lattice and optics writer behaviour.
-- `roundtrip/`: generated file import and write/reload equivalence.
 - `sad_helpers/`: reusable helper APIs that call or prepare external SAD runs.
 - `examples/`: public example execution and example lattice checks.
 - `installation/`: installer and installation helper behaviour.
@@ -72,14 +71,13 @@ intermediate dictionaries.
 
 ## SAD Dependency
 
-Tests that do not require external SAD should remain fast and independent.
-
-Tests that require SAD should be marked and capable of being skipped when SAD
-is unavailable. CI should run a dedicated SAD smoke or installation job before
-running SAD-dependent conversion checks.
+The SAD2XS test suite requires SAD. Some tests, especially parser, packaging,
+and Xsuite API compatibility checks, do not invoke SAD directly, but they still
+run inside the same SAD-capable test environment.
 
 Do not rely on filename ordering to ensure that SAD installation tests run
-before other tests. Use pytest markers and CI job dependencies instead.
+before other tests. CI jobs should make the SAD dependency explicit and run a
+SAD smoke check before broader SAD-dependent checks.
 
 ## Temporary Files
 
@@ -136,10 +134,9 @@ the converter contract clearer, for example `cavi`, `aper`, `moni`, and `sol`.
 
 ## Transitional Work
 
-Current status: the test tree is being reorganised. Support files have been
-moved under `tests/support/`, and fixtures under `tests/fixtures/`, but some
-test files still import legacy support module names. Those imports should be
-updated when each test file is reviewed.
+Current status: the test tree is being reorganised. Shared support belongs in
+`tests/support/`; test data should live beside the test area that owns it unless
+it is genuinely shared across unrelated folders.
 
 The current placeholder files are intentional markers for planned coverage.
 They should be filled or removed as the associated issues are tackled.
@@ -150,5 +147,5 @@ Next release target: CI should run the public test suite without private files
 or local machine assumptions.
 
 CI should test the commit or pull request under review, not a fixed branch.
-External SAD-dependent tests should run in a job that clearly declares the
-dependency and depends on a SAD smoke check.
+The test jobs should run in an environment where SAD is available and should
+expose SAD smoke failures clearly before broader test failures.

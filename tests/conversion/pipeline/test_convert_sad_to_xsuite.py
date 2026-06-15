@@ -788,6 +788,145 @@ def test_pipeline_write_reload_preserves_test_mode_line_contract(
             "after reload.")
 
 
+def test_pipeline_generated_lattice_file_imports_into_xsuite_environment(
+        write_lattice,
+        tmp_path):
+    """
+    The generated lattice file should be loadable by a clean Xsuite Environment.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        DRIFT       D1      = (L = 1.0);
+        QUAD        Q1      = (L = 0.5 K1 = 0.2);
+
+        MARK        START   = ()
+                    END     = ();
+
+        LINE        TEST_LINE = (START D1 Q1 END);
+        """,
+        filename = "pipeline_generated_lattice_import_input.sad")
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+
+    s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = str(output_dir),
+        output_filename  = "generated_lattice_import",
+        _verbose         = False)
+
+    generated_lattice_path = output_dir / "generated_lattice_import.py"
+
+    env = xt.Environment()
+    env.call(str(generated_lattice_path))
+
+    assert "line" in env.lines, (
+        "Generated lattice file should define an Xsuite line named 'line'.")
+    assert env.lines["line"].element_names == ["start", "d1", "q1", "end"], (
+        "Generated lattice file should preserve converted line element names "
+        "when loaded into a clean Xsuite Environment.")
+
+
+def test_pipeline_generated_optics_file_imports_after_generated_lattice(
+        write_lattice,
+        tmp_path):
+    """
+    The generated optics file should be loadable after the generated lattice file.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        DRIFT       D1      = (L = 1.0);
+        CAVI        C1      = (VOLT = 1000000 FREQ = 100000000);
+
+        MARK        START   = ()
+                    END     = ();
+
+        LINE        TEST_LINE = (START D1 C1 END);
+        """,
+        filename = "pipeline_generated_optics_import_input.sad")
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+
+    s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = str(output_dir),
+        output_filename  = "generated_optics_import",
+        _verbose         = False)
+
+    generated_lattice_path = output_dir / "generated_optics_import.py"
+    generated_optics_path = output_dir / "generated_optics_import_import_optics.py"
+
+    env = xt.Environment()
+    env.call(str(generated_lattice_path))
+    env.call(str(generated_optics_path))
+    line = env.lines["line"]
+
+    assert line.particle_ref is not None, (
+        "Generated optics file should restore the line reference particle.")
+    assert line.particle_ref.p0c[0] == pytest.approx(1.0E9), (
+        "Generated optics file should restore the SAD MOMENTUM as p0c.")
+    assert line["c1"].voltage == pytest.approx(1000000), (
+        "Generated optics file should preserve cavity voltage after import.")
+    assert line["c1"].frequency == pytest.approx(100000000), (
+        "Generated optics file should preserve cavity frequency after import.")
+
+
+def test_pipeline_verbose_does_not_change_conversion_result(
+        write_lattice,
+        tmp_path,
+        capsys):
+    """
+    Verbose logging should not change the converted line contract.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        DRIFT       TEST_D      = (L = 1.0);
+        APERT       TEST_APERT  = (AX = 0.01 AY = 0.02);
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        RING        = (START TEST_D TEST_APERT END);
+        """,
+        filename = "pipeline_verbose_invariance.sad")
+
+    line_quiet = s2x.convert_sad_to_xsuite(
+        sad_lattice_path             = str(lattice_path),
+        output_directory             = str(tmp_path),
+        line_name                    = "RING",
+        install_apertures_as_markers = True,
+        _verbose                     = False,
+        _test_mode                   = True)
+
+    quiet_output = capsys.readouterr()
+
+    line_verbose = s2x.convert_sad_to_xsuite(
+        sad_lattice_path             = str(lattice_path),
+        output_directory             = str(tmp_path),
+        line_name                    = "RING",
+        install_apertures_as_markers = True,
+        _verbose                     = True,
+        _test_mode                   = True)
+
+    verbose_output = capsys.readouterr()
+
+    assert quiet_output.out == "", (
+        "Quiet conversion should not write to stdout.")
+    assert verbose_output.out != "", (
+        "Verbose conversion should write diagnostic progress to stdout.")
+    assert line_quiet.element_names == line_verbose.element_names, (
+        "Verbose logging should not change converted element names.")
+    assert isinstance(line_quiet["test_apert"], xt.Marker), (
+        "Quiet conversion should install APERT as Marker when requested.")
+    assert isinstance(line_verbose["test_apert"], xt.Marker), (
+        "Verbose conversion should install APERT as Marker when requested.")
+
+
 ################################################################################
 # Reference Particle
 ################################################################################
