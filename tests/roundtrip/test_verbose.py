@@ -1,6 +1,6 @@
 """
 ================================================================================
-Tests for SAD parser comment handling
+<Placeholder file header>
 ================================================================================
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 

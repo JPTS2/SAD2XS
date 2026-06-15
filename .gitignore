@@ -53,7 +53,8 @@ build_instructions
 # ==============================================================================
 # Ignore unit test diagnostic outputs
 # ==============================================================================
-/tests/artifacts
+/tests/artifacts/*
+!/tests/artifacts/README.md
 
 # ==============================================================================
 # Ignore private lattice files
