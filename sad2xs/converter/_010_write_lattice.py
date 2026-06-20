@@ -64,17 +64,17 @@ def write_lattice(
     try:
         line["p0c"]
     except KeyError:
-        line["p0c"]     = line.particle_ref.p0c                 # type: ignore
+        line["p0c"]     = line.particle_ref.p0c.item()          # type: ignore
 
     try:
         line["mass0"]
     except KeyError:
-        line["mass0"]   = line.particle_ref.mass0               # type: ignore
+        line["mass0"]   = line.particle_ref.mass0.item()        # type: ignore
 
     try:
         line["q0"]
     except KeyError:
-        line["q0"]      = line.particle_ref.q0                  # type: ignore
+        line["q0"]      = line.particle_ref.q0.item()           # type: ignore
 
     try:
         line["fshift"]
