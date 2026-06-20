@@ -1,6 +1,24 @@
 # Writer Element Tests
 
-This folder contains element-specific writer serialisation tests.
+This folder contains element-specific writer serialisation tests, one file per
+Xsuite element family.
 
-Use these tests when the expected output is owned by one Xsuite element or one
-SAD element family.
+Each file tests the roundtrip contract for that element type: build an
+`xt.Line` directly with representative field values, write with
+`sad2xs.write_lattice` and `sad2xs.write_optics`, reload in a clean Xsuite
+environment, and assert that all supported fields are preserved.
+
+## Coverage
+
+- `test_drift_writer.py` — `xt.Drift`: length
+- `test_bend_writer.py` — `xt.Bend` (h≠0): angle, k1, edge angles, shift_x/y, knl/ksl
+- `test_corr_writer.py` — `xt.Bend` (h=0): horizontal, vertical, skew correctors; replication contract
+- `test_quad_writer.py` — `xt.Quadrupole`: k1, k1s, shift_x/y, rot_s_rad, knl/ksl combined function
+- `test_sext_writer.py` — `xt.Sextupole`: k2, k2s, shift_x/y, rot_s_rad, knl/ksl
+- `test_oct_writer.py` — `xt.Octupole`: k3, k3s, shift_x/y, rot_s_rad, knl/ksl
+- `test_mult_writer.py` — `xt.Multipole`: knl/ksl arrays, shift_x/y, rot_s_rad
+- `test_sol_writer.py` — `xt.UniformSolenoid`: ks, shift_x/y, rot_s_rad
+- `test_cavi_writer.py` — `xt.Cavity`: voltage, frequency, lag; unit handling
+- `test_refshift_writer.py` — `xt.XYShift`, `xt.ZetaShift`, `xt.XRotation`, `xt.YRotation`, `xt.SRotation`
+- `test_aper_writer.py` — `xt.LimitEllipse`, `xt.LimitRect`
+- `test_marker_writer.py` — `xt.Marker`: basic marker; offset marker output section
