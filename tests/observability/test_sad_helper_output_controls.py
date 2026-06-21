@@ -4,7 +4,7 @@ Tests for SAD helper output behaviour
 ================================================================================
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
-This file is part of the SAD2XS project, licensed under the MIT License.
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
 See LICENSE.txt for details.
 
 Authors:    John P. T. Salvesen
@@ -12,11 +12,13 @@ Email:      john.salvesen@cern.ch
 Date:       2026-06-21
 ================================================================================
 
-NOTE: sad_helpers functions currently have no _verbose or quiet-mode parameter.
-All helpers print diagnostic lines (e.g. "Creating SAD Command") unconditionally
-on every call. The tests below document this behaviour as the current baseline.
-When output suppression is added to sad_helpers, these tests should be
-updated to cover both the quiet and verbose paths.
+sad_helpers functions have no _verbose or quiet-mode parameter. All helpers
+print diagnostic lines (e.g. "Creating SAD Command") unconditionally on every
+call. The signature tests below assert that _verbose is absent — they will
+fail if a parameter is added without corresponding quiet/verbose coverage being
+written, which is the intended forcing function. The baseline output tests
+document that output is currently unconditional and guard against it being
+silenced without a controlled replacement.
 """
 ################################################################################
 # Required Packages
