@@ -40,8 +40,8 @@ executable. Placed in the **SAD-free** CI job.
 
 Two categories. Signature checks (7 tests) confirm that no `sad_helpers`
 function yet accepts a `_verbose` parameter. These tests pass now and will
-**intentionally fail** if `_verbose` is added to a helper without corresponding
-quiet/verbose coverage being written first — they act as a forcing function.
+**fail** if `_verbose` is added to a helper without corresponding quiet/verbose
+coverage being written first — they act as a forcing function.
 Baseline output tests (2 tests) confirm that the helpers which do run SAD
 produce stdout unconditionally, and will catch a regression where all output
 is silently removed. Uses a minimal transfer-line lattice and requires the SAD

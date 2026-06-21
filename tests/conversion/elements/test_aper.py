@@ -994,8 +994,8 @@ def test_aper_rotated_limitrect_grid_loss_matches_sad_boundary():
             "[1, 1, 1, 0, 0] for particles "
             "(0,0), (0.005,0), (0.011,0), (0,0.015), (0,0.021) "
             "through this pi/4 rotated rectangle.",
-            "This test intentionally fails until APERT ROTATE is mapped to "
-            "the Xsuite aperture element.",
+            "This test currently fails because APERT ROTATE is not yet mapped "
+            "to the Xsuite aperture element.",
         ])
 
 def test_aper_limitrectellipse_grid_loss_matches_analytic_boundary():

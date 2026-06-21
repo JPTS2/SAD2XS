@@ -16,10 +16,10 @@ formatting, or SAD helper command construction. Those behaviours belong in
 
 ## Coverage
 
-Many parser tests are testing planned or partially-implemented behaviour. Tests
-written for features not yet implemented in the parser are intentionally
-failing — they document the parser's current limitations and must not be
-modified to hide known failures.
+Many parser tests cover planned or partially-implemented behaviour. Tests
+written for features not yet implemented in the parser currently fail —
+they document the parser's current limitations and must not be modified to
+hide known failures.
 
 **Functions** is the count of `def test_` entries in the file. **Fail** is
 actual failing instances from the test run. `test_errors.py` is parametrised
