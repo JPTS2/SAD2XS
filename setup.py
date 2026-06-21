@@ -34,6 +34,7 @@ setup(
     include_package_data            = True,
     install_requires                = [
         "numpy>=1.0",
+        "pyyaml>=6.0",
         "xtrack>=0.92"],
     license                         = 'Apache 2.0',
     download_url                    = "https://pypi.python.org/pypi/sad2xs",

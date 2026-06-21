@@ -66,211 +66,217 @@ def _write_only(line, tmp_path, filename):
     return output_dir
 
 
+def _assert_file_exists_and_is_executable(output_dir, filename):
+    """
+    Assert that output_dir/filename.py exists and that calling it in a fresh
+    Xsuite environment registers a line named 'line'. Calling each generated
+    file verifies that the writer output is syntactically valid Python and
+    that the element serialisation produces a loadable lattice.
+    """
+    output_path = output_dir / f"{filename}.py"
+
+    assert output_path.exists(), (
+        f"write_lattice should create the output file at {output_path}.")
+
+    env = xt.Environment()
+    env.call(str(output_path))
+
+    assert "line" in env.lines, (
+        f"Calling {output_path.name} should register a line named 'line' in "
+        "the Xsuite environment. This fails if the serialised element is "
+        "syntactically invalid or produces an unloadable lattice.")
+
+
 ################################################################################
 # Supported Element Policy Tests
 ################################################################################
 def test_supported_elements_writer_handles_drift(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.Drift element.
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.Drift element.
     """
     line       = _build_single_element_line(xt.Drift(length = 1.0), "d1")
     output_dir = _write_only(line, tmp_path, "drift")
 
-    assert (output_dir / "drift.py").exists(), (
-        "write_lattice should create the output file for xt.Drift.")
+    _assert_file_exists_and_is_executable(output_dir, "drift")
 
 
 def test_supported_elements_writer_handles_bend(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.Bend element classified as a dipole bend (angle set, h != 0).
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.Bend element classified as a dipole bend (angle set,
+    h != 0).
     """
     line       = _build_single_element_line(xt.Bend(length = 0.5, angle = 0.1), "b1")
     output_dir = _write_only(line, tmp_path, "bend")
 
-    assert (output_dir / "bend.py").exists(), (
-        "write_lattice should create the output file for xt.Bend (bend).")
+    _assert_file_exists_and_is_executable(output_dir, "bend")
 
 
 def test_supported_elements_writer_handles_corrector(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.Bend element classified as a corrector (k0 set explicitly, h == 0).
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.Bend element classified as a corrector (k0 set explicitly,
+    h == 0).
     """
     line       = _build_single_element_line(xt.Bend(length = 0.3, k0 = 1.0E-4), "c1")
     output_dir = _write_only(line, tmp_path, "corrector")
 
-    assert (output_dir / "corrector.py").exists(), (
-        "write_lattice should create the output file for xt.Bend (corrector).")
+    _assert_file_exists_and_is_executable(output_dir, "corrector")
 
 
 def test_supported_elements_writer_handles_quadrupole(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.Quadrupole element.
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.Quadrupole element.
     """
     line       = _build_single_element_line(xt.Quadrupole(length = 0.5, k1 = 0.2), "q1")
     output_dir = _write_only(line, tmp_path, "quadrupole")
 
-    assert (output_dir / "quadrupole.py").exists(), (
-        "write_lattice should create the output file for xt.Quadrupole.")
+    _assert_file_exists_and_is_executable(output_dir, "quadrupole")
 
 
 def test_supported_elements_writer_handles_sextupole(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.Sextupole element.
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.Sextupole element.
     """
     line       = _build_single_element_line(xt.Sextupole(length = 0.4, k2 = 0.3), "s1")
     output_dir = _write_only(line, tmp_path, "sextupole")
 
-    assert (output_dir / "sextupole.py").exists(), (
-        "write_lattice should create the output file for xt.Sextupole.")
+    _assert_file_exists_and_is_executable(output_dir, "sextupole")
 
 
 def test_supported_elements_writer_handles_octupole(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.Octupole element.
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.Octupole element.
     """
     line       = _build_single_element_line(xt.Octupole(length = 0.3, k3 = 0.4), "o1")
     output_dir = _write_only(line, tmp_path, "octupole")
 
-    assert (output_dir / "octupole.py").exists(), (
-        "write_lattice should create the output file for xt.Octupole.")
+    _assert_file_exists_and_is_executable(output_dir, "octupole")
 
 
 def test_supported_elements_writer_handles_multipole(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.Multipole element.
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.Multipole element.
     """
     line = _build_single_element_line(
         xt.Multipole(knl = [0.0, 0.1], ksl = [0.0, -0.05]), "m1")
     output_dir = _write_only(line, tmp_path, "multipole")
 
-    assert (output_dir / "multipole.py").exists(), (
-        "write_lattice should create the output file for xt.Multipole.")
+    _assert_file_exists_and_is_executable(output_dir, "multipole")
 
 
 def test_supported_elements_writer_handles_solenoid(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.UniformSolenoid element.
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.UniformSolenoid element.
     """
     line       = _build_single_element_line(xt.UniformSolenoid(length = 0.7, ks = 0.08), "sol1")
     output_dir = _write_only(line, tmp_path, "solenoid")
 
-    assert (output_dir / "solenoid.py").exists(), (
-        "write_lattice should create the output file for xt.UniformSolenoid.")
+    _assert_file_exists_and_is_executable(output_dir, "solenoid")
 
 
 def test_supported_elements_writer_handles_cavity(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.Cavity element.
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.Cavity element.
     """
     line = _build_single_element_line(
         xt.Cavity(voltage = 3.0E6, frequency = 4.0E8, lag = 5.0), "cav1")
     output_dir = _write_only(line, tmp_path, "cavity")
 
-    assert (output_dir / "cavity.py").exists(), (
-        "write_lattice should create the output file for xt.Cavity.")
+    _assert_file_exists_and_is_executable(output_dir, "cavity")
 
 
 def test_supported_elements_writer_handles_xy_shift(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.XYShift element.
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.XYShift element.
     """
     line       = _build_single_element_line(xt.XYShift(dx = 1.0E-3, dy = -2.0E-3), "shift1")
     output_dir = _write_only(line, tmp_path, "xy_shift")
 
-    assert (output_dir / "xy_shift.py").exists(), (
-        "write_lattice should create the output file for xt.XYShift.")
+    _assert_file_exists_and_is_executable(output_dir, "xy_shift")
 
 
 def test_supported_elements_writer_handles_zeta_shift(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.ZetaShift element.
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.ZetaShift element.
     """
     line       = _build_single_element_line(xt.ZetaShift(dzeta = 3.0E-3), "zshift1")
     output_dir = _write_only(line, tmp_path, "zeta_shift")
 
-    assert (output_dir / "zeta_shift.py").exists(), (
-        "write_lattice should create the output file for xt.ZetaShift.")
+    _assert_file_exists_and_is_executable(output_dir, "zeta_shift")
 
 
 def test_supported_elements_writer_handles_x_rotation(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.XRotation element.
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.XRotation element.
     """
     line       = _build_single_element_line(xt.XRotation(angle = 1.25), "xrot1")
     output_dir = _write_only(line, tmp_path, "x_rotation")
 
-    assert (output_dir / "x_rotation.py").exists(), (
-        "write_lattice should create the output file for xt.XRotation.")
+    _assert_file_exists_and_is_executable(output_dir, "x_rotation")
 
 
 def test_supported_elements_writer_handles_y_rotation(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.YRotation element.
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.YRotation element.
     """
     line       = _build_single_element_line(xt.YRotation(angle = -1.25), "yrot1")
     output_dir = _write_only(line, tmp_path, "y_rotation")
 
-    assert (output_dir / "y_rotation.py").exists(), (
-        "write_lattice should create the output file for xt.YRotation.")
+    _assert_file_exists_and_is_executable(output_dir, "y_rotation")
 
 
 def test_supported_elements_writer_handles_s_rotation(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.SRotation element.
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.SRotation element.
     """
     line       = _build_single_element_line(xt.SRotation(angle = 0.75), "srot1")
     output_dir = _write_only(line, tmp_path, "s_rotation")
 
-    assert (output_dir / "s_rotation.py").exists(), (
-        "write_lattice should create the output file for xt.SRotation.")
+    _assert_file_exists_and_is_executable(output_dir, "s_rotation")
 
 
 def test_supported_elements_writer_handles_limit_rect(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.LimitRect element.
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.LimitRect element.
     """
     line = _build_single_element_line(
         xt.LimitRect(min_x = -1.0, max_x = 2.0, min_y = -3.0, max_y = 4.0), "rect1")
     output_dir = _write_only(line, tmp_path, "limit_rect")
 
-    assert (output_dir / "limit_rect.py").exists(), (
-        "write_lattice should create the output file for xt.LimitRect.")
+    _assert_file_exists_and_is_executable(output_dir, "limit_rect")
 
 
 def test_supported_elements_writer_handles_limit_ellipse(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains an
-    xt.LimitEllipse element.
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.LimitEllipse element.
     """
     line       = _build_single_element_line(xt.LimitEllipse(a = 1.0, b = 2.0), "ellipse1")
     output_dir = _write_only(line, tmp_path, "limit_ellipse")
 
-    assert (output_dir / "limit_ellipse.py").exists(), (
-        "write_lattice should create the output file for xt.LimitEllipse.")
+    _assert_file_exists_and_is_executable(output_dir, "limit_ellipse")
 
 
 def test_supported_elements_writer_handles_marker(tmp_path):
     """
-    write_lattice should produce a lattice file when the line contains only
-    xt.Marker elements.
+    write_lattice should produce an executable lattice file when the line
+    contains only xt.Marker elements.
     """
     line       = _build_single_element_line(xt.Marker(), "mk1")
     output_dir = _write_only(line, tmp_path, "marker")
 
-    assert (output_dir / "marker.py").exists(), (
-        "write_lattice should create the output file for xt.Marker.")
+    _assert_file_exists_and_is_executable(output_dir, "marker")

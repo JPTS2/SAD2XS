@@ -21,7 +21,7 @@ Avoid describing target behaviour as if it already exists.
 - [Architecture](architecture.md): package layout, subsystem responsibilities, and boundaries between parser, converter, writer, and SAD helper code.
 - [Conversion model](conversion-model.md): the SAD-to-Xsuite conversion pipeline and the decision to treat the converted Xsuite model as the canonical representation.
 - [SAD helpers](sad-helpers.md): Python wrappers around external SAD calculations, including entry points, subprocess handling, timeouts, optionality target, and current limitations.
-- [Testing](testing.md): public test policy, local validation rules, temporary file handling, and expected regression test structure.
+- [Testing](testing.md): public test policy, regression workflow, CI structure (master and per-folder workflows), known failure groups, and SAD dependency handling.
 - [Contributing](contributing.md): branch naming, pull request expectations, release workflow, and public issue policy.
 - [Design decisions](design-decisions.md): project-level decisions that should guide future development.
 
