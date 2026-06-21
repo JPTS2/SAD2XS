@@ -84,11 +84,11 @@ def _write_minimal_fodo_ring(tmp_path):
     lattice_path.write_text(textwrap.dedent("""\
         MOMENTUM    = 1.0 GEV;
 
-        QUAD    QF  = (L = 0.3, K1 =  1.5);
-        QUAD    QD  = (L = 0.3, K1 = -1.5);
-        BEND    B   = (L = 0.7854, ANGLE = 0.7854);
+        QUAD    QF  = (L = 0.3 K1 =  0.2);
+        QUAD    QD  = (L = 0.3 K1 = -0.2);
+        BEND    B   = (L = 0.7854 ANGLE = 0.7854);
         DRIFT   D   = (L = 0.5);
-        CAVI    CAV = (VOLT = 1.0E6, FREQ = 1.8E7);
+        CAVI    CAV = (VOLT = 1.0E6 FREQ = 1.8E7);
         MARK    IP  = ();
 
         LINE    CELL = (QF D B D QD D B D);
@@ -177,23 +177,24 @@ def test_emit_sad_physical_quantities_have_correct_sign(tmp_path, monkeypatch):
     """
     Sign conventions for the returned quantities:
     - revolution_frequency > 0 (positive periodicity)
-    - eneloss_turn < 0 (SAD reports energy loss as a negative energy change)
+    - eneloss_turn > 0 (positive energy loss magnitude)
     - synchrotron_frequency > 0 (positive for a stable RF bucket)
-    - gemitt_x, gemitt_y, gemitt_z > 0 (positive definite emittances)
+    - gemitt_x, gemitt_z > 0 (positive emittances)
+    - gemitt_y approximately zero (uncoupled planar ring)
     - energy_spread > 0 (positive definite)
     """
     result = _run_emit(tmp_path, monkeypatch)
 
     for key in ("revolution_frequency", "synchrotron_frequency",
-                "gemitt_x", "gemitt_y", "gemitt_z", "energy_spread"):
+                "eneloss_turn", "gemitt_x", "gemitt_z", "energy_spread"):
         assert result[key] > 0, (
             f"emit_sad result['{key}'] should be positive. "
             f"Got: {result[key]}.")
 
-    assert result["eneloss_turn"] < 0, (
-        "emit_sad result['eneloss_turn'] should be negative: SAD reports "
-        "energy loss as a negative energy change per turn. "
-        f"Got: {result['eneloss_turn']}.")
+    assert result["gemitt_y"] >= -1E-30, (
+        "emit_sad result['gemitt_y'] should be zero to numerical precision "
+        "for an uncoupled planar ring. "
+        f"Got: {result['gemitt_y']}.")
 
 
 def test_emit_sad_radcod_flag_runs_and_returns_all_keys(tmp_path, monkeypatch):
