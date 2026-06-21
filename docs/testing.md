@@ -52,7 +52,7 @@ has its own README with per-file coverage tables and known-failure documentation
 | `ci/` | No | Workflow configuration correctness |
 | `observability/` | Mixed | Output suppression, quiet mode, and helper output policy |
 
-Total collected: **1176 tests** (1033 pass, 143 currently failing) as of
+Total collected: **1184 tests** (1041 pass, 143 currently failing) as of
 this branch. See `tests/README.md` for the breakdown by failure group.
 
 Large end-to-end lattice tests are useful, but they should not be the only
@@ -82,6 +82,18 @@ intermediate dictionaries.
 
 The suite contains 143 currently failing tests, split into two groups:
 
+Tests associated with open issues receive the `known_issue` marker during
+collection from `tests/support/known_issues.py`. They are not `xfail` tests:
+they execute and report ordinary failures. CI runs unmarked tests as the
+blocking regression gate and marked tests in a visible non-blocking job.
+
+Local selections use:
+
+```bash
+pytest -m "not known_issue"  # blocking regression selection
+pytest -m "known_issue"      # tests documenting open issues
+```
+
 **Group A (17 tests)** — known writer bugs, tracked as open issues:
 - Issue #17: `knl`/`ksl` not written for quad, sext, and oct elements
 - Issue #62: aperture dimensions written as literal numbers rather than live expressions
@@ -92,14 +104,17 @@ These tests are the spec for the fix work that follows. They must not be
 modified to pass artificially — they are the record of what is broken and what
 needs to be done.
 
+All 143 currently failing instances are linked to open issues; combined
+rectangular-and-elliptical aperture conversion is tracked by issue #66.
+
 ## SAD Dependency
 
 The test suite requires SAD for conversion and helper tests. Parser, writer,
 packaging, CI, and converter quiet-mode tests do not invoke the SAD executable.
 
-CI runs the suite in two sequential jobs: `sad-free` tests run first so
-structural and packaging failures are reported immediately without waiting for
-SAD. `sad-required` tests run only after `sad-free` passes.
+CI uses two blocking regression jobs and one non-blocking known-issues job.
+`sad-free` runs first; `sad-required` follows only when that regression gate
+passes. The known-issues job runs independently and retains full failure output.
 
 Do not rely on filename ordering to ensure that SAD installation tests run
 before other tests. The explicit job dependency in `run_tests.yml` handles this.

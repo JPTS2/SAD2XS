@@ -21,7 +21,8 @@ files these are equal; for heavily parametrised files (sol, corrector, bend)
 the fail instance count exceeds the failing function count.
 
 Tests that currently fail document known converter bugs. They must not be
-modified to pass artificially.
+modified to pass artificially. Tests linked to open issues are selected through
+the central `known_issue` mapping; this marker changes CI routing, not outcomes.
 
 Total collected from this folder: see `tests/README.md`.
 

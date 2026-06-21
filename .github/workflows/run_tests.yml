@@ -26,15 +26,15 @@ concurrency:
   cancel-in-progress: true
 
 ################################################################################
-# SAD-free tests
+# SAD-free regression tests — BLOCKING
 # Covers: packaging, CI config, parser, and writer.
 # Does not invoke the SAD executable. Runs first so structural and packaging
 # failures are reported immediately without waiting for Docker or SAD.
+# Excludes tests marked @known_issue so only clean regressions block the gate.
 ################################################################################
 jobs:
   sad-free:
     runs-on: ubuntu-24.04
-    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -55,7 +55,7 @@ jobs:
       - name: Pull SAD image
         run: docker pull "$IMAGE"
 
-      - name: Run SAD-free tests
+      - name: Run SAD-free regression tests
         env:
           SKIP_SMOKE: "1"
         run: |
@@ -63,7 +63,7 @@ jobs:
             -e SKIP_SMOKE \
             -v "$GITHUB_WORKSPACE":/work -w /work \
             "$IMAGE" \
-            pytest -ra -q \
+            pytest -ra -q -m "not known_issue" \
               tests/packaging \
               tests/ci \
               tests/observability/test_quiet_converter_output.py \
@@ -71,10 +71,11 @@ jobs:
               tests/writer
 
 ################################################################################
-# SAD-required tests
+# SAD-required regression tests — BLOCKING
 # Covers: conversion, SAD helpers, observability (SAD output), examples, and
 # installation. Runs only after sad-free passes, so a SAD/Xsuite version
 # breakage is clearly isolated from structural failures.
+# Excludes tests marked @known_issue so only clean regressions block the gate.
 ################################################################################
   sad-required:
     needs: [sad-free]
@@ -99,7 +100,7 @@ jobs:
       - name: Pull SAD image
         run: docker pull "$IMAGE"
 
-      - name: Run SAD-required tests
+      - name: Run SAD-required regression tests
         env:
           SKIP_SMOKE: "1"
         run: |
@@ -107,9 +108,49 @@ jobs:
             -e SKIP_SMOKE \
             -v "$GITHUB_WORKSPACE":/work -w /work \
             "$IMAGE" \
-            pytest -ra -q \
+            pytest -ra -q -m "not known_issue" \
               tests/conversion \
               tests/sad_helpers \
               tests/observability \
               tests/examples \
               tests/installation
+
+################################################################################
+# Known-issue tests — NON-BLOCKING
+# Runs all tests marked @known_issue(N) against the full SAD environment.
+# continue-on-error: true so failures here never block sad-required or PRs.
+# Full failure output is preserved — these are real failures, not expected passes.
+################################################################################
+  known-issues:
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute image name (lowercase owner)
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE=ghcr.io/${OWNER_LC}/sad2xs-sad:latest" >> "$GITHUB_ENV"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull SAD image
+        run: docker pull "$IMAGE"
+
+      - name: Run known-issue tests
+        env:
+          SKIP_SMOKE: "1"
+        run: |
+          docker run --rm \
+            -e SKIP_SMOKE \
+            -v "$GITHUB_WORKSPACE":/work -w /work \
+            "$IMAGE" \
+            pytest -ra -q -m "known_issue" \
+              tests/

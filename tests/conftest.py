@@ -18,6 +18,8 @@ Date:       2026-06-21
 import sys
 from pathlib import Path
 
+import pytest
+
 ################################################################################
 # Test Import Path
 ################################################################################
@@ -25,3 +27,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+
+from tests.support.known_issues import known_issue_for
+
+
+def pytest_itemcollected(item):
+    """Mark issue-linked tests before pytest evaluates marker selections."""
+    issue = known_issue_for(item.nodeid)
+    if issue is not None:
+        item.add_marker(pytest.mark.known_issue(issue))

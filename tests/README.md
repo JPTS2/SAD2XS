@@ -36,14 +36,13 @@ signal upstream Xsuite or SAD API changes that require attention.
 
 ## CI
 
-Two CI workflows run tests automatically:
+The master workflow separates merge-blocking regression coverage from visible
+tests for open issues:
 
-- `run_tests.yml` — master workflow. Triggered on pull requests to `main` and
-  `release/**`, and on a weekly schedule (every Monday). Runs two sequential
-  jobs: `sad-free` (packaging, ci, parser, writer, and converter quiet tests)
-  followed by `sad-required` (conversion, sad_helpers, observability helpers,
-  examples, and installation). The sequential ordering ensures that structural
-  failures are reported before slower SAD-dependent tests run.
+- `run_tests.yml` — master workflow. Its blocking `sad-free` and `sad-required`
+  jobs run tests selected by `-m "not known_issue"`. A parallel, non-blocking
+  `known-issues` job runs `-m "known_issue"` normally so full failure output
+  remains visible without masking new regressions.
 
 - Per-folder workflows — one workflow per test folder, all manually triggerable
   via `workflow_dispatch`. Allow targeted re-runs of one area without waiting
@@ -95,13 +94,17 @@ Artifact paths should mirror the test area that produced them, for example
 
 ## Test Counts
 
-Total collected: **1176 tests** (1033 pass, 143 fail) as of the test run on
+Total collected: **1184 tests** (1041 pass, 143 fail) as of the test run on
 this branch. The breakdown by failure group is in the Known Failures section
 below. Individual folder READMEs document per-file counts.
 
 ## Known Failures
 
 The test suite contains currently failing tests that document known bugs. These fall into two groups:
+
+Tests linked to open issues are marked during collection from the central
+mapping in `tests/support/known_issues.py`. They remain ordinary failing tests;
+the marker controls CI selection only and does not use `xfail`.
 
 **Group A — Documented writer issues:** 17 tests (16 in `writer/elements/`, 1
 in `writer/pipeline/`) that expose known writer bugs tracked as issues #17
@@ -114,6 +117,9 @@ These tests must remain failing until the corresponding issues are fixed.
 known incorrect behaviour in the production code. These tests are the spec for
 the fix work that follows this PR. They must not be modified to pass — they are
 the record of what is broken and what needs to be done.
+
+All 143 currently failing instances are linked to open issues. Combined
+rectangular-and-elliptical aperture conversion is tracked by issue #66.
 
 Never modify a failing test to make it pass artificially. Fix the root cause.
 If you add a test that documents a known bug, record it in the relevant folder

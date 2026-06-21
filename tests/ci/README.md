@@ -34,7 +34,7 @@ string `"on"`. All trigger access uses a `_triggers(data)` helper that checks
 
 ## Coverage
 
-### `test_workflow_checkout_refs.py` — 17 test functions, ~45 instances, all expected to pass
+### `test_workflow_checkout_refs.py` — 23 test functions, ~53 instances, all expected to pass
 
 **Template tests (7, not parametrised):**
 - Template has `workflow_call` trigger (required for per-folder delegation)
@@ -58,6 +58,12 @@ Parametrised over all 9 per-folder workflows (`test_packaging.yml`,
 - `run_tests.yml` has a `pull_request` trigger (catches regressions before merge)
 - `run_tests.yml` has a `schedule` trigger (weekly runs for upstream breakage)
 - `run_tests.yml` has a `workflow_dispatch` trigger (manual re-runs)
+
+**Regression-gate tests (6 functions, 8 instances):**
+- SAD-free and SAD-required jobs select `not known_issue`
+- The known-issues job selects `known_issue` and is non-blocking
+- Both regression jobs remain blocking
+- All three jobs check out the triggering commit without a `ref` override
 
 **Docker build tests (4, not parametrised):**
 - `docker-build.yml` name is stable and documented

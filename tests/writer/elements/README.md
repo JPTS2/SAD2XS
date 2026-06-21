@@ -8,6 +8,9 @@ Each file tests the roundtrip contract for that element type: build an
 `sad2xs.write_lattice` and `sad2xs.write_optics`, reload in a clean Xsuite
 environment, and assert that all supported fields are preserved.
 
+Issue-linked failures receive the centrally managed `known_issue` marker. They
+remain ordinary failures and are routed to the non-blocking CI job.
+
 ## Coverage
 
 - `test_drift_writer.py` — `xt.Drift`: length

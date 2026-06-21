@@ -89,5 +89,5 @@ This is not equivalently supported in Xsuite.
 [![Run Tests](https://github.com/JPTS2/sad2xs/actions/workflows/run_tests.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/run_tests.yml)
 
 The test suite covers parser, converter elements, conversion pipeline, writer,
-SAD helpers, examples, installation, packaging, and CI configuration — 1176
+SAD helpers, examples, installation, packaging, and CI configuration — 1184
 tests in total. See [docs/testing.md](docs/testing.md) for full details.
