@@ -19,7 +19,8 @@ formatting, or SAD helper command construction. Those behaviours belong in
 Many parser tests cover planned or partially-implemented behaviour. Tests
 written for features not yet implemented in the parser currently fail —
 they document the parser's current limitations and must not be modified to
-hide known failures.
+hide known failures. Issue-linked cases receive the `known_issue` marker from
+the central mapping and run in CI as ordinary failures.
 
 **Functions** is the count of `def test_` entries in the file. **Fail** is
 actual failing instances from the test run. `test_errors.py` is parametrised

@@ -59,6 +59,13 @@ def _checkout_step(steps):
     return None
 
 
+def _job_run_text(data, job_name):
+    """Return all shell commands configured for a workflow job."""
+    job = data.get("jobs", {}).get(job_name, {})
+    return "\n".join(
+        step["run"] for step in job.get("steps", []) if "run" in step)
+
+
 def _triggers(data):
     """
     Return the triggers dict from a workflow, handling PyYAML's treatment of
@@ -259,6 +266,45 @@ def test_ci_run_all_workflow_has_workflow_dispatch_trigger():
     data = _load(RUN_ALL_PATH)
     assert "workflow_dispatch" in _triggers(data), (
         "run_tests.yml should have a 'workflow_dispatch' trigger.")
+
+
+################################################################################
+# Run-all workflow — regression gate and known issues
+################################################################################
+def test_ci_sad_free_job_excludes_known_issues():
+    data = _load(RUN_ALL_PATH)
+    assert 'not known_issue' in _job_run_text(data, "sad-free")
+
+
+def test_ci_sad_required_job_excludes_known_issues():
+    data = _load(RUN_ALL_PATH)
+    assert 'not known_issue' in _job_run_text(data, "sad-required")
+
+
+def test_ci_known_issues_job_selects_only_known_issues():
+    data = _load(RUN_ALL_PATH)
+    run_text = _job_run_text(data, "known-issues")
+    assert 'known_issue' in run_text
+    assert 'not known_issue' not in run_text
+
+
+def test_ci_only_known_issues_job_is_non_blocking():
+    data = _load(RUN_ALL_PATH)
+    assert data["jobs"]["known-issues"].get("continue-on-error") is True
+
+
+def test_ci_regression_jobs_are_blocking():
+    data = _load(RUN_ALL_PATH)
+    for job_name in ("sad-free", "sad-required"):
+        assert not data["jobs"][job_name].get("continue-on-error", False)
+
+
+@pytest.mark.parametrize("job_name", ["sad-free", "sad-required", "known-issues"])
+def test_ci_run_all_jobs_do_not_override_checkout_ref(job_name):
+    data = _load(RUN_ALL_PATH)
+    step = _checkout_step(data["jobs"][job_name]["steps"])
+    assert step is not None
+    assert step.get("with", {}).get("ref") is None
 
 
 ################################################################################
