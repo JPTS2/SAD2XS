@@ -24,8 +24,8 @@ silenced without a controlled replacement.
 # Required Packages
 ################################################################################
 import inspect
-import textwrap
 
+from tests.support.lattices import write_minimal_transfer_lattice
 from sad2xs.sad_helpers import (
     chromaticity_sad,
     emit_sad,
@@ -34,28 +34,6 @@ from sad2xs.sad_helpers import (
     track_sad,
     transfer_matrix_sad,
     twiss_sad)
-
-################################################################################
-# Helpers
-################################################################################
-def _write_minimal_transfer_lattice(tmp_path):
-    """
-    Write a minimal SAD transfer-line lattice. Returns (filename, line_name)
-    for use as twiss_sad / survey_sad arguments after monkeypatch.chdir.
-    """
-    lattice_path = tmp_path / "observ_helper_lattice.sad"
-    lattice_path.write_text(textwrap.dedent("""\
-        MOMENTUM    = 1.0 GEV;
-
-        DRIFT       OBS_DRIFT   = (L = 1.0);
-
-        MARK        START       = ()
-                    END         = ();
-
-        LINE        TEST_LINE   = (START OBS_DRIFT END);
-        """))
-    return lattice_path.name, "TEST_LINE"
-
 
 ################################################################################
 # Output suppression gap — signature checks
@@ -144,7 +122,7 @@ def test_twiss_sad_produces_stdout_output(monkeypatch, capsys, tmp_path):
     change that accidentally silences all output is caught.
     """
     monkeypatch.chdir(tmp_path)
-    filename, line_name = _write_minimal_transfer_lattice(tmp_path)
+    filename, line_name = write_minimal_transfer_lattice(tmp_path)
 
     twiss_sad(
         lattice_filepath = filename,
@@ -164,7 +142,7 @@ def test_survey_sad_produces_stdout_output(monkeypatch, capsys, tmp_path):
     baseline documentation as test_twiss_sad_produces_stdout_output.
     """
     monkeypatch.chdir(tmp_path)
-    filename, line_name = _write_minimal_transfer_lattice(tmp_path)
+    filename, line_name = write_minimal_transfer_lattice(tmp_path)
 
     survey_sad(
         lattice_filepath = filename,
