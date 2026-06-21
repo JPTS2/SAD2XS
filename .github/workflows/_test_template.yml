@@ -89,4 +89,7 @@ jobs:
             -e SKIP_SMOKE \
             -v "$GITHUB_WORKSPACE":/work -w /work \
             "${{ steps.pull.outputs.image_ref }}" \
-            pytest -q "${{ matrix.test_file }}"
+            bash -lc '
+              python -m pip install --no-cache-dir -e . &&
+              pytest -q "${{ matrix.test_file }}"
+            '

@@ -66,6 +66,14 @@ def _job_run_text(data, job_name):
         step["run"] for step in job.get("steps", []) if "run" in step)
 
 
+def _step_by_name(data, job_name, step_name):
+    """Return a named workflow step, or None when it is absent."""
+    for step in data.get("jobs", {}).get(job_name, {}).get("steps", []):
+        if step.get("name") == step_name:
+            return step
+    return None
+
+
 def _triggers(data):
     """
     Return the triggers dict from a workflow, handling PyYAML's treatment of
@@ -273,12 +281,16 @@ def test_ci_run_all_workflow_has_workflow_dispatch_trigger():
 ################################################################################
 def test_ci_sad_free_job_excludes_known_issues():
     data = _load(RUN_ALL_PATH)
-    assert 'not known_issue' in _job_run_text(data, "sad-free")
+    run_text = _job_run_text(data, "sad-free")
+    assert 'not known_issue' in run_text
+    assert 'pip install --no-cache-dir -e .' in run_text
 
 
 def test_ci_sad_required_job_excludes_known_issues():
     data = _load(RUN_ALL_PATH)
-    assert 'not known_issue' in _job_run_text(data, "sad-required")
+    run_text = _job_run_text(data, "sad-required")
+    assert 'not known_issue' in run_text
+    assert 'pip install --no-cache-dir -e .' in run_text
 
 
 def test_ci_known_issues_job_selects_only_known_issues():
@@ -286,11 +298,16 @@ def test_ci_known_issues_job_selects_only_known_issues():
     run_text = _job_run_text(data, "known-issues")
     assert 'known_issue' in run_text
     assert 'not known_issue' not in run_text
+    assert 'pip install --no-cache-dir -e .' in run_text
 
 
 def test_ci_only_known_issues_job_is_non_blocking():
     data = _load(RUN_ALL_PATH)
-    assert data["jobs"]["known-issues"].get("continue-on-error") is True
+    job = data["jobs"]["known-issues"]
+    assert not job.get("continue-on-error", False)
+    step = _step_by_name(data, "known-issues", "Run known-issue tests")
+    assert step is not None
+    assert step.get("continue-on-error") is True
 
 
 def test_ci_regression_jobs_are_blocking():
