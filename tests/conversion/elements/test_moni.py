@@ -137,7 +137,8 @@ def test_moni_pipeline_preserves_monitor_names(write_lattice):
 ########################################
 def test_moni_conversion_matches_sad_zero_length_line(write_lattice, tmp_path):
     """
-    A MONI-only line should remain zero length in SAD and Xsuite.
+    MONI elements should contribute zero length — SAD and Xsuite should agree
+    on the total line length, which equals only the drift length.
     """
     cwd = os.getcwd()
     os.chdir(tmp_path)
@@ -147,10 +148,13 @@ def test_moni_conversion_matches_sad_zero_length_line(write_lattice, tmp_path):
             """\
             MOMENTUM    = 1.0 GEV;
 
-            MONI        START       = ()
+            DRIFT       D1          = (L = 1.0);
+            MONI        BPM_1       = ()
+                        BPM_2       = ();
+            MARK        START       = ()
                         END         = ();
 
-            LINE        TEST_LINE   = (START END);
+            LINE        TEST_LINE   = (START BPM_1 D1 BPM_2 END);
             """,
             filename = "moni_zero_length_line.sad")
 
@@ -180,4 +184,5 @@ def test_moni_conversion_matches_sad_zero_length_line(write_lattice, tmp_path):
         xs_final_s,
         rtol = DELTA_S_RTOL,
         atol = DELTA_S_ATOL), (
-        "MONI-only conversion should preserve the zero-length SAD line.")
+        "MONI elements should contribute zero length — SAD and Xsuite total "
+        "line lengths should agree.")

@@ -2,9 +2,65 @@
 
 This folder contains conversion tests for individual SAD element families.
 
-Each file should protect one element mnemonic or one tightly related group.
-The usual progression is direct converter checks, full conversion pipeline
-checks, then SAD optics or tracking comparisons where relevant.
+Each file covers one element mnemonic or one tightly related element group.
+The usual progression within a file is: direct converter checks (calling the
+element converter with a parsed element dictionary and asserting on the produced
+Xsuite object), full pipeline checks (calling `convert_sad_to_xsuite` and
+asserting on the resulting line), then SAD optics and tracking comparisons
+where relevant.
 
-Shared element fixtures live in `conftest.py`. Cross-file support should live
-in `tests/support/` rather than being copied between element files.
+Shared fixtures live in `conftest.py`. Cross-file support belongs in
+`tests/support/` rather than being copied between element files.
+
+## Coverage
+
+**Functions** is the count of `def test_` entries in the file. Parametrised
+tests expand to more instances at runtime — the **Fail** column is actual
+failing instances from the test run, not failing functions. For non-parametrised
+files these are equal; for heavily parametrised files (sol, corrector, bend)
+the fail instance count exceeds the failing function count.
+
+Expected failures are tests written to document known converter bugs. They are
+intentionally failing and must not be modified to pass artificially.
+
+Total collected from this folder: see `tests/README.md`.
+
+| File | Functions | Fail | Failure root cause |
+|------|-----------|------|--------------------|
+| `test_aper.py` | 19 | 4 | `ROTATE` not preserved; combined rect+ellipse conversion unsupported |
+| `test_beambeam.py` | 5 | 0 | — |
+| `test_bend.py` | 23 | 10 | `k0 = angle/length` conversion wrong; symbolic length/angle; thin bend; element offsets |
+| `test_cavi.py` | 10 | 6 | SAD uses phase (`PHI`), converter sets lag; harmonic-driven cavity not converted correctly |
+| `test_coord.py` | 10 | 3 | `DX`/`DY` sign convention wrong in converter |
+| `test_corrector.py` | 18 | 16 | Corrector physics incorrect — optics and tracking both wrong for kicks, rotations, offsets |
+| `test_drift.py` | 6 | 2 | Symbolic variable support not implemented (parametric drift length) |
+| `test_mark.py` | 5 | 0 | — |
+| `test_moni.py` | 5 | 0 | — |
+| `test_mult.py` | 12 | 2 | Combined multipole orders — cross-order physics wrong |
+| `test_oct.py` | 15 | 3 | Symbolic variable support; thin octupole to `xt.Multipole` conversion |
+| `test_quad.py` | 15 | 5 | Symbolic variable support; thin quadrupole; rotation tracking |
+| `test_sext.py` | 15 | 3 | Symbolic variable support; thin sextupole to `xt.Multipole` conversion |
+| `test_sol.py` | 18 | 42 | `xt.Translation` API change; solenoid reference transform physics |
+
+### `test_sol.py` note
+
+The solenoid tests are the most extensive in this folder. 18 test functions
+expand to 42 failing instances at runtime because three parametrised functions
+carry a full matrix of perturbation types (`dxdy`, `dpx`, `dpy`,
+`dxdy_dpx_dpy`, `dxdy_chi1_chi2`) crossed with reversal modes (`forward`,
+`rev_in`, `rev_out`, `rev_both`). All 42 instances fail — the test structure
+is complete and correct; the failures document the production code work required.
+
+### `test_corrector.py` note
+
+16 failing instances come from 8 test functions, each parametrised over kick
+sign or offset direction (2–3 parameter values each). Optics and tracking both
+fail for horizontal kicks, thin kicks, rotated kicks, and element offsets,
+confirming the corrector physics is broadly wrong in the converter.
+
+## Shared Fixtures
+
+`conftest.py` provides:
+- `xsuite_environment` — a fresh `xt.Environment` for direct converter tests
+- `parsed_elements` — helper for constructing minimal parsed element dictionaries
+- `assert_environment_element` — assertion helper for environment element contents

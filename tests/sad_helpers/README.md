@@ -14,10 +14,10 @@ in `tests/conversion/`.
 |------|-------------|-------|-----------------|
 | `test_twiss_sad.py` | `twiss_sad`, `compute_second_order_dispersions`, `compute_chromatic_functions`, `generate_twiss_print_function` | 20 | Minimal transfer-line (1 m drift, START/END markers); minimal bend (0.1 rad BEND) |
 | `test_survey_sad.py` | `survey_sad`, `generate_survey_print_function` | 15 | Same transfer-line and bend lattices |
-| `test_emit_sad.py` | `emit_sad` | 6 | 4-cell FODO ring with RF (45° bends, ρ = 1 m, K1 = 1.5) |
+| `test_emit_sad.py` | `emit_sad` | 6 | 4-cell FODO ring with RF (45° bends, ρ = 1 m, K1 = ±0.2) |
 | `test_chromaticity_sad.py` | `chromaticity_sad`, `generate_off_momentum_tune_function` | 11 | Same 4-cell FODO ring without RF |
 | `test_transfer_matrix_sad.py` | `transfer_matrix_sad` | 8 | Minimal transfer-line |
-| `test_track_sad.py` | `track_sad` | 9 | Minimal transfer-line |
+| `test_track_sad.py` | `track_sad` | 12 | Minimal transfer-line |
 | `test_rebuild_lattice.py` | `rebuild_sad_lattice` | 6 | Minimal transfer-line |
 
 ## Lattice fixture notes

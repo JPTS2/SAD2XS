@@ -1,7 +1,7 @@
 # SAD2XS Test Suite
 
-This directory contains the public tests, test support modules, local test data,
-and diagnostic artifacts for SAD2XS.
+This directory contains the public tests, test support modules, local test
+data, and diagnostic artifacts for SAD2XS.
 
 The suite is organised by responsibility. New tests should be placed in the
 narrowest folder that describes the behaviour being protected.
@@ -10,59 +10,111 @@ narrowest folder that describes the behaviour being protected.
 
 The SAD2XS converter is validated against SAD, so the test suite is expected to
 run in an environment where the SAD executable and the Python project
-dependencies are available.
+dependencies (`xtrack`, `numpy`, `pyyaml`) are available.
 
-Some tests, especially parser and packaging tests, do not invoke SAD directly.
-They still live inside the same SAD-capable suite so that local and CI runs use
-one consistent environment.
+Some tests — notably `parser/`, `writer/`, `packaging/`, `ci/`, and the
+converter quiet-mode tests in `observability/` — do not invoke the SAD
+executable. They still live inside the same environment so that local and CI
+runs are consistent.
+
+## Running Tests
+
+`pytest.ini` at the repository root sets `testpaths = tests` so that running
+`pytest` from the root directory collects and runs the full suite without
+arguments. The `-ra` flag is set by default, which prints a short summary of
+all non-passing tests at the end of the run.
+
+To run a single folder:
+
+```
+pytest tests/writer/ -v
+pytest tests/conversion/elements/ -v
+```
+
+Deprecation warnings are shown by default. Do not suppress them — they often
+signal upstream Xsuite or SAD API changes that require attention.
+
+## CI
+
+Two CI workflows run tests automatically:
+
+- `run_tests.yml` — master workflow. Triggered on pull requests to `main` and
+  `release/**`, and on a weekly schedule (every Monday). Runs two sequential
+  jobs: `sad-free` (packaging, ci, parser, writer, and converter quiet tests)
+  followed by `sad-required` (conversion, sad_helpers, observability helpers,
+  examples, and installation). The sequential ordering ensures that structural
+  failures are reported before slower SAD-dependent tests run.
+
+- Per-folder workflows — one workflow per test folder, all manually triggerable
+  via `workflow_dispatch`. Allow targeted re-runs of one area without waiting
+  for the full suite.
+
+Both CI setups use the Docker image built by `docker-build.yml`, which packages
+the SAD executable and all Python dependencies.
 
 ## Folder Map
 
-- `parser/`: SAD text parsing and parser-owned expression conversion.
-- `conversion/`: SAD-to-Xsuite conversion behaviour.
-- `conversion/elements/`: conversion tests for individual SAD element families.
-- `conversion/pipeline/`: public conversion entry points and user options.
-- `writer/`: generated lattice and optics writer behaviour.
-- `writer/elements/`: element-specific serialisation.
-- `writer/features/`: writer behaviour that crosses element families.
-- `writer/pipeline/`: whole-writer entry points and supported-element policy.
-- `sad_helpers/`: tests for `sad2xs.sad_helpers` command construction,
-  temporary-file handling, SAD output parsing, and smoke behaviour.
-- `examples/`: tests for public examples and example lattices.
-- `installation/`: installer and installation helper tests, plus
-  installation-specific SAD smoke-test input data.
-- `packaging/`: package metadata, import boundary, and release metadata tests.
-- `ci/`: tests for repository CI workflow configuration.
-- `observability/`: tests for terminal output, quiet mode, and logging policy.
-- `support/`: reusable test support modules. These are not test files.
-- `artifacts/`: generated diagnostic Markdown reports from selected physics
-  comparison tests.
+| Folder | Requires SAD | Contents |
+|--------|-------------|----------|
+| `parser/` | No | SAD text parsing and expression conversion |
+| `conversion/` | Yes | SAD-to-Xsuite conversion; element and pipeline sub-tests |
+| `conversion/elements/` | Yes | Per-element-family conversion tests |
+| `conversion/pipeline/` | Yes | Public conversion options and pipeline behaviour |
+| `writer/` | No | Generated lattice and optics writer behaviour |
+| `writer/elements/` | No | Per-element-family serialisation roundtrip tests |
+| `writer/pipeline/` | No | Whole-writer entry points and supported-element policy |
+| `sad_helpers/` | Yes | `sad2xs.sad_helpers` — command construction, output parsing, smoke tests |
+| `examples/` | Yes | Public example lattice conversion, write+reload, and script contracts |
+| `installation/` | Yes | macOS installer, SAD executable smoke test |
+| `packaging/` | No | Package metadata format and public API surface |
+| `ci/` | No | GitHub Actions workflow structural and target-path contracts |
+| `observability/` | Mixed | Converter quiet mode (no SAD); helper output policy (SAD required) |
+| `support/` | — | Reusable support modules — not test files |
+| `artifacts/` | — | Generated Markdown diagnostic reports (git-ignored) |
 
 ## Naming
 
-Use descriptive test filenames. Existing numbered names are retained where they
-come from historical examples, but new tests should not rely on filename order
-for execution.
-
-Element-specific tests may use SAD element mnemonics when that is clearer for
-the converter contract, for example `cavi`, `aper`, `moni`, and `sol`.
+Use descriptive test filenames. Element-specific tests may use SAD element
+mnemonics when that is clearer for the converter contract — for example
+`cavi`, `aper`, `moni`, and `sol`.
 
 For large element families, a subfolder is acceptable, but do not add
-per-element folders by default unless the test set is large enough to justify
-the extra navigation.
+per-element subfolders by default unless the test set is large enough to
+justify the extra navigation.
 
 ## Diagnostic Artifacts
 
 Physics comparison tests may write deterministic Markdown reports under
 `tests/artifacts/`. These generated reports are ignored by Git, except for the
-folder README. They are intended to make failures inspectable: they include the
-SAD lattice, tested parameters, SAD and Xsuite values, and tolerance summaries.
+folder README. They are intended to make failures inspectable without long test
+logs: they include the SAD lattice, tested parameters, SAD and Xsuite values,
+and tolerance summaries.
 
 Artifact paths should mirror the test area that produced them, for example
 `tests/artifacts/conversion/elements/sol/`.
 
-## Transitional Notes
+## Test Counts
 
-The test tree is being reorganised. Placeholder files in incomplete folders are
-intentional markers for planned coverage and should be filled or removed as the
-associated issues are tackled.
+Total collected: **1176 tests** (1031 pass, 145 fail) as of the test run on
+this branch. The breakdown by failure group is in the Known Failures section
+below. Individual folder READMEs document per-file counts.
+
+## Known Failures
+
+The test suite contains intentionally failing tests. These fall into two groups:
+
+**Group A — Documented writer issues:** 17 tests in `writer/elements/` that
+expose known writer bugs tracked as issues #17 (knl/ksl not written for
+quad/sext/oct), #62 (aperture dimensions not written as live expressions), and
+#63 (k1 not written for combined-function bends). These tests must remain
+failing until the corresponding issues are fixed.
+
+**Group B — Exposing production bugs:** approximately 128 tests across
+`parser/`, `conversion/elements/`, and `conversion/pipeline/` that document
+known incorrect behaviour in the production code. These tests are the spec for
+the fix work that follows this PR. They must not be modified to pass — they are
+the record of what is broken and what needs to be done.
+
+Never modify a failing test to make it pass artificially. Fix the root cause,
+or if the failure is intentional and expected, document it in the relevant
+folder README.

@@ -60,6 +60,24 @@ def _write_lattice_only(line, tmp_path, filename, header = "Lattice writer test"
     return output_dir, output_dir / f"{filename}.py"
 
 
+def _build_line_with_length():
+    """
+    Build a line containing a 2 m drift so that line.get_length() returns a
+    positive value. Used by offset-marker tests where the generated code calls
+    line.get_length() to compute the remaining length before insertion.
+    """
+    line = xt.Line(
+        elements      = [xt.Marker(), xt.Drift(length = 2.0), xt.Marker()],
+        element_names = ["start", "d1", "end"])
+
+    line.particle_ref = xt.Particles(
+        p0c   = 1.0E9,
+        q0    = -1.0,
+        mass0 = xt.ELECTRON_MASS_EV)
+
+    return line
+
+
 ################################################################################
 # write_lattice Tests
 ################################################################################
@@ -118,3 +136,91 @@ def test_lattice_writer_output_is_executable_python(tmp_path):
     assert "line" in env.lines, (
         "Calling the lattice file should register a line named 'line' in "
         "the Xsuite environment.")
+
+
+################################################################################
+# write_lattice Offset Marker Tests
+################################################################################
+def test_lattice_writer_offset_markers_section_is_written(tmp_path):
+    """
+    When offset_marker_locations is a non-empty dict, write_lattice should
+    include a MARKER_POSITIONS block in the output file, with the marker name
+    and s-position listed. This tests the branch at the end of write_lattice
+    that is skipped when offset_marker_locations=None.
+    """
+    line        = _build_line_with_length()
+    output_dir  = tmp_path / "writer_output"
+    output_dir.mkdir()
+    output_path = output_dir / "test_lattice.py"
+
+    s2x.write_lattice(
+        line                    = line,
+        output_filename         = "test_lattice",
+        output_directory        = str(output_dir),
+        output_header           = "Offset marker content test",
+        offset_marker_locations = {"obs0": [1.0]},
+        config                  = Config(_verbose = False))
+
+    content = output_path.read_text(encoding = "utf-8")
+    assert "MARKER_POSITIONS" in content, (
+        "write_lattice with a non-empty offset_marker_locations should write "
+        "a MARKER_POSITIONS block. File content starts with: "
+        f"{content[:300]!r}.")
+    assert "obs0" in content, (
+        "write_lattice should include the marker name 'obs0' inside the "
+        "MARKER_POSITIONS block.")
+
+
+def test_lattice_writer_empty_offset_markers_omits_section(tmp_path):
+    """
+    When offset_marker_locations is an empty dict, the offset markers writer
+    short-circuits and returns an empty string, so no MARKER_POSITIONS block
+    should appear in the output file.
+    """
+    line        = _build_line_with_length()
+    output_dir  = tmp_path / "writer_output"
+    output_dir.mkdir()
+    output_path = output_dir / "test_lattice.py"
+
+    s2x.write_lattice(
+        line                    = line,
+        output_filename         = "test_lattice",
+        output_directory        = str(output_dir),
+        output_header           = "Empty offset marker test",
+        offset_marker_locations = {},
+        config                  = Config(_verbose = False))
+
+    content = output_path.read_text(encoding = "utf-8")
+    assert "MARKER_POSITIONS" not in content, (
+        "write_lattice with an empty offset_marker_locations dict should not "
+        "write a MARKER_POSITIONS block. File content starts with: "
+        f"{content[:300]!r}.")
+
+
+def test_lattice_writer_offset_markers_output_is_executable(tmp_path):
+    """
+    A lattice file written with a non-empty offset_marker_locations and
+    _install_offset_markers=False (dict-only form, no insertion code) should
+    be callable via env.call() without raising an exception. This confirms
+    that the MARKER_POSITIONS dict is syntactically valid Python and that
+    line.get_length() is callable in the generated file context.
+    """
+    line        = _build_line_with_length()
+    output_dir  = tmp_path / "writer_output"
+    output_dir.mkdir()
+    output_path = output_dir / "test_lattice.py"
+
+    s2x.write_lattice(
+        line                    = line,
+        output_filename         = "test_lattice",
+        output_directory        = str(output_dir),
+        output_header           = "Offset marker executable test",
+        offset_marker_locations = {"obs0": [1.0]},
+        config                  = Config(_verbose = False, _install_offset_markers = False))
+
+    env = xt.Environment()
+    env.call(str(output_path))
+
+    assert "line" in env.lines, (
+        "Calling a lattice file written with offset_marker_locations should "
+        "still register 'line' in the Xsuite environment.")

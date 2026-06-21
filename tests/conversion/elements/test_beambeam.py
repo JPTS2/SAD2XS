@@ -140,7 +140,8 @@ def test_beambeam_conversion_matches_sad_zero_length_line(
         write_lattice,
         tmp_path):
     """
-    A BEAMBEAM-only line should remain zero length in SAD and Xsuite.
+    BEAMBEAM elements should contribute zero length — SAD and Xsuite should
+    agree on the total line length, which equals only the drift length.
     """
     cwd = os.getcwd()
     os.chdir(tmp_path)
@@ -150,10 +151,13 @@ def test_beambeam_conversion_matches_sad_zero_length_line(
             """\
             MOMENTUM    = 1.0 GEV;
 
-            BEAMBEAM    START       = ()
+            DRIFT       D1          = (L = 1.0);
+            BEAMBEAM    BB_1        = ()
+                        BB_2        = ();
+            MARK        START       = ()
                         END         = ();
 
-            LINE        TEST_LINE   = (START END);
+            LINE        TEST_LINE   = (START BB_1 D1 BB_2 END);
             """,
             filename = "beambeam_zero_length_line.sad")
 
@@ -183,4 +187,5 @@ def test_beambeam_conversion_matches_sad_zero_length_line(
         xs_final_s,
         rtol = DELTA_S_RTOL,
         atol = DELTA_S_ATOL), (
-        "BEAMBEAM-only conversion should preserve the zero-length SAD line.")
+        "BEAMBEAM elements should contribute zero length — SAD and Xsuite "
+        "total line lengths should agree.")
