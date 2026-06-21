@@ -426,7 +426,7 @@ def convert_solenoids(
                     environment.element_dict[element],      # type: ignore
                     (
                         xt.XYShift,
-                        xt.ZetaShift,
+                        xt.TimeDelay,
                         xt.XRotation,
                         xt.YRotation,
                         xt.SRotation,

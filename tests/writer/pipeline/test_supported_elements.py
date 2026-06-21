@@ -204,15 +204,15 @@ def test_supported_elements_writer_handles_xy_shift(tmp_path):
     _assert_file_exists_and_is_executable(output_dir, "xy_shift")
 
 
-def test_supported_elements_writer_handles_zeta_shift(tmp_path):
+def test_supported_elements_writer_handles_timedelay(tmp_path):
     """
     write_lattice should produce an executable lattice file when the line
-    contains an xt.ZetaShift element.
+    contains an xt.TimeDelay element.
     """
-    line       = _build_single_element_line(xt.ZetaShift(dzeta = 3.0E-3), "zshift1")
-    output_dir = _write_only(line, tmp_path, "zeta_shift")
+    line       = _build_single_element_line(xt.TimeDelay(shift_zeta = 3.0E-3), "zshift1")
+    output_dir = _write_only(line, tmp_path, "timedelay")
 
-    _assert_file_exists_and_is_executable(output_dir, "zeta_shift")
+    _assert_file_exists_and_is_executable(output_dir, "timedelay")
 
 
 def test_supported_elements_writer_handles_x_rotation(tmp_path):

@@ -32,8 +32,8 @@ def _write_and_load(line, tmp_path):
     All five reference shift element types write their parameters as live optics
     expression variables. The variable name is derived from the element name:
 
-        XYShift  'rs1' -> dx_rs1, dy_rs1
-        ZetaShift 'rs1' -> dz_rs1
+        XYShift   'rs1' -> dx_rs1, dy_rs1
+        TimeDelay 'rs1' -> dz_rs1
         YRotation 'rs1' -> chi1_rs1  (SAD CHI1)
         XRotation 'rs1' -> chi2_rs1  (SAD CHI2)
         SRotation 'rs1' -> chi3_rs1  (SAD CHI3)
@@ -91,12 +91,12 @@ def _build_xyshift_line(dx = 0.0, dy = 0.0):
     return line
 
 
-def _build_zetashift_line(dzeta = 0.0):
+def _build_timedelay_line(shift_zeta = 0.0):
     """
-    Build a minimal single-ZetaShift Xsuite line with a reference particle.
+    Build a minimal single-TimeDelay Xsuite line with a reference particle.
     """
     line = xt.Line(
-        elements      = [xt.Marker(), xt.ZetaShift(dzeta = dzeta), xt.Marker()],
+        elements      = [xt.Marker(), xt.TimeDelay(shift_zeta = shift_zeta), xt.Marker()],
         element_names = ["start", "rs1", "end"])
 
     line.particle_ref = xt.Particles(
@@ -411,93 +411,93 @@ def test_refshift_writer_preserves_multiple_xyshifts_independently(tmp_path):
 
 
 ################################################################################
-# ZetaShift
+# TimeDelay
 ################################################################################
 ########################################
 # Basic Serialisation
 ########################################
-def test_refshift_writer_zetashift_reloads_as_xsuite_zetashift(tmp_path):
+def test_refshift_writer_timedelay_reloads_as_xsuite_timedelay(tmp_path):
     """
-    A written ZetaShift element should reload as an xt.ZetaShift in a clean
+    A written TimeDelay element should reload as an xt.TimeDelay in a clean
     Xsuite environment.
     """
-    original_line = _build_zetashift_line(dzeta = 1.0E-3)
+    original_line = _build_timedelay_line(shift_zeta = 1.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert isinstance(reloaded_line["rs1"], xt.ZetaShift), (
-        "Written ZetaShift element 'rs1' should reload as xt.ZetaShift. "
+    assert isinstance(reloaded_line["rs1"], xt.TimeDelay), (
+        "Written TimeDelay element 'rs1' should reload as xt.TimeDelay. "
         f"Got: {type(reloaded_line['rs1']).__name__}.")
 
 
 ########################################
-# dzeta Field
+# shift_zeta Field
 ########################################
-def test_refshift_writer_zetashift_preserves_positive_dzeta(tmp_path):
+def test_refshift_writer_timedelay_preserves_positive_shift_zeta(tmp_path):
     """
-    A positive longitudinal shift dzeta should be preserved through a write and
-    reload cycle. dzeta is written as optics variable dz_rs1.
+    A positive longitudinal shift_zeta should be preserved through a write and
+    reload cycle. shift_zeta is written as optics variable dz_rs1.
     """
-    original_line = _build_zetashift_line(dzeta = 1.0E-3)
+    original_line = _build_timedelay_line(shift_zeta = 1.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert reloaded_line["rs1"].dzeta == pytest.approx(1.0E-3), (
-        "Writer roundtrip should preserve positive ZetaShift dzeta. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['rs1'].dzeta}.")
+    assert reloaded_line["rs1"].shift_zeta == pytest.approx(1.0E-3), (
+        "Writer roundtrip should preserve positive TimeDelay shift_zeta. "
+        f"Original: 1.0E-3, reloaded: {reloaded_line['rs1'].shift_zeta}.")
 
 
-def test_refshift_writer_zetashift_preserves_negative_dzeta(tmp_path):
+def test_refshift_writer_timedelay_preserves_negative_shift_zeta(tmp_path):
     """
-    A negative longitudinal shift dzeta should be preserved through a write
+    A negative longitudinal shift_zeta should be preserved through a write
     and reload cycle.
     """
-    original_line = _build_zetashift_line(dzeta = -1.0E-3)
+    original_line = _build_timedelay_line(shift_zeta = -1.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert reloaded_line["rs1"].dzeta == pytest.approx(-1.0E-3), (
-        "Writer roundtrip should preserve negative ZetaShift dzeta. "
-        f"Original: -1.0E-3, reloaded: {reloaded_line['rs1'].dzeta}.")
+    assert reloaded_line["rs1"].shift_zeta == pytest.approx(-1.0E-3), (
+        "Writer roundtrip should preserve negative TimeDelay shift_zeta. "
+        f"Original: -1.0E-3, reloaded: {reloaded_line['rs1'].shift_zeta}.")
 
 
-def test_refshift_writer_zetashift_dzeta_is_accessible_as_optics_variable(tmp_path):
+def test_refshift_writer_timedelay_shift_zeta_is_accessible_as_optics_variable(tmp_path):
     """
-    After writing and reloading, the ZetaShift dzeta field should be accessible
-    as named optics variable dz_rs1 in the Xsuite environment.
+    After writing and reloading, the TimeDelay shift_zeta field should be
+    accessible as named optics variable dz_rs1 in the Xsuite environment.
     """
-    original_line = _build_zetashift_line(dzeta = 1.0E-3)
+    original_line = _build_timedelay_line(shift_zeta = 1.0E-3)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["dz_rs1"] == pytest.approx(1.0E-3), (
         "Optics variable 'dz_rs1' should exist in the environment after reload "
-        "and equal the original dzeta. "
+        "and equal the original shift_zeta. "
         f"Got: {env['dz_rs1']}.")
 
 
-def test_refshift_writer_zetashift_dzeta_is_tunable_via_optics_variable(tmp_path):
+def test_refshift_writer_timedelay_shift_zeta_is_tunable_via_optics_variable(tmp_path):
     """
     The dz_rs1 optics variable should remain live after reload: modifying it
-    should immediately update the ZetaShift dzeta in the line.
+    should immediately update the TimeDelay shift_zeta in the line.
     """
-    original_line = _build_zetashift_line(dzeta = 1.0E-3)
+    original_line = _build_timedelay_line(shift_zeta = 1.0E-3)
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     env["dz_rs1"] = 2.0E-3
 
-    assert reloaded_line["rs1"].dzeta == pytest.approx(2.0E-3), (
-        "Modifying optics variable 'dz_rs1' should update the ZetaShift dzeta. "
-        f"Got: {reloaded_line['rs1'].dzeta}.")
+    assert reloaded_line["rs1"].shift_zeta == pytest.approx(2.0E-3), (
+        "Modifying optics variable 'dz_rs1' should update the TimeDelay shift_zeta. "
+        f"Got: {reloaded_line['rs1'].shift_zeta}.")
 
 
-def test_refshift_writer_zetashift_dzeta_preserved_at_full_double_precision(tmp_path):
+def test_refshift_writer_timedelay_shift_zeta_preserved_at_full_double_precision(tmp_path):
     """
-    A ZetaShift dzeta with many significant digits should survive a write and
-    reload cycle at full double precision.
+    A TimeDelay shift_zeta with many significant digits should survive a write
+    and reload cycle at full double precision.
     """
     dz_precise = 1.23456789012345678E-4
-    original_line = _build_zetashift_line(dzeta = dz_precise)
+    original_line = _build_timedelay_line(shift_zeta = dz_precise)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["dz_rs1"] == pytest.approx(dz_precise, rel = 1E-15), (
-        "Writer roundtrip should preserve ZetaShift dzeta at full double precision. "
+        "Writer roundtrip should preserve TimeDelay shift_zeta at full double precision. "
         f"Original: {dz_precise!r}, reloaded env var: {env['dz_rs1']!r}.")
 
 
@@ -793,7 +793,7 @@ def test_refshift_writer_preserves_all_five_types_in_one_line(tmp_path):
         elements = [
             xt.Marker(),
             xt.XYShift(dx = 1.0E-3, dy = -2.0E-3),
-            xt.ZetaShift(dzeta = 0.5E-3),
+            xt.TimeDelay(shift_zeta = 0.5E-3),
             xt.YRotation(angle = 3.0E-3),
             xt.XRotation(angle = -4.0E-3),
             xt.SRotation(angle = 0.05),
@@ -814,9 +814,9 @@ def test_refshift_writer_preserves_all_five_types_in_one_line(tmp_path):
     assert reloaded_line["rsxy"].dy    == pytest.approx(-2.0E-3), (
         f"Writer roundtrip should preserve XYShift dy. "
         f"Original: -2.0E-3, reloaded: {reloaded_line['rsxy'].dy}.")
-    assert reloaded_line["rsdz"].dzeta == pytest.approx( 0.5E-3), (
-        f"Writer roundtrip should preserve ZetaShift dzeta. "
-        f"Original: 0.5E-3, reloaded: {reloaded_line['rsdz'].dzeta}.")
+    assert reloaded_line["rsdz"].shift_zeta == pytest.approx( 0.5E-3), (
+        f"Writer roundtrip should preserve TimeDelay shift_zeta. "
+        f"Original: 0.5E-3, reloaded: {reloaded_line['rsdz'].shift_zeta}.")
     assert reloaded_line["rsyr"].angle == pytest.approx( 3.0E-3), (
         f"Writer roundtrip should preserve YRotation angle. "
         f"Original: 3.0E-3, reloaded: {reloaded_line['rsyr'].angle}.")

@@ -64,7 +64,7 @@ def create_reversed_component(component, environment):
     ########################################
     # Longitudinal Reference Shift
     ########################################
-    elif isinstance(environment.element_dict[component[1:]], xt.ZetaShift):
+    elif isinstance(environment.element_dict[component[1:]], xt.TimeDelay):
         environment.new(
             name    = component,
             parent  = component[1:],

@@ -477,7 +477,7 @@ def test_sol_bound_converter_creates_compound_reference_transform_line(
     assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_sol_dz",
-        element_type = xt.ZetaShift)
+        element_type = xt.TimeDelay)
     assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_sol_chi1",
@@ -521,7 +521,7 @@ def test_sol_bound_converter_applies_reference_transform_signs(
         "Bound SOL DX should use the current SAD2XS sign convention.")
     assert xsuite_environment["test_sol_dxy"].dy == pytest.approx(0.002), (
         "Bound SOL DY should use the current SAD2XS sign convention.")
-    assert xsuite_environment["test_sol_dz"].dzeta == pytest.approx(-0.003), (
+    assert xsuite_environment["test_sol_dz"].shift_zeta == pytest.approx(-0.003), (
         "Bound SOL DZ should map to the current SAD2XS longitudinal shift.")
     assert xsuite_environment["test_sol_chi1"].angle == pytest.approx(
         np.rad2deg(0.004)), (
