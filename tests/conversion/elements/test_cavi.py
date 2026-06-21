@@ -85,9 +85,9 @@ def _cavi_xsuite_sad_s(twiss, line):
     table = line.get_table(attr = True)
     ds = np.concatenate([[0], twiss.s[1:] - twiss.s[:-1]])
     dzeta = np.concatenate([[0], twiss.zeta[1:] - twiss.zeta[:-1]])
-    zeta_shifts = table.element_type == "TimeDelay"
-    zeta_shifts = np.concatenate([[0], zeta_shifts[:-1]])
-    dzeta = np.where(zeta_shifts, 0, dzeta)
+    time_delays = table.element_type == "TimeDelay"
+    time_delays = np.concatenate([[0], time_delays[:-1]])
+    dzeta = np.where(time_delays, 0, dzeta)
 
     sad_s = np.zeros_like(twiss.s)
     for idx in range(1, len(sad_s)):

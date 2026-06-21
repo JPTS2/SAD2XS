@@ -23,7 +23,7 @@ def create_refshift_lattice_file_information(
         config:     ConfigLike) -> str:
     """
     Docstring for create_refshift_lattice_file_information
-    
+
     :param line_table: Description
     :type line_table: xd.table.Table
     :param config: Description
@@ -35,31 +35,31 @@ def create_refshift_lattice_file_information(
     ########################################
     # Get information
     ########################################
-    unique_xyshift_names    = []
-    unique_zetashift_names  = []
-    unique_xrotation_names  = []
-    unique_yrotation_names  = []
-    unique_srotation_names  = []
+    unique_translation_names  = []
+    unique_timedelay_names    = []
+    unique_xrotation_names    = []
+    unique_yrotation_names    = []
+    unique_srotation_names    = []
 
-    unique_xyshift_variable_names   = []
-    unique_zetashift_variable_names = []
-    unique_xrotation_variable_names = []
-    unique_yrotation_variable_names = []
-    unique_srotation_variable_names = []
+    unique_translation_variable_names  = []
+    unique_timedelay_variable_names    = []
+    unique_xrotation_variable_names    = []
+    unique_yrotation_variable_names    = []
+    unique_srotation_variable_names    = []
 
-    for xyshift in line_table.rows[line_table.element_type == 'Translation'].name:
-        parentname      = get_parentname(xyshift)
-        variablename    = get_variablename(xyshift)
-        if parentname not in unique_xyshift_names:
-            unique_xyshift_names.append(parentname)
-            unique_xyshift_variable_names.append(variablename)
+    for translation in line_table.rows[line_table.element_type == 'Translation'].name:
+        parentname      = get_parentname(translation)
+        variablename    = get_variablename(translation)
+        if parentname not in unique_translation_names:
+            unique_translation_names.append(parentname)
+            unique_translation_variable_names.append(variablename)
 
-    for zshift in line_table.rows[line_table.element_type == 'TimeDelay'].name:
-        parentname      = get_parentname(zshift)
-        variablename    = get_variablename(zshift)
-        if parentname not in unique_zetashift_names:
-            unique_zetashift_names.append(parentname)
-            unique_zetashift_variable_names.append(variablename)
+    for timedelay in line_table.rows[line_table.element_type == 'TimeDelay'].name:
+        parentname      = get_parentname(timedelay)
+        variablename    = get_variablename(timedelay)
+        if parentname not in unique_timedelay_names:
+            unique_timedelay_names.append(parentname)
+            unique_timedelay_variable_names.append(variablename)
 
     for xrotation in line_table.rows[line_table.element_type == 'XRotation'].name:
         parentname      = get_parentname(xrotation)
@@ -85,8 +85,8 @@ def create_refshift_lattice_file_information(
     ########################################
     # Ensure there are reference shifts in the line
     ########################################
-    if len(unique_xyshift_names) == 0 and \
-            len(unique_zetashift_names) == 0 and \
+    if len(unique_translation_names) == 0 and \
+            len(unique_timedelay_names) == 0 and \
             len(unique_xrotation_names) == 0 and \
             len(unique_yrotation_names) == 0 and \
             len(unique_srotation_names) == 0:
@@ -104,53 +104,53 @@ def create_refshift_lattice_file_information(
     ########################################
     # Translations
     ########################################
-    if len(unique_xyshift_names) != 0:
+    if len(unique_translation_names) != 0:
         output_string += """
 ########################################
 # Translations
 ########################################"""
 
-        for xyshift_name, xyshift_variable_name in zip(
-                unique_xyshift_names, unique_xyshift_variable_names):
+        for translation_name, translation_variable_name in zip(
+                unique_translation_names, unique_translation_variable_names):
 
             # Remove the minus sign if no non minus version exists
-            if xyshift_name.startswith("-"):
-                root_name   = xyshift_name[1:]
-                if root_name not in unique_xyshift_names:
-                    xyshift_name        = root_name
+            if translation_name.startswith("-"):
+                root_name   = translation_name[1:]
+                if root_name not in unique_translation_names:
+                    translation_name        = root_name
 
             output_string += f"""
 env.new(
-    name        = '{xyshift_name}',
+    name        = '{translation_name}',
     parent      = xt.Translation,
-    shift_x     = 'dx_{xyshift_variable_name}',
-    shift_y     = 'dy_{xyshift_variable_name}')"""
+    shift_x     = 'dx_{translation_variable_name}',
+    shift_y     = 'dy_{translation_variable_name}')"""
 
         output_string += "\n"
 
     ########################################
     # TimeDelays
     ########################################
-    if len(unique_zetashift_names) != 0:
+    if len(unique_timedelay_names) != 0:
         output_string += """
 ########################################
 # TimeDelays
 ########################################"""
 
-        for zetashift_name, zetashift_variable_name in zip(
-                unique_zetashift_names, unique_zetashift_variable_names):
+        for timedelay_name, timedelay_variable_name in zip(
+                unique_timedelay_names, unique_timedelay_variable_names):
 
             # Remove the minus sign if no non minus version exists
-            if zetashift_name.startswith("-"):
-                root_name   = zetashift_name[1:]
-                if root_name not in unique_zetashift_names:
-                    zetashift_name        = root_name
+            if timedelay_name.startswith("-"):
+                root_name   = timedelay_name[1:]
+                if root_name not in unique_timedelay_names:
+                    timedelay_name        = root_name
 
             output_string += f"""
 env.new(
-    name        = '{zetashift_name}',
+    name        = '{timedelay_name}',
     parent      = xt.TimeDelay,
-    shift_zeta  = 'dz_{zetashift_variable_name}')"""
+    shift_zeta  = 'dz_{timedelay_variable_name}')"""
 
         output_string += "\n"
 
@@ -245,7 +245,7 @@ def create_refshift_optics_file_information(
         config:     ConfigLike) -> str:
     """
     Docstring for create_refshift_optics_file_information
-    
+
     :param line: Description
     :type line: xt.Line
     :param line_table: Description
@@ -259,31 +259,31 @@ def create_refshift_optics_file_information(
     ########################################
     # Get information
     ########################################
-    unique_xyshift_names    = []
-    unique_zetashift_names  = []
-    unique_xrotation_names  = []
-    unique_yrotation_names  = []
-    unique_srotation_names  = []
+    unique_translation_names  = []
+    unique_timedelay_names    = []
+    unique_xrotation_names    = []
+    unique_yrotation_names    = []
+    unique_srotation_names    = []
 
-    unique_xyshift_variable_names   = []
-    unique_zetashift_variable_names = []
-    unique_xrotation_variable_names = []
-    unique_yrotation_variable_names = []
-    unique_srotation_variable_names = []
+    unique_translation_variable_names  = []
+    unique_timedelay_variable_names    = []
+    unique_xrotation_variable_names    = []
+    unique_yrotation_variable_names    = []
+    unique_srotation_variable_names    = []
 
-    for xyshift in line_table.rows[line_table.element_type == 'Translation'].name:
-        parentname      = get_parentname(xyshift)
-        variablename    = get_variablename(xyshift)
-        if parentname not in unique_xyshift_names:
-            unique_xyshift_names.append(parentname)
-            unique_xyshift_variable_names.append(variablename)
+    for translation in line_table.rows[line_table.element_type == 'Translation'].name:
+        parentname      = get_parentname(translation)
+        variablename    = get_variablename(translation)
+        if parentname not in unique_translation_names:
+            unique_translation_names.append(parentname)
+            unique_translation_variable_names.append(variablename)
 
-    for zshift in line_table.rows[line_table.element_type == 'TimeDelay'].name:
-        parentname      = get_parentname(zshift)
-        variablename    = get_variablename(zshift)
-        if parentname not in unique_zetashift_names:
-            unique_zetashift_names.append(parentname)
-            unique_zetashift_variable_names.append(variablename)
+    for timedelay in line_table.rows[line_table.element_type == 'TimeDelay'].name:
+        parentname      = get_parentname(timedelay)
+        variablename    = get_variablename(timedelay)
+        if parentname not in unique_timedelay_names:
+            unique_timedelay_names.append(parentname)
+            unique_timedelay_variable_names.append(variablename)
 
     for xrotation in line_table.rows[line_table.element_type == 'XRotation'].name:
         parentname      = get_parentname(xrotation)
@@ -309,8 +309,8 @@ def create_refshift_optics_file_information(
     ########################################
     # Ensure there are reference shifts in the line
     ########################################
-    if len(unique_xyshift_names) == 0 and \
-            len(unique_zetashift_names) == 0 and \
+    if len(unique_translation_names) == 0 and \
+            len(unique_timedelay_names) == 0 and \
             len(unique_xrotation_names) == 0 and \
             len(unique_yrotation_names) == 0 and \
             len(unique_srotation_names) == 0:
@@ -319,14 +319,14 @@ def create_refshift_optics_file_information(
     ########################################
     # Sort the lists
     ########################################
-    if len(unique_xyshift_names) != 0:
-        unique_xyshift_variable_names, unique_xyshift_names = map(
+    if len(unique_translation_names) != 0:
+        unique_translation_variable_names, unique_translation_names = map(
             list, zip(*sorted(zip(
-                unique_xyshift_variable_names, unique_xyshift_names))))
-    if len(unique_zetashift_names) != 0:
-        unique_zetashift_variable_names, unique_zetashift_names = map(
+                unique_translation_variable_names, unique_translation_names))))
+    if len(unique_timedelay_names) != 0:
+        unique_timedelay_variable_names, unique_timedelay_names = map(
             list, zip(*sorted(zip(
-                unique_zetashift_variable_names, unique_zetashift_names))))
+                unique_timedelay_variable_names, unique_timedelay_names))))
     if len(unique_xrotation_names) != 0:
         unique_xrotation_variable_names, unique_xrotation_names = map(
             list, zip(*sorted(zip(
@@ -350,44 +350,44 @@ def create_refshift_optics_file_information(
     ########################################
     # Translations
     ########################################
-    if len(unique_xyshift_names) != 0:
+    if len(unique_translation_names) != 0:
         output_string += """
     ########################################
     # Translations
     ########################################"""
 
-        for xyshift_name, xyshift_variable_name in zip(
-                unique_xyshift_names, unique_xyshift_variable_names):
+        for translation_name, translation_variable_name in zip(
+                unique_translation_names, unique_translation_variable_names):
 
-            dx  = line[xyshift_name].shift_x
-            dy  = line[xyshift_name].shift_y
+            dx  = line[translation_name].shift_x
+            dy  = line[translation_name].shift_y
 
             if dx != 0:
                 output_string += f"""
-    {f'dx_{xyshift_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dx_{xyshift_variable_name}') + 4)}{'= '}{dx:.24f},"""
+    {f'dx_{translation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dx_{translation_variable_name}') + 4)}{'= '}{dx:.24f},"""
             if dy != 0:
                 output_string += f"""
-    {f'dy_{xyshift_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dy_{xyshift_variable_name}') + 4)}{'= '}{dy:.24f},"""
+    {f'dy_{translation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dy_{translation_variable_name}') + 4)}{'= '}{dy:.24f},"""
 
         output_string += "\n"
 
     ########################################
     # TimeDelays
     ########################################
-    if len(unique_zetashift_names) != 0:
+    if len(unique_timedelay_names) != 0:
         output_string += """
     ########################################
     # TimeDelays
     ########################################"""
 
-        for zetashift_name, zetashift_variable_name in zip(
-                unique_zetashift_names, unique_zetashift_variable_names):
+        for timedelay_name, timedelay_variable_name in zip(
+                unique_timedelay_names, unique_timedelay_variable_names):
 
-            dz  = line[zetashift_name].shift_zeta
-            
+            dz  = line[timedelay_name].shift_zeta
+
             if dz != 0:
                 output_string += f"""
-    {f'dz_{zetashift_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dz_{zetashift_variable_name}') + 4)}{'= '}{dz:.24f},"""
+    {f'dz_{timedelay_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dz_{timedelay_variable_name}') + 4)}{'= '}{dz:.24f},"""
 
         output_string += "\n"
 

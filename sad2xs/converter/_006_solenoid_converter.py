@@ -708,13 +708,13 @@ def solenoid_reference_shift_corrections(
     # Flip the neccesary reference shifts
     ############################################################################
     def flip_reference_shifts(solenoid, dxy_sign, chi_sign):
-        xy_shift_name   = f"{solenoid}_dxy"
+        translation_name = f"{solenoid}_dxy"
         chi1_shift_name = f"{solenoid}_chi1"
         chi2_shift_name = f"{solenoid}_chi2"
         chi3_shift_name = f"{solenoid}_chi3"
 
-        line[xy_shift_name].shift_x *= dxy_sign
-        line[xy_shift_name].shift_y *= dxy_sign
+        line[translation_name].shift_x *= dxy_sign
+        line[translation_name].shift_y *= dxy_sign
 
         line[chi1_shift_name].angle *= chi_sign
         line[chi2_shift_name].angle *= chi_sign
