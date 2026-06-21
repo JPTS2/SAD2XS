@@ -205,7 +205,7 @@ abort;
         "SOL":          "Solenoid",
         "CAVI":         "Cavity",
         "APERT":        "LimitEllipse",
-        "COORD":        "XYShift",
+        "COORD":        "Translation",
         "MARK":         "Marker",
         "MONI":         "Marker",
         "BEAMBEAM":     "Marker"}

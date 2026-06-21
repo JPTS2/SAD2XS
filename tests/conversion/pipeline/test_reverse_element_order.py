@@ -163,9 +163,10 @@ def test_pipeline_reverse_element_order_swaps_bend_edge_angles(write_lattice):
 ################################################################################
 def test_pipeline_reverse_element_order_negates_coord_dx_and_dy(write_lattice):
     """
-    reverse_element_order=True should negate the dx and dy of each XYShift
-    produced by a SAD COORD element. The reversed values are compared against
-    the forward conversion to avoid dependence on internal sign conventions.
+    reverse_element_order=True should negate the shift_x and shift_y of each
+    Translation produced by a SAD COORD element. The reversed values are
+    compared against the forward conversion to avoid dependence on internal
+    sign conventions.
     """
     lattice_path = write_lattice(
         """\
@@ -194,15 +195,15 @@ def test_pipeline_reverse_element_order_negates_coord_dx_and_dy(write_lattice):
         _verbose              = False,
         _test_mode            = True)
 
-    dx_forward  = line_forward["c1"].dx
-    dy_forward  = line_forward["c1"].dy
-    dx_reversed = line_reversed["c1"].dx
-    dy_reversed = line_reversed["c1"].dy
+    dx_forward  = line_forward["c1"].shift_x
+    dy_forward  = line_forward["c1"].shift_y
+    dx_reversed = line_reversed["c1"].shift_x
+    dy_reversed = line_reversed["c1"].shift_y
 
     assert dx_forward != pytest.approx(0.0), (
-        "Forward COORD dx should be non-zero for DX = 0.01.")
+        "Forward COORD shift_x should be non-zero for DX = 0.01.")
     assert dy_forward != pytest.approx(0.0), (
-        "Forward COORD dy should be non-zero for DY = 0.02.")
+        "Forward COORD shift_y should be non-zero for DY = 0.02.")
     assert dx_reversed == pytest.approx(-dx_forward), (
         "reverse_element_order=True should negate COORD dx. "
         f"Forward: {dx_forward}, reversed: {dx_reversed}.")

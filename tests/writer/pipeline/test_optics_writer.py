@@ -348,37 +348,37 @@ def test_optics_writer_writes_freq_volt_lag_variables_for_cavity(tmp_path):
 
 
 ################################################################################
-# XYShift Optics Tests
+# Translation Optics Tests
 ################################################################################
-def test_optics_writer_writes_dx_and_dy_for_nonzero_xyshift(tmp_path):
+def test_optics_writer_writes_dx_and_dy_for_nonzero_translation(tmp_path):
     """
-    For an XYShift with both dx != 0 and dy != 0, write_optics should write
-    'dx_{name}' and 'dy_{name}' to the optics file.
+    For a Translation with both shift_x != 0 and shift_y != 0, write_optics
+    should write 'dx_{name}' and 'dy_{name}' to the optics file.
     """
     content = _optics_content(
-        xt.XYShift(dx = 1.0E-3, dy = -2.0E-3), "shift1", tmp_path)
+        xt.Translation(shift_x = 1.0E-3, shift_y = -2.0E-3), "shift1", tmp_path)
 
     assert "dx_shift1" in content, (
-        "write_optics should write 'dx_shift1' for an XYShift with dx = 1e-3. "
+        "write_optics should write 'dx_shift1' for a Translation with shift_x = 1e-3. "
         f"File content: {content!r}.")
     assert "dy_shift1" in content, (
-        "write_optics should write 'dy_shift1' for an XYShift with dy = -2e-3. "
+        "write_optics should write 'dy_shift1' for a Translation with shift_y = -2e-3. "
         f"File content: {content!r}.")
 
 
-def test_optics_writer_does_not_write_dx_for_zero_dx_xyshift(tmp_path):
+def test_optics_writer_does_not_write_dx_for_zero_shift_x_translation(tmp_path):
     """
-    For an XYShift with dx=0, write_optics should suppress 'dx_{name}' while
-    still writing 'dy_{name}' when dy != 0.
+    For a Translation with shift_x=0, write_optics should suppress 'dx_{name}'
+    while still writing 'dy_{name}' when shift_y != 0.
     """
     content = _optics_content(
-        xt.XYShift(dx = 0.0, dy = -2.0E-3), "shift1", tmp_path)
+        xt.Translation(shift_x = 0.0, shift_y = -2.0E-3), "shift1", tmp_path)
 
     assert "dx_shift1" not in content, (
-        "write_optics should not write 'dx_shift1' when dx = 0. "
+        "write_optics should not write 'dx_shift1' when shift_x = 0. "
         f"File content: {content!r}.")
     assert "dy_shift1" in content, (
-        "write_optics should still write 'dy_shift1' when dy = -2e-3. "
+        "write_optics should still write 'dy_shift1' when shift_y = -2e-3. "
         f"File content: {content!r}.")
 
 

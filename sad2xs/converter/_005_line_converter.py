@@ -54,7 +54,7 @@ def create_reversed_component(component, environment):
     ########################################
     # Transverse Reference Shift
     ########################################
-    elif isinstance(environment.element_dict[component[1:]], xt.XYShift):
+    elif isinstance(environment.element_dict[component[1:]], xt.Translation):
         environment.new(
             name    = component,
             parent  = component[1:],

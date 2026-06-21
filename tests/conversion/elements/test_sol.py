@@ -473,7 +473,7 @@ def test_sol_bound_converter_creates_compound_reference_transform_line(
     assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_sol_dxy",
-        element_type = xt.XYShift)
+        element_type = xt.Translation)
     assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_sol_dz",
@@ -517,9 +517,9 @@ def test_sol_bound_converter_applies_reference_transform_signs(
         environment = xsuite_environment,
         config      = sad2xs_config)
 
-    assert xsuite_environment["test_sol_dxy"].dx == pytest.approx(-0.001), (
+    assert xsuite_environment["test_sol_dxy"].shift_x == pytest.approx(-0.001), (
         "Bound SOL DX should use the current SAD2XS sign convention.")
-    assert xsuite_environment["test_sol_dxy"].dy == pytest.approx(0.002), (
+    assert xsuite_environment["test_sol_dxy"].shift_y == pytest.approx(0.002), (
         "Bound SOL DY should use the current SAD2XS sign convention.")
     assert xsuite_environment["test_sol_dz"].shift_zeta == pytest.approx(-0.003), (
         "Bound SOL DZ should map to the current SAD2XS longitudinal shift.")

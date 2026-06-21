@@ -149,7 +149,7 @@ class Config:
         "Marker", "Drift",
         "Bend", "Quadrupole", "Sextupole", "Octupole", "Multipole",
         "UniformSolenoid",
-        "Cavity", "XYShift", "TimeDelay", "XRotation", "YRotation", "SRotation",
+        "Cavity", "Translation", "TimeDelay", "XRotation", "YRotation", "SRotation",
         "LimitEllipse", "LimitRect"})
 
     ########################################

@@ -43,7 +43,7 @@ rather than one serialised element or feature.
   - Sextupole: `k2_{name}` present/suppressed, `k2s_{name}` for skew (3 tests)
   - Octupole: `k3_{name}` present/suppressed, `k3s_{name}` for skew (3 tests)
   - Cavity: `freq_{name}`, `volt_{name}`, `lag_{name}` always written (1 test)
-  - XYShift: `dx_{name}` and `dy_{name}` independently present/suppressed (2 tests)
+  - Translation: `dx_{name}` and `dy_{name}` independently present/suppressed (2 tests)
   - TimeDelay: `dz_{name}` (1 test)
   - XRotation: `chi2_{name}` (1 test)
   - YRotation: `chi1_{name}` (1 test)

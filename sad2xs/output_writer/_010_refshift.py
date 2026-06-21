@@ -47,7 +47,7 @@ def create_refshift_lattice_file_information(
     unique_yrotation_variable_names = []
     unique_srotation_variable_names = []
 
-    for xyshift in line_table.rows[line_table.element_type == 'XYShift'].name:
+    for xyshift in line_table.rows[line_table.element_type == 'Translation'].name:
         parentname      = get_parentname(xyshift)
         variablename    = get_variablename(xyshift)
         if parentname not in unique_xyshift_names:
@@ -102,12 +102,12 @@ def create_refshift_lattice_file_information(
 """
 
     ########################################
-    # XYShifts
+    # Translations
     ########################################
     if len(unique_xyshift_names) != 0:
         output_string += """
 ########################################
-# XYShifts
+# Translations
 ########################################"""
 
         for xyshift_name, xyshift_variable_name in zip(
@@ -122,9 +122,9 @@ def create_refshift_lattice_file_information(
             output_string += f"""
 env.new(
     name        = '{xyshift_name}',
-    parent      = xt.XYShift,
-    dx          = 'dx_{xyshift_variable_name}',
-    dy          = 'dy_{xyshift_variable_name}')"""
+    parent      = xt.Translation,
+    shift_x     = 'dx_{xyshift_variable_name}',
+    shift_y     = 'dy_{xyshift_variable_name}')"""
 
         output_string += "\n"
 
@@ -271,7 +271,7 @@ def create_refshift_optics_file_information(
     unique_yrotation_variable_names = []
     unique_srotation_variable_names = []
 
-    for xyshift in line_table.rows[line_table.element_type == 'XYShift'].name:
+    for xyshift in line_table.rows[line_table.element_type == 'Translation'].name:
         parentname      = get_parentname(xyshift)
         variablename    = get_variablename(xyshift)
         if parentname not in unique_xyshift_names:
@@ -348,19 +348,19 @@ def create_refshift_optics_file_information(
 """
 
     ########################################
-    # XYShifts
+    # Translations
     ########################################
     if len(unique_xyshift_names) != 0:
         output_string += """
     ########################################
-    # XYShifts
+    # Translations
     ########################################"""
 
         for xyshift_name, xyshift_variable_name in zip(
                 unique_xyshift_names, unique_xyshift_variable_names):
 
-            dx  = line[xyshift_name].dx
-            dy  = line[xyshift_name].dy
+            dx  = line[xyshift_name].shift_x
+            dy  = line[xyshift_name].shift_y
 
             if dx != 0:
                 output_string += f"""

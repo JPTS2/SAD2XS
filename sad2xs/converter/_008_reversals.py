@@ -47,7 +47,7 @@ def reverse_line_element_order(line):
     tt_bend = tt.rows[
         (tt.element_type == "Bend") | (tt.element_type == "RBend")]
     tt_sol  = tt.rows[tt.element_type == "UniformSolenoid"]
-    tt_dxy  = tt.rows[tt.element_type == "XYShift"]
+    tt_dxy  = tt.rows[tt.element_type == "Translation"]
 
     ########################################
     # Get unique elements
@@ -108,8 +108,8 @@ def reverse_line_element_order(line):
 
             if dxy not in env_elements:
                 continue
-            env[dxy].dx *= -1
-            env[dxy].dy *= -1
+            env[dxy].shift_x *= -1
+            env[dxy].shift_y *= -1
 
     return line
 
@@ -148,7 +148,7 @@ def reverse_line_bend_direction(line):
     tt_oct  = tt.rows[tt.element_type == "Octupole"]
     tt_mult = tt.rows[tt.element_type == "Multipole"]
     tt_sol  = tt.rows[tt.element_type == "UniformSolenoid"]
-    tt_dxy  = tt.rows[tt.element_type == "XYShift"]
+    tt_dxy  = tt.rows[tt.element_type == "Translation"]
     tt_chi1 = tt.rows[tt.element_type == "YRotation"]
     tt_chi2 = tt.rows[tt.element_type == "XRotation"]
     tt_chi3 = tt.rows[tt.element_type == "SRotation"]
@@ -350,8 +350,8 @@ def reverse_line_bend_direction(line):
 
             if dxy not in env_elements:
                 continue
-            env[dxy].dx *= -1
-            env[dxy].dy *= +1
+            env[dxy].shift_x *= -1
+            env[dxy].shift_y *= +1
 
     for chi1 in unique_chi1s:
 

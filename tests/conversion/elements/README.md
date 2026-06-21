@@ -32,7 +32,7 @@ Total collected from this folder: see `tests/README.md`.
 | `test_beambeam.py` | 5 | 0 | — |
 | `test_bend.py` | 23 | 10 | `k0 = angle/length` conversion wrong; symbolic length/angle; thin bend; element offsets |
 | `test_cavi.py` | 10 | 6 | SAD uses phase (`PHI`), converter sets lag; harmonic-driven cavity not converted correctly |
-| `test_coord.py` | 10 | 3 | `DX`/`DY` sign convention wrong in converter |
+| `test_coord.py` | 10 | 0 | — |
 | `test_corrector.py` | 18 | 16 | Corrector physics incorrect — optics and tracking both wrong for kicks, rotations, offsets |
 | `test_drift.py` | 6 | 2 | Symbolic variable support not implemented (parametric drift length) |
 | `test_mark.py` | 5 | 0 | — |
@@ -41,7 +41,7 @@ Total collected from this folder: see `tests/README.md`.
 | `test_oct.py` | 15 | 3 | Symbolic variable support; thin octupole to `xt.Multipole` conversion |
 | `test_quad.py` | 15 | 5 | Symbolic variable support; thin quadrupole; rotation tracking |
 | `test_sext.py` | 15 | 3 | Symbolic variable support; thin sextupole to `xt.Multipole` conversion |
-| `test_sol.py` | 18 | 42 | `xt.Translation` API change; solenoid reference transform physics |
+| `test_sol.py` | 18 | 42 | `xt.Rotation` API change (pending slice 3); solenoid reference transform physics |
 
 ### `test_sol.py` note
 
