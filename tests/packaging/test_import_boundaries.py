@@ -4,7 +4,7 @@ Tests for SAD2XS public import boundaries
 ================================================================================
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
-This file is part of the SAD2XS project, licensed under the MIT License.
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
 See LICENSE.txt for details.
 
 Authors:    John P. T. Salvesen
@@ -62,22 +62,33 @@ def test_import_boundary_sad_helpers_namespace_is_importable():
 # Public API — callability
 ################################################################################
 def test_import_boundary_convert_sad_to_xsuite_is_callable():
+    """
+    convert_sad_to_xsuite must be callable, not a module, class, or constant.
+    """
     assert callable(sad2xs.convert_sad_to_xsuite), (
         "sad2xs.convert_sad_to_xsuite should be callable.")
 
 
 def test_import_boundary_write_lattice_is_callable():
+    """
+    write_lattice must be callable.
+    """
     assert callable(sad2xs.write_lattice), (
         "sad2xs.write_lattice should be callable.")
 
 
 def test_import_boundary_write_optics_is_callable():
+    """
+    write_optics must be callable.
+    """
     assert callable(sad2xs.write_optics), (
         "sad2xs.write_optics should be callable.")
 
 
 def test_import_boundary_sad_helpers_is_a_module():
+    """
+    sad_helpers must be a module so users can access helpers via attribute
+    access (sad2xs.sad_helpers.twiss_sad etc.) rather than as a flat import.
+    """
     assert isinstance(sad2xs.sad_helpers, types.ModuleType), (
         "sad2xs.sad_helpers should be a module, not a class or function.")
-
-
