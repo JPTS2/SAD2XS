@@ -50,7 +50,7 @@ jobs:
             ${{ steps.img.outputs.image }}:${{ github.sha }}
             ${{ steps.img.outputs.image }}:latest
           build-args: |
-            SAD_SMOKE_PATH=tests/sad_installation_test.sad
+            SAD_SMOKE_PATH=tests/installation/sad_installation_test.sad
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

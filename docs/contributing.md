@@ -65,7 +65,6 @@ Use a Python environment with the SAD2XS development dependencies installed. The
 
 ```bash
 pytest
-python -m pytest tests/test_001_drift.py
 ```
 
 For documentation-only changes, Python tests are not normally required unless examples or generated outputs are changed.

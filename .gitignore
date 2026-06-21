@@ -53,10 +53,8 @@ build_instructions
 # ==============================================================================
 # Ignore unit test diagnostic outputs
 # ==============================================================================
-/tests/outputs
-/tests/test_lattice.sad
-/tests/temporary_sad_twiss.sad
-/tests/temporary_sad_twiss.tfs
+/tests/artifacts/*
+!/tests/artifacts/README.md
 
 # ==============================================================================
 # Ignore private lattice files
