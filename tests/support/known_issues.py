@@ -33,7 +33,6 @@ KNOWN_ISSUE_TESTS = {
     "tests/conversion/elements/test_cavi.py::test_cavi_converter_uses_harmonic_when_harmonic_is_supplied": 19,
     "tests/conversion/elements/test_cavi.py::test_cavi_pipeline_preserves_names_order_and_rf_settings": 19,
     "tests/conversion/elements/test_cavi.py::test_cavi_pipeline_preserves_harmonic_rf_setting": 19,
-    "tests/conversion/elements/test_sol.py::test_sol_bound_reference_transforms_use_current_xsuite_api": 19,
 
     # Parser and expression handling.
     "tests/parser/test_errors.py::test_invalid_deferred_expression_syntax_raises_clear_error": 22,

@@ -215,37 +215,15 @@ def test_supported_elements_writer_handles_timedelay(tmp_path):
     _assert_file_exists_and_is_executable(output_dir, "timedelay")
 
 
-def test_supported_elements_writer_handles_x_rotation(tmp_path):
+def test_supported_elements_writer_handles_rotation(tmp_path):
     """
     write_lattice should produce an executable lattice file when the line
-    contains an xt.XRotation element.
+    contains an xt.Rotation element.
     """
-    line       = _build_single_element_line(xt.XRotation(angle = 1.25), "xrot1")
-    output_dir = _write_only(line, tmp_path, "x_rotation")
+    line       = _build_single_element_line(xt.Rotation(rot_y_rad = 1.25), "rot1")
+    output_dir = _write_only(line, tmp_path, "rotation")
 
-    _assert_file_exists_and_is_executable(output_dir, "x_rotation")
-
-
-def test_supported_elements_writer_handles_y_rotation(tmp_path):
-    """
-    write_lattice should produce an executable lattice file when the line
-    contains an xt.YRotation element.
-    """
-    line       = _build_single_element_line(xt.YRotation(angle = -1.25), "yrot1")
-    output_dir = _write_only(line, tmp_path, "y_rotation")
-
-    _assert_file_exists_and_is_executable(output_dir, "y_rotation")
-
-
-def test_supported_elements_writer_handles_s_rotation(tmp_path):
-    """
-    write_lattice should produce an executable lattice file when the line
-    contains an xt.SRotation element.
-    """
-    line       = _build_single_element_line(xt.SRotation(angle = 0.75), "srot1")
-    output_dir = _write_only(line, tmp_path, "s_rotation")
-
-    _assert_file_exists_and_is_executable(output_dir, "s_rotation")
+    _assert_file_exists_and_is_executable(output_dir, "rotation")
 
 
 def test_supported_elements_writer_handles_limit_rect(tmp_path):

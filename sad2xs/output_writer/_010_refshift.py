@@ -37,15 +37,11 @@ def create_refshift_lattice_file_information(
     ########################################
     unique_translation_names  = []
     unique_timedelay_names    = []
-    unique_xrotation_names    = []
-    unique_yrotation_names    = []
-    unique_srotation_names    = []
+    unique_rotation_names     = []
 
     unique_translation_variable_names  = []
     unique_timedelay_variable_names    = []
-    unique_xrotation_variable_names    = []
-    unique_yrotation_variable_names    = []
-    unique_srotation_variable_names    = []
+    unique_rotation_variable_names     = []
 
     for translation in line_table.rows[line_table.element_type == 'Translation'].name:
         parentname      = get_parentname(translation)
@@ -61,35 +57,19 @@ def create_refshift_lattice_file_information(
             unique_timedelay_names.append(parentname)
             unique_timedelay_variable_names.append(variablename)
 
-    for xrotation in line_table.rows[line_table.element_type == 'XRotation'].name:
-        parentname      = get_parentname(xrotation)
-        variablename    = get_variablename(xrotation)
-        if parentname not in unique_xrotation_names:
-            unique_xrotation_names.append(parentname)
-            unique_xrotation_variable_names.append(variablename)
-
-    for yrotation in line_table.rows[line_table.element_type == 'YRotation'].name:
-        parentname      = get_parentname(yrotation)
-        variablename    = get_variablename(yrotation)
-        if parentname not in unique_yrotation_names:
-            unique_yrotation_names.append(parentname)
-            unique_yrotation_variable_names.append(variablename)
-
-    for srotation in line_table.rows[line_table.element_type == 'SRotation'].name:
-        parentname      = get_parentname(srotation)
-        variablename    = get_variablename(srotation)
-        if parentname not in unique_srotation_names:
-            unique_srotation_names.append(parentname)
-            unique_srotation_variable_names.append(variablename)
+    for rotation in line_table.rows[line_table.element_type == 'Rotation'].name:
+        parentname      = get_parentname(rotation)
+        variablename    = get_variablename(rotation)
+        if parentname not in unique_rotation_names:
+            unique_rotation_names.append(parentname)
+            unique_rotation_variable_names.append(variablename)
 
     ########################################
     # Ensure there are reference shifts in the line
     ########################################
     if len(unique_translation_names) == 0 and \
             len(unique_timedelay_names) == 0 and \
-            len(unique_xrotation_names) == 0 and \
-            len(unique_yrotation_names) == 0 and \
-            len(unique_srotation_names) == 0:
+            len(unique_rotation_names) == 0:
         return ""
 
     ########################################
@@ -155,80 +135,30 @@ env.new(
         output_string += "\n"
 
     ########################################
-    # YRotations
+    # Rotations (CHI1/CHI2/CHI3)
     ########################################
-    if len(unique_yrotation_names) != 0:
+    if len(unique_rotation_names) != 0:
         output_string += """
 ########################################
-# YRotations (CHI1)
+# Rotations (CHI1/CHI2/CHI3)
 ########################################"""
 
-        for yrotation_name, yrotation_variable_name in zip(
-                unique_yrotation_names, unique_yrotation_variable_names):
+        for rotation_name, rotation_variable_name in zip(
+                unique_rotation_names, unique_rotation_variable_names):
 
             # Remove the minus sign if no non minus version exists
-            if yrotation_name.startswith("-"):
-                root_name   = yrotation_name[1:]
-                if root_name not in unique_yrotation_names:
-                    yrotation_name        = root_name
+            if rotation_name.startswith("-"):
+                root_name   = rotation_name[1:]
+                if root_name not in unique_rotation_names:
+                    rotation_name        = root_name
 
             output_string += f"""
 env.new(
-    name        = '{yrotation_name}',
-    parent      = xt.YRotation,
-    angle       = 'chi1_{yrotation_variable_name}')"""
-
-        output_string += "\n"
-
-    ########################################
-    # XRotations
-    ########################################
-    if len(unique_xrotation_names) != 0:
-        output_string += """
-########################################
-# XRotations (CHI2)
-########################################"""
-
-        for xrotation_name, xrotation_variable_name in zip(
-                unique_xrotation_names, unique_xrotation_variable_names):
-
-            # Remove the minus sign if no non minus version exists
-            if xrotation_name.startswith("-"):
-                root_name   = xrotation_name[1:]
-                if root_name not in unique_xrotation_names:
-                    xrotation_name        = root_name
-
-            output_string += f"""
-env.new(
-    name        = '{xrotation_name}',
-    parent      = xt.XRotation,
-    angle       = 'chi2_{xrotation_variable_name}')"""
-
-        output_string += "\n"
-
-    ########################################
-    # SRotations
-    ########################################
-    if len(unique_srotation_names) != 0:
-        output_string += """
-########################################
-# SRotations (CHI3)
-########################################"""
-
-        for srotation_name, srotation_variable_name in zip(
-                unique_srotation_names, unique_srotation_variable_names):
-
-            # Remove the minus sign if no non minus version exists
-            if srotation_name.startswith("-"):
-                root_name   = srotation_name[1:]
-                if root_name not in unique_srotation_names:
-                    srotation_name        = root_name
-
-            output_string += f"""
-env.new(
-    name        = '{srotation_name}',
-    parent      = xt.SRotation,
-    angle       = 'chi3_{srotation_variable_name}')"""
+    name        = '{rotation_name}',
+    parent      = xt.Rotation,
+    rot_y_rad   = 'chi1_{rotation_variable_name}',
+    rot_x_rad   = 'chi2_{rotation_variable_name}',
+    rot_s_rad   = 'chi3_{rotation_variable_name}')"""
 
     ########################################
     # Return
@@ -261,15 +191,11 @@ def create_refshift_optics_file_information(
     ########################################
     unique_translation_names  = []
     unique_timedelay_names    = []
-    unique_xrotation_names    = []
-    unique_yrotation_names    = []
-    unique_srotation_names    = []
+    unique_rotation_names     = []
 
     unique_translation_variable_names  = []
     unique_timedelay_variable_names    = []
-    unique_xrotation_variable_names    = []
-    unique_yrotation_variable_names    = []
-    unique_srotation_variable_names    = []
+    unique_rotation_variable_names     = []
 
     for translation in line_table.rows[line_table.element_type == 'Translation'].name:
         parentname      = get_parentname(translation)
@@ -285,35 +211,19 @@ def create_refshift_optics_file_information(
             unique_timedelay_names.append(parentname)
             unique_timedelay_variable_names.append(variablename)
 
-    for xrotation in line_table.rows[line_table.element_type == 'XRotation'].name:
-        parentname      = get_parentname(xrotation)
-        variablename    = get_variablename(xrotation)
-        if parentname not in unique_xrotation_names:
-            unique_xrotation_names.append(parentname)
-            unique_xrotation_variable_names.append(variablename)
-
-    for yrotation in line_table.rows[line_table.element_type == 'YRotation'].name:
-        parentname      = get_parentname(yrotation)
-        variablename    = get_variablename(yrotation)
-        if parentname not in unique_yrotation_names:
-            unique_yrotation_names.append(parentname)
-            unique_yrotation_variable_names.append(variablename)
-
-    for srotation in line_table.rows[line_table.element_type == 'SRotation'].name:
-        parentname      = get_parentname(srotation)
-        variablename    = get_variablename(srotation)
-        if parentname not in unique_srotation_names:
-            unique_srotation_names.append(parentname)
-            unique_srotation_variable_names.append(variablename)
+    for rotation in line_table.rows[line_table.element_type == 'Rotation'].name:
+        parentname      = get_parentname(rotation)
+        variablename    = get_variablename(rotation)
+        if parentname not in unique_rotation_names:
+            unique_rotation_names.append(parentname)
+            unique_rotation_variable_names.append(variablename)
 
     ########################################
     # Ensure there are reference shifts in the line
     ########################################
     if len(unique_translation_names) == 0 and \
             len(unique_timedelay_names) == 0 and \
-            len(unique_xrotation_names) == 0 and \
-            len(unique_yrotation_names) == 0 and \
-            len(unique_srotation_names) == 0:
+            len(unique_rotation_names) == 0:
         return ""
 
     ########################################
@@ -327,16 +237,10 @@ def create_refshift_optics_file_information(
         unique_timedelay_variable_names, unique_timedelay_names = map(
             list, zip(*sorted(zip(
                 unique_timedelay_variable_names, unique_timedelay_names))))
-    if len(unique_xrotation_names) != 0:
-        unique_xrotation_variable_names, unique_xrotation_names = map(
+    if len(unique_rotation_names) != 0:
+        unique_rotation_variable_names, unique_rotation_names = map(
             list, zip(*sorted(zip(
-                unique_xrotation_variable_names, unique_xrotation_names))))
-    if len(unique_yrotation_names) != 0:
-        unique_yrotation_variable_names, unique_yrotation_names = map(
-            list, zip(*sorted(zip(unique_yrotation_variable_names, unique_yrotation_names))))
-    if len(unique_srotation_names) != 0:
-        unique_srotation_variable_names, unique_srotation_names = map(
-            list, zip(*sorted(zip(unique_srotation_variable_names, unique_srotation_names))))
+                unique_rotation_variable_names, unique_rotation_names))))
 
     ########################################
     # Create Output string
@@ -392,62 +296,30 @@ def create_refshift_optics_file_information(
         output_string += "\n"
 
     ########################################
-    # YRotations
+    # Rotations (CHI1/CHI2/CHI3)
     ########################################
-    if len(unique_yrotation_names) != 0:
+    if len(unique_rotation_names) != 0:
         output_string += """
     ########################################
-    # YRotations (CHI1)
+    # Rotations (CHI1/CHI2/CHI3)
     ########################################"""
 
-        for yrotation_name, yrotation_variable_name in zip(
-                unique_yrotation_names, unique_yrotation_variable_names):
+        for rotation_name, rotation_variable_name in zip(
+                unique_rotation_names, unique_rotation_variable_names):
 
-            chi1    = line[yrotation_name].angle
+            chi1 = line[rotation_name].rot_y_rad
+            chi2 = line[rotation_name].rot_x_rad
+            chi3 = line[rotation_name].rot_s_rad
 
             if chi1 != 0:
                 output_string += f"""
-    {f'chi1_{yrotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi1_{yrotation_variable_name}') + 4)}{'= '}{chi1:.24f},"""
-
-        output_string += "\n"
-
-    ########################################
-    # XRotations
-    ########################################
-    if len(unique_xrotation_names) != 0:
-        output_string += """
-    ########################################
-    # XRotations (CHI2)
-    ########################################"""
-
-        for xrotation_name, xrotation_variable_name in zip(
-                unique_xrotation_names, unique_xrotation_variable_names):
-
-            chi2    = line[xrotation_name].angle
-
+    {f'chi1_{rotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi1_{rotation_variable_name}') + 4)}{'= '}{chi1:.24f},"""
             if chi2 != 0:
                 output_string += f"""
-    {f'chi2_{xrotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi2_{xrotation_variable_name}') + 4)}{'= '}{chi2:.24f},"""
-
-        output_string += "\n"
-
-    ########################################
-    # XRotations
-    ########################################
-    if len(unique_srotation_names) != 0:
-        output_string += """
-    ########################################
-    # SRotations (CHI3)
-    ########################################"""
-
-        for srotation_name, srotation_variable_name in zip(
-                unique_srotation_names, unique_srotation_variable_names):
-
-            chi3    = line[srotation_name].angle
-
+    {f'chi2_{rotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi2_{rotation_variable_name}') + 4)}{'= '}{chi2:.24f},"""
             if chi3 != 0:
                 output_string += f"""
-    {f'chi3_{srotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi3_{srotation_variable_name}') + 4)}{'= '}{chi3:.24f},"""
+    {f'chi3_{rotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi3_{rotation_variable_name}') + 4)}{'= '}{chi3:.24f},"""
 
     ########################################
     # Return

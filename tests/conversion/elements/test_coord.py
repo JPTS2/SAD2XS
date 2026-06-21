@@ -46,7 +46,6 @@ from sad2xs.sad_helpers import twiss_sad
 # Diagnostic Helpers
 ################################################################################
 COORD_ARTIFACT_CATEGORY = "conversion/elements/coord"
-RAD2DEG = 180.0 / np.pi
 
 def _coord_config():
     """
@@ -256,21 +255,21 @@ def test_coord_converter_creates_xsuite_translation(
         "Converted COORD should preserve SAD DY with the current sign convention.")
 
 @pytest.mark.parametrize(
-    "element_variables, element_type, expected_angle",
+    "element_variables, expected_field, expected_value",
     [
-        ({"chi1": 0.125}, xt.YRotation, -0.125 * RAD2DEG),
-        ({"chi2": 0.125}, xt.XRotation,  0.125 * RAD2DEG),
-        ({"chi3": 0.125}, xt.SRotation, -0.125 * RAD2DEG),
+        ({"chi1": 0.125}, "rot_y_rad", -0.125),
+        ({"chi2": 0.125}, "rot_x_rad",  0.125),
+        ({"chi3": 0.125}, "rot_s_rad", -0.125),
     ])
 def test_coord_converter_creates_xsuite_rotations(
         parsed_elements,
         xsuite_environment,
         assert_environment_element,
         element_variables,
-        element_type,
-        expected_angle):
+        expected_field,
+        expected_value):
     """
-    SAD COORD rotations should become current Xsuite rotation elements.
+    SAD COORD rotations should become current Xsuite Rotation elements.
     """
     convert_coordinate_transformations(
         parsed_elements = parsed_elements(
@@ -283,11 +282,11 @@ def test_coord_converter_creates_xsuite_rotations(
     rotation = assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_coord",
-        element_type = element_type)
+        element_type = xt.Rotation)
 
-    assert rotation.angle == pytest.approx(expected_angle), (
-        "Converted COORD rotation angle should be stored in degrees with the "
-        "current SAD-to-Xsuite sign convention.")
+    assert getattr(rotation, expected_field) == pytest.approx(expected_value), (
+        "Converted COORD rotation should store radians with the current "
+        "SAD-to-Xsuite sign convention.")
 
 def test_coord_converter_creates_marker_like_translation_for_empty_transform(
         parsed_elements,
@@ -355,25 +354,25 @@ def test_coord_converter_creates_compound_transform_line(
     chi1 = assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_coord_chi1",
-        element_type = xt.YRotation)
+        element_type = xt.Rotation)
     chi2 = assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_coord_chi2",
-        element_type = xt.XRotation)
+        element_type = xt.Rotation)
     chi3 = assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_coord_chi3",
-        element_type = xt.SRotation)
+        element_type = xt.Rotation)
 
     assert translation.shift_x == pytest.approx(1.0E-3), (
         "Compound COORD should preserve SAD DX.")
     assert translation.shift_y == pytest.approx(-2.0E-3), (
         "Compound COORD should preserve SAD DY.")
-    assert chi1.angle == pytest.approx(-0.125 * RAD2DEG), (
+    assert chi1.rot_y_rad == pytest.approx(-0.125), (
         "Compound COORD should preserve the CHI1 sign convention.")
-    assert chi2.angle == pytest.approx(-0.25 * RAD2DEG), (
+    assert chi2.rot_x_rad == pytest.approx(-0.25), (
         "Compound COORD should preserve the CHI2 sign convention.")
-    assert chi3.angle == pytest.approx(-0.5 * RAD2DEG), (
+    assert chi3.rot_s_rad == pytest.approx(-0.5), (
         "Compound COORD should preserve the CHI3 sign convention.")
 
 ########################################
@@ -412,15 +411,15 @@ def test_coord_converter_applies_dir_signs_and_order(
     chi1 = assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_coord_chi1",
-        element_type = xt.YRotation)
+        element_type = xt.Rotation)
     chi2 = assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_coord_chi2",
-        element_type = xt.XRotation)
+        element_type = xt.Rotation)
     chi3 = assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_coord_chi3",
-        element_type = xt.SRotation)
+        element_type = xt.Rotation)
     translation = assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_coord_dxy",
@@ -430,11 +429,11 @@ def test_coord_converter_applies_dir_signs_and_order(
         "DIR COORD should reverse the current DX convention.")
     assert translation.shift_y == pytest.approx(-2.0E-3), (
         "DIR COORD should preserve the current DY convention.")
-    assert chi1.angle == pytest.approx(-0.125 * RAD2DEG), (
+    assert chi1.rot_y_rad == pytest.approx(-0.125), (
         "DIR COORD should preserve the current CHI1 convention.")
-    assert chi2.angle == pytest.approx(0.25 * RAD2DEG), (
+    assert chi2.rot_x_rad == pytest.approx(0.25), (
         "DIR COORD should reverse the current CHI2 convention.")
-    assert chi3.angle == pytest.approx(-0.5 * RAD2DEG), (
+    assert chi3.rot_s_rad == pytest.approx(-0.5), (
         "DIR COORD should preserve the current CHI3 convention.")
 
 ################################################################################
@@ -516,12 +515,12 @@ def test_coord_pipeline_expands_compound_transform(write_lattice):
         "Compound COORD should expand to its generated child elements in order.")
     assert isinstance(line["test_coord_dxy"], xt.Translation), (
         "Compound COORD should include an Xsuite Translation child.")
-    assert isinstance(line["test_coord_chi1"], xt.YRotation), (
-        "Compound COORD should include an Xsuite YRotation child.")
-    assert isinstance(line["test_coord_chi2"], xt.XRotation), (
-        "Compound COORD should include an Xsuite XRotation child.")
-    assert isinstance(line["test_coord_chi3"], xt.SRotation), (
-        "Compound COORD should include an Xsuite SRotation child.")
+    assert isinstance(line["test_coord_chi1"], xt.Rotation), (
+        "Compound COORD should include an Xsuite Rotation child for CHI1.")
+    assert isinstance(line["test_coord_chi2"], xt.Rotation), (
+        "Compound COORD should include an Xsuite Rotation child for CHI2.")
+    assert isinstance(line["test_coord_chi3"], xt.Rotation), (
+        "Compound COORD should include an Xsuite Rotation child for CHI3.")
 
 def test_coord_pipeline_preserves_reversed_compound_transform(write_lattice):
     """
@@ -565,12 +564,12 @@ def test_coord_pipeline_preserves_reversed_compound_transform(write_lattice):
         "child-element naming.")
     assert isinstance(line["-test_coord_dxy"], xt.Translation), (
         "Reversed COORD shift should remain a current Xsuite Translation clone.")
-    assert isinstance(line["-test_coord_chi1"], xt.YRotation), (
-        "Reversed COORD CHI1 should remain a current Xsuite YRotation clone.")
-    assert isinstance(line["-test_coord_chi2"], xt.XRotation), (
-        "Reversed COORD CHI2 should remain a current Xsuite XRotation clone.")
-    assert isinstance(line["-test_coord_chi3"], xt.SRotation), (
-        "Reversed COORD CHI3 should remain a current Xsuite SRotation clone.")
+    assert isinstance(line["-test_coord_chi1"], xt.Rotation), (
+        "Reversed COORD CHI1 should remain a current Xsuite Rotation clone.")
+    assert isinstance(line["-test_coord_chi2"], xt.Rotation), (
+        "Reversed COORD CHI2 should remain a current Xsuite Rotation clone.")
+    assert isinstance(line["-test_coord_chi3"], xt.Rotation), (
+        "Reversed COORD CHI3 should remain a current Xsuite Rotation clone.")
 
 ################################################################################
 # Physics Equivalence

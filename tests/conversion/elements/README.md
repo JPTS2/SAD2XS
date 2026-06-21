@@ -41,16 +41,17 @@ Total collected from this folder: see `tests/README.md`.
 | `test_oct.py` | 15 | 3 | Symbolic variable support; thin octupole to `xt.Multipole` conversion |
 | `test_quad.py` | 15 | 5 | Symbolic variable support; thin quadrupole; rotation tracking |
 | `test_sext.py` | 15 | 3 | Symbolic variable support; thin sextupole to `xt.Multipole` conversion |
-| `test_sol.py` | 18 | 42 | `xt.Rotation` API change (pending slice 3); solenoid reference transform physics |
+| `test_sol.py` | 17 | 41 | Solenoid reference transform physics |
 
 ### `test_sol.py` note
 
-The solenoid tests are the most extensive in this folder. 18 test functions
-expand to 42 failing instances at runtime because three parametrised functions
-carry a full matrix of perturbation types (`dxdy`, `dpx`, `dpy`,
-`dxdy_dpx_dpy`, `dxdy_chi1_chi2`) crossed with reversal modes (`forward`,
-`rev_in`, `rev_out`, `rev_both`). All 42 instances fail — the test structure
-is complete and correct; the failures document the production code work required.
+The solenoid tests are the most extensive in this folder. The `xt.Rotation` API
+migration (slice 3) is now complete, so `test_sol_bound_reference_transforms_use_current_xsuite_api`
+is no longer a known issue. 17 test functions expand to 41 failing instances at
+runtime because three parametrised functions carry a full matrix of perturbation
+types (`dxdy`, `dpx`, `dpy`, `dxdy_dpx_dpy`, `dxdy_chi1_chi2`) crossed with
+reversal modes (`forward`, `rev_in`, `rev_out`, `rev_both`). The failures document
+the production code work remaining for solenoid reference transform physics.
 
 ### `test_corrector.py` note
 

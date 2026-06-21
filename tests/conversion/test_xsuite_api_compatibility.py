@@ -257,9 +257,7 @@ def test_xsuite_line_table_exposes_writer_filter_fields_used_by_sad2xs():
             xt.Cavity(voltage = 1.0, frequency = 2.0, lag = 0.0),
             xt.Translation(shift_x = 1.0E-3, shift_y = -2.0E-3),
             xt.TimeDelay(shift_zeta = 3.0E-3),
-            xt.XRotation(angle = 1.0),
-            xt.YRotation(angle = -1.0),
-            xt.SRotation(angle = 0.5),
+            xt.Rotation(rot_y_rad = 1.0),
             xt.LimitRect(min_x = -1.0, max_x = 1.0, min_y = -2.0, max_y = 2.0),
             xt.LimitEllipse(a = 1.0, b = 2.0),
         ],
@@ -275,9 +273,7 @@ def test_xsuite_line_table_exposes_writer_filter_fields_used_by_sad2xs():
             "test_cavi",
             "test_translation",
             "test_timedelay",
-            "test_xrotation",
-            "test_yrotation",
-            "test_srotation",
+            "test_rotation",
             "test_limitrect",
             "test_limitellipse",
         ])
@@ -295,11 +291,9 @@ def test_xsuite_line_table_exposes_writer_filter_fields_used_by_sad2xs():
         "test_mult":         "Multipole",
         "test_sol":          "UniformSolenoid",
         "test_cavi":         "Cavity",
-        "test_translation":      "Translation",
+        "test_translation":  "Translation",
         "test_timedelay":    "TimeDelay",
-        "test_xrotation":    "XRotation",
-        "test_yrotation":    "YRotation",
-        "test_srotation":    "SRotation",
+        "test_rotation":     "Rotation",
         "test_limitrect":    "LimitRect",
         "test_limitellipse": "LimitEllipse",
     }
@@ -415,19 +409,9 @@ def test_xsuite_element_attribute_contracts(
             {"shift_zeta": 3.0E-3},
         ),
         (
-            "XRotation",
-            xt.XRotation(angle = 1.25),
-            {"angle": 1.25},
-        ),
-        (
-            "YRotation",
-            xt.YRotation(angle = -1.25),
-            {"angle": -1.25},
-        ),
-        (
-            "SRotation",
-            xt.SRotation(angle = 0.75),
-            {"angle": 0.75},
+            "Rotation",
+            xt.Rotation(rot_y_rad = -0.125, rot_x_rad = 0.25, rot_s_rad = -0.5),
+            {"rot_y_rad": -0.125, "rot_x_rad": 0.25, "rot_s_rad": -0.5},
         ),
     ])
 def test_xsuite_transform_element_contracts(
@@ -436,8 +420,6 @@ def test_xsuite_transform_element_contracts(
         expected_fields):
     """
     Current Xsuite transform elements should keep the API SAD2XS targets.
-
-    Migration to newer transform elements is tracked separately in issue #19.
     """
     for field, expected_value in expected_fields.items():
         assert hasattr(element, field), (
