@@ -5,7 +5,7 @@ Tests for sad2xs.sad_helpers.rebuild lattice
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
 This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
-See LICENSE.txt for details.
+See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
@@ -15,43 +15,21 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
-import textwrap
-
 import pytest
 
+from tests.support.lattices import write_minimal_transfer_lattice
 from sad2xs.sad_helpers import rebuild_sad_lattice
 
 ################################################################################
 # Helpers
 ################################################################################
-def _write_minimal_transfer_lattice(tmp_path):
-    """
-    Write a minimal SAD transfer-line lattice consisting of a single 1 m drift
-    between a START and END marker. Returns (filename, line_name) for direct
-    use as rebuild_sad_lattice arguments after monkeypatch.chdir(tmp_path).
-    """
-    lattice_path = tmp_path / "test_lattice.sad"
-    lattice_path.write_text(textwrap.dedent("""\
-        MOMENTUM    = 1.0 GEV;
-
-        DRIFT       TEST_DRIFT  = (L = 1.0);
-
-        MARK        START       = ()
-                    END         = ();
-
-        LINE        TEST_LINE   = (START TEST_DRIFT END);
-        """))
-
-    return lattice_path.name, "TEST_LINE"
-
-
 def _run_rebuild(tmp_path, monkeypatch, **kwargs):
     """
     Write the minimal transfer-line lattice, change to its directory, and run
     rebuild_sad_lattice with wall_time=30. Extra keyword arguments are forwarded
     to rebuild_sad_lattice (e.g. output_filepath, additional_commands).
     """
-    filename, line_name = _write_minimal_transfer_lattice(tmp_path)
+    filename, line_name = write_minimal_transfer_lattice(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     rebuild_sad_lattice(

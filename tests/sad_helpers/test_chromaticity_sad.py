@@ -5,7 +5,7 @@ Tests for sad2xs.sad_helpers.chromaticity sad
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
 This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
-See LICENSE.txt for details.
+See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
@@ -15,47 +15,23 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
-import textwrap
-
 import numpy as np
 import pytest
 
+from tests.support.lattices import write_fodo_ring
 from sad2xs.sad_helpers import chromaticity_sad
 from sad2xs.sad_helpers.chromaticity import generate_off_momentum_tune_function
 
 ################################################################################
 # Helpers
 ################################################################################
-def _write_minimal_fodo_ring(tmp_path):
-    """
-    Write a minimal closed FODO ring suitable for chromaticity_sad. The ring
-    has 4 cells each contributing π/2 of bending (2π total). Returns
-    (filename, line_name).
-    """
-    lattice_path = tmp_path / "test_ring.sad"
-    lattice_path.write_text(textwrap.dedent("""\
-        MOMENTUM    = 1.0 GEV;
-
-        QUAD    QF  = (L = 0.3, K1 =  1.5);
-        QUAD    QD  = (L = 0.3, K1 = -1.5);
-        BEND    B   = (L = 0.7854, ANGLE = 0.7854);
-        DRIFT   D   = (L = 0.5);
-        MARK    IP  = ();
-
-        LINE    CELL = (QF D B D QD D B D);
-        LINE    RING = (IP CELL CELL CELL CELL);
-        """))
-
-    return lattice_path.name, "RING"
-
-
 def _run_chromaticity(tmp_path, monkeypatch, **kwargs):
     """
     Write the minimal FODO ring, change to its directory, and run
     chromaticity_sad with the default parameters. Extra keyword arguments are
     forwarded to chromaticity_sad (e.g. compute_higher_orders=True).
     """
-    filename, line_name = _write_minimal_fodo_ring(tmp_path)
+    filename, line_name = write_fodo_ring(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     return chromaticity_sad(

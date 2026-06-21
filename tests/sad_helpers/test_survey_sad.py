@@ -5,7 +5,7 @@ Tests for sad2xs.sad_helpers.survey sad
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
 This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
-See LICENSE.txt for details.
+See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
@@ -15,60 +15,16 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
-import textwrap
-
 import numpy as np
 import pytest
 
+from tests.support.lattices import write_minimal_bend_lattice, write_minimal_transfer_lattice
 from sad2xs.sad_helpers import survey_sad
 from sad2xs.sad_helpers.survey import generate_survey_print_function
 
 ################################################################################
 # Helpers
 ################################################################################
-def _write_minimal_transfer_lattice(tmp_path):
-    """
-    Write a minimal SAD transfer-line lattice consisting of a single 1 m drift
-    between a START and END marker. Returns (filename, line_name) for direct
-    use as survey_sad arguments after monkeypatch.chdir(tmp_path).
-    """
-    lattice_path = tmp_path / "test_lattice.sad"
-    lattice_path.write_text(textwrap.dedent("""\
-        MOMENTUM    = 1.0 GEV;
-
-        DRIFT       TEST_DRIFT  = (L = 1.0);
-
-        MARK        START       = ()
-                    END         = ();
-
-        LINE        TEST_LINE   = (START TEST_DRIFT END);
-        """))
-
-    return lattice_path.name, "TEST_LINE"
-
-
-def _write_minimal_bend_lattice(tmp_path):
-    """
-    Write a minimal SAD transfer-line lattice containing a 1 m bend with a
-    0.1 rad bending angle between a START and END marker. The bend produces
-    non-zero horizontal displacement (X != 0), which is required to test the
-    reverse_bend_direction sign-flip transformation.
-    """
-    lattice_path = tmp_path / "test_bend_lattice.sad"
-    lattice_path.write_text(textwrap.dedent("""\
-        MOMENTUM    = 1.0 GEV;
-
-        BEND        TEST_BEND   = (L = 1.0, ANGLE = 0.1);
-
-        MARK        START       = ()
-                    END         = ();
-
-        LINE        TEST_LINE   = (START TEST_BEND END);
-        """))
-
-    return lattice_path.name, "TEST_LINE"
-
-
 def _run_survey(tmp_path, monkeypatch, **kwargs):
     """
     Write the minimal drift transfer-line lattice, change to its directory,
@@ -76,7 +32,7 @@ def _run_survey(tmp_path, monkeypatch, **kwargs):
     arguments are forwarded to survey_sad to allow per-test flag overrides
     (e.g. reverse_element_order=True).
     """
-    filename, line_name = _write_minimal_transfer_lattice(tmp_path)
+    filename, line_name = write_minimal_transfer_lattice(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     return survey_sad(
@@ -93,7 +49,7 @@ def _run_survey_on_bend_lattice(tmp_path, monkeypatch, **kwargs):
     run survey_sad with closed=False, wall_time=30. Extra keyword arguments are
     forwarded to survey_sad.
     """
-    filename, line_name = _write_minimal_bend_lattice(tmp_path)
+    filename, line_name = write_minimal_bend_lattice(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     return survey_sad(
