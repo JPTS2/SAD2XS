@@ -103,11 +103,11 @@ below. Individual folder READMEs document per-file counts.
 
 The test suite contains currently failing tests that document known bugs. These fall into two groups:
 
-**Group A — Documented writer issues:** 17 tests in `writer/elements/` that
-expose known writer bugs tracked as issues #17 (knl/ksl not written for
-quad/sext/oct), #62 (aperture dimensions not written as live expressions), and
-#63 (k1 not written for combined-function bends). These tests must remain
-failing until the corresponding issues are fixed.
+**Group A — Documented writer issues:** 17 tests (16 in `writer/elements/`, 1
+in `writer/pipeline/`) that expose known writer bugs tracked as issues #17
+(knl/ksl not written for quad/sext/oct), #62 (aperture dimensions not written
+as live expressions), and #63 (k1 not written for combined-function bends).
+These tests must remain failing until the corresponding issues are fixed.
 
 **Group B — Exposing production bugs:** 126 tests across
 `parser/`, `conversion/elements/`, and `conversion/pipeline/` that document

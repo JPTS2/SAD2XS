@@ -5,7 +5,7 @@ Tests for CI workflow checkout references and structural contracts
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
 This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
-See LICENSE.txt for details.
+See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
@@ -112,20 +112,22 @@ def test_ci_template_discover_job_uses_checkout_v4():
         f"Discover job should use actions/checkout@v4, got: {step['uses']!r}")
 
 
-def test_ci_template_discover_job_checks_out_main():
+def test_ci_template_discover_job_does_not_override_checkout_ref():
     """
-    The discover job must check out main. CI always validates the committed
-    main state, not a transient PR branch. Changing this ref would cause CI to
-    run tests that do not exist on main yet.
+    The discover job must not set an explicit ref on the checkout step. Without
+    an override, actions/checkout uses the commit that triggered the workflow —
+    the correct behaviour per issue #20. An explicit ref (e.g. 'main') would
+    cause CI to test a different commit than the one that triggered the run.
     """
     data  = _load(TEMPLATE_PATH)
     steps = data["jobs"]["discover"]["steps"]
     step  = _checkout_step(steps)
     assert step is not None, (
         "The 'discover' job should have a checkout step.")
-    assert step.get("with", {}).get("ref") == "main", (
-        "The 'discover' job checkout should reference 'main'. "
-        f"Got: {step.get('with', {}).get('ref')!r}")
+    ref = step.get("with", {}).get("ref")
+    assert ref is None, (
+        "The 'discover' job checkout should not override the ref. "
+        f"Got: {ref!r}")
 
 
 ################################################################################
@@ -144,19 +146,20 @@ def test_ci_template_run_job_uses_checkout_v4():
         f"Run job should use actions/checkout@v4, got: {step['uses']!r}")
 
 
-def test_ci_template_run_job_checks_out_main():
+def test_ci_template_run_job_does_not_override_checkout_ref():
     """
-    The run job must check out main for the same reason as the discover job.
-    Both jobs must be consistent.
+    The run job must not set an explicit ref on the checkout step, for the same
+    reason as the discover job. Both jobs must be consistent.
     """
     data  = _load(TEMPLATE_PATH)
     steps = data["jobs"]["run"]["steps"]
     step  = _checkout_step(steps)
     assert step is not None, (
         "The 'run' job should have a checkout step.")
-    assert step.get("with", {}).get("ref") == "main", (
-        "The 'run' job checkout should reference 'main'. "
-        f"Got: {step.get('with', {}).get('ref')!r}")
+    ref = step.get("with", {}).get("ref")
+    assert ref is None, (
+        "The 'run' job checkout should not override the ref. "
+        f"Got: {ref!r}")
 
 
 ################################################################################

@@ -43,7 +43,7 @@ The version of SAD used in comparisons is Katsunobu Oide's version, available at
 
 ### Xsuite
 With thanks to all the developers of Xsuite.
-The Xsuite documentation was used extensively in this comparison, available at [Xsuite](xsuite.readthedocs.io/).
+The Xsuite documentation was used extensively in this comparison, available at [Xsuite](https://xsuite.readthedocs.io/).
 The version of Xsuite used in comparisons is the latest version, available at [Xsuite GitHub](https://github.com/xsuite).
 
 

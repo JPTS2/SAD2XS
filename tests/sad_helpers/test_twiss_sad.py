@@ -5,7 +5,7 @@ Tests for sad2xs.sad_helpers.twiss
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
 This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
-See LICENSE.txt for details.
+See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
@@ -15,11 +15,10 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
-import textwrap
-
 import numpy as np
 import pytest
 
+from tests.support.lattices import write_minimal_bend_lattice, write_minimal_transfer_lattice
 from sad2xs.sad_helpers import (
     compute_chromatic_functions,
     compute_second_order_dispersions,
@@ -29,49 +28,6 @@ from sad2xs.sad_helpers.twiss import generate_twiss_print_function
 ################################################################################
 # Helpers
 ################################################################################
-def _write_minimal_transfer_lattice(tmp_path):
-    """
-    Write a minimal SAD transfer-line lattice consisting of a single 1 m drift
-    between a START and END marker. Returns (filename, line_name) for direct
-    use as twiss_sad arguments after monkeypatch.chdir(tmp_path).
-    """
-    lattice_path = tmp_path / "test_lattice.sad"
-    lattice_path.write_text(textwrap.dedent("""\
-        MOMENTUM    = 1.0 GEV;
-
-        DRIFT       TEST_DRIFT  = (L = 1.0);
-
-        MARK        START       = ()
-                    END         = ();
-
-        LINE        TEST_LINE   = (START TEST_DRIFT END);
-        """))
-
-    return lattice_path.name, "TEST_LINE"
-
-
-def _write_minimal_bend_lattice(tmp_path):
-    """
-    Write a minimal SAD transfer-line lattice containing a 1 m bend with a
-    0.1 rad bending angle between a START and END marker. The bend produces
-    non-zero horizontal dispersion, which is required to test the
-    reverse_bend_direction sign-flip transformation.
-    """
-    lattice_path = tmp_path / "test_bend_lattice.sad"
-    lattice_path.write_text(textwrap.dedent("""\
-        MOMENTUM    = 1.0 GEV;
-
-        BEND        TEST_BEND   = (L = 1.0, ANGLE = 0.1);
-
-        MARK        START       = ()
-                    END         = ();
-
-        LINE        TEST_LINE   = (START TEST_BEND END);
-        """))
-
-    return lattice_path.name, "TEST_LINE"
-
-
 def _run_twiss(tmp_path, monkeypatch, **kwargs):
     """
     Write the minimal drift transfer-line lattice, change to its directory,
@@ -79,7 +35,7 @@ def _run_twiss(tmp_path, monkeypatch, **kwargs):
     keyword arguments are forwarded to twiss_sad to allow per-test flag
     overrides (e.g. reverse_element_order=True).
     """
-    filename, line_name = _write_minimal_transfer_lattice(tmp_path)
+    filename, line_name = write_minimal_transfer_lattice(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     return twiss_sad(
@@ -97,7 +53,7 @@ def _run_twiss_on_bend_lattice(tmp_path, monkeypatch, **kwargs):
     run twiss_sad with closed=False, calc6d=False, wall_time=30. Extra keyword
     arguments are forwarded to twiss_sad.
     """
-    filename, line_name = _write_minimal_bend_lattice(tmp_path)
+    filename, line_name = write_minimal_bend_lattice(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     return twiss_sad(
@@ -115,7 +71,7 @@ def _run_second_order_dispersions(tmp_path, monkeypatch):
     compute_second_order_dispersions with closed=False, calc6d=False,
     wall_time=30.
     """
-    filename, line_name = _write_minimal_transfer_lattice(tmp_path)
+    filename, line_name = write_minimal_transfer_lattice(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     return compute_second_order_dispersions(
@@ -131,7 +87,7 @@ def _run_chromatic_functions(tmp_path, monkeypatch):
     Write the minimal drift transfer-line lattice and run
     compute_chromatic_functions with closed=False, calc6d=False, wall_time=30.
     """
-    filename, line_name = _write_minimal_transfer_lattice(tmp_path)
+    filename, line_name = write_minimal_transfer_lattice(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     return compute_chromatic_functions(

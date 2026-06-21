@@ -22,7 +22,11 @@ in `tests/conversion/`.
 
 ## Lattice fixture notes
 
-- **Transfer-line**: `MOMENTUM = 1.0 GEV`, single `DRIFT TEST_DRIFT = (L = 1.0)`, `START`/`END` markers, `LINE TEST_LINE`.
-- **Bend lattice**: same structure with `BEND TEST_BEND = (L = 1.0, ANGLE = 0.1)`.
-- **FODO ring**: 4 cells × 2 bends of 45° (π/4 rad, ρ = 1 m), `K1 = ±0.2`, `DRIFT D = (L = 0.5)`, `CAVI FREQ = 18 MHz` (h = 1). Element parameters use SAD's whitespace-separated syntax.
-- **FODO ring without RF**: identical to above but without `CAVI` element (for chromaticity tests).
+All shared lattice-writing helpers live in `tests/support/lattices.py`. Import
+from there rather than defining local copies.
+
+- **Transfer-line** (`write_minimal_transfer_lattice`): `MOMENTUM = 1.0 GEV`, single `DRIFT TEST_DRIFT = (L = 1.0)`, `START`/`END` markers, `LINE TEST_LINE`.
+- **Bend lattice** (`write_minimal_bend_lattice`): same structure with `BEND TEST_BEND = (L = 1.0 ANGLE = 0.1)`.
+- **FODO ring** (`write_fodo_ring`): 4 cells × 2 bends of 45° (π/4 rad, ρ = 1 m), `K1 = ±0.2`, `DRIFT D = (L = 0.5)`, `CAVI FREQ = 18 MHz`. Used by both emit and chromaticity tests — the cavity is required by emit and harmless for chromaticity (a transverse optics quantity unaffected by longitudinal RF). Element parameters use SAD's whitespace-separated syntax.
+
+`test_track_sad.py` also uses a local marker-only lattice (two markers, no physical elements) that is unique to tracking edge-case tests and is not shared.

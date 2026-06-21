@@ -39,8 +39,8 @@ string `"on"`. All trigger access uses a `_triggers(data)` helper that checks
 **Template tests (7, not parametrised):**
 - Template has `workflow_call` trigger (required for per-folder delegation)
 - Template `test_files` input is marked `required: true`
-- Discover job uses `actions/checkout@v4` and checks out `main`
-- Run job uses `actions/checkout@v4` and checks out `main`
+- Discover job uses `actions/checkout@v4` with no `ref` override (checks out triggering commit)
+- Run job uses `actions/checkout@v4` with no `ref` override (checks out triggering commit)
 - Run job matrix strategy has `fail-fast: false`
 
 **Per-folder workflow tests (3 functions × 9 workflows = 27 instances):**

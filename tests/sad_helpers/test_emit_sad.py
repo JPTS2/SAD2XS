@@ -5,7 +5,7 @@ Tests for sad2xs.sad_helpers.emit sad
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
 This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
-See LICENSE.txt for details.
+See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
@@ -16,11 +16,11 @@ Date:       2026-06-21
 # Required Packages
 ################################################################################
 import math
-import textwrap
 
 import numpy as np
 import pytest
 
+from tests.support.lattices import write_fodo_ring
 from sad2xs.sad_helpers import emit_sad
 
 ################################################################################
@@ -73,37 +73,12 @@ _EMIT_TUPLE_KEYS = (
     "damping_partition")
 
 
-def _write_minimal_fodo_ring(tmp_path):
-    """
-    Write a minimal closed FODO ring with radiation and RF cavity, suitable for
-    emit_sad. The ring has 4 cells each contributing π/2 of bending (2π total)
-    and an RF cavity with voltage well above the synchrotron radiation loss per
-    turn. Returns (filename, line_name).
-    """
-    lattice_path = tmp_path / "test_ring.sad"
-    lattice_path.write_text(textwrap.dedent("""\
-        MOMENTUM    = 1.0 GEV;
-
-        QUAD    QF  = (L = 0.3 K1 =  0.2);
-        QUAD    QD  = (L = 0.3 K1 = -0.2);
-        BEND    B   = (L = 0.7854 ANGLE = 0.7854);
-        DRIFT   D   = (L = 0.5);
-        CAVI    CAV = (VOLT = 1.0E6 FREQ = 1.8E7);
-        MARK    IP  = ();
-
-        LINE    CELL = (QF D B D QD D B D);
-        LINE    RING = (IP CELL CELL CELL CELL CAV);
-        """))
-
-    return lattice_path.name, "RING"
-
-
 def _run_emit(tmp_path, monkeypatch):
     """
     Write the minimal FODO ring, change to its directory, and run emit_sad with
     the default parameters.
     """
-    filename, line_name = _write_minimal_fodo_ring(tmp_path)
+    filename, line_name = write_fodo_ring(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     return emit_sad(
@@ -203,7 +178,7 @@ def test_emit_sad_radcod_flag_runs_and_returns_all_keys(tmp_path, monkeypatch):
     returned dict should still contain all 20 expected keys — this tests that
     the radcod code path through emit_sad produces the same output structure.
     """
-    filename, line_name = _write_minimal_fodo_ring(tmp_path)
+    filename, line_name = write_fodo_ring(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     result = emit_sad(

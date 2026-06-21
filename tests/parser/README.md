@@ -59,7 +59,7 @@ both deferred and element expressions.
 
 Error contract tests check that the parser raises clear `ValueError`s for
 malformed input. Several expected errors are not yet raised, and some error
-messages do not yet match the expected regex patterns. The 7 failures
+messages do not yet match the expected regex patterns. The 8 failures
 document planned parser defensive behaviour.
 
 ## Shared Fixtures

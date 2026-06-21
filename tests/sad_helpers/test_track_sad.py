@@ -5,7 +5,7 @@ Tests for sad2xs.sad_helpers.track sad
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
 This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
-See LICENSE.txt for details.
+See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
@@ -20,33 +20,13 @@ import textwrap
 import numpy as np
 import pytest
 
+from tests.support.lattices import write_minimal_transfer_lattice
 from sad2xs.sad_helpers import track_sad
 
 ################################################################################
 # Helpers
 ################################################################################
 _N_TURNS_SMOKE = 10
-
-
-def _write_minimal_transfer_lattice(tmp_path):
-    """
-    Write a minimal SAD transfer-line lattice consisting of a single 1 m drift
-    between a START and END marker. Returns (filename, line_name) for direct
-    use as track_sad arguments after monkeypatch.chdir(tmp_path).
-    """
-    lattice_path = tmp_path / "test_lattice.sad"
-    lattice_path.write_text(textwrap.dedent("""\
-        MOMENTUM    = 1.0 GEV;
-
-        DRIFT       TEST_DRIFT  = (L = 1.0);
-
-        MARK        START       = ()
-                    END         = ();
-
-        LINE        TEST_LINE   = (START TEST_DRIFT END);
-        """))
-
-    return lattice_path.name, "TEST_LINE"
 
 
 def _zero_particles(n):
@@ -89,7 +69,7 @@ def _run_track(tmp_path, monkeypatch, n_particles = 1, n_turns = _N_TURNS_SMOKE,
     Popen code path and the with_progress/n_turns batch-size interaction).
     Extra keyword arguments are forwarded to track_sad.
     """
-    filename, line_name = _write_minimal_transfer_lattice(tmp_path)
+    filename, line_name = write_minimal_transfer_lattice(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     x, px, y, py, zeta, delta = _zero_particles(n_particles)
@@ -330,7 +310,7 @@ def test_track_sad_drift_applies_correct_transverse_map(tmp_path, monkeypatch):
     analytic result is x_final = x0 + px0 × L = 1e-3 m and px_final = px0.
     This confirms the coordinate convention and the SAD ↔ Xtrack translation.
     """
-    filename, line_name = _write_minimal_transfer_lattice(tmp_path)
+    filename, line_name = write_minimal_transfer_lattice(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     px0 = 1E-3

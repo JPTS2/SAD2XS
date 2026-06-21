@@ -27,10 +27,8 @@ jobs:
     outputs:
       files: ${{ steps.collect.outputs.files }}
     steps:
-      - name: Checkout main (for test paths)
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: main
 
       - name: Normalize list into JSON
         id: collect
@@ -56,10 +54,8 @@ jobs:
         test_file: ${{ fromJson(needs.discover.outputs.files) }}
 
     steps:
-      - name: Checkout main (tests/config)
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: main
 
       - name: Compute IMAGE env (lowercase owner)
         run: |
