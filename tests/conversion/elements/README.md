@@ -20,8 +20,8 @@ failing instances from the test run, not failing functions. For non-parametrised
 files these are equal; for heavily parametrised files (sol, corrector, bend)
 the fail instance count exceeds the failing function count.
 
-Expected failures are tests written to document known converter bugs. They are
-intentionally failing and must not be modified to pass artificially.
+Tests that currently fail document known converter bugs. They must not be
+modified to pass artificially.
 
 Total collected from this folder: see `tests/README.md`.
 

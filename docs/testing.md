@@ -52,7 +52,7 @@ has its own README with per-file coverage tables and known-failure documentation
 | `ci/` | No | Workflow configuration correctness |
 | `observability/` | Mixed | Output suppression, quiet mode, and helper output policy |
 
-Total collected: **1176 tests** (1031 pass, 145 intentionally failing) as of
+Total collected: **1176 tests** (1033 pass, 143 currently failing) as of
 this branch. See `tests/README.md` for the breakdown by failure group.
 
 Large end-to-end lattice tests are useful, but they should not be the only
@@ -80,14 +80,14 @@ intermediate dictionaries.
 
 ## Known Failures
 
-The suite contains 145 intentionally failing tests, split into two groups:
+The suite contains 143 currently failing tests, split into two groups:
 
 **Group A (17 tests)** — known writer bugs, tracked as open issues:
 - Issue #17: `knl`/`ksl` not written for quad, sext, and oct elements
 - Issue #62: aperture dimensions written as literal numbers rather than live expressions
 - Issue #63: `k1` not written for combined-function bends
 
-**Group B (128 tests)** — converter and parser bugs documented by the tests.
+**Group B (126 tests)** — converter and parser bugs documented by the tests.
 These tests are the spec for the fix work that follows. They must not be
 modified to pass artificially — they are the record of what is broken and what
 needs to be done.
