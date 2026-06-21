@@ -16,6 +16,7 @@ dependencies:
   - wheel
   - pip:
       - pytest
+      - pyyaml>=6.0
       - xsuite
       - numpy
       - pandas

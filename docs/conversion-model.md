@@ -67,6 +67,11 @@ Important cases for the next release include:
 - Thin and zero-length magnetic elements need a documented policy, likely using `xt.Multipole` where appropriate.
 - Combined multipole components should be preserved when a base element includes higher-order corrections.
 - Aperture conversion should support equivalent SAD aperture parameter forms where the meaning is clear.
+- Solenoid-region conversion should follow SAD's inserted-element rules: between
+  SOL boundary elements, SAD supports DRIFT, straight BEND, QUAD, and MULT.
+  Direct SEXT and OCT elements should not be treated as supported inserted
+  elements in that region; higher-order content should be represented through
+  MULT where appropriate.
 
 Unsupported cases should fail clearly. Silent loss of physics information is worse than a loud error.
 

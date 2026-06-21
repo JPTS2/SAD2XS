@@ -43,7 +43,7 @@ The version of SAD used in comparisons is Katsunobu Oide's version, available at
 
 ### Xsuite
 With thanks to all the developers of Xsuite.
-The Xsuite documentation was used extensively in this comparison, available at [Xsuite](xsuite.readthedocs.io/).
+The Xsuite documentation was used extensively in this comparison, available at [Xsuite](https://xsuite.readthedocs.io/).
 The version of Xsuite used in comparisons is the latest version, available at [Xsuite GitHub](https://github.com/xsuite).
 
 
@@ -55,7 +55,7 @@ To reference the use of SAD2XS, please reference the proceedings of eeFACT 2025 
     J. Salvesen, G. Iadarola, G. Broggi, H. Sugimoto, K. Oide, G. Roy, A. Oeftiger
 
 ## License
-This project is liscensed under the Apache License Version 2.0
+This project is licensed under the Apache License Version 2.0
 
 [![License](https://img.shields.io/github/license/JPTS2/sad2xs)](https://github.com/JPTS2/sad2xs/blob/main/LICENSE)
 
@@ -83,22 +83,11 @@ There are therefore discrepancies on the energy loss and phase advance with high
 In SAD it is possible to create a multipole element with RF parameters (Voltage, Frequency, Phase).
 This is not equivalently supported in Xsuite.
 
-## Tests
-A series of ongoing tests are performed to test the equivalence of SAD elements with the converted Xsuite elements.
+## CI Status
 
-### Test Docker (SAD Installation)
 [![Docker Build](https://github.com/JPTS2/sad2xs/actions/workflows/docker-build.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/docker-build.yml)
+[![Run Tests](https://github.com/JPTS2/sad2xs/actions/workflows/run_tests.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/run_tests.yml)
 
-### Element Tests
-[![Drift](https://github.com/JPTS2/sad2xs/actions/workflows/001_drift_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/001_drift_test.yml)
-<!-- [![Bend](https://github.com/JPTS2/sad2xs/actions/workflows/002_bend_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/002_bend_test.yml) -->
-<!-- [![Quadrupole](https://github.com/JPTS2/sad2xs/actions/workflows/003_quad_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/003_quad_test.yml) -->
-<!-- [![Sextupole](https://github.com/JPTS2/sad2xs/actions/workflows/004_sext_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/004_sext_test.yml) -->
-<!-- [![Octupole](https://github.com/JPTS2/sad2xs/actions/workflows/005_oct_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/005_oct_test.yml) -->
-<!-- [![Multipole](https://github.com/JPTS2/sad2xs/actions/workflows/006_mult_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/006_mult_test.yml) -->
-[![Solenoid](https://github.com/JPTS2/sad2xs/actions/workflows/007_sol_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/007_sol_test.yml)
-[![Cavity](https://github.com/JPTS2/sad2xs/actions/workflows/008_cavi_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/008_cavi_test.yml)
-<!-- [![Aperture](https://github.com/JPTS2/sad2xs/actions/workflows/009_apert_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/009_apert_test.yml) -->
-[![Coordinate Transform](https://github.com/JPTS2/sad2xs/actions/workflows/010_coord_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/010_coord_test.yml)
-<!-- [![Marker](https://github.com/JPTS2/sad2xs/actions/workflows/011_mark_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/011_mark_test.yml) -->
-[![Reversal](https://github.com/JPTS2/sad2xs/actions/workflows/012_reversal_test.yml/badge.svg?branch=main)](https://github.com/JPTS2/sad2xs/actions/workflows/012_reversal_test.yml)
+The test suite covers parser, converter elements, conversion pipeline, writer,
+SAD helpers, examples, installation, packaging, and CI configuration — 1184
+tests in total. See [docs/testing.md](docs/testing.md) for full details.

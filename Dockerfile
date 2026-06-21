@@ -11,7 +11,7 @@
 ################################################################################
 ARG SAD_REPO_URL="https://github.com/KatsOide/SAD.git"
 ARG SAD_BRANCH="master"
-ARG SAD_SMOKE_PATH="tests/sad_installation_test.sad"
+ARG SAD_SMOKE_PATH="tests/installation/sad_installation_test.sad"
 
 ################################################################################
 # 1: Build SAD from source

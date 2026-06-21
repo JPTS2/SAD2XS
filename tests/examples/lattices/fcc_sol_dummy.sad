@@ -1,0 +1,40 @@
+MOMENTUM    = 1.0 GEV;
+
+DRIFT       SOL_DRIFT   = (L = 1.00)
+            SHORT_DRIFT = (L = 2.0)
+            ARC_DRIFT   = (L = 10.0);
+
+SOL         ESR0        = (BZ =-2  DPX =-.02 BOUND =1  CHI1 =-.02     GEO =1)
+            ESR1        = (BZ =0    BOUND =1)
+            ESCR0       = (BZ =-1.999599959991998 BOUND =1 GEO =1 )
+            ESCR1       = (BZ =0   BOUND =1)
+            ESCL1       = (BZ =-1.999599959991998 BOUND =1)
+            ESCL0       = (BZ =0   BOUND =1  GEO =1 )
+            ESL1        = (BZ =0   BOUND =1)
+            ESL0        = (BZ =0   DPX =.02  BOUND =1  CHI1 =.02 GEO =1 );
+
+MARK        START       = ()
+            END         = ()
+            IP          = ();
+
+LINE        RING        = (START
+    IP
+    -IP
+    -ESR0 -SOL_DRIFT -ESR1
+    SHORT_DRIFT
+    ESCR0 SOL_DRIFT ESCR1
+    ARC_DRIFT
+    ESCL1 SOL_DRIFT ESCL0
+    SHORT_DRIFT
+    ESL1 SOL_DRIFT ESL0
+    IP
+    -IP
+    -ESR0 -SOL_DRIFT -ESR1
+    SHORT_DRIFT
+    ESCR0 SOL_DRIFT ESCR1
+    ARC_DRIFT
+    ESCL1 SOL_DRIFT ESCL0
+    SHORT_DRIFT
+    ESL1 SOL_DRIFT ESL0
+    IP
+    END);
