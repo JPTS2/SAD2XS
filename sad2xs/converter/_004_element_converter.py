@@ -1581,23 +1581,23 @@ def convert_solenoids(
         sol_chi3_factor = -1 * config.COORD_SIGNS["chi3"]
 
         if isinstance(rot_chi1, float):
-            rot_chi1    = np.rad2deg(sol_chi1_factor * rot_chi1)
+            rot_chi1    = sol_chi1_factor * rot_chi1
         elif isinstance(rot_chi1, str):
-            rot_chi1    = f"{sol_chi1_factor} * {rot_chi1} * {RAD2DEG}"
+            rot_chi1    = f"{sol_chi1_factor} * {rot_chi1}"
         else:
             raise ValueError(f"Unsupported type for rot_chi1: {type(rot_chi1)}")
 
         if isinstance(rot_chi2, float):
-            rot_chi2    = np.rad2deg(sol_chi2_factor * rot_chi2)
+            rot_chi2    = sol_chi2_factor * rot_chi2
         elif isinstance(rot_chi2, str):
-            rot_chi2    = f"{sol_chi2_factor} * {rot_chi2} * {RAD2DEG}"
+            rot_chi2    = f"{sol_chi2_factor} * {rot_chi2}"
         else:
             raise ValueError(f"Unsupported type for rot_chi2: {type(rot_chi2)}")
 
         if isinstance(rot_chi3, float):
-            rot_chi3    = np.rad2deg(sol_chi3_factor * rot_chi3)
+            rot_chi3    = sol_chi3_factor * rot_chi3
         elif isinstance(rot_chi3, str):
-            rot_chi3    = f"{sol_chi3_factor} * {rot_chi3} * {RAD2DEG}"
+            rot_chi3    = f"{sol_chi3_factor} * {rot_chi3}"
         else:
             raise ValueError(f"Unsupported type for rot_chi3: {type(rot_chi3)}")
 
@@ -1626,19 +1626,19 @@ def convert_solenoids(
                 shift_zeta = offset_z)
 
             environment.new(
-                name    = f"{ele_name}_chi2",
-                parent  = xt.XRotation,
-                angle   = rot_chi2)
+                name        = f"{ele_name}_chi2",
+                parent      = xt.Rotation,
+                rot_x_rad   = rot_chi2)
 
             environment.new(
-                name    = f"{ele_name}_chi1",
-                parent  = xt.YRotation,
-                angle   = rot_chi1)
+                name        = f"{ele_name}_chi1",
+                parent      = xt.Rotation,
+                rot_y_rad   = rot_chi1)
 
             environment.new(
-                name    = f"{ele_name}_chi3",
-                parent  = xt.SRotation,
-                angle   = rot_chi3)
+                name        = f"{ele_name}_chi3",
+                parent      = xt.Rotation,
+                rot_s_rad   = rot_chi3)
 
             # No ds shift: is ruins the survey
             # The ds difference is because SAD takes dz into account with s
@@ -1835,23 +1835,23 @@ def convert_coordinate_transformations(
             coord_chi3_factor   = +1 * config.COORD_SIGNS["chi3"]
 
         if isinstance(rot_chi1, float):
-            rot_chi1    = np.rad2deg(coord_chi1_factor * rot_chi1)
+            rot_chi1    = coord_chi1_factor * rot_chi1
         elif isinstance(rot_chi1, str):
-            rot_chi1    = f"{coord_chi1_factor} * {rot_chi1} * {RAD2DEG}"
+            rot_chi1    = f"{coord_chi1_factor} * {rot_chi1}"
         else:
             raise ValueError(f"Unsupported type for rot_chi1: {type(rot_chi1)}")
 
         if isinstance(rot_chi2, float):
-            rot_chi2    = np.rad2deg(coord_chi2_factor * rot_chi2)
+            rot_chi2    = coord_chi2_factor * rot_chi2
         elif isinstance(rot_chi2, str):
-            rot_chi2    = f"{coord_chi2_factor} * {rot_chi2} * {RAD2DEG}"
+            rot_chi2    = f"{coord_chi2_factor} * {rot_chi2}"
         else:
             raise ValueError(f"Unsupported type for rot_chi2: {type(rot_chi2)}")
 
         if isinstance(rot_chi3, float):
-            rot_chi3    = np.rad2deg(coord_chi3_factor * rot_chi3)
+            rot_chi3    = coord_chi3_factor * rot_chi3
         elif isinstance(rot_chi3, str):
-            rot_chi3    = f"{coord_chi3_factor} * {rot_chi3} * {RAD2DEG}"
+            rot_chi3    = f"{coord_chi3_factor} * {rot_chi3}"
         else:
             raise ValueError(f"Unsupported type for rot_chi3: {type(rot_chi3)}")
 
@@ -1881,19 +1881,19 @@ def convert_coordinate_transformations(
                     shift_y = offset_y)
             if rot_chi1 != 0:
                 environment.new(
-                    name    = ele_name,
-                    parent  = xt.YRotation,
-                    angle   = rot_chi1)
+                    name        = ele_name,
+                    parent      = xt.Rotation,
+                    rot_y_rad   = rot_chi1)
             if rot_chi2 != 0:
                 environment.new(
-                    name    = ele_name,
-                    parent  = xt.XRotation,
-                    angle   = rot_chi2)
+                    name        = ele_name,
+                    parent      = xt.Rotation,
+                    rot_x_rad   = rot_chi2)
             if rot_chi3 != 0:
                 environment.new(
-                    name    = ele_name,
-                    parent  = xt.SRotation,
-                    angle   = rot_chi3)
+                    name        = ele_name,
+                    parent      = xt.Rotation,
+                    rot_s_rad   = rot_chi3)
         elif n_transforms == 2 and offset_x != 0 and offset_y != 0:
             environment.new(
                 name    = ele_name,
@@ -1905,26 +1905,26 @@ def convert_coordinate_transformations(
             # Order from testing and agrees with the SAD manual online
 
             if dir_flag:
-                # YRotation First
+                # chi1 (rot_y_rad) First
                 if rot_chi1 != 0:
                     environment.new(
-                        name    = f"{ele_name}_chi1",
-                        parent  = xt.YRotation,
-                        angle   = rot_chi1)
+                        name        = f"{ele_name}_chi1",
+                        parent      = xt.Rotation,
+                        rot_y_rad   = rot_chi1)
                     compound_coord_transform_components.append(f"{ele_name}_chi1")
-                # XRotation Second
+                # chi2 (rot_x_rad) Second
                 if rot_chi2 != 0:
                     environment.new(
-                        name    = f"{ele_name}_chi2",
-                        parent  = xt.XRotation,
-                        angle   = rot_chi2)
+                        name        = f"{ele_name}_chi2",
+                        parent      = xt.Rotation,
+                        rot_x_rad   = rot_chi2)
                     compound_coord_transform_components.append(f"{ele_name}_chi2")
-                # SRotation Third
+                # chi3 (rot_s_rad) Third
                 if rot_chi3 != 0:
                     environment.new(
-                        name    = f"{ele_name}_chi3",
-                        parent  = xt.SRotation,
-                        angle   = rot_chi3)
+                        name        = f"{ele_name}_chi3",
+                        parent      = xt.Rotation,
+                        rot_s_rad   = rot_chi3)
                     compound_coord_transform_components.append(f"{ele_name}_chi3")
                 # Transverse Shifts Last
                 if offset_x != 0 or offset_y != 0:
@@ -1948,26 +1948,26 @@ def convert_coordinate_transformations(
                         shift_x = offset_x,
                         shift_y = offset_y)
                     compound_coord_transform_components.append(f"{ele_name}_dxy")
-                # YRotation Second
+                # chi1 (rot_y_rad) Second
                 if rot_chi1 != 0:
                     environment.new(
-                        name    = f"{ele_name}_chi1",
-                        parent  = xt.YRotation,
-                        angle   = rot_chi1)
+                        name        = f"{ele_name}_chi1",
+                        parent      = xt.Rotation,
+                        rot_y_rad   = rot_chi1)
                     compound_coord_transform_components.append(f"{ele_name}_chi1")
-                # XRotation Third
+                # chi2 (rot_x_rad) Third
                 if rot_chi2 != 0:
                     environment.new(
-                        name    = f"{ele_name}_chi2",
-                        parent  = xt.XRotation,
-                        angle   = rot_chi2)
+                        name        = f"{ele_name}_chi2",
+                        parent      = xt.Rotation,
+                        rot_x_rad   = rot_chi2)
                     compound_coord_transform_components.append(f"{ele_name}_chi2")
-                # SRotation Fourth
+                # chi3 (rot_s_rad) Fourth
                 if rot_chi3 != 0:
                     environment.new(
-                        name    = f"{ele_name}_chi3",
-                        parent  = xt.SRotation,
-                        angle   = rot_chi3)
+                        name        = f"{ele_name}_chi3",
+                        parent      = xt.Rotation,
+                        rot_s_rad   = rot_chi3)
                     compound_coord_transform_components.append(f"{ele_name}_chi3")
 
                 environment.new_line(

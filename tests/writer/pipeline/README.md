@@ -45,9 +45,9 @@ rather than one serialised element or feature.
   - Cavity: `freq_{name}`, `volt_{name}`, `lag_{name}` always written (1 test)
   - Translation: `dx_{name}` and `dy_{name}` independently present/suppressed (2 tests)
   - TimeDelay: `dz_{name}` (1 test)
-  - XRotation: `chi2_{name}` (1 test)
-  - YRotation: `chi1_{name}` (1 test)
-  - SRotation: `chi3_{name}` (1 test)
+  - Rotation (rot_x_rad/chi2): `chi2_{name}` (1 test)
+  - Rotation (rot_y_rad/chi1): `chi1_{name}` (1 test)
+  - Rotation (rot_s_rad/chi3): `chi3_{name}` (1 test)
   All 22 tests expected to pass.
 
 ## Expected Failures

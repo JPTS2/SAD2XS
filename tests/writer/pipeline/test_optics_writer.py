@@ -401,40 +401,40 @@ def test_optics_writer_writes_dz_for_nonzero_timedelay(tmp_path):
 ################################################################################
 # Rotation Optics Tests
 ################################################################################
-def test_optics_writer_writes_chi2_for_nonzero_xrotation(tmp_path):
+def test_optics_writer_writes_chi2_for_nonzero_rotation_rot_x_rad(tmp_path):
     """
-    For an XRotation with angle != 0, write_optics should write a
+    For a Rotation with rot_x_rad != 0, write_optics should write a
     'chi2_{name}' variable to the optics file.
     """
     content = _optics_content(
-        xt.XRotation(angle = 1.25), "xrot1", tmp_path)
+        xt.Rotation(rot_x_rad = 1.25), "rot1", tmp_path)
 
-    assert "chi2_xrot1" in content, (
-        "write_optics should write 'chi2_xrot1' for an XRotation with "
-        f"angle = 1.25. File content: {content!r}.")
+    assert "chi2_rot1" in content, (
+        "write_optics should write 'chi2_rot1' for a Rotation with "
+        f"rot_x_rad = 1.25. File content: {content!r}.")
 
 
-def test_optics_writer_writes_chi1_for_nonzero_yrotation(tmp_path):
+def test_optics_writer_writes_chi1_for_nonzero_rotation_rot_y_rad(tmp_path):
     """
-    For a YRotation with angle != 0, write_optics should write a
+    For a Rotation with rot_y_rad != 0, write_optics should write a
     'chi1_{name}' variable to the optics file.
     """
     content = _optics_content(
-        xt.YRotation(angle = -1.25), "yrot1", tmp_path)
+        xt.Rotation(rot_y_rad = -1.25), "rot1", tmp_path)
 
-    assert "chi1_yrot1" in content, (
-        "write_optics should write 'chi1_yrot1' for a YRotation with "
-        f"angle = -1.25. File content: {content!r}.")
+    assert "chi1_rot1" in content, (
+        "write_optics should write 'chi1_rot1' for a Rotation with "
+        f"rot_y_rad = -1.25. File content: {content!r}.")
 
 
-def test_optics_writer_writes_chi3_for_nonzero_srotation(tmp_path):
+def test_optics_writer_writes_chi3_for_nonzero_rotation_rot_s_rad(tmp_path):
     """
-    For an SRotation with angle != 0, write_optics should write a
+    For a Rotation with rot_s_rad != 0, write_optics should write a
     'chi3_{name}' variable to the optics file.
     """
     content = _optics_content(
-        xt.SRotation(angle = 0.75), "srot1", tmp_path)
+        xt.Rotation(rot_s_rad = 0.75), "rot1", tmp_path)
 
-    assert "chi3_srot1" in content, (
-        "write_optics should write 'chi3_srot1' for an SRotation with "
-        f"angle = 0.75. File content: {content!r}.")
+    assert "chi3_rot1" in content, (
+        "write_optics should write 'chi3_rot1' for a Rotation with "
+        f"rot_s_rad = 0.75. File content: {content!r}.")

@@ -34,9 +34,9 @@ def _write_and_load(line, tmp_path):
 
         Translation 'rs1' -> dx_rs1, dy_rs1
         TimeDelay 'rs1' -> dz_rs1
-        YRotation 'rs1' -> chi1_rs1  (SAD CHI1)
-        XRotation 'rs1' -> chi2_rs1  (SAD CHI2)
-        SRotation 'rs1' -> chi3_rs1  (SAD CHI3)
+        Rotation 'rs1' (rot_y_rad) -> chi1_rs1  (SAD CHI1)
+        Rotation 'rs1' (rot_x_rad) -> chi2_rs1  (SAD CHI2)
+        Rotation 'rs1' (rot_s_rad) -> chi3_rs1  (SAD CHI3)
 
     Zero-valued fields are not written to the optics file; the lattice file
     always references the variable, and env.vars.default_to_zero = True returns
@@ -107,12 +107,12 @@ def _build_timedelay_line(shift_zeta = 0.0):
     return line
 
 
-def _build_yrotation_line(angle = 0.0):
+def _build_rotation_chi1_line(rot_y_rad = 0.0):
     """
-    Build a minimal single-YRotation Xsuite line with a reference particle.
+    Build a minimal single-Rotation (chi1/rot_y_rad) Xsuite line with a reference particle.
     """
     line = xt.Line(
-        elements      = [xt.Marker(), xt.YRotation(angle = angle), xt.Marker()],
+        elements      = [xt.Marker(), xt.Rotation(rot_y_rad = rot_y_rad), xt.Marker()],
         element_names = ["start", "rs1", "end"])
 
     line.particle_ref = xt.Particles(
@@ -123,12 +123,12 @@ def _build_yrotation_line(angle = 0.0):
     return line
 
 
-def _build_xrotation_line(angle = 0.0):
+def _build_rotation_chi2_line(rot_x_rad = 0.0):
     """
-    Build a minimal single-XRotation Xsuite line with a reference particle.
+    Build a minimal single-Rotation (chi2/rot_x_rad) Xsuite line with a reference particle.
     """
     line = xt.Line(
-        elements      = [xt.Marker(), xt.XRotation(angle = angle), xt.Marker()],
+        elements      = [xt.Marker(), xt.Rotation(rot_x_rad = rot_x_rad), xt.Marker()],
         element_names = ["start", "rs1", "end"])
 
     line.particle_ref = xt.Particles(
@@ -139,12 +139,12 @@ def _build_xrotation_line(angle = 0.0):
     return line
 
 
-def _build_srotation_line(angle = 0.0):
+def _build_rotation_chi3_line(rot_s_rad = 0.0):
     """
-    Build a minimal single-SRotation Xsuite line with a reference particle.
+    Build a minimal single-Rotation (chi3/rot_s_rad) Xsuite line with a reference particle.
     """
     line = xt.Line(
-        elements      = [xt.Marker(), xt.SRotation(angle = angle), xt.Marker()],
+        elements      = [xt.Marker(), xt.Rotation(rot_s_rad = rot_s_rad), xt.Marker()],
         element_names = ["start", "rs1", "end"])
 
     line.particle_ref = xt.Particles(
@@ -504,279 +504,276 @@ def test_refshift_writer_timedelay_shift_zeta_preserved_at_full_double_precision
 
 
 ################################################################################
-# YRotation (CHI1)
+# Rotation CHI1 (rot_y_rad)
 ################################################################################
 ########################################
 # Basic Serialisation
 ########################################
-def test_refshift_writer_yrotation_reloads_as_xsuite_yrotation(tmp_path):
+def test_refshift_writer_rotation_chi1_reloads_as_xsuite_rotation(tmp_path):
     """
-    A written YRotation element should reload as an xt.YRotation in a clean
-    Xsuite environment. YRotation maps to SAD CHI1; the optics variable is
-    chi1_{name}.
+    A written Rotation element with rot_y_rad should reload as an xt.Rotation
+    in a clean Xsuite environment. rot_y_rad maps to SAD CHI1; the optics
+    variable is chi1_{name}.
     """
-    original_line = _build_yrotation_line(angle = 1.0E-3)
+    original_line = _build_rotation_chi1_line(rot_y_rad = 1.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert isinstance(reloaded_line["rs1"], xt.YRotation), (
-        "Written YRotation element 'rs1' should reload as xt.YRotation. "
+    assert isinstance(reloaded_line["rs1"], xt.Rotation), (
+        "Written Rotation (chi1) element 'rs1' should reload as xt.Rotation. "
         f"Got: {type(reloaded_line['rs1']).__name__}.")
 
 
 ########################################
-# angle Field
+# rot_y_rad Field
 ########################################
-def test_refshift_writer_yrotation_preserves_positive_angle(tmp_path):
+def test_refshift_writer_rotation_chi1_preserves_positive_rot_y_rad(tmp_path):
     """
-    A positive YRotation angle should be preserved through a write and reload
-    cycle. Angle is written as optics variable chi1_rs1.
+    A positive rot_y_rad should be preserved through a write and reload cycle.
+    rot_y_rad is written as optics variable chi1_rs1.
     """
-    original_line = _build_yrotation_line(angle = 5.0E-3)
+    original_line = _build_rotation_chi1_line(rot_y_rad = 5.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert reloaded_line["rs1"].angle == pytest.approx(5.0E-3), (
-        "Writer roundtrip should preserve positive YRotation angle. "
-        f"Original: 5.0E-3, reloaded: {reloaded_line['rs1'].angle}.")
+    assert reloaded_line["rs1"].rot_y_rad == pytest.approx(5.0E-3), (
+        "Writer roundtrip should preserve positive Rotation rot_y_rad. "
+        f"Original: 5.0E-3, reloaded: {reloaded_line['rs1'].rot_y_rad}.")
 
 
-def test_refshift_writer_yrotation_preserves_negative_angle(tmp_path):
+def test_refshift_writer_rotation_chi1_preserves_negative_rot_y_rad(tmp_path):
     """
-    A negative YRotation angle should be preserved through a write and reload
-    cycle.
+    A negative rot_y_rad should be preserved through a write and reload cycle.
     """
-    original_line = _build_yrotation_line(angle = -5.0E-3)
+    original_line = _build_rotation_chi1_line(rot_y_rad = -5.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert reloaded_line["rs1"].angle == pytest.approx(-5.0E-3), (
-        "Writer roundtrip should preserve negative YRotation angle. "
-        f"Original: -5.0E-3, reloaded: {reloaded_line['rs1'].angle}.")
+    assert reloaded_line["rs1"].rot_y_rad == pytest.approx(-5.0E-3), (
+        "Writer roundtrip should preserve negative Rotation rot_y_rad. "
+        f"Original: -5.0E-3, reloaded: {reloaded_line['rs1'].rot_y_rad}.")
 
 
-def test_refshift_writer_yrotation_angle_is_accessible_as_optics_variable(tmp_path):
+def test_refshift_writer_rotation_chi1_is_accessible_as_optics_variable(tmp_path):
     """
-    After writing and reloading, the YRotation angle should be accessible as
-    named optics variable chi1_rs1 in the Xsuite environment.
+    After writing and reloading, rot_y_rad should be accessible as named optics
+    variable chi1_rs1 in the Xsuite environment.
     """
-    original_line = _build_yrotation_line(angle = 5.0E-3)
+    original_line = _build_rotation_chi1_line(rot_y_rad = 5.0E-3)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["chi1_rs1"] == pytest.approx(5.0E-3), (
         "Optics variable 'chi1_rs1' should exist in the environment after reload "
-        "and equal the original YRotation angle. "
+        "and equal the original rot_y_rad. "
         f"Got: {env['chi1_rs1']}.")
 
 
-def test_refshift_writer_yrotation_angle_is_tunable_via_optics_variable(tmp_path):
+def test_refshift_writer_rotation_chi1_is_tunable_via_optics_variable(tmp_path):
     """
     The chi1_rs1 optics variable should remain live after reload: modifying it
-    should immediately update the YRotation angle in the line.
+    should immediately update the Rotation rot_y_rad in the line.
     """
-    original_line = _build_yrotation_line(angle = 5.0E-3)
+    original_line = _build_rotation_chi1_line(rot_y_rad = 5.0E-3)
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     env["chi1_rs1"] = 10.0E-3
 
-    assert reloaded_line["rs1"].angle == pytest.approx(10.0E-3), (
-        "Modifying optics variable 'chi1_rs1' should update the YRotation angle. "
-        f"Got: {reloaded_line['rs1'].angle}.")
+    assert reloaded_line["rs1"].rot_y_rad == pytest.approx(10.0E-3), (
+        "Modifying optics variable 'chi1_rs1' should update the Rotation rot_y_rad. "
+        f"Got: {reloaded_line['rs1'].rot_y_rad}.")
 
 
-def test_refshift_writer_yrotation_angle_preserved_at_full_double_precision(tmp_path):
+def test_refshift_writer_rotation_chi1_preserved_at_full_double_precision(tmp_path):
     """
-    A YRotation angle with many significant digits should survive a write and
+    A Rotation rot_y_rad with many significant digits should survive a write and
     reload cycle at full double precision.
     """
-    angle_precise = 4.56789012345678901E-3
-    original_line = _build_yrotation_line(angle = angle_precise)
+    value_precise = 4.56789012345678901E-3
+    original_line = _build_rotation_chi1_line(rot_y_rad = value_precise)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
-    assert env["chi1_rs1"] == pytest.approx(angle_precise, rel = 1E-15), (
-        "Writer roundtrip should preserve YRotation angle at full double precision. "
-        f"Original: {angle_precise!r}, reloaded env var: {env['chi1_rs1']!r}.")
+    assert env["chi1_rs1"] == pytest.approx(value_precise, rel = 1E-15), (
+        "Writer roundtrip should preserve Rotation rot_y_rad at full double precision. "
+        f"Original: {value_precise!r}, reloaded env var: {env['chi1_rs1']!r}.")
 
 
 ################################################################################
-# XRotation (CHI2)
+# Rotation CHI2 (rot_x_rad)
 ################################################################################
 ########################################
 # Basic Serialisation
 ########################################
-def test_refshift_writer_xrotation_reloads_as_xsuite_xrotation(tmp_path):
+def test_refshift_writer_rotation_chi2_reloads_as_xsuite_rotation(tmp_path):
     """
-    A written XRotation element should reload as an xt.XRotation in a clean
-    Xsuite environment. XRotation maps to SAD CHI2; the optics variable is
-    chi2_{name}.
+    A written Rotation element with rot_x_rad should reload as an xt.Rotation
+    in a clean Xsuite environment. rot_x_rad maps to SAD CHI2; the optics
+    variable is chi2_{name}.
     """
-    original_line = _build_xrotation_line(angle = 1.0E-3)
+    original_line = _build_rotation_chi2_line(rot_x_rad = 1.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert isinstance(reloaded_line["rs1"], xt.XRotation), (
-        "Written XRotation element 'rs1' should reload as xt.XRotation. "
+    assert isinstance(reloaded_line["rs1"], xt.Rotation), (
+        "Written Rotation (chi2) element 'rs1' should reload as xt.Rotation. "
         f"Got: {type(reloaded_line['rs1']).__name__}.")
 
 
 ########################################
-# angle Field
+# rot_x_rad Field
 ########################################
-def test_refshift_writer_xrotation_preserves_positive_angle(tmp_path):
+def test_refshift_writer_rotation_chi2_preserves_positive_rot_x_rad(tmp_path):
     """
-    A positive XRotation angle should be preserved through a write and reload
-    cycle. Angle is written as optics variable chi2_rs1.
+    A positive rot_x_rad should be preserved through a write and reload cycle.
+    rot_x_rad is written as optics variable chi2_rs1.
     """
-    original_line = _build_xrotation_line(angle = 5.0E-3)
+    original_line = _build_rotation_chi2_line(rot_x_rad = 5.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert reloaded_line["rs1"].angle == pytest.approx(5.0E-3), (
-        "Writer roundtrip should preserve positive XRotation angle. "
-        f"Original: 5.0E-3, reloaded: {reloaded_line['rs1'].angle}.")
+    assert reloaded_line["rs1"].rot_x_rad == pytest.approx(5.0E-3), (
+        "Writer roundtrip should preserve positive Rotation rot_x_rad. "
+        f"Original: 5.0E-3, reloaded: {reloaded_line['rs1'].rot_x_rad}.")
 
 
-def test_refshift_writer_xrotation_preserves_negative_angle(tmp_path):
+def test_refshift_writer_rotation_chi2_preserves_negative_rot_x_rad(tmp_path):
     """
-    A negative XRotation angle should be preserved through a write and reload
-    cycle.
+    A negative rot_x_rad should be preserved through a write and reload cycle.
     """
-    original_line = _build_xrotation_line(angle = -5.0E-3)
+    original_line = _build_rotation_chi2_line(rot_x_rad = -5.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert reloaded_line["rs1"].angle == pytest.approx(-5.0E-3), (
-        "Writer roundtrip should preserve negative XRotation angle. "
-        f"Original: -5.0E-3, reloaded: {reloaded_line['rs1'].angle}.")
+    assert reloaded_line["rs1"].rot_x_rad == pytest.approx(-5.0E-3), (
+        "Writer roundtrip should preserve negative Rotation rot_x_rad. "
+        f"Original: -5.0E-3, reloaded: {reloaded_line['rs1'].rot_x_rad}.")
 
 
-def test_refshift_writer_xrotation_angle_is_accessible_as_optics_variable(tmp_path):
+def test_refshift_writer_rotation_chi2_is_accessible_as_optics_variable(tmp_path):
     """
-    After writing and reloading, the XRotation angle should be accessible as
-    named optics variable chi2_rs1 in the Xsuite environment.
+    After writing and reloading, rot_x_rad should be accessible as named optics
+    variable chi2_rs1 in the Xsuite environment.
     """
-    original_line = _build_xrotation_line(angle = 5.0E-3)
+    original_line = _build_rotation_chi2_line(rot_x_rad = 5.0E-3)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["chi2_rs1"] == pytest.approx(5.0E-3), (
         "Optics variable 'chi2_rs1' should exist in the environment after reload "
-        "and equal the original XRotation angle. "
+        "and equal the original rot_x_rad. "
         f"Got: {env['chi2_rs1']}.")
 
 
-def test_refshift_writer_xrotation_angle_is_tunable_via_optics_variable(tmp_path):
+def test_refshift_writer_rotation_chi2_is_tunable_via_optics_variable(tmp_path):
     """
     The chi2_rs1 optics variable should remain live after reload: modifying it
-    should immediately update the XRotation angle in the line.
+    should immediately update the Rotation rot_x_rad in the line.
     """
-    original_line = _build_xrotation_line(angle = 5.0E-3)
+    original_line = _build_rotation_chi2_line(rot_x_rad = 5.0E-3)
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     env["chi2_rs1"] = 10.0E-3
 
-    assert reloaded_line["rs1"].angle == pytest.approx(10.0E-3), (
-        "Modifying optics variable 'chi2_rs1' should update the XRotation angle. "
-        f"Got: {reloaded_line['rs1'].angle}.")
+    assert reloaded_line["rs1"].rot_x_rad == pytest.approx(10.0E-3), (
+        "Modifying optics variable 'chi2_rs1' should update the Rotation rot_x_rad. "
+        f"Got: {reloaded_line['rs1'].rot_x_rad}.")
 
 
-def test_refshift_writer_xrotation_angle_preserved_at_full_double_precision(tmp_path):
+def test_refshift_writer_rotation_chi2_preserved_at_full_double_precision(tmp_path):
     """
-    An XRotation angle with many significant digits should survive a write and
+    A Rotation rot_x_rad with many significant digits should survive a write and
     reload cycle at full double precision.
     """
-    angle_precise = 4.56789012345678901E-3
-    original_line = _build_xrotation_line(angle = angle_precise)
+    value_precise = 4.56789012345678901E-3
+    original_line = _build_rotation_chi2_line(rot_x_rad = value_precise)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
-    assert env["chi2_rs1"] == pytest.approx(angle_precise, rel = 1E-15), (
-        "Writer roundtrip should preserve XRotation angle at full double precision. "
-        f"Original: {angle_precise!r}, reloaded env var: {env['chi2_rs1']!r}.")
+    assert env["chi2_rs1"] == pytest.approx(value_precise, rel = 1E-15), (
+        "Writer roundtrip should preserve Rotation rot_x_rad at full double precision. "
+        f"Original: {value_precise!r}, reloaded env var: {env['chi2_rs1']!r}.")
 
 
 ################################################################################
-# SRotation (CHI3)
+# Rotation CHI3 (rot_s_rad)
 ################################################################################
 ########################################
 # Basic Serialisation
 ########################################
-def test_refshift_writer_srotation_reloads_as_xsuite_srotation(tmp_path):
+def test_refshift_writer_rotation_chi3_reloads_as_xsuite_rotation(tmp_path):
     """
-    A written SRotation element should reload as an xt.SRotation in a clean
-    Xsuite environment. SRotation maps to SAD CHI3; the optics variable is
-    chi3_{name}.
+    A written Rotation element with rot_s_rad should reload as an xt.Rotation
+    in a clean Xsuite environment. rot_s_rad maps to SAD CHI3; the optics
+    variable is chi3_{name}.
     """
-    original_line = _build_srotation_line(angle = 1.0E-3)
+    original_line = _build_rotation_chi3_line(rot_s_rad = 1.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert isinstance(reloaded_line["rs1"], xt.SRotation), (
-        "Written SRotation element 'rs1' should reload as xt.SRotation. "
+    assert isinstance(reloaded_line["rs1"], xt.Rotation), (
+        "Written Rotation (chi3) element 'rs1' should reload as xt.Rotation. "
         f"Got: {type(reloaded_line['rs1']).__name__}.")
 
 
 ########################################
-# angle Field
+# rot_s_rad Field
 ########################################
-def test_refshift_writer_srotation_preserves_positive_angle(tmp_path):
+def test_refshift_writer_rotation_chi3_preserves_positive_rot_s_rad(tmp_path):
     """
-    A positive SRotation angle should be preserved through a write and reload
-    cycle. Angle is written as optics variable chi3_rs1.
+    A positive rot_s_rad should be preserved through a write and reload cycle.
+    rot_s_rad is written as optics variable chi3_rs1.
     """
-    original_line = _build_srotation_line(angle = 0.05)
+    original_line = _build_rotation_chi3_line(rot_s_rad = 0.05)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert reloaded_line["rs1"].angle == pytest.approx(0.05), (
-        "Writer roundtrip should preserve positive SRotation angle. "
-        f"Original: 0.05, reloaded: {reloaded_line['rs1'].angle}.")
+    assert reloaded_line["rs1"].rot_s_rad == pytest.approx(0.05), (
+        "Writer roundtrip should preserve positive Rotation rot_s_rad. "
+        f"Original: 0.05, reloaded: {reloaded_line['rs1'].rot_s_rad}.")
 
 
-def test_refshift_writer_srotation_preserves_negative_angle(tmp_path):
+def test_refshift_writer_rotation_chi3_preserves_negative_rot_s_rad(tmp_path):
     """
-    A negative SRotation angle should be preserved through a write and reload
-    cycle.
+    A negative rot_s_rad should be preserved through a write and reload cycle.
     """
-    original_line = _build_srotation_line(angle = -0.05)
+    original_line = _build_rotation_chi3_line(rot_s_rad = -0.05)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert reloaded_line["rs1"].angle == pytest.approx(-0.05), (
-        "Writer roundtrip should preserve negative SRotation angle. "
-        f"Original: -0.05, reloaded: {reloaded_line['rs1'].angle}.")
+    assert reloaded_line["rs1"].rot_s_rad == pytest.approx(-0.05), (
+        "Writer roundtrip should preserve negative Rotation rot_s_rad. "
+        f"Original: -0.05, reloaded: {reloaded_line['rs1'].rot_s_rad}.")
 
 
-def test_refshift_writer_srotation_angle_is_accessible_as_optics_variable(tmp_path):
+def test_refshift_writer_rotation_chi3_is_accessible_as_optics_variable(tmp_path):
     """
-    After writing and reloading, the SRotation angle should be accessible as
-    named optics variable chi3_rs1 in the Xsuite environment.
+    After writing and reloading, rot_s_rad should be accessible as named optics
+    variable chi3_rs1 in the Xsuite environment.
     """
-    original_line = _build_srotation_line(angle = 0.05)
+    original_line = _build_rotation_chi3_line(rot_s_rad = 0.05)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["chi3_rs1"] == pytest.approx(0.05), (
         "Optics variable 'chi3_rs1' should exist in the environment after reload "
-        "and equal the original SRotation angle. "
+        "and equal the original rot_s_rad. "
         f"Got: {env['chi3_rs1']}.")
 
 
-def test_refshift_writer_srotation_angle_is_tunable_via_optics_variable(tmp_path):
+def test_refshift_writer_rotation_chi3_is_tunable_via_optics_variable(tmp_path):
     """
     The chi3_rs1 optics variable should remain live after reload: modifying it
-    should immediately update the SRotation angle in the line.
+    should immediately update the Rotation rot_s_rad in the line.
     """
-    original_line = _build_srotation_line(angle = 0.05)
+    original_line = _build_rotation_chi3_line(rot_s_rad = 0.05)
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     env["chi3_rs1"] = 0.10
 
-    assert reloaded_line["rs1"].angle == pytest.approx(0.10), (
-        "Modifying optics variable 'chi3_rs1' should update the SRotation angle. "
-        f"Got: {reloaded_line['rs1'].angle}.")
+    assert reloaded_line["rs1"].rot_s_rad == pytest.approx(0.10), (
+        "Modifying optics variable 'chi3_rs1' should update the Rotation rot_s_rad. "
+        f"Got: {reloaded_line['rs1'].rot_s_rad}.")
 
 
-def test_refshift_writer_srotation_angle_preserved_at_full_double_precision(tmp_path):
+def test_refshift_writer_rotation_chi3_preserved_at_full_double_precision(tmp_path):
     """
-    An SRotation angle with many significant digits should survive a write and
+    A Rotation rot_s_rad with many significant digits should survive a write and
     reload cycle at full double precision.
     """
-    angle_precise = 4.56789012345678901E-2
-    original_line = _build_srotation_line(angle = angle_precise)
+    value_precise = 4.56789012345678901E-2
+    original_line = _build_rotation_chi3_line(rot_s_rad = value_precise)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
-    assert env["chi3_rs1"] == pytest.approx(angle_precise, rel = 1E-15), (
-        "Writer roundtrip should preserve SRotation angle at full double precision. "
-        f"Original: {angle_precise!r}, reloaded env var: {env['chi3_rs1']!r}.")
+    assert env["chi3_rs1"] == pytest.approx(value_precise, rel = 1E-15), (
+        "Writer roundtrip should preserve Rotation rot_s_rad at full double precision. "
+        f"Original: {value_precise!r}, reloaded env var: {env['chi3_rs1']!r}.")
 
 
 ################################################################################
@@ -796,9 +793,9 @@ def test_refshift_writer_preserves_all_five_types_in_one_line(tmp_path):
             xt.Marker(),
             xt.Translation(shift_x = 1.0E-3, shift_y = -2.0E-3),
             xt.TimeDelay(shift_zeta = 0.5E-3),
-            xt.YRotation(angle = 3.0E-3),
-            xt.XRotation(angle = -4.0E-3),
-            xt.SRotation(angle = 0.05),
+            xt.Rotation(rot_y_rad = 3.0E-3),
+            xt.Rotation(rot_x_rad = -4.0E-3),
+            xt.Rotation(rot_s_rad = 0.05),
             xt.Marker(),
         ],
         element_names = ["start", "rsxy", "rsdz", "rsyr", "rsxr", "rssr", "end"])
@@ -819,15 +816,15 @@ def test_refshift_writer_preserves_all_five_types_in_one_line(tmp_path):
     assert reloaded_line["rsdz"].shift_zeta == pytest.approx( 0.5E-3), (
         f"Writer roundtrip should preserve TimeDelay shift_zeta. "
         f"Original: 0.5E-3, reloaded: {reloaded_line['rsdz'].shift_zeta}.")
-    assert reloaded_line["rsyr"].angle == pytest.approx( 3.0E-3), (
-        f"Writer roundtrip should preserve YRotation angle. "
-        f"Original: 3.0E-3, reloaded: {reloaded_line['rsyr'].angle}.")
-    assert reloaded_line["rsxr"].angle == pytest.approx(-4.0E-3), (
-        f"Writer roundtrip should preserve XRotation angle. "
-        f"Original: -4.0E-3, reloaded: {reloaded_line['rsxr'].angle}.")
-    assert reloaded_line["rssr"].angle == pytest.approx( 0.05),   (
-        f"Writer roundtrip should preserve SRotation angle. "
-        f"Original: 0.05, reloaded: {reloaded_line['rssr'].angle}.")
+    assert reloaded_line["rsyr"].rot_y_rad == pytest.approx( 3.0E-3), (
+        f"Writer roundtrip should preserve Rotation rot_y_rad (chi1). "
+        f"Original: 3.0E-3, reloaded: {reloaded_line['rsyr'].rot_y_rad}.")
+    assert reloaded_line["rsxr"].rot_x_rad == pytest.approx(-4.0E-3), (
+        f"Writer roundtrip should preserve Rotation rot_x_rad (chi2). "
+        f"Original: -4.0E-3, reloaded: {reloaded_line['rsxr'].rot_x_rad}.")
+    assert reloaded_line["rssr"].rot_s_rad == pytest.approx( 0.05),   (
+        f"Writer roundtrip should preserve Rotation rot_s_rad (chi3). "
+        f"Original: 0.05, reloaded: {reloaded_line['rssr'].rot_s_rad}.")
 
     assert env["dx_rsxy"]    == pytest.approx( 1.0E-3), (
         "Optics variable 'dx_rsxy' should be accessible and correct.")

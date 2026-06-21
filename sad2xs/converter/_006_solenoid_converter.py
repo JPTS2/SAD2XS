@@ -427,11 +427,9 @@ def convert_solenoids(
                     (
                         xt.Translation,
                         xt.TimeDelay,
-                        xt.XRotation,
-                        xt.YRotation,
-                        xt.SRotation,
+                        xt.Rotation,
                         xt.Marker,
-                        xt.LimitEllipse)):  
+                        xt.LimitEllipse)):
                     # Known elements that don"t need conversion
                     continue
                 elif config._verbose:
@@ -716,9 +714,9 @@ def solenoid_reference_shift_corrections(
         line[translation_name].shift_x *= dxy_sign
         line[translation_name].shift_y *= dxy_sign
 
-        line[chi1_shift_name].angle *= chi_sign
-        line[chi2_shift_name].angle *= chi_sign
-        line[chi3_shift_name].angle *= chi_sign
+        line[chi1_shift_name].rot_y_rad *= chi_sign
+        line[chi2_shift_name].rot_x_rad *= chi_sign
+        line[chi3_shift_name].rot_s_rad *= chi_sign
 
     ########################################
     # Inbound Geo Forward Forward Solenoids (Complete: test_003)
