@@ -63,12 +63,15 @@ jobs:
             -e SKIP_SMOKE \
             -v "$GITHUB_WORKSPACE":/work -w /work \
             "$IMAGE" \
-            pytest -ra -q -m "not known_issue" \
-              tests/packaging \
-              tests/ci \
-              tests/observability/test_quiet_converter_output.py \
-              tests/parser \
-              tests/writer
+            bash -lc '
+              python -m pip install --no-cache-dir -e . &&
+              pytest -ra -q -m "not known_issue" \
+                tests/packaging \
+                tests/ci \
+                tests/observability/test_quiet_converter_output.py \
+                tests/parser \
+                tests/writer
+            '
 
 ################################################################################
 # SAD-required regression tests — BLOCKING
@@ -108,12 +111,15 @@ jobs:
             -e SKIP_SMOKE \
             -v "$GITHUB_WORKSPACE":/work -w /work \
             "$IMAGE" \
-            pytest -ra -q -m "not known_issue" \
-              tests/conversion \
-              tests/sad_helpers \
-              tests/observability \
-              tests/examples \
-              tests/installation
+            bash -lc '
+              python -m pip install --no-cache-dir -e . &&
+              pytest -ra -q -m "not known_issue" \
+                tests/conversion \
+                tests/sad_helpers \
+                tests/observability \
+                tests/examples \
+                tests/installation
+            '
 
 ################################################################################
 # Known-issue tests — NON-BLOCKING
@@ -123,7 +129,6 @@ jobs:
 ################################################################################
   known-issues:
     runs-on: ubuntu-24.04
-    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -145,6 +150,7 @@ jobs:
         run: docker pull "$IMAGE"
 
       - name: Run known-issue tests
+        continue-on-error: true
         env:
           SKIP_SMOKE: "1"
         run: |
@@ -152,5 +158,7 @@ jobs:
             -e SKIP_SMOKE \
             -v "$GITHUB_WORKSPACE":/work -w /work \
             "$IMAGE" \
-            pytest -ra -q -m "known_issue" \
-              tests/
+            bash -lc '
+              python -m pip install --no-cache-dir -e . &&
+              pytest -ra -q -m "known_issue" tests/
+            '
