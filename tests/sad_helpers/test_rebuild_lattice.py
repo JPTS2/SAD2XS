@@ -1,6 +1,6 @@
 """
 ================================================================================
-<Placeholder file header>
+Tests for sad2xs.sad_helpers.rebuild lattice
 ================================================================================
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
@@ -9,7 +9,7 @@ See LICENSE.txt for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-11
+Date:       2026-06-21
 ================================================================================
 """
 ################################################################################

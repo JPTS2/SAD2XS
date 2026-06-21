@@ -197,10 +197,10 @@ def test_writer_roundtrip_preserves_supported_line_contract(tmp_path):
         line     = original_line,
         tmp_path = tmp_path)
 
-    assert reloaded_line.element_names == original_line.element_names, (
+    assert list(reloaded_line.element_names) == list(original_line.element_names), (
         "Writer roundtrip should preserve element names and order. "
-        f"Original: {original_line.element_names}; reloaded: "
-        f"{reloaded_line.element_names}.")
+        f"Original: {list(original_line.element_names)}; reloaded: "
+        f"{list(reloaded_line.element_names)}.")
 
     original_table = original_line.get_table()
     reloaded_table = reloaded_line.get_table()
