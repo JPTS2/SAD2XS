@@ -1,0 +1,21 @@
+name: Test SAD Helpers
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: test-sad-helpers-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run:
+    uses: ./.github/workflows/_test_template.yml
+    with:
+      pull_tag: latest
+      test_files: |
+        tests/sad_helpers
+    secrets: inherit

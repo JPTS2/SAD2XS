@@ -1,0 +1,21 @@
+name: Test Examples
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: test-examples-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run:
+    uses: ./.github/workflows/_test_template.yml
+    with:
+      pull_tag: latest
+      test_files: |
+        tests/examples
+    secrets: inherit
