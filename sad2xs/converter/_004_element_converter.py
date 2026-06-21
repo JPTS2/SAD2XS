@@ -1616,9 +1616,9 @@ def convert_solenoids(
 
             environment.new(
                 name    = f"{ele_name}_dxy",
-                parent  = xt.XYShift,
-                dx      = offset_x,
-                dy      = offset_y)
+                parent  = xt.Translation,
+                shift_x = offset_x,
+                shift_y = offset_y)
 
             environment.new(
                 name    = f"{ele_name}_dz",
@@ -1862,23 +1862,23 @@ def convert_coordinate_transformations(
             # In this case, it is some transform, but we don"t know what, so guess this
             environment.new(
                 name    = ele_name,
-                parent  = xt.XYShift)
+                parent  = xt.Translation)
             if config._verbose:
                 print(
                     f"Warning! Coordinate transformation {ele_name} has no transformations defined, " +\
-                    "installing as XYShift")
+                    "installing as Translation")
             continue
         elif n_transforms == 1:
             if offset_x != 0:
                 environment.new(
                     name    = ele_name,
-                    parent  = xt.XYShift,
-                    dx      = offset_x)
+                    parent  = xt.Translation,
+                    shift_x = offset_x)
             if offset_y != 0:
                 environment.new(
                     name    = ele_name,
-                    parent  = xt.XYShift,
-                    dy      = offset_y)
+                    parent  = xt.Translation,
+                    shift_y = offset_y)
             if rot_chi1 != 0:
                 environment.new(
                     name    = ele_name,
@@ -1897,9 +1897,9 @@ def convert_coordinate_transformations(
         elif n_transforms == 2 and offset_x != 0 and offset_y != 0:
             environment.new(
                 name    = ele_name,
-                parent  = xt.XYShift,
-                dx      = offset_x,
-                dy      = offset_y)
+                parent  = xt.Translation,
+                shift_x = offset_x,
+                shift_y = offset_y)
         else:
             compound_coord_transform_components = []
             # Order from testing and agrees with the SAD manual online
@@ -1930,9 +1930,9 @@ def convert_coordinate_transformations(
                 if offset_x != 0 or offset_y != 0:
                     environment.new(
                         name    = f"{ele_name}_dxy",
-                        parent  = xt.XYShift,
-                        dx      = offset_x,
-                        dy      = offset_y)
+                        parent  = xt.Translation,
+                        shift_x = offset_x,
+                        shift_y = offset_y)
                     compound_coord_transform_components.append(f"{ele_name}_dxy")
 
                 environment.new_line(
@@ -1944,9 +1944,9 @@ def convert_coordinate_transformations(
                 if offset_x != 0 or offset_y != 0:
                     environment.new(
                         name    = f"{ele_name}_dxy",
-                        parent  = xt.XYShift,
-                        dx      = offset_x,
-                        dy      = offset_y)
+                        parent  = xt.Translation,
+                        shift_x = offset_x,
+                        shift_y = offset_y)
                     compound_coord_transform_components.append(f"{ele_name}_dxy")
                 # YRotation Second
                 if rot_chi1 != 0:

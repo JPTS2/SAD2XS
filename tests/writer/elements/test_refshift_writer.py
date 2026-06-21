@@ -32,7 +32,7 @@ def _write_and_load(line, tmp_path):
     All five reference shift element types write their parameters as live optics
     expression variables. The variable name is derived from the element name:
 
-        XYShift   'rs1' -> dx_rs1, dy_rs1
+        Translation 'rs1' -> dx_rs1, dy_rs1
         TimeDelay 'rs1' -> dz_rs1
         YRotation 'rs1' -> chi1_rs1  (SAD CHI1)
         XRotation 'rs1' -> chi2_rs1  (SAD CHI2)
@@ -75,12 +75,12 @@ def _writer_roundtrip(line, tmp_path):
     return reloaded_line
 
 
-def _build_xyshift_line(dx = 0.0, dy = 0.0):
+def _build_translation_line(shift_x = 0.0, shift_y = 0.0):
     """
-    Build a minimal single-XYShift Xsuite line with a reference particle.
+    Build a minimal single-Translation Xsuite line with a reference particle.
     """
     line = xt.Line(
-        elements      = [xt.Marker(), xt.XYShift(dx = dx, dy = dy), xt.Marker()],
+        elements      = [xt.Marker(), xt.Translation(shift_x = shift_x, shift_y = shift_y), xt.Marker()],
         element_names = ["start", "rs1", "end"])
 
     line.particle_ref = xt.Particles(
@@ -156,230 +156,232 @@ def _build_srotation_line(angle = 0.0):
 
 
 ################################################################################
-# XYShift
+# Translation
 ################################################################################
 ########################################
 # Basic Serialisation
 ########################################
-def test_refshift_writer_xyshift_reloads_as_xsuite_xyshift(tmp_path):
+def test_refshift_writer_translation_reloads_as_xsuite_translation(tmp_path):
     """
-    A written XYShift element should reload as an xt.XYShift in a clean
+    A written Translation element should reload as an xt.Translation in a clean
     Xsuite environment.
     """
-    original_line = _build_xyshift_line(dx = 1.0E-3)
+    original_line = _build_translation_line(shift_x = 1.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert isinstance(reloaded_line["rs1"], xt.XYShift), (
-        "Written XYShift element 'rs1' should reload as xt.XYShift. "
+    assert isinstance(reloaded_line["rs1"], xt.Translation), (
+        "Written Translation element 'rs1' should reload as xt.Translation. "
         f"Got: {type(reloaded_line['rs1']).__name__}.")
 
 
-def test_refshift_writer_xyshift_preserves_element_name(tmp_path):
+def test_refshift_writer_translation_preserves_element_name(tmp_path):
     """
-    A written XYShift element should appear under its original name in the
+    A written Translation element should appear under its original name in the
     reloaded line.
     """
-    original_line = _build_xyshift_line(dx = 1.0E-3)
+    original_line = _build_translation_line(shift_x = 1.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert "rs1" in list(reloaded_line.element_names), (
-        "Reloaded line should contain XYShift element 'rs1'. "
+        "Reloaded line should contain Translation element 'rs1'. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
 ########################################
-# dx Field
+# shift_x Field
 ########################################
-def test_refshift_writer_xyshift_preserves_positive_dx(tmp_path):
+def test_refshift_writer_translation_preserves_positive_shift_x(tmp_path):
     """
-    A positive transverse shift dx should be preserved through a write and
-    reload cycle. dx is written as optics variable dx_rs1.
+    A positive transverse shift_x should be preserved through a write and
+    reload cycle. shift_x is written as optics variable dx_rs1.
     """
-    original_line = _build_xyshift_line(dx = 1.5E-3)
+    original_line = _build_translation_line(shift_x = 1.5E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert reloaded_line["rs1"].dx == pytest.approx(1.5E-3), (
-        "Writer roundtrip should preserve positive XYShift dx. "
-        f"Original: 1.5E-3, reloaded: {reloaded_line['rs1'].dx}.")
+    assert reloaded_line["rs1"].shift_x == pytest.approx(1.5E-3), (
+        "Writer roundtrip should preserve positive Translation shift_x. "
+        f"Original: 1.5E-3, reloaded: {reloaded_line['rs1'].shift_x}.")
 
 
-def test_refshift_writer_xyshift_preserves_negative_dx(tmp_path):
+def test_refshift_writer_translation_preserves_negative_shift_x(tmp_path):
     """
-    A negative transverse shift dx should be preserved through a write and
+    A negative transverse shift_x should be preserved through a write and
     reload cycle.
     """
-    original_line = _build_xyshift_line(dx = -1.5E-3)
+    original_line = _build_translation_line(shift_x = -1.5E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert reloaded_line["rs1"].dx == pytest.approx(-1.5E-3), (
-        "Writer roundtrip should preserve negative XYShift dx. "
-        f"Original: -1.5E-3, reloaded: {reloaded_line['rs1'].dx}.")
+    assert reloaded_line["rs1"].shift_x == pytest.approx(-1.5E-3), (
+        "Writer roundtrip should preserve negative Translation shift_x. "
+        f"Original: -1.5E-3, reloaded: {reloaded_line['rs1'].shift_x}.")
 
 
-def test_refshift_writer_xyshift_dx_is_accessible_as_optics_variable(tmp_path):
+def test_refshift_writer_translation_shift_x_is_accessible_as_optics_variable(tmp_path):
     """
-    After writing and reloading, the XYShift dx field should be accessible as
-    named optics variable dx_rs1 in the Xsuite environment.
+    After writing and reloading, the Translation shift_x field should be
+    accessible as named optics variable dx_rs1 in the Xsuite environment.
     """
-    original_line = _build_xyshift_line(dx = 1.5E-3)
+    original_line = _build_translation_line(shift_x = 1.5E-3)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["dx_rs1"] == pytest.approx(1.5E-3), (
         "Optics variable 'dx_rs1' should exist in the environment after reload "
-        "and equal the original dx. "
+        "and equal the original shift_x. "
         f"Got: {env['dx_rs1']}.")
 
 
-def test_refshift_writer_xyshift_dx_is_tunable_via_optics_variable(tmp_path):
+def test_refshift_writer_translation_shift_x_is_tunable_via_optics_variable(tmp_path):
     """
     The dx_rs1 optics variable should remain live after reload: modifying it
-    should immediately update the XYShift dx in the line.
+    should immediately update the Translation shift_x in the line.
     """
-    original_line = _build_xyshift_line(dx = 1.5E-3)
+    original_line = _build_translation_line(shift_x = 1.5E-3)
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     env["dx_rs1"] = 3.0E-3
 
-    assert reloaded_line["rs1"].dx == pytest.approx(3.0E-3), (
-        "Modifying optics variable 'dx_rs1' should update the XYShift dx. "
-        f"Got: {reloaded_line['rs1'].dx}.")
+    assert reloaded_line["rs1"].shift_x == pytest.approx(3.0E-3), (
+        "Modifying optics variable 'dx_rs1' should update the Translation shift_x. "
+        f"Got: {reloaded_line['rs1'].shift_x}.")
 
 
 ########################################
-# dy Field
+# shift_y Field
 ########################################
-def test_refshift_writer_xyshift_preserves_positive_dy(tmp_path):
+def test_refshift_writer_translation_preserves_positive_shift_y(tmp_path):
     """
-    A positive transverse shift dy should be preserved through a write and
-    reload cycle. dy is written as optics variable dy_rs1.
+    A positive transverse shift_y should be preserved through a write and
+    reload cycle. shift_y is written as optics variable dy_rs1.
     """
-    original_line = _build_xyshift_line(dy = 2.0E-3)
+    original_line = _build_translation_line(shift_y = 2.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert reloaded_line["rs1"].dy == pytest.approx(2.0E-3), (
-        "Writer roundtrip should preserve positive XYShift dy. "
-        f"Original: 2.0E-3, reloaded: {reloaded_line['rs1'].dy}.")
+    assert reloaded_line["rs1"].shift_y == pytest.approx(2.0E-3), (
+        "Writer roundtrip should preserve positive Translation shift_y. "
+        f"Original: 2.0E-3, reloaded: {reloaded_line['rs1'].shift_y}.")
 
 
-def test_refshift_writer_xyshift_preserves_negative_dy(tmp_path):
+def test_refshift_writer_translation_preserves_negative_shift_y(tmp_path):
     """
-    A negative transverse shift dy should be preserved through a write and
+    A negative transverse shift_y should be preserved through a write and
     reload cycle.
     """
-    original_line = _build_xyshift_line(dy = -2.0E-3)
+    original_line = _build_translation_line(shift_y = -2.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert reloaded_line["rs1"].dy == pytest.approx(-2.0E-3), (
-        "Writer roundtrip should preserve negative XYShift dy. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['rs1'].dy}.")
+    assert reloaded_line["rs1"].shift_y == pytest.approx(-2.0E-3), (
+        "Writer roundtrip should preserve negative Translation shift_y. "
+        f"Original: -2.0E-3, reloaded: {reloaded_line['rs1'].shift_y}.")
 
 
-def test_refshift_writer_xyshift_dy_is_accessible_as_optics_variable(tmp_path):
+def test_refshift_writer_translation_shift_y_is_accessible_as_optics_variable(tmp_path):
     """
-    After writing and reloading, the XYShift dy field should be accessible as
-    named optics variable dy_rs1 in the Xsuite environment.
+    After writing and reloading, the Translation shift_y field should be
+    accessible as named optics variable dy_rs1 in the Xsuite environment.
     """
-    original_line = _build_xyshift_line(dy = 2.0E-3)
+    original_line = _build_translation_line(shift_y = 2.0E-3)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["dy_rs1"] == pytest.approx(2.0E-3), (
         "Optics variable 'dy_rs1' should exist in the environment after reload "
-        "and equal the original dy. "
+        "and equal the original shift_y. "
         f"Got: {env['dy_rs1']}.")
 
 
-def test_refshift_writer_xyshift_dy_is_tunable_via_optics_variable(tmp_path):
+def test_refshift_writer_translation_shift_y_is_tunable_via_optics_variable(tmp_path):
     """
     The dy_rs1 optics variable should remain live after reload: modifying it
-    should immediately update the XYShift dy in the line.
+    should immediately update the Translation shift_y in the line.
     """
-    original_line = _build_xyshift_line(dy = 2.0E-3)
+    original_line = _build_translation_line(shift_y = 2.0E-3)
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     env["dy_rs1"] = 4.0E-3
 
-    assert reloaded_line["rs1"].dy == pytest.approx(4.0E-3), (
-        "Modifying optics variable 'dy_rs1' should update the XYShift dy. "
-        f"Got: {reloaded_line['rs1'].dy}.")
+    assert reloaded_line["rs1"].shift_y == pytest.approx(4.0E-3), (
+        "Modifying optics variable 'dy_rs1' should update the Translation shift_y. "
+        f"Got: {reloaded_line['rs1'].shift_y}.")
 
 
 ########################################
-# dx and dy Simultaneously
+# shift_x and shift_y Simultaneously
 ########################################
-def test_refshift_writer_xyshift_preserves_dx_and_dy_simultaneously(tmp_path):
+def test_refshift_writer_translation_preserves_shift_x_and_shift_y_simultaneously(tmp_path):
     """
-    An XYShift with both dx and dy non-zero should preserve both through a
-    write and reload cycle. Each field has its own independent optics variable.
+    A Translation with both shift_x and shift_y non-zero should preserve both
+    through a write and reload cycle. Each field has its own independent optics
+    variable.
     """
-    original_line = _build_xyshift_line(dx = 1.5E-3, dy = -2.0E-3)
+    original_line = _build_translation_line(shift_x = 1.5E-3, shift_y = -2.0E-3)
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
 
-    assert reloaded_line["rs1"].dx == pytest.approx(1.5E-3), (
-        "Writer roundtrip should preserve dx when dy is also non-zero. "
-        f"Original: 1.5E-3, reloaded: {reloaded_line['rs1'].dx}.")
-    assert reloaded_line["rs1"].dy == pytest.approx(-2.0E-3), (
-        "Writer roundtrip should preserve dy when dx is also non-zero. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['rs1'].dy}.")
+    assert reloaded_line["rs1"].shift_x == pytest.approx(1.5E-3), (
+        "Writer roundtrip should preserve shift_x when shift_y is also non-zero. "
+        f"Original: 1.5E-3, reloaded: {reloaded_line['rs1'].shift_x}.")
+    assert reloaded_line["rs1"].shift_y == pytest.approx(-2.0E-3), (
+        "Writer roundtrip should preserve shift_y when shift_x is also non-zero. "
+        f"Original: -2.0E-3, reloaded: {reloaded_line['rs1'].shift_y}.")
     assert env["dx_rs1"] == pytest.approx(1.5E-3), (
-        "Optics variable 'dx_rs1' should be accessible when dy is also set. "
+        "Optics variable 'dx_rs1' should be accessible when shift_y is also set. "
         f"Got: {env['dx_rs1']}.")
     assert env["dy_rs1"] == pytest.approx(-2.0E-3), (
-        "Optics variable 'dy_rs1' should be accessible when dx is also set. "
+        "Optics variable 'dy_rs1' should be accessible when shift_x is also set. "
         f"Got: {env['dy_rs1']}.")
 
 
 ########################################
 # Zero Value (not written to optics file)
 ########################################
-def test_refshift_writer_xyshift_preserves_zero_dx(tmp_path):
+def test_refshift_writer_translation_preserves_zero_shift_x(tmp_path):
     """
-    An XYShift with dx=0 should survive a write and reload cycle with dx
-    remaining zero. Zero dx is not written to the optics file; the lattice file
-    references 'dx_rs1' and env.vars.default_to_zero = True returns 0 for the
-    undefined variable.
+    A Translation with shift_x=0 should survive a write and reload cycle with
+    shift_x remaining zero. Zero shift_x is not written to the optics file; the
+    lattice file references 'dx_rs1' and env.vars.default_to_zero = True returns
+    0 for the undefined variable.
     """
-    original_line = _build_xyshift_line(dx = 0.0, dy = 2.0E-3)
+    original_line = _build_translation_line(shift_x = 0.0, shift_y = 2.0E-3)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
-    assert reloaded_line["rs1"].dx == pytest.approx(0.0), (
-        "Writer roundtrip should preserve zero XYShift dx (handled by "
+    assert reloaded_line["rs1"].shift_x == pytest.approx(0.0), (
+        "Writer roundtrip should preserve zero Translation shift_x (handled by "
         "default_to_zero). "
-        f"Reloaded: {reloaded_line['rs1'].dx}.")
+        f"Reloaded: {reloaded_line['rs1'].shift_x}.")
 
 
 ########################################
 # Precision
 ########################################
-def test_refshift_writer_xyshift_dx_preserved_at_full_double_precision(tmp_path):
+def test_refshift_writer_translation_shift_x_preserved_at_full_double_precision(tmp_path):
     """
-    An XYShift dx with many significant digits should survive a write and
-    reload cycle at full double precision. The optics file writes dx_rs1 to
+    A Translation shift_x with many significant digits should survive a write
+    and reload cycle at full double precision. The optics file writes dx_rs1 to
     24 decimal places.
     """
     dx_precise = 1.23456789012345678E-4
-    original_line = _build_xyshift_line(dx = dx_precise)
+    original_line = _build_translation_line(shift_x = dx_precise)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["dx_rs1"] == pytest.approx(dx_precise, rel = 1E-15), (
-        "Writer roundtrip should preserve XYShift dx at full double precision. "
+        "Writer roundtrip should preserve Translation shift_x at full double "
+        "precision. "
         f"Original: {dx_precise!r}, reloaded env var: {env['dx_rs1']!r}.")
 
 
 ########################################
-# Multiple XYShifts
+# Multiple Translations
 ########################################
-def test_refshift_writer_preserves_multiple_xyshifts_independently(tmp_path):
+def test_refshift_writer_preserves_multiple_translations_independently(tmp_path):
     """
-    Multiple XYShift elements with different dx/dy values should each preserve
-    their individual values through a single write and reload cycle. Each
-    element writes its own independent optics variables.
+    Multiple Translation elements with different shift_x/shift_y values should
+    each preserve their individual values through a single write and reload
+    cycle. Each element writes its own independent optics variables.
     """
     line = xt.Line(
         elements = [
             xt.Marker(),
-            xt.XYShift(dx = +1.0E-3, dy =  0.0),
-            xt.XYShift(dx =  0.0,    dy = -2.0E-3),
-            xt.XYShift(dx = +0.5E-3, dy = +1.5E-3),
+            xt.Translation(shift_x = +1.0E-3, shift_y =  0.0),
+            xt.Translation(shift_x =  0.0,    shift_y = -2.0E-3),
+            xt.Translation(shift_x = +0.5E-3, shift_y = +1.5E-3),
             xt.Marker(),
         ],
         element_names = ["start", "rsa", "rsb", "rsc", "end"])
@@ -391,18 +393,18 @@ def test_refshift_writer_preserves_multiple_xyshifts_independently(tmp_path):
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 
-    assert reloaded_line["rsa"].dx == pytest.approx(+1.0E-3), (
-        "Writer roundtrip should preserve dx for 'rsa'. "
-        f"Original: +1.0E-3, reloaded: {reloaded_line['rsa'].dx}.")
-    assert reloaded_line["rsb"].dy == pytest.approx(-2.0E-3), (
-        "Writer roundtrip should preserve dy for 'rsb'. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['rsb'].dy}.")
-    assert reloaded_line["rsc"].dx == pytest.approx(+0.5E-3), (
-        "Writer roundtrip should preserve dx for 'rsc'. "
-        f"Original: +0.5E-3, reloaded: {reloaded_line['rsc'].dx}.")
-    assert reloaded_line["rsc"].dy == pytest.approx(+1.5E-3), (
-        "Writer roundtrip should preserve dy for 'rsc'. "
-        f"Original: +1.5E-3, reloaded: {reloaded_line['rsc'].dy}.")
+    assert reloaded_line["rsa"].shift_x == pytest.approx(+1.0E-3), (
+        "Writer roundtrip should preserve shift_x for 'rsa'. "
+        f"Original: +1.0E-3, reloaded: {reloaded_line['rsa'].shift_x}.")
+    assert reloaded_line["rsb"].shift_y == pytest.approx(-2.0E-3), (
+        "Writer roundtrip should preserve shift_y for 'rsb'. "
+        f"Original: -2.0E-3, reloaded: {reloaded_line['rsb'].shift_y}.")
+    assert reloaded_line["rsc"].shift_x == pytest.approx(+0.5E-3), (
+        "Writer roundtrip should preserve shift_x for 'rsc'. "
+        f"Original: +0.5E-3, reloaded: {reloaded_line['rsc'].shift_x}.")
+    assert reloaded_line["rsc"].shift_y == pytest.approx(+1.5E-3), (
+        "Writer roundtrip should preserve shift_y for 'rsc'. "
+        f"Original: +1.5E-3, reloaded: {reloaded_line['rsc'].shift_y}.")
 
     assert env["dx_rsa"] == pytest.approx(+1.0E-3), (
         "Optics variable 'dx_rsa' should be accessible and correct.")
@@ -792,7 +794,7 @@ def test_refshift_writer_preserves_all_five_types_in_one_line(tmp_path):
     line = xt.Line(
         elements = [
             xt.Marker(),
-            xt.XYShift(dx = 1.0E-3, dy = -2.0E-3),
+            xt.Translation(shift_x = 1.0E-3, shift_y = -2.0E-3),
             xt.TimeDelay(shift_zeta = 0.5E-3),
             xt.YRotation(angle = 3.0E-3),
             xt.XRotation(angle = -4.0E-3),
@@ -808,12 +810,12 @@ def test_refshift_writer_preserves_all_five_types_in_one_line(tmp_path):
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 
-    assert reloaded_line["rsxy"].dx    == pytest.approx( 1.0E-3), (
-        f"Writer roundtrip should preserve XYShift dx. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['rsxy'].dx}.")
-    assert reloaded_line["rsxy"].dy    == pytest.approx(-2.0E-3), (
-        f"Writer roundtrip should preserve XYShift dy. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['rsxy'].dy}.")
+    assert reloaded_line["rsxy"].shift_x == pytest.approx( 1.0E-3), (
+        f"Writer roundtrip should preserve Translation shift_x. "
+        f"Original: 1.0E-3, reloaded: {reloaded_line['rsxy'].shift_x}.")
+    assert reloaded_line["rsxy"].shift_y == pytest.approx(-2.0E-3), (
+        f"Writer roundtrip should preserve Translation shift_y. "
+        f"Original: -2.0E-3, reloaded: {reloaded_line['rsxy'].shift_y}.")
     assert reloaded_line["rsdz"].shift_zeta == pytest.approx( 0.5E-3), (
         f"Writer roundtrip should preserve TimeDelay shift_zeta. "
         f"Original: 0.5E-3, reloaded: {reloaded_line['rsdz'].shift_zeta}.")

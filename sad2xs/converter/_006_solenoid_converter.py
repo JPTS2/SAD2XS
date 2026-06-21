@@ -425,7 +425,7 @@ def convert_solenoids(
                 elif isinstance(
                     environment.element_dict[element],      # type: ignore
                     (
-                        xt.XYShift,
+                        xt.Translation,
                         xt.TimeDelay,
                         xt.XRotation,
                         xt.YRotation,
@@ -713,8 +713,8 @@ def solenoid_reference_shift_corrections(
         chi2_shift_name = f"{solenoid}_chi2"
         chi3_shift_name = f"{solenoid}_chi3"
 
-        line[xy_shift_name].dx      *= dxy_sign
-        line[xy_shift_name].dy      *= dxy_sign
+        line[xy_shift_name].shift_x *= dxy_sign
+        line[xy_shift_name].shift_y *= dxy_sign
 
         line[chi1_shift_name].angle *= chi_sign
         line[chi2_shift_name].angle *= chi_sign

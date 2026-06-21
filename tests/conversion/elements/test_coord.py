@@ -227,7 +227,7 @@ def _assert_coord_tracking_matches_sad(
         ({"dy": -2.0E-3}, 0.0, -2.0E-3),
         ({"dx": 1.0E-3, "dy": -2.0E-3}, 1.0E-3, -2.0E-3),
     ])
-def test_coord_converter_creates_xsuite_xyshift(
+def test_coord_converter_creates_xsuite_translation(
         parsed_elements,
         xsuite_environment,
         assert_environment_element,
@@ -235,7 +235,7 @@ def test_coord_converter_creates_xsuite_xyshift(
         expected_dx,
         expected_dy):
     """
-    SAD COORD transverse shifts should become current Xsuite XYShift elements.
+    SAD COORD transverse shifts should become current Xsuite Translation elements.
     """
     convert_coordinate_transformations(
         parsed_elements = parsed_elements(
@@ -245,14 +245,14 @@ def test_coord_converter_creates_xsuite_xyshift(
         environment     = xsuite_environment,
         config          = _coord_config())
 
-    xyshift = assert_environment_element(
+    translation = assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_coord",
-        element_type = xt.XYShift)
+        element_type = xt.Translation)
 
-    assert xyshift.dx == pytest.approx(expected_dx), (
+    assert translation.shift_x == pytest.approx(expected_dx), (
         "Converted COORD should preserve SAD DX with the current sign convention.")
-    assert xyshift.dy == pytest.approx(expected_dy), (
+    assert translation.shift_y == pytest.approx(expected_dy), (
         "Converted COORD should preserve SAD DY with the current sign convention.")
 
 @pytest.mark.parametrize(
@@ -289,12 +289,12 @@ def test_coord_converter_creates_xsuite_rotations(
         "Converted COORD rotation angle should be stored in degrees with the "
         "current SAD-to-Xsuite sign convention.")
 
-def test_coord_converter_creates_marker_like_xyshift_for_empty_transform(
+def test_coord_converter_creates_marker_like_translation_for_empty_transform(
         parsed_elements,
         xsuite_environment,
         assert_environment_element):
     """
-    Empty COORD elements currently install a zero XYShift placeholder.
+    Empty COORD elements install a zero Translation placeholder.
     """
     convert_coordinate_transformations(
         parsed_elements = parsed_elements(
@@ -304,14 +304,14 @@ def test_coord_converter_creates_marker_like_xyshift_for_empty_transform(
         environment     = xsuite_environment,
         config          = _coord_config())
 
-    xyshift = assert_environment_element(
+    translation = assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_coord",
-        element_type = xt.XYShift)
+        element_type = xt.Translation)
 
-    assert xyshift.dx == pytest.approx(0.0), (
+    assert translation.shift_x == pytest.approx(0.0), (
         "Empty COORD placeholder should have zero horizontal shift.")
-    assert xyshift.dy == pytest.approx(0.0), (
+    assert translation.shift_y == pytest.approx(0.0), (
         "Empty COORD placeholder should have zero vertical shift.")
 
 ########################################
@@ -348,10 +348,10 @@ def test_coord_converter_creates_compound_transform_line(
     ], (
         "Compound COORD should preserve the current shift-then-rotation order.")
 
-    xyshift = assert_environment_element(
+    translation = assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_coord_dxy",
-        element_type = xt.XYShift)
+        element_type = xt.Translation)
     chi1 = assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_coord_chi1",
@@ -365,9 +365,9 @@ def test_coord_converter_creates_compound_transform_line(
         element_name = "test_coord_chi3",
         element_type = xt.SRotation)
 
-    assert xyshift.dx == pytest.approx(1.0E-3), (
+    assert translation.shift_x == pytest.approx(1.0E-3), (
         "Compound COORD should preserve SAD DX.")
-    assert xyshift.dy == pytest.approx(-2.0E-3), (
+    assert translation.shift_y == pytest.approx(-2.0E-3), (
         "Compound COORD should preserve SAD DY.")
     assert chi1.angle == pytest.approx(-0.125 * RAD2DEG), (
         "Compound COORD should preserve the CHI1 sign convention.")
@@ -421,14 +421,14 @@ def test_coord_converter_applies_dir_signs_and_order(
         environment  = xsuite_environment,
         element_name = "test_coord_chi3",
         element_type = xt.SRotation)
-    xyshift = assert_environment_element(
+    translation = assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_coord_dxy",
-        element_type = xt.XYShift)
+        element_type = xt.Translation)
 
-    assert xyshift.dx == pytest.approx(-1.0E-3), (
+    assert translation.shift_x == pytest.approx(-1.0E-3), (
         "DIR COORD should reverse the current DX convention.")
-    assert xyshift.dy == pytest.approx(-2.0E-3), (
+    assert translation.shift_y == pytest.approx(-2.0E-3), (
         "DIR COORD should preserve the current DY convention.")
     assert chi1.angle == pytest.approx(-0.125 * RAD2DEG), (
         "DIR COORD should preserve the current CHI1 convention.")
@@ -468,11 +468,11 @@ def test_coord_pipeline_preserves_single_shift(write_lattice):
 
     assert line.element_names == ["start", "test_coord", "end"], (
         "Converted COORD line should preserve marker and COORD order.")
-    assert isinstance(line["test_coord"], xt.XYShift), (
-        "Single DX/DY COORD should remain an Xsuite XYShift in the line.")
-    assert line["test_coord"].dx == pytest.approx(1.0E-3), (
+    assert isinstance(line["test_coord"], xt.Translation), (
+        "Single DX/DY COORD should remain an Xsuite Translation in the line.")
+    assert line["test_coord"].shift_x == pytest.approx(1.0E-3), (
         "Pipeline conversion should preserve SAD DX.")
-    assert line["test_coord"].dy == pytest.approx(-2.0E-3), (
+    assert line["test_coord"].shift_y == pytest.approx(-2.0E-3), (
         "Pipeline conversion should preserve SAD DY.")
 
 def test_coord_pipeline_expands_compound_transform(write_lattice):
@@ -514,8 +514,8 @@ def test_coord_pipeline_expands_compound_transform(write_lattice):
     ]
     assert line.element_names == expected_names, (
         "Compound COORD should expand to its generated child elements in order.")
-    assert isinstance(line["test_coord_dxy"], xt.XYShift), (
-        "Compound COORD should include an Xsuite XYShift child.")
+    assert isinstance(line["test_coord_dxy"], xt.Translation), (
+        "Compound COORD should include an Xsuite Translation child.")
     assert isinstance(line["test_coord_chi1"], xt.YRotation), (
         "Compound COORD should include an Xsuite YRotation child.")
     assert isinstance(line["test_coord_chi2"], xt.XRotation), (
@@ -563,8 +563,8 @@ def test_coord_pipeline_preserves_reversed_compound_transform(write_lattice):
     assert line.element_names == expected_names, (
         "Reversed generated COORD sub-lines should preserve current cloned "
         "child-element naming.")
-    assert isinstance(line["-test_coord_dxy"], xt.XYShift), (
-        "Reversed COORD shift should remain a current Xsuite XYShift clone.")
+    assert isinstance(line["-test_coord_dxy"], xt.Translation), (
+        "Reversed COORD shift should remain a current Xsuite Translation clone.")
     assert isinstance(line["-test_coord_chi1"], xt.YRotation), (
         "Reversed COORD CHI1 should remain a current Xsuite YRotation clone.")
     assert isinstance(line["-test_coord_chi2"], xt.XRotation), (

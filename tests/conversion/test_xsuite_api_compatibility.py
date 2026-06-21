@@ -255,7 +255,7 @@ def test_xsuite_line_table_exposes_writer_filter_fields_used_by_sad2xs():
             xt.Multipole(length = 0.1, knl = [0.0, 0.1]),
             xt.UniformSolenoid(length = 1.0, ks = 0.1),
             xt.Cavity(voltage = 1.0, frequency = 2.0, lag = 0.0),
-            xt.XYShift(dx = 1.0E-3, dy = -2.0E-3),
+            xt.Translation(shift_x = 1.0E-3, shift_y = -2.0E-3),
             xt.TimeDelay(shift_zeta = 3.0E-3),
             xt.XRotation(angle = 1.0),
             xt.YRotation(angle = -1.0),
@@ -295,7 +295,7 @@ def test_xsuite_line_table_exposes_writer_filter_fields_used_by_sad2xs():
         "test_mult":         "Multipole",
         "test_sol":          "UniformSolenoid",
         "test_cavi":         "Cavity",
-        "test_xyshift":      "XYShift",
+        "test_xyshift":      "Translation",
         "test_zetashift":    "TimeDelay",
         "test_xrotation":    "XRotation",
         "test_yrotation":    "YRotation",
@@ -405,9 +405,9 @@ def test_xsuite_element_attribute_contracts(
     "element_name, element, expected_fields",
     [
         (
-            "XYShift",
-            xt.XYShift(dx = 1.0E-3, dy = -2.0E-3),
-            {"dx": 1.0E-3, "dy": -2.0E-3},
+            "Translation",
+            xt.Translation(shift_x = 1.0E-3, shift_y = -2.0E-3),
+            {"shift_x": 1.0E-3, "shift_y": -2.0E-3},
         ),
         (
             "TimeDelay",

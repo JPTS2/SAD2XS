@@ -33,7 +33,6 @@ KNOWN_ISSUE_TESTS = {
     "tests/conversion/elements/test_cavi.py::test_cavi_converter_uses_harmonic_when_harmonic_is_supplied": 19,
     "tests/conversion/elements/test_cavi.py::test_cavi_pipeline_preserves_names_order_and_rf_settings": 19,
     "tests/conversion/elements/test_cavi.py::test_cavi_pipeline_preserves_harmonic_rf_setting": 19,
-    "tests/conversion/elements/test_coord.py::test_coord_converter_creates_marker_like_xyshift_for_empty_transform": 19,
     "tests/conversion/elements/test_sol.py::test_sol_bound_reference_transforms_use_current_xsuite_api": 19,
 
     # Parser and expression handling.
@@ -92,8 +91,6 @@ KNOWN_ISSUE_TESTS = {
 PARTIAL_KNOWN_ISSUES = (
     # (test node prefix, parameter-id fragment, issue number)
     ("tests/conversion/elements/test_drift.py::test_drift_converter_creates_xsuite_drift", "[l_drift]", 52),
-    ("tests/conversion/elements/test_coord.py::test_coord_converter_creates_xsuite_xyshift", "[element_variables0-", 19),
-    ("tests/conversion/elements/test_coord.py::test_coord_converter_creates_xsuite_xyshift", "[element_variables1-", 19),
     ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_twiss_for_element_offsets", "[0.001-0.0]", 19),
     ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_twiss_for_element_offsets", "[0.001--0.001]", 19),
     ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_tracking_for_element_offsets", "[0.001-0.0]", 19),

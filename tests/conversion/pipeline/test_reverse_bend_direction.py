@@ -500,21 +500,21 @@ def test_pipeline_reverse_bend_direction_negates_coord_dx_preserves_dy(write_lat
         _verbose               = False,
         _test_mode             = True)
 
-    dx_forward  = line_forward["c1"].dx
-    dy_forward  = line_forward["c1"].dy
-    dx_reversed = line_reversed["c1"].dx
-    dy_reversed = line_reversed["c1"].dy
+    dx_forward  = line_forward["c1"].shift_x
+    dy_forward  = line_forward["c1"].shift_y
+    dx_reversed = line_reversed["c1"].shift_x
+    dy_reversed = line_reversed["c1"].shift_y
 
     assert dx_forward != pytest.approx(0.0), (
-        "Forward COORD dx should be non-zero for DX = 0.01.")
+        "Forward COORD shift_x should be non-zero for DX = 0.01.")
     assert dy_forward != pytest.approx(0.0), (
-        "Forward COORD dy should be non-zero for DY = 0.02.")
+        "Forward COORD shift_y should be non-zero for DY = 0.02.")
     assert dx_reversed == pytest.approx(-dx_forward), (
-        "reverse_bend_direction=True should negate COORD dx. "
+        "reverse_bend_direction=True should negate COORD shift_x. "
         f"Forward: {dx_forward}, reversed: {dx_reversed}.")
     assert dy_reversed == pytest.approx(dy_forward), (
-        "reverse_bend_direction=True should leave COORD dy unchanged "
-        "(unlike reverse_element_order which negates both dx and dy). "
+        "reverse_bend_direction=True should leave COORD shift_y unchanged "
+        "(unlike reverse_element_order which negates both shift_x and shift_y). "
         f"Forward: {dy_forward}, reversed: {dy_reversed}.")
 
 

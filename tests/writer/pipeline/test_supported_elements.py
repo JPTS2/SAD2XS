@@ -193,15 +193,15 @@ def test_supported_elements_writer_handles_cavity(tmp_path):
     _assert_file_exists_and_is_executable(output_dir, "cavity")
 
 
-def test_supported_elements_writer_handles_xy_shift(tmp_path):
+def test_supported_elements_writer_handles_translation(tmp_path):
     """
     write_lattice should produce an executable lattice file when the line
-    contains an xt.XYShift element.
+    contains an xt.Translation element.
     """
-    line       = _build_single_element_line(xt.XYShift(dx = 1.0E-3, dy = -2.0E-3), "shift1")
-    output_dir = _write_only(line, tmp_path, "xy_shift")
+    line       = _build_single_element_line(xt.Translation(shift_x = 1.0E-3, shift_y = -2.0E-3), "shift1")
+    output_dir = _write_only(line, tmp_path, "translation")
 
-    _assert_file_exists_and_is_executable(output_dir, "xy_shift")
+    _assert_file_exists_and_is_executable(output_dir, "translation")
 
 
 def test_supported_elements_writer_handles_timedelay(tmp_path):
