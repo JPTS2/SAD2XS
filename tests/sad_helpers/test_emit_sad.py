@@ -175,12 +175,12 @@ def test_emit_sad_design_momentum_is_correct_order_of_magnitude(
 
 def test_emit_sad_physical_quantities_have_correct_sign(tmp_path, monkeypatch):
     """
-    Several quantities must be positive by physics:
-    - revolution_frequency (positive periodicity)
-    - eneloss_turn (positive energy loss for a radiating ring)
-    - synchrotron_frequency (positive for a stable RF bucket)
-    - gemitt_x, gemitt_y, gemitt_z (positive definite emittances)
-    - energy_spread (positive definite)
+    Sign conventions for the returned quantities:
+    - revolution_frequency > 0 (positive periodicity)
+    - eneloss_turn < 0 (SAD reports energy loss as a negative energy change)
+    - synchrotron_frequency > 0 (positive for a stable RF bucket)
+    - gemitt_x, gemitt_y, gemitt_z > 0 (positive definite emittances)
+    - energy_spread > 0 (positive definite)
     """
     result = _run_emit(tmp_path, monkeypatch)
 
@@ -189,6 +189,11 @@ def test_emit_sad_physical_quantities_have_correct_sign(tmp_path, monkeypatch):
         assert result[key] > 0, (
             f"emit_sad result['{key}'] should be positive. "
             f"Got: {result[key]}.")
+
+    assert result["eneloss_turn"] < 0, (
+        "emit_sad result['eneloss_turn'] should be negative: SAD reports "
+        "energy loss as a negative energy change per turn. "
+        f"Got: {result['eneloss_turn']}.")
 
 
 def test_emit_sad_radcod_flag_runs_and_returns_all_keys(tmp_path, monkeypatch):
