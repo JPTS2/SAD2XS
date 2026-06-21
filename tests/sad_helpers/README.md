@@ -10,13 +10,23 @@ in `tests/conversion/`.
 
 ## Coverage
 
-- `test_twiss_sad.py` — `twiss_sad`, `compute_second_order_dispersions`,
-  `compute_chromatic_functions`, `generate_twiss_print_function`; SAD-free
-  command generation tests and end-to-end smoke tests against a minimal
-  transfer-line lattice
-- `test_survey_sad.py` — `survey_sad`
-- `test_emit_sad.py` — `emit_sad`
-- `test_track_sad.py` — `track_sad`
-- `test_chromaticity_sad.py` — `chromaticity_sad`
-- `test_transfer_matrix_sad.py` — `transfer_matrix_sad`
-- `test_rebuild_lattice.py` — `rebuild_sad_lattice`
+| File | Function(s) | Tests | Lattice fixture |
+|------|-------------|-------|-----------------|
+| `test_twiss_sad.py` | `twiss_sad`, `compute_second_order_dispersions`, `compute_chromatic_functions`, `generate_twiss_print_function` | 20 | Minimal transfer-line (1 m drift, START/END markers); minimal bend (0.1 rad BEND) |
+| `test_survey_sad.py` | `survey_sad`, `generate_survey_print_function` | 15 | Same transfer-line and bend lattices |
+| `test_emit_sad.py` | `emit_sad` | 6 | 4-cell FODO ring with RF (45° bends, ρ = 1 m, K1 = 1.5) |
+| `test_chromaticity_sad.py` | `chromaticity_sad`, `generate_off_momentum_tune_function` | 11 | Same 4-cell FODO ring without RF |
+| `test_transfer_matrix_sad.py` | `transfer_matrix_sad` | 8 | Minimal transfer-line |
+| `test_track_sad.py` | `track_sad` | 9 | Minimal transfer-line |
+| `test_rebuild_lattice.py` | `rebuild_sad_lattice` | 6 | Minimal transfer-line |
+
+## Lattice fixture notes
+
+- **Transfer-line**: `MOMENTUM = 1.0 GEV`, single `DRIFT TEST_DRIFT = (L = 1.0)`, `START`/`END` markers, `LINE TEST_LINE`.
+- **Bend lattice**: same structure with `BEND TEST_BEND = (L = 1.0, ANGLE = 0.1)`.
+- **FODO ring**: 4 cells × 2 bends of 45° (π/4 rad, ρ = 1 m), `K1 = ±1.5`, `DRIFT D = (L = 0.5)`, `CAVI FREQ = 18 MHz` (h = 1).
+- **FODO ring without RF**: identical to above but without `CAVI` element (for chromaticity tests).
+
+## Known issues
+
+- `test_emit_sad.py` — `test_emit_sad_physical_quantities_have_correct_sign`: SAD's 6D EMIT calculation returns `gemitt_x = -1.39e-6 m` (negative) for this 4-cell FODO ring. The correct sign for the equilibrium horizontal emittance is positive. Root cause and fix to be determined — likely a lattice design issue (Robinson partition number) or a sign convention in SAD's EMIT output for this geometry.
