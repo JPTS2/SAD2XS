@@ -253,7 +253,7 @@ r1 = Table[
         beam = TrackParticles[beam, 1, turn, turn];
         beam[[2]]
     ),
-    {{turn, 1, turns}}
+    {turn, 1, turns}
     ];
 WriteString[6,"TRACKING COMPLETE \\n"];
 
