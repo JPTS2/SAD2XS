@@ -383,19 +383,19 @@ def test_optics_writer_does_not_write_dx_for_zero_dx_xyshift(tmp_path):
 
 
 ################################################################################
-# ZetaShift Optics Tests
+# TimeDelay Optics Tests
 ################################################################################
-def test_optics_writer_writes_dz_for_nonzero_zetashift(tmp_path):
+def test_optics_writer_writes_dz_for_nonzero_timedelay(tmp_path):
     """
-    For a ZetaShift with dzeta != 0, write_optics should write a 'dz_{name}'
-    variable to the optics file.
+    For a TimeDelay with shift_zeta != 0, write_optics should write a
+    'dz_{name}' variable to the optics file.
     """
     content = _optics_content(
-        xt.ZetaShift(dzeta = 3.0E-3), "zshift1", tmp_path)
+        xt.TimeDelay(shift_zeta = 3.0E-3), "zshift1", tmp_path)
 
     assert "dz_zshift1" in content, (
-        "write_optics should write 'dz_zshift1' for a ZetaShift with "
-        f"dzeta = 3e-3. File content: {content!r}.")
+        "write_optics should write 'dz_zshift1' for a TimeDelay with "
+        f"shift_zeta = 3e-3. File content: {content!r}.")
 
 
 ################################################################################

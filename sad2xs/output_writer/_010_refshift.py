@@ -54,7 +54,7 @@ def create_refshift_lattice_file_information(
             unique_xyshift_names.append(parentname)
             unique_xyshift_variable_names.append(variablename)
 
-    for zshift in line_table.rows[line_table.element_type == 'ZetaShift'].name:
+    for zshift in line_table.rows[line_table.element_type == 'TimeDelay'].name:
         parentname      = get_parentname(zshift)
         variablename    = get_variablename(zshift)
         if parentname not in unique_zetashift_names:
@@ -129,12 +129,12 @@ env.new(
         output_string += "\n"
 
     ########################################
-    # ZetaShifts
+    # TimeDelays
     ########################################
     if len(unique_zetashift_names) != 0:
         output_string += """
 ########################################
-# ZetaShifts
+# TimeDelays
 ########################################"""
 
         for zetashift_name, zetashift_variable_name in zip(
@@ -149,8 +149,8 @@ env.new(
             output_string += f"""
 env.new(
     name        = '{zetashift_name}',
-    parent      = xt.ZetaShift,
-    dzeta       = 'dz_{zetashift_variable_name}')"""
+    parent      = xt.TimeDelay,
+    shift_zeta  = 'dz_{zetashift_variable_name}')"""
 
         output_string += "\n"
 
@@ -278,7 +278,7 @@ def create_refshift_optics_file_information(
             unique_xyshift_names.append(parentname)
             unique_xyshift_variable_names.append(variablename)
 
-    for zshift in line_table.rows[line_table.element_type == 'ZetaShift'].name:
+    for zshift in line_table.rows[line_table.element_type == 'TimeDelay'].name:
         parentname      = get_parentname(zshift)
         variablename    = get_variablename(zshift)
         if parentname not in unique_zetashift_names:
@@ -372,18 +372,18 @@ def create_refshift_optics_file_information(
         output_string += "\n"
 
     ########################################
-    # ZetaShifts
+    # TimeDelays
     ########################################
     if len(unique_zetashift_names) != 0:
         output_string += """
     ########################################
-    # ZetaShifts
+    # TimeDelays
     ########################################"""
 
         for zetashift_name, zetashift_variable_name in zip(
                 unique_zetashift_names, unique_zetashift_variable_names):
 
-            dz  = line[zetashift_name].dzeta
+            dz  = line[zetashift_name].shift_zeta
             
             if dz != 0:
                 output_string += f"""

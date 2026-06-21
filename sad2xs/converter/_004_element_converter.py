@@ -1622,8 +1622,8 @@ def convert_solenoids(
 
             environment.new(
                 name    = f"{ele_name}_dz",
-                parent  = xt.ZetaShift,
-                dzeta   = offset_z)
+                parent  = xt.TimeDelay,
+                shift_zeta = offset_z)
 
             environment.new(
                 name    = f"{ele_name}_chi2",
