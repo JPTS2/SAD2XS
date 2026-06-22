@@ -108,7 +108,7 @@ env.new(name = '{sbend_name}', parent = xt.Bend, length = {sbend_length})"""
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):
                 bend_generation = f"""
-env.new(name = '{replica_name}', parent = '{hbend}', angle = 'k0_{replica_variable} * {hbend_length}')"""
+env.new(name = '{replica_name}', parent = '{hbend}', angle = {line[replica_name].angle:.24f}, k0 = 'k0_{replica_variable}')"""
 
             # Otherwise do the full version
             else:
@@ -116,7 +116,8 @@ env.new(name = '{replica_name}', parent = '{hbend}', angle = 'k0_{replica_variab
 env.new(
     name                    = '{replica_name}',
     parent                  = '{hbend}',
-    angle                   = 'k0_{replica_variable} * {hbend_length}'"""
+    angle                   = {line[replica_name].angle:.24f},
+    k0                      = 'k0_{replica_variable}'"""
             # Append edge entry angles
                 if line[replica_name].edge_entry_angle != 0:
                     bend_generation += f""",
@@ -157,7 +158,7 @@ env.new(
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):
                 bend_generation = f"""
-env.new(name = '{replica_name}', parent = '{vbend}', angle = 'k0_{replica_variable} * {vbend_length}')"""
+env.new(name = '{replica_name}', parent = '{vbend}', angle = {line[replica_name].angle:.24f}, k0 = 'k0_{replica_variable}')"""
 
             # Otherwise do the full version
             else:
@@ -165,7 +166,8 @@ env.new(name = '{replica_name}', parent = '{vbend}', angle = 'k0_{replica_variab
 env.new(
     name                    = '{replica_name}',
     parent                  = '{vbend}',
-    angle                   = 'k0_{replica_variable} * {vbend_length}'"""
+    angle                   = {line[replica_name].angle:.24f},
+    k0                      = 'k0_{replica_variable}'"""
             # Append edge entry angles
                 if line[replica_name].edge_entry_angle != 0:
                     bend_generation += f""",
@@ -205,7 +207,7 @@ env.new(
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):
                 bend_generation = f"""
-env.new(name = '{replica_name}', parent = '{sbend}', angle = 'k0_{replica_variable} * {sbend_length}', rot_s_rad = '{line[replica_name].rot_s_rad}')"""
+env.new(name = '{replica_name}', parent = '{sbend}', angle = {line[replica_name].angle:.24f}, k0 = 'k0_{replica_variable}', rot_s_rad = '{line[replica_name].rot_s_rad}')"""
 
             # Otherwise do the full version
             else:
@@ -213,7 +215,8 @@ env.new(name = '{replica_name}', parent = '{sbend}', angle = 'k0_{replica_variab
 env.new(
     name                    = '{replica_name}',
     parent                  = '{sbend}',
-    angle                   = 'k0_{replica_variable} * {sbend_length}'"""
+    angle                   = {line[replica_name].angle:.24f},
+    k0                      = 'k0_{replica_variable}'"""
             # Append edge entry angles
                 if line[replica_name].edge_entry_angle != 0:
                     bend_generation += f""",
