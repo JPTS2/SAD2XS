@@ -1358,9 +1358,59 @@ def convert_apertures(parsed_elements, environment):
         ########################################
         if any(v is not None for v in [dx1, dx2, dy1, dy2]) and \
                 any(v is not None for v in [a, b]):
-            raise ValueError(
-                f"Error! Aperture {ele_name} has both rectangular and elliptical definitions." +\
-                "This is not supported.")
+            aper_type   = "LimitRectEllipse"
+
+            if dx1 is None and dx2 is None:
+                dx1 = -1.0
+                dx2 = +1.0
+            elif dx1 is None and isinstance(dx2, float):
+                if float(dx2) < 0:
+                    dx1 = dx2
+                    dx2 = +1.0
+                else:
+                    dx1 = -1.0
+            elif dx2 is None and isinstance(dx1, float):
+                if float(dx1) < 0:
+                    dx2 = +1.0
+                else:
+                    dx2 = dx1
+                    dx1 = -1.0
+            elif isinstance(dx1, float) and isinstance(dx2, float):
+                if dx1 > dx2:
+                    tmp = dx1
+                    dx1 = dx2
+                    dx2 = tmp
+            else:
+                pass
+
+            if dy1 is None and dy2 is None:
+                dy1 = -1.0
+                dy2 = +1.0
+            elif dy1 is None and isinstance(dy2, float):
+                if float(dy2) < 0:
+                    dy1 = dy2
+                    dy2 = +1.0
+                else:
+                    dy1 = -1.0
+            elif dy2 is None and isinstance(dy1, float):
+                if float(dy1) < 0:
+                    dy2 = +1.0
+                else:
+                    dy2 = dy1
+                    dy1 = -1.0
+            elif isinstance(dy1, float) and isinstance(dy2, float):
+                if dy1 > dy2:
+                    tmp = dy1
+                    dy1 = dy2
+                    dy2 = tmp
+            else:
+                pass
+
+            if a is None:
+                a = 1.0
+            if b is None:
+                b = 1.0
+
         elif any(v is not None for v in [dx1, dx2, dy1, dy2]):
             aper_type   = "LimitRect"
 
@@ -1438,11 +1488,20 @@ def convert_apertures(parsed_elements, environment):
                 max_y   = dy2,
                 shift_x = offset_x,
                 shift_y = offset_y)
-            continue
         elif aper_type == "LimitEllipse":
             environment.new(
                 name    = ele_name,
                 parent  = xt.LimitEllipse,
+                a       = a,
+                b       = b,
+                shift_x = offset_x,
+                shift_y = offset_y)
+        elif aper_type == "LimitRectEllipse":
+            environment.new(
+                name    = ele_name,
+                parent  = xt.LimitRectEllipse,
+                max_x   = dx2,
+                max_y   = dy2,
                 a       = a,
                 b       = b,
                 shift_x = offset_x,
