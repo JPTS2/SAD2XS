@@ -97,20 +97,9 @@ Default wall times are currently short for optics-style helpers and longer for t
 
 ## Temporary files
 
-`chromaticity_sad` and `transfer_matrix_sad` write UUID-named temporary files directly in the current working directory (e.g. `_sad_chrom_<uid>.sad`, `_sad_chrom_<uid>.dat`) and remove them in a `finally` block, so concurrent calls and interrupted runs are both safe for these two helpers.
+All helpers write UUID-named temporary files directly in the current working directory (e.g. `_sad_chrom_<uid>.sad`) and remove them in a `finally` block. Concurrent calls from the same working directory are safe, and files are cleaned up on both normal and error exits.
 
-The remaining helpers write fixed temporary filenames in the current working directory, for example:
-
-- `temp_sad_twiss.sad`
-- `temp_sad_twiss.tfs`
-- `temp_sad_survey.sad`
-- `temp_sad_survey.tfs`
-- `temp_sad_track.sad`
-- `temp_sad_track.dat`
-- `temp_sad_emit.sad`
-- `temp_sad_rebuild_lattice.sad`
-
-For these helpers, concurrent calls from the same working directory are not safe, and failed or interrupted processes may leave temporary files behind.
+`rebuild_sad_lattice` also writes a user-specified output lattice file; that file is intentionally persistent and is not cleaned up automatically.
 
 Note: SAD resolves paths relative to the directory of the input script file, so temporary script files must be written to the same directory as the lattice file (i.e. the Python process cwd).
 
@@ -120,7 +109,7 @@ The helper layer currently provides these safeguards:
 
 - `wall_time` limits for external SAD calls;
 - `check=True` for most subprocess calls, so non-zero SAD exits are treated as failures;
-- cleanup of known temporary command files on many normal, timeout, and handled error paths;
+- UUID-named temporary files with guaranteed cleanup via `finally` on all exit paths;
 - array shape and size assertions in `track_sad`;
 - explicit validation that `transfer_matrix_sad` receives either both `start_element` and `end_element`, or neither.
 
@@ -130,11 +119,8 @@ Known limitations:
 
 - helper imports and execution depend on optional runtime dependencies;
 - top-level package import still re-exports the helper package;
-- most helpers use fixed temporary filenames in cwd; concurrent calls from the same directory are not safe for these;
-- `chromaticity_sad` and `transfer_matrix_sad` use UUID-named files with guaranteed cleanup;
 - `additional_commands` is raw SAD text and is not sandboxed or validated;
 - subprocess output parsing is tailored to the current generated SAD commands;
-- cleanup is not guaranteed for every interrupted or unexpected failure path;
 - some error messages still use generic wording from earlier Twiss-only implementations.
 
 Next release target: address these limitations incrementally without making the core converter depend on an external SAD installation.
