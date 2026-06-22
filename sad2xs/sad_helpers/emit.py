@@ -7,6 +7,7 @@
 ################################################################################
 import os
 import subprocess
+import uuid
 
 ################################################################################
 # EMIT
@@ -32,6 +33,9 @@ def emit_sad(
     ########################################
     # Generate the twiss command
     ########################################
+    uid      = uuid.uuid4().hex[:12]
+    cmd_file = f"_sad_emit_{uid}.sad"
+
     print("Creating SAD Command")
     sad_command = f"""OFF ECHO;
 
@@ -73,38 +77,30 @@ WriteString[6, "! END EMIT"];
 abort;
 """
 
-    ########################################
-    # Write the SAD command
-    ########################################
-    with open("temp_sad_emit.sad", "w", encoding = "utf-8") as f:
-        f.write(sad_command)
-    del sad_command
-
-    ########################################
-    # Run the process
-    ########################################
     try:
-        process = subprocess.run(
-            [sad_path, "temp_sad_emit.sad"],
-            capture_output  = True,
-            text            = True,
-            timeout         = wall_time,
-            check           = True)
-    except subprocess.TimeoutExpired:
-        print(f"SAD Twiss timed out at {wall_time}s")
-        if os.path.exists("temp_sad_emit.sad"):
-            os.remove("temp_sad_emit.sad")
-        raise
-    except subprocess.CalledProcessError as e:
-        print(f"SAD exited with non-zero status {e.returncode}")
-        print("stdout:", e.stdout)
-        print("stderr:", e.stderr)
-        if os.path.exists("temp_sad_emit.sad"):
-            os.remove("temp_sad_emit.sad")
-        raise
+        with open(cmd_file, "w", encoding = "utf-8") as f:
+            f.write(sad_command)
+        del sad_command
+
+        try:
+            process = subprocess.run(
+                [sad_path, cmd_file],
+                capture_output  = True,
+                text            = True,
+                timeout         = wall_time,
+                check           = True)
+        except subprocess.TimeoutExpired:
+            print(f"SAD Twiss timed out at {wall_time}s")
+            raise
+        except subprocess.CalledProcessError as e:
+            print(f"SAD exited with non-zero status {e.returncode}")
+            print("stdout:", e.stdout)
+            print("stderr:", e.stderr)
+            raise
+
     finally:
-        if os.path.exists("temp_sad_emit.sad"):
-            os.remove("temp_sad_emit.sad")
+        if os.path.exists(cmd_file):
+            os.remove(cmd_file)
 
     ########################################
     # Read the terminal output

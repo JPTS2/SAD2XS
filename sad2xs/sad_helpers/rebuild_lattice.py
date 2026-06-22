@@ -7,6 +7,7 @@
 ################################################################################
 import os
 import subprocess
+import uuid
 
 ################################################################################
 # Rebuild SAD lattice
@@ -43,6 +44,9 @@ def rebuild_sad_lattice(
     ########################################
     # Generate the twiss command
     ########################################
+    uid      = uuid.uuid4().hex[:12]
+    cmd_file = f"_sad_rebuild_{uid}.sad"
+
     print("Creating SAD Command")
     sad_command = f"""OFF ECHO;
 
@@ -85,34 +89,26 @@ Close[of];
 abort;
 """
 
-    ########################################
-    # Write the SAD command
-    ########################################
-    with open("temp_sad_rebuild_lattice.sad", "w", encoding = "utf-8") as f:
-        f.write(sad_command)
-
-    ########################################
-    # Run the process
-    ########################################
     try:
-        subprocess.run(
-            [sad_path, "temp_sad_rebuild_lattice.sad"],
-            capture_output  = True,
-            text            = True,
-            timeout         = wall_time,
-            check           = True)
-    except subprocess.TimeoutExpired:
-        print(f"SAD Twiss timed out at {wall_time}s")
-        if os.path.exists("temp_sad_rebuild_lattice.sad"):
-            os.remove("temp_sad_rebuild_lattice.sad")
-        raise
-    except subprocess.CalledProcessError as e:
-        print(f"SAD exited with non-zero status {e.returncode}")
-        print("stdout:", e.stdout)
-        print("stderr:", e.stderr)
-        if os.path.exists("temp_sad_rebuild_lattice.sad"):
-            os.remove("temp_sad_rebuild_lattice.sad")
-        raise
+        with open(cmd_file, "w", encoding = "utf-8") as f:
+            f.write(sad_command)
+
+        try:
+            subprocess.run(
+                [sad_path, cmd_file],
+                capture_output  = True,
+                text            = True,
+                timeout         = wall_time,
+                check           = True)
+        except subprocess.TimeoutExpired:
+            print(f"SAD Twiss timed out at {wall_time}s")
+            raise
+        except subprocess.CalledProcessError as e:
+            print(f"SAD exited with non-zero status {e.returncode}")
+            print("stdout:", e.stdout)
+            print("stderr:", e.stderr)
+            raise
+
     finally:
-        if os.path.exists("temp_sad_rebuild_lattice.sad"):
-            os.remove("temp_sad_rebuild_lattice.sad")
+        if os.path.exists(cmd_file):
+            os.remove(cmd_file)
