@@ -15,6 +15,7 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
+import numpy as np
 import xtrack as xt
 
 import sad2xs as s2x
@@ -187,7 +188,7 @@ def test_supported_elements_writer_handles_cavity(tmp_path):
     contains an xt.Cavity element.
     """
     line = _build_single_element_line(
-        xt.Cavity(voltage = 3.0E6, frequency = 4.0E8, lag = 5.0), "cav1")
+        xt.Cavity(voltage = 3.0E6, frequency = 4.0E8, phase = np.pi), "cav1")
     output_dir = _write_only(line, tmp_path, "cavity")
 
     _assert_file_exists_and_is_executable(output_dir, "cavity")

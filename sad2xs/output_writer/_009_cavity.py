@@ -9,6 +9,7 @@ Date:       09-12-2025
 ################################################################################
 # Import Packages
 ################################################################################
+import numpy as np
 import xtrack as xt
 import xdeps as xd
 
@@ -88,7 +89,7 @@ env.new(
         cavity_generation += f""",
     voltage     = 'volt_{cavi_variable_name}'"""
         cavity_generation += f""",
-    lag         = 'lag_{cavi_variable_name}'"""
+    phase       = 'phase_{cavi_variable_name}'"""
 
         # Close the element definition
         cavity_generation += """)"""
@@ -155,7 +156,7 @@ def create_cavity_optics_file_information(
 
         freq    = 0
         volt    = 0
-        lag     = 180
+        phase   = np.pi
 
         try:
             freq  = line[cavi].frequency
@@ -176,10 +177,10 @@ def create_cavity_optics_file_information(
                     f"Could not find cavity variable {cavi} or -{cavi} in line.") from exc
 
         try:
-            lag   = line[cavi].lag
+            phase = line[cavi].phase
         except KeyError:
             try:
-                lag  = line[f"-{cavi}"].lag
+                phase = line[f"-{cavi}"].phase
             except KeyError as exc:
                 raise KeyError(
                     f"Could not find cavity variable {cavi} or -{cavi} in line.") from exc
@@ -189,7 +190,7 @@ def create_cavity_optics_file_information(
         output_string += f"""
     {f'volt_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'volt_{variable_name}') + 4)}{'= '}{volt:.24f},"""
         output_string += f"""
-    {f'lag_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'lag_{variable_name}') + 4)}{'= '}{lag:.24f},"""
+    {f'phase_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'phase_{variable_name}') + 4)}{'= '}{phase:.24f},"""
 
     ########################################
     # Return

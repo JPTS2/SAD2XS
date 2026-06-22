@@ -15,6 +15,7 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
+import numpy as np
 import pytest
 import xtrack as xt
 
@@ -162,7 +163,7 @@ def test_xsuite_line_model_configuration_calls_used_by_sad2xs():
             xt.Octupole(length = 1.0, k3 = 0.3),
             xt.Multipole(length = 0.1, knl = [0.0, 0.1]),
             xt.UniformSolenoid(length = 1.0, ks = 0.1),
-            xt.Cavity(voltage = 1.0, frequency = 2.0, lag = 0.0),
+            xt.Cavity(voltage = 1.0, frequency = 2.0, phase = 0.0),
         ],
         element_names = [
             "test_drift",
@@ -254,7 +255,7 @@ def test_xsuite_line_table_exposes_writer_filter_fields_used_by_sad2xs():
             xt.Octupole(length = 1.0, k3 = 0.3),
             xt.Multipole(length = 0.1, knl = [0.0, 0.1]),
             xt.UniformSolenoid(length = 1.0, ks = 0.1),
-            xt.Cavity(voltage = 1.0, frequency = 2.0, lag = 0.0),
+            xt.Cavity(voltage = 1.0, frequency = 2.0, phase = 0.0),
             xt.Translation(shift_x = 1.0E-3, shift_y = -2.0E-3),
             xt.TimeDelay(shift_zeta = 3.0E-3),
             xt.Rotation(rot_y_rad = 1.0),
@@ -357,8 +358,8 @@ def test_xsuite_line_table_exposes_writer_filter_fields_used_by_sad2xs():
         ),
         (
             "Cavity",
-            xt.Cavity(voltage = 3.0, frequency = 4.0, lag = 5.0),
-            {"voltage": 3.0, "frequency": 4.0, "lag": 5.0},
+            xt.Cavity(voltage = 3.0, frequency = 4.0, phase = np.pi + 0.5),
+            {"voltage": 3.0, "frequency": 4.0, "phase": np.pi + 0.5},
         ),
         (
             "UniformSolenoid",

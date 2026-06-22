@@ -15,6 +15,7 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
+import numpy as np
 import xtrack as xt
 
 import sad2xs as s2x
@@ -332,16 +333,16 @@ def test_optics_writer_writes_k3s_variable_for_skew_octupole(tmp_path):
 ################################################################################
 # Cavity Optics Tests
 ################################################################################
-def test_optics_writer_writes_freq_volt_lag_variables_for_cavity(tmp_path):
+def test_optics_writer_writes_freq_volt_phase_variables_for_cavity(tmp_path):
     """
     For a cavity, write_optics should always write all three optics variables:
-    'freq_{name}', 'volt_{name}', and 'lag_{name}'. Cavity parameters are
+    'freq_{name}', 'volt_{name}', and 'phase_{name}'. Cavity parameters are
     never suppressed even when they take default values.
     """
     content = _optics_content(
-        xt.Cavity(voltage = 3.0E6, frequency = 4.0E8, lag = 5.0), "cav1", tmp_path)
+        xt.Cavity(voltage = 3.0E6, frequency = 4.0E8, phase = np.pi + 0.5), "cav1", tmp_path)
 
-    for var in ("freq_cav1", "volt_cav1", "lag_cav1"):
+    for var in ("freq_cav1", "volt_cav1", "phase_cav1"):
         assert var in content, (
             f"write_optics should write '{var}' to the optics file for a "
             f"cavity. File content: {content!r}.")
