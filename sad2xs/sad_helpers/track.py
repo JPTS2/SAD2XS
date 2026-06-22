@@ -7,6 +7,7 @@
 ################################################################################
 import os
 import subprocess
+import uuid
 import re
 import time
 import textwrap
@@ -160,6 +161,10 @@ def track_sad(
     ########################################
     # Generate the twiss command
     ########################################
+    uid      = uuid.uuid4().hex[:12]
+    cmd_file = f"_sad_track_{uid}.sad"
+    out_file = f"_sad_track_{uid}.dat"
+
     print("Creating SAD Command")
     sad_command = f"""OFF ECHO;
 
@@ -231,7 +236,7 @@ r       = Prepend[r1, r0];
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Save to file
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-Put[r, "temp_sad_track.dat"];
+Put[r, "{out_file}"];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -239,7 +244,7 @@ Put[r, "temp_sad_track.dat"];
 abort;
 """
     elif turn_by_turn_monitor and not with_progress:
-        sad_command += """
+        sad_command += f"""
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Store initial beam
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -253,7 +258,7 @@ r1 = Table[
         beam = TrackParticles[beam, 1, turn, turn];
         beam[[2]]
     ),
-    {turn, 1, turns}
+    {{turn, 1, turns}}
     ];
 WriteString[6,"TRACKING COMPLETE \\n"];
 
@@ -265,7 +270,7 @@ r = Prepend[r1, r0];
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Save to file
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-Put[r, "temp_sad_track.dat"];
+Put[r, "{out_file}"];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -288,7 +293,7 @@ WriteString[6,"TRACKING COMPLETE \\n"];
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Save to file
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-Put[beam[[2]], "temp_sad_track.dat"];
+Put[beam[[2]], "{out_file}"];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -296,7 +301,7 @@ Put[beam[[2]], "temp_sad_track.dat"];
 abort;
 """
     else:
-        sad_command += """
+        sad_command += f"""
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Track particles
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -306,7 +311,7 @@ WriteString[6,"TRACKING COMPLETE \\n"];
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Save to file
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-Put[beam[[2]], "temp_sad_track.dat"];
+Put[beam[[2]], "{out_file}"];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -314,83 +319,79 @@ Put[beam[[2]], "temp_sad_track.dat"];
 abort;
 """
 
-    ########################################
-    # Write the SAD command
-    ########################################
     print("Writing SAD Command")
-    with open("temp_sad_track.sad", "w", encoding = "utf-8") as f:
-        f.write(sad_command)
-    del sad_command
+    try:
+        with open(cmd_file, "w", encoding = "utf-8") as f:
+            f.write(sad_command)
+        del sad_command
 
-    ########################################
-    # Set up progress bar
-    ########################################
-    print("Running SAD")
-    if with_progress:
-        progress_re = re.compile(r"PROGRESS:(\d+)")
-        pbar        = tqdm(total = n_turns)
-
-    ########################################
-    # Set up process
-    ########################################
-    stdout_lines    = []
-    start           = time.time()
-
-    process = subprocess.Popen(
-        [sad_path, "temp_sad_track.sad"],
-        stdout      = subprocess.PIPE,
-        stderr      = subprocess.STDOUT,
-        text        = True,
-        bufsize     = 1)
-
-    ########################################
-    # Run the process, reading lines for progress
-    ########################################
-    for line in process.stdout:                                 # type: ignore
-        stdout_lines.append(line)
-
-        if process.poll() is not None:
-            raise RuntimeError(f"Subprocess died early with code {process.returncode}")
-
-        if "TRACKING COMPLETE" in line:
-            if with_progress:
-                pbar.close()                                    # type: ignore
-            print("SAD tracking complete, writing output file")
-            break
-
-        # Check for progress lines
+        ########################################
+        # Set up progress bar
+        ########################################
+        print("Running SAD")
         if with_progress:
-            m = progress_re.search(line)                        # type: ignore
-            if m:
-                done    = int(m.group(1))
-                pbar.n  = done                                  # type: ignore
-                pbar.refresh()                                  # type: ignore
+            progress_re = re.compile(r"PROGRESS:(\d+)")
+            pbar        = tqdm(total = n_turns)
 
-        # Timeout handling
-        if time.time() - start > wall_time:
-            process.kill()
-            os.remove("temp_sad_track.sad")
-            raise TimeoutError("SAD tracking timed out")
+        ########################################
+        # Set up process
+        ########################################
+        stdout_lines    = []
+        start           = time.time()
 
-    ########################################
-    # Check the process exits correctly
-    ########################################
-    process.wait()
-    if process.returncode != 0:
-        raise RuntimeError(f"Subprocess exited with error code {process.returncode}")
+        process = subprocess.Popen(
+            [sad_path, cmd_file],
+            stdout      = subprocess.PIPE,
+            stderr      = subprocess.STDOUT,
+            text        = True,
+            bufsize     = 1)
 
-    ########################################
-    # Load the data
-    ########################################
-    print("Loading output file")
-    with open("temp_sad_track.dat", "r", encoding = "utf-8") as f:
-        raw_output  = f.read()
+        ########################################
+        # Run the process, reading lines for progress
+        ########################################
+        for line in process.stdout:                                 # type: ignore
+            stdout_lines.append(line)
 
-    ########################################
-    # Remove temporary data
-    ########################################
-    os.remove("temp_sad_track.sad")
-    os.remove("temp_sad_track.dat")
+            if process.poll() is not None:
+                raise RuntimeError(f"Subprocess died early with code {process.returncode}")
+
+            if "TRACKING COMPLETE" in line:
+                if with_progress:
+                    pbar.close()                                    # type: ignore
+                print("SAD tracking complete, writing output file")
+                break
+
+            # Check for progress lines
+            if with_progress:
+                m = progress_re.search(line)                        # type: ignore
+                if m:
+                    done    = int(m.group(1))
+                    pbar.n  = done                                  # type: ignore
+                    pbar.refresh()                                  # type: ignore
+
+            # Timeout handling
+            if time.time() - start > wall_time:
+                process.kill()
+                raise TimeoutError("SAD tracking timed out")
+
+        ########################################
+        # Check the process exits correctly
+        ########################################
+        process.wait()
+        if process.returncode != 0:
+            raise RuntimeError(f"Subprocess exited with error code {process.returncode}")
+
+        ########################################
+        # Load the data
+        ########################################
+        print("Loading output file")
+        with open(out_file, "r", encoding = "utf-8") as f:
+            raw_output  = f.read()
+
+    finally:
+        for path in [cmd_file, out_file]:
+            if os.path.exists(path):
+                os.remove(path)
 
     ########################################
     # Process the data

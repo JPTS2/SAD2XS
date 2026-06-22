@@ -7,6 +7,7 @@
 ################################################################################
 import os
 import subprocess
+import uuid
 import numpy as np
 import tfs
 import xtrack as xt
@@ -171,6 +172,10 @@ def twiss_sad(
     ########################################
     # Generate the twiss command
     ########################################
+    uid      = uuid.uuid4().hex[:12]
+    cmd_file = f"_sad_twiss_{uid}.sad"
+    out_file = f"_sad_twiss_{uid}.tfs"
+
     print("Creating SAD Command")
     sad_command = f"""OFF ECHO;
 
@@ -209,7 +214,7 @@ SAVE ALL;
 ! Include the twiss print function
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 {generate_twiss_print_function()}
-SaveTwissFile["./temp_sad_twiss.tfs"];
+SaveTwissFile["./{out_file}"];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -217,43 +222,32 @@ SaveTwissFile["./temp_sad_twiss.tfs"];
 abort;
 """
 
-    ########################################
-    # Write the SAD command
-    ########################################
-    with open("temp_sad_twiss.sad", "w", encoding = "utf-8") as f:
-        f.write(sad_command)
-
-    ########################################
-    # Run the process
-    ########################################
     try:
-        subprocess.run(
-            [sad_path, "temp_sad_twiss.sad"],
-            capture_output  = True,
-            text            = True,
-            timeout         = wall_time,
-            check           = True)
-    except subprocess.TimeoutExpired:
-        print(f"SAD Twiss timed out at {wall_time}s")
-        if os.path.exists("temp_sad_twiss.sad"):
-            os.remove("temp_sad_twiss.sad")
-        raise
-    except subprocess.CalledProcessError as e:
-        print(f"SAD exited with non-zero status {e.returncode}")
-        print("stdout:", e.stdout)
-        print("stderr:", e.stderr)
-        if os.path.exists("temp_sad_twiss.sad"):
-            os.remove("temp_sad_twiss.sad")
-        raise
-    finally:
-        if os.path.exists("temp_sad_twiss.sad"):
-            os.remove("temp_sad_twiss.sad")
+        with open(cmd_file, "w", encoding = "utf-8") as f:
+            f.write(sad_command)
 
-    ########################################
-    # Read the data
-    ########################################
-    sad_twiss   = tfs.read("temp_sad_twiss.tfs")
-    os.remove("temp_sad_twiss.tfs")
+        try:
+            subprocess.run(
+                [sad_path, cmd_file],
+                capture_output  = True,
+                text            = True,
+                timeout         = wall_time,
+                check           = True)
+        except subprocess.TimeoutExpired:
+            print(f"SAD Twiss timed out at {wall_time}s")
+            raise
+        except subprocess.CalledProcessError as e:
+            print(f"SAD exited with non-zero status {e.returncode}")
+            print("stdout:", e.stdout)
+            print("stderr:", e.stderr)
+            raise
+
+        sad_twiss = tfs.read(out_file)
+
+    finally:
+        for path in [cmd_file, out_file]:
+            if os.path.exists(path):
+                os.remove(path)
 
     ########################################
     # Convert to TwissTable
