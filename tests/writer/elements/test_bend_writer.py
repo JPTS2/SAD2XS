@@ -250,10 +250,11 @@ def test_bend_writer_angle_is_accessible_as_optics_variable(tmp_path):
         f"Expected: {expected_k0}, got: {env['k0_b1']}.")
 
 
-def test_bend_writer_angle_is_tunable_via_optics_variable(tmp_path):
+def test_bend_writer_k0_is_tunable_via_optics_variable(tmp_path):
     """
     The k0_b1 optics variable should remain live after reload: modifying it
-    should immediately update the Bend angle in the line.
+    should immediately update the Bend k0. The geometric angle is a fixed literal
+    and must remain unchanged when k0 is varied.
     """
     original_line = _build_hbend_line(angle = 0.12, length = 0.6)
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
@@ -261,9 +262,12 @@ def test_bend_writer_angle_is_tunable_via_optics_variable(tmp_path):
     new_k0 = 0.30
     env["k0_b1"] = new_k0
 
-    assert reloaded_line["b1"].angle == pytest.approx(new_k0 * 0.6), (
-        "Modifying optics variable 'k0_b1' should update the Bend angle. "
-        f"Expected: {new_k0 * 0.6}, got: {reloaded_line['b1'].angle}.")
+    assert reloaded_line["b1"].k0 == pytest.approx(new_k0), (
+        "Modifying optics variable 'k0_b1' should update the Bend k0. "
+        f"Expected: {new_k0}, got: {reloaded_line['b1'].k0}.")
+    assert reloaded_line["b1"].angle == pytest.approx(0.12), (
+        "The geometric angle should remain fixed when k0 is varied. "
+        f"Expected: 0.12, got: {reloaded_line['b1'].angle}.")
 
 
 ################################################################################
