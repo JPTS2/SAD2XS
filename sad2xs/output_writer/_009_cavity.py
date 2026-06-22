@@ -9,6 +9,7 @@ Date:       09-12-2025
 ################################################################################
 # Import Packages
 ################################################################################
+import numpy as np
 import xtrack as xt
 import xdeps as xd
 
@@ -68,7 +69,8 @@ def create_cavity_lattice_file_information(
     for cavi_name, cavi_variable_name in zip(unique_cavi_names, unique_cavi_variables):
 
         # Get the information
-        length      = line[cavi_name].length
+        length          = line[cavi_name].length
+        harmonic_value  = line[cavi_name].harmonic
 
         # Remove the minus sign if no non minus version exists
         if cavi_name.startswith("-"):
@@ -83,12 +85,16 @@ env.new(
         if length != 0:
             cavity_generation += f""",
     length      = {length}"""
-        cavity_generation += f""",
+        if harmonic_value != 0:
+            cavity_generation += f""",
+    harmonic    = 'harm_{cavi_variable_name}'"""
+        else:
+            cavity_generation += f""",
     frequency   = 'freq_{cavi_variable_name} * (1 + fshift)'"""
         cavity_generation += f""",
     voltage     = 'volt_{cavi_variable_name}'"""
         cavity_generation += f""",
-    lag         = 'lag_{cavi_variable_name}'"""
+    phase       = 'phase_{cavi_variable_name}'"""
 
         # Close the element definition
         cavity_generation += """)"""
@@ -155,7 +161,7 @@ def create_cavity_optics_file_information(
 
         freq    = 0
         volt    = 0
-        lag     = 180
+        phase   = np.pi
 
         try:
             freq  = line[cavi].frequency
@@ -176,20 +182,34 @@ def create_cavity_optics_file_information(
                     f"Could not find cavity variable {cavi} or -{cavi} in line.") from exc
 
         try:
-            lag   = line[cavi].lag
+            phase = line[cavi].phase
         except KeyError:
             try:
-                lag  = line[f"-{cavi}"].lag
+                phase = line[f"-{cavi}"].phase
             except KeyError as exc:
                 raise KeyError(
                     f"Could not find cavity variable {cavi} or -{cavi} in line.") from exc
 
-        output_string += f"""
+        harmonic = 0
+        try:
+            harmonic = line[cavi].harmonic
+        except KeyError:
+            try:
+                harmonic = line[f"-{cavi}"].harmonic
+            except KeyError as exc:
+                raise KeyError(
+                    f"Could not find cavity variable {cavi} or -{cavi} in line.") from exc
+
+        if harmonic != 0:
+            output_string += f"""
+    {f'harm_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'harm_{variable_name}') + 4)}{'= '}{harmonic:.24f},"""
+        else:
+            output_string += f"""
     {f'freq_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'freq_{variable_name}') + 4)}{'= '}{freq:.24f},"""
         output_string += f"""
     {f'volt_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'volt_{variable_name}') + 4)}{'= '}{volt:.24f},"""
         output_string += f"""
-    {f'lag_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'lag_{variable_name}') + 4)}{'= '}{lag:.24f},"""
+    {f'phase_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'phase_{variable_name}') + 4)}{'= '}{phase:.24f},"""
 
     ########################################
     # Return

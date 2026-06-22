@@ -42,12 +42,13 @@ rather than one serialised element or feature.
   - Corrector (h=0): `k0_{name}` present/suppressed (2 tests)
   - Sextupole: `k2_{name}` present/suppressed, `k2s_{name}` for skew (3 tests)
   - Octupole: `k3_{name}` present/suppressed, `k3s_{name}` for skew (3 tests)
-  - Cavity: `freq_{name}`, `volt_{name}`, `lag_{name}` always written (1 test)
-  - XYShift: `dx_{name}` and `dy_{name}` independently present/suppressed (2 tests)
-  - ZetaShift: `dz_{name}` (1 test)
-  - XRotation: `chi2_{name}` (1 test)
-  - YRotation: `chi1_{name}` (1 test)
-  - SRotation: `chi3_{name}` (1 test)
+  - Cavity (frequency-driven): `freq_{name}`, `volt_{name}`, `phase_{name}` always written (1 test)
+  - Cavity (harmonic-driven): `harm_{name}`, `volt_{name}`, `phase_{name}` written; `freq_{name}` omitted
+  - Translation: `dx_{name}` and `dy_{name}` independently present/suppressed (2 tests)
+  - TimeDelay: `dz_{name}` (1 test)
+  - Rotation (rot_x_rad/chi2): `chi2_{name}` (1 test)
+  - Rotation (rot_y_rad/chi1): `chi1_{name}` (1 test)
+  - Rotation (rot_s_rad/chi3): `chi3_{name}` (1 test)
   All 22 tests expected to pass.
 
 ## Expected Failures

@@ -31,7 +31,7 @@ parse SAD input
   -> convert elements
   -> convert lines
   -> select the requested or longest line
-  -> apply solenoid and harmonic RF corrections
+  -> apply solenoid corrections
   -> configure element models and integrators
   -> apply requested line and charge reversals
   -> install offset markers
@@ -74,10 +74,9 @@ Key responsibilities:
 - `_004_element_converter.py`: convert supported SAD element definitions into Xsuite elements.
 - `_005_line_converter.py`: convert SAD line definitions into Xsuite line definitions.
 - `_006_solenoid_converter.py`: handle solenoid-specific conversion details.
-- `_007_harmonic_rf.py`: handle harmonic RF cases.
-- `_008_reversals.py`: construct reversed elements and lines where needed.
-- `_009_offset_markers.py`: install offset marker structures.
-- `_010_write_lattice.py` and `_011_write_optics.py`: writer entry points that assemble output from the `sad2xs/output_writer/` modules.
+- `_007_reversals.py`: construct reversed elements and lines where needed.
+- `_008_offset_markers.py`: install offset marker structures.
+- `_009_write_lattice.py` and `_010_write_optics.py`: writer entry points that assemble output from the `sad2xs/output_writer/` modules.
 
 Next release target: the converter should produce a valid Xsuite model and should not rely on the writer to repair conversion semantics.
 

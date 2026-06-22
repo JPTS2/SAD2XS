@@ -14,8 +14,8 @@ from .main import convert_sad_to_xsuite
 ################################################################################
 # Lattice and Optics writers
 ################################################################################
-from .converter._010_write_lattice import write_lattice
-from .converter._011_write_optics import write_optics
+from .converter._009_write_lattice import write_lattice
+from .converter._010_write_optics import write_optics
 
 ################################################################################
 # SAD Helpers Functions

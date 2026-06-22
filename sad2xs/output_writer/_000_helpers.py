@@ -176,12 +176,8 @@ def extract_bend_information(line, line_table):
 
                 # Handle horizontal and vertical bends rotated by 180 degrees
                 if flip:
-                    if not line[bend].k0_from_h:
-                        assert line[bend].h == 0
-                        line[bend].k0           *= -1
-                    else:
-                        line[bend].angle        *= -1
-
+                    line[bend].angle            *= -1
+                    line[bend].k0               *= -1
                     line[bend].edge_entry_angle *= -1
                     line[bend].edge_exit_angle  *= -1
                     line[bend].rot_s_rad        *= -1

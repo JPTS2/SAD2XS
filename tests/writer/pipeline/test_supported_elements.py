@@ -15,6 +15,7 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
+import numpy as np
 import xtrack as xt
 
 import sad2xs as s2x
@@ -187,65 +188,43 @@ def test_supported_elements_writer_handles_cavity(tmp_path):
     contains an xt.Cavity element.
     """
     line = _build_single_element_line(
-        xt.Cavity(voltage = 3.0E6, frequency = 4.0E8, lag = 5.0), "cav1")
+        xt.Cavity(voltage = 3.0E6, frequency = 4.0E8, phase = np.pi), "cav1")
     output_dir = _write_only(line, tmp_path, "cavity")
 
     _assert_file_exists_and_is_executable(output_dir, "cavity")
 
 
-def test_supported_elements_writer_handles_xy_shift(tmp_path):
+def test_supported_elements_writer_handles_translation(tmp_path):
     """
     write_lattice should produce an executable lattice file when the line
-    contains an xt.XYShift element.
+    contains an xt.Translation element.
     """
-    line       = _build_single_element_line(xt.XYShift(dx = 1.0E-3, dy = -2.0E-3), "shift1")
-    output_dir = _write_only(line, tmp_path, "xy_shift")
+    line       = _build_single_element_line(xt.Translation(shift_x = 1.0E-3, shift_y = -2.0E-3), "shift1")
+    output_dir = _write_only(line, tmp_path, "translation")
 
-    _assert_file_exists_and_is_executable(output_dir, "xy_shift")
-
-
-def test_supported_elements_writer_handles_zeta_shift(tmp_path):
-    """
-    write_lattice should produce an executable lattice file when the line
-    contains an xt.ZetaShift element.
-    """
-    line       = _build_single_element_line(xt.ZetaShift(dzeta = 3.0E-3), "zshift1")
-    output_dir = _write_only(line, tmp_path, "zeta_shift")
-
-    _assert_file_exists_and_is_executable(output_dir, "zeta_shift")
+    _assert_file_exists_and_is_executable(output_dir, "translation")
 
 
-def test_supported_elements_writer_handles_x_rotation(tmp_path):
+def test_supported_elements_writer_handles_timedelay(tmp_path):
     """
     write_lattice should produce an executable lattice file when the line
-    contains an xt.XRotation element.
+    contains an xt.TimeDelay element.
     """
-    line       = _build_single_element_line(xt.XRotation(angle = 1.25), "xrot1")
-    output_dir = _write_only(line, tmp_path, "x_rotation")
+    line       = _build_single_element_line(xt.TimeDelay(shift_zeta = 3.0E-3), "zshift1")
+    output_dir = _write_only(line, tmp_path, "timedelay")
 
-    _assert_file_exists_and_is_executable(output_dir, "x_rotation")
-
-
-def test_supported_elements_writer_handles_y_rotation(tmp_path):
-    """
-    write_lattice should produce an executable lattice file when the line
-    contains an xt.YRotation element.
-    """
-    line       = _build_single_element_line(xt.YRotation(angle = -1.25), "yrot1")
-    output_dir = _write_only(line, tmp_path, "y_rotation")
-
-    _assert_file_exists_and_is_executable(output_dir, "y_rotation")
+    _assert_file_exists_and_is_executable(output_dir, "timedelay")
 
 
-def test_supported_elements_writer_handles_s_rotation(tmp_path):
+def test_supported_elements_writer_handles_rotation(tmp_path):
     """
     write_lattice should produce an executable lattice file when the line
-    contains an xt.SRotation element.
+    contains an xt.Rotation element.
     """
-    line       = _build_single_element_line(xt.SRotation(angle = 0.75), "srot1")
-    output_dir = _write_only(line, tmp_path, "s_rotation")
+    line       = _build_single_element_line(xt.Rotation(rot_y_rad = 1.25), "rot1")
+    output_dir = _write_only(line, tmp_path, "rotation")
 
-    _assert_file_exists_and_is_executable(output_dir, "s_rotation")
+    _assert_file_exists_and_is_executable(output_dir, "rotation")
 
 
 def test_supported_elements_writer_handles_limit_rect(tmp_path):

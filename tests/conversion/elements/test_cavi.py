@@ -85,9 +85,9 @@ def _cavi_xsuite_sad_s(twiss, line):
     table = line.get_table(attr = True)
     ds = np.concatenate([[0], twiss.s[1:] - twiss.s[:-1]])
     dzeta = np.concatenate([[0], twiss.zeta[1:] - twiss.zeta[:-1]])
-    zeta_shifts = table.element_type == "ZetaShift"
-    zeta_shifts = np.concatenate([[0], zeta_shifts[:-1]])
-    dzeta = np.where(zeta_shifts, 0, dzeta)
+    time_delays = table.element_type == "TimeDelay"
+    time_delays = np.concatenate([[0], time_delays[:-1]])
+    dzeta = np.where(time_delays, 0, dzeta)
 
     sad_s = np.zeros_like(twiss.s)
     for idx in range(1, len(sad_s)):
@@ -256,12 +256,12 @@ def test_cavi_converter_creates_xsuite_cavity(
         "Converted CAVI should preserve the parsed SAD frequency when "
         "fshift is zero.")
 
-def test_cavi_converter_uses_phase_not_lag(
+def test_cavi_converter_sets_phase_in_radians(
         parsed_elements,
         xsuite_environment,
         assert_environment_element):
     """
-    CAVI phase should use current Xsuite phase rather than deprecated lag.
+    SAD PHI should be expressed as Xsuite phase in radians (offset by π).
     """
     xsuite_environment["fshift"] = 0.0
 
@@ -285,8 +285,6 @@ def test_cavi_converter_uses_phase_not_lag(
 
     assert cavity.phase == pytest.approx(np.pi + 0.125), (
         "Converted CAVI should express SAD PHI using Xsuite phase in radians.")
-    assert cavity.lag == pytest.approx(0.0), (
-        "Converted CAVI should not use deprecated Xsuite lag.")
 
 def test_cavi_converter_preserves_symbolic_phase_with_environment_variable(
         parsed_elements,
@@ -318,8 +316,6 @@ def test_cavi_converter_preserves_symbolic_phase_with_environment_variable(
 
     assert cavity.phase == pytest.approx(np.pi + 0.125), (
         "Symbolic CAVI PHI should evaluate through Xsuite phase in radians.")
-    assert cavity.lag == pytest.approx(0.0), (
-        "Symbolic CAVI PHI should not be represented through deprecated lag.")
 
 ########################################
 # Frequency and Harmonic Handling
@@ -479,8 +475,6 @@ def test_cavi_pipeline_preserves_names_order_and_rf_settings(
         "Pipeline CAVI conversion should preserve the SAD cavity frequency.")
     assert line["test_cavi"].phase == pytest.approx(np.pi + 0.125), (
         "Pipeline CAVI conversion should use Xsuite phase in radians.")
-    assert line["test_cavi"].lag == pytest.approx(0.0), (
-        "Pipeline CAVI conversion should not use deprecated Xsuite lag.")
 
 def test_cavi_pipeline_preserves_harmonic_rf_setting(write_lattice):
     """
@@ -519,8 +513,6 @@ def test_cavi_pipeline_preserves_harmonic_rf_setting(write_lattice):
         "Pipeline CAVI conversion should preserve HARM as Xsuite harmonic.")
     assert line["test_cavi"].phase == pytest.approx(np.pi), (
         "Pipeline harmonic CAVI conversion should use Xsuite phase in radians.")
-    assert line["test_cavi"].lag == pytest.approx(0.0), (
-        "Pipeline harmonic CAVI conversion should not use deprecated Xsuite lag.")
 
 ################################################################################
 # Physics Equivalence
@@ -606,11 +598,7 @@ def test_cavi_conversion_matches_sad_twiss_for_phase(
         sad_values    = sad_values,
         xsuite_values = xsuite_values,
         parameters    = {"length": length, "phi": phi},
-        notes         = [
-            "Physics equivalence currently uses the converter output directly. "
-            "Separate direct tests require migration from deprecated lag to "
-            "current Xsuite phase.",
-        ])
+        notes         = [])
 
 @pytest.mark.parametrize(
     "zeta, delta",
@@ -712,8 +700,4 @@ def test_cavi_conversion_matches_sad_tracking_for_longitudinal_offsets(
         sad_coordinates     = _cavi_sad_coordinates(sad_particles),
         xsuite_coordinates  = _cavi_xsuite_coordinates(xs_particles),
         parameters          = {"zeta": zeta, "delta": delta},
-        notes               = [
-            "Tracking equivalence currently uses the converter output directly. "
-            "Separate direct tests require migration from deprecated lag to "
-            "current Xsuite phase.",
-        ])
+        notes               = [])

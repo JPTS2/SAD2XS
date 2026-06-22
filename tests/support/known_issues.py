@@ -26,16 +26,6 @@ KNOWN_ISSUE_TESTS = {
     "tests/conversion/elements/test_oct.py::test_oct_converter_converts_thin_octupole_to_multipole": 18,
     "tests/conversion/elements/test_quad.py::test_quad_converter_converts_thin_quadrupole_to_multipole": 18,
     "tests/conversion/elements/test_sext.py::test_sext_converter_converts_thin_sextupole_to_multipole": 18,
-    "tests/conversion/elements/test_bend.py::test_bend_converter_creates_xsuite_bend": 19,
-    "tests/conversion/elements/test_bend.py::test_bend_converter_creates_all_bends": 19,
-    "tests/conversion/elements/test_cavi.py::test_cavi_converter_uses_phase_not_lag": 19,
-    "tests/conversion/elements/test_cavi.py::test_cavi_converter_preserves_symbolic_phase_with_environment_variable": 19,
-    "tests/conversion/elements/test_cavi.py::test_cavi_converter_uses_harmonic_when_harmonic_is_supplied": 19,
-    "tests/conversion/elements/test_cavi.py::test_cavi_pipeline_preserves_names_order_and_rf_settings": 19,
-    "tests/conversion/elements/test_cavi.py::test_cavi_pipeline_preserves_harmonic_rf_setting": 19,
-    "tests/conversion/elements/test_coord.py::test_coord_converter_creates_marker_like_xyshift_for_empty_transform": 19,
-    "tests/conversion/elements/test_sol.py::test_sol_bound_reference_transforms_use_current_xsuite_api": 19,
-
     # Parser and expression handling.
     "tests/parser/test_errors.py::test_invalid_deferred_expression_syntax_raises_clear_error": 22,
     "tests/parser/test_errors.py::test_malformed_line_missing_equals_raises_clear_error": 22,
@@ -80,9 +70,6 @@ KNOWN_ISSUE_TESTS = {
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_thin_kick": 55,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_rotated_kicks": 55,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_element_offsets": 55,
-    "tests/conversion/elements/test_sol.py::test_sol_reference_transform_restores_design_orbit_at_end": 58,
-    "tests/conversion/elements/test_sol.py::test_sol_reference_transform_restores_orbit_with_interior_kicks": 58,
-    "tests/conversion/elements/test_sol.py::test_sol_powered_reference_shift_orbit_matches_sad_at_end": 58,
     "tests/conversion/pipeline/test_reverse_charge.py::test_pipeline_reverse_charge_negates_positive_q0": 59,
     "tests/conversion/pipeline/test_reverse_charge.py::test_pipeline_reverse_charge_negates_negative_q0": 59,
     "tests/conversion/pipeline/test_reverse_charge.py::test_pipeline_reverse_charge_does_not_affect_p0c_or_mass0": 59,
@@ -92,8 +79,6 @@ KNOWN_ISSUE_TESTS = {
 PARTIAL_KNOWN_ISSUES = (
     # (test node prefix, parameter-id fragment, issue number)
     ("tests/conversion/elements/test_drift.py::test_drift_converter_creates_xsuite_drift", "[l_drift]", 52),
-    ("tests/conversion/elements/test_coord.py::test_coord_converter_creates_xsuite_xyshift", "[element_variables0-", 19),
-    ("tests/conversion/elements/test_coord.py::test_coord_converter_creates_xsuite_xyshift", "[element_variables1-", 19),
     ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_twiss_for_element_offsets", "[0.001-0.0]", 19),
     ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_twiss_for_element_offsets", "[0.001--0.001]", 19),
     ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_tracking_for_element_offsets", "[0.001-0.0]", 19),
@@ -106,11 +91,8 @@ PARTIAL_KNOWN_ISSUES = (
     ("tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_twiss_for_horizontal_kicks", "[0.1]", 55),
     ("tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_horizontal_kicks", "[-0.1]", 55),
     ("tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_horizontal_kicks", "[0.1]", 55),
-    ("tests/conversion/elements/test_sol.py::test_sol_reference_transform_orbit_matches_sad_twiss", "-geo_out-dxdy]", 58),
-    ("tests/conversion/elements/test_sol.py::test_sol_reference_transform_orbit_matches_sad_twiss", "-geo_out-dpx]", 58),
-    ("tests/conversion/elements/test_sol.py::test_sol_reference_transform_orbit_matches_sad_twiss", "-geo_out-dpy]", 58),
-    ("tests/conversion/elements/test_sol.py::test_sol_reference_transform_orbit_matches_sad_twiss", "-geo_out-dxdy_dpx_dpy]", 58),
-    ("tests/conversion/elements/test_sol.py::test_sol_reference_transform_orbit_matches_sad_twiss", "-geo_out-dxdy_chi1_chi2]", 58),
+    ("tests/conversion/elements/test_sol.py::test_sol_reference_transform_restores_design_orbit_at_end", "[out-dxdy]", 58),
+    ("tests/conversion/elements/test_sol.py::test_sol_reference_transform_restores_design_orbit_at_end", "[out-dxdy_dpx_dpy]", 58),
 )
 
 

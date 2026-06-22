@@ -500,21 +500,21 @@ def test_pipeline_reverse_bend_direction_negates_coord_dx_preserves_dy(write_lat
         _verbose               = False,
         _test_mode             = True)
 
-    dx_forward  = line_forward["c1"].dx
-    dy_forward  = line_forward["c1"].dy
-    dx_reversed = line_reversed["c1"].dx
-    dy_reversed = line_reversed["c1"].dy
+    dx_forward  = line_forward["c1"].shift_x
+    dy_forward  = line_forward["c1"].shift_y
+    dx_reversed = line_reversed["c1"].shift_x
+    dy_reversed = line_reversed["c1"].shift_y
 
     assert dx_forward != pytest.approx(0.0), (
-        "Forward COORD dx should be non-zero for DX = 0.01.")
+        "Forward COORD shift_x should be non-zero for DX = 0.01.")
     assert dy_forward != pytest.approx(0.0), (
-        "Forward COORD dy should be non-zero for DY = 0.02.")
+        "Forward COORD shift_y should be non-zero for DY = 0.02.")
     assert dx_reversed == pytest.approx(-dx_forward), (
-        "reverse_bend_direction=True should negate COORD dx. "
+        "reverse_bend_direction=True should negate COORD shift_x. "
         f"Forward: {dx_forward}, reversed: {dx_reversed}.")
     assert dy_reversed == pytest.approx(dy_forward), (
-        "reverse_bend_direction=True should leave COORD dy unchanged "
-        "(unlike reverse_element_order which negates both dx and dy). "
+        "reverse_bend_direction=True should leave COORD shift_y unchanged "
+        "(unlike reverse_element_order which negates both shift_x and shift_y). "
         f"Forward: {dy_forward}, reversed: {dy_reversed}.")
 
 
@@ -524,9 +524,9 @@ def test_pipeline_reverse_bend_direction_negates_coord_dx_preserves_dy(write_lat
 def test_pipeline_reverse_bend_direction_coord_chi1_negated_chi2_unchanged_chi3_negated(
         write_lattice):
     """
-    reverse_bend_direction=True should negate chi1 (YRotation) and chi3
-    (SRotation) angles but leave chi2 (XRotation) unchanged. A single COORD
-    with all three components produces elements named c1_chi1, c1_chi2, c1_chi3.
+    reverse_bend_direction=True should negate chi1 (rot_y_rad) and chi3
+    (rot_s_rad) but leave chi2 (rot_x_rad) unchanged. A single COORD with all
+    three components produces elements named c1_chi1, c1_chi2, c1_chi3.
     The chi2 assertion is the non-trivial one: it confirms the asymmetry between
     the three rotation types.
     """
@@ -557,27 +557,27 @@ def test_pipeline_reverse_bend_direction_coord_chi1_negated_chi2_unchanged_chi3_
         _verbose               = False,
         _test_mode             = True)
 
-    chi1_fwd = line_forward["c1_chi1"].angle
-    chi2_fwd = line_forward["c1_chi2"].angle
-    chi3_fwd = line_forward["c1_chi3"].angle
+    chi1_fwd = line_forward["c1_chi1"].rot_y_rad
+    chi2_fwd = line_forward["c1_chi2"].rot_x_rad
+    chi3_fwd = line_forward["c1_chi3"].rot_s_rad
 
-    chi1_rev = line_reversed["c1_chi1"].angle
-    chi2_rev = line_reversed["c1_chi2"].angle
-    chi3_rev = line_reversed["c1_chi3"].angle
+    chi1_rev = line_reversed["c1_chi1"].rot_y_rad
+    chi2_rev = line_reversed["c1_chi2"].rot_x_rad
+    chi3_rev = line_reversed["c1_chi3"].rot_s_rad
 
     assert chi1_fwd != pytest.approx(0.0), (
-        "Forward c1_chi1 angle should be non-zero for CHI1 = 0.05.")
+        "Forward c1_chi1 rot_y_rad should be non-zero for CHI1 = 0.05.")
     assert chi2_fwd != pytest.approx(0.0), (
-        "Forward c1_chi2 angle should be non-zero for CHI2 = 0.03.")
+        "Forward c1_chi2 rot_x_rad should be non-zero for CHI2 = 0.03.")
     assert chi3_fwd != pytest.approx(0.0), (
-        "Forward c1_chi3 angle should be non-zero for CHI3 = 0.02.")
+        "Forward c1_chi3 rot_s_rad should be non-zero for CHI3 = 0.02.")
 
     assert chi1_rev == pytest.approx(-chi1_fwd), (
-        "reverse_bend_direction=True should negate the chi1 (YRotation) angle. "
+        "reverse_bend_direction=True should negate the chi1 rot_y_rad. "
         f"Forward: {chi1_fwd}, reversed: {chi1_rev}.")
     assert chi2_rev == pytest.approx(chi2_fwd), (
-        "reverse_bend_direction=True should leave the chi2 (XRotation) angle unchanged. "
+        "reverse_bend_direction=True should leave chi2 rot_x_rad unchanged. "
         f"Forward: {chi2_fwd}, reversed: {chi2_rev}.")
     assert chi3_rev == pytest.approx(-chi3_fwd), (
-        "reverse_bend_direction=True should negate the chi3 (SRotation) angle. "
+        "reverse_bend_direction=True should negate the chi3 rot_s_rad. "
         f"Forward: {chi3_fwd}, reversed: {chi3_rev}.")

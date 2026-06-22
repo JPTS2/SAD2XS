@@ -15,6 +15,7 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
+import numpy as np
 import xtrack as xt
 
 import sad2xs as s2x
@@ -332,109 +333,109 @@ def test_optics_writer_writes_k3s_variable_for_skew_octupole(tmp_path):
 ################################################################################
 # Cavity Optics Tests
 ################################################################################
-def test_optics_writer_writes_freq_volt_lag_variables_for_cavity(tmp_path):
+def test_optics_writer_writes_freq_volt_phase_variables_for_cavity(tmp_path):
     """
     For a cavity, write_optics should always write all three optics variables:
-    'freq_{name}', 'volt_{name}', and 'lag_{name}'. Cavity parameters are
+    'freq_{name}', 'volt_{name}', and 'phase_{name}'. Cavity parameters are
     never suppressed even when they take default values.
     """
     content = _optics_content(
-        xt.Cavity(voltage = 3.0E6, frequency = 4.0E8, lag = 5.0), "cav1", tmp_path)
+        xt.Cavity(voltage = 3.0E6, frequency = 4.0E8, phase = np.pi + 0.5), "cav1", tmp_path)
 
-    for var in ("freq_cav1", "volt_cav1", "lag_cav1"):
+    for var in ("freq_cav1", "volt_cav1", "phase_cav1"):
         assert var in content, (
             f"write_optics should write '{var}' to the optics file for a "
             f"cavity. File content: {content!r}.")
 
 
 ################################################################################
-# XYShift Optics Tests
+# Translation Optics Tests
 ################################################################################
-def test_optics_writer_writes_dx_and_dy_for_nonzero_xyshift(tmp_path):
+def test_optics_writer_writes_dx_and_dy_for_nonzero_translation(tmp_path):
     """
-    For an XYShift with both dx != 0 and dy != 0, write_optics should write
-    'dx_{name}' and 'dy_{name}' to the optics file.
+    For a Translation with both shift_x != 0 and shift_y != 0, write_optics
+    should write 'dx_{name}' and 'dy_{name}' to the optics file.
     """
     content = _optics_content(
-        xt.XYShift(dx = 1.0E-3, dy = -2.0E-3), "shift1", tmp_path)
+        xt.Translation(shift_x = 1.0E-3, shift_y = -2.0E-3), "shift1", tmp_path)
 
     assert "dx_shift1" in content, (
-        "write_optics should write 'dx_shift1' for an XYShift with dx = 1e-3. "
+        "write_optics should write 'dx_shift1' for a Translation with shift_x = 1e-3. "
         f"File content: {content!r}.")
     assert "dy_shift1" in content, (
-        "write_optics should write 'dy_shift1' for an XYShift with dy = -2e-3. "
+        "write_optics should write 'dy_shift1' for a Translation with shift_y = -2e-3. "
         f"File content: {content!r}.")
 
 
-def test_optics_writer_does_not_write_dx_for_zero_dx_xyshift(tmp_path):
+def test_optics_writer_does_not_write_dx_for_zero_shift_x_translation(tmp_path):
     """
-    For an XYShift with dx=0, write_optics should suppress 'dx_{name}' while
-    still writing 'dy_{name}' when dy != 0.
+    For a Translation with shift_x=0, write_optics should suppress 'dx_{name}'
+    while still writing 'dy_{name}' when shift_y != 0.
     """
     content = _optics_content(
-        xt.XYShift(dx = 0.0, dy = -2.0E-3), "shift1", tmp_path)
+        xt.Translation(shift_x = 0.0, shift_y = -2.0E-3), "shift1", tmp_path)
 
     assert "dx_shift1" not in content, (
-        "write_optics should not write 'dx_shift1' when dx = 0. "
+        "write_optics should not write 'dx_shift1' when shift_x = 0. "
         f"File content: {content!r}.")
     assert "dy_shift1" in content, (
-        "write_optics should still write 'dy_shift1' when dy = -2e-3. "
+        "write_optics should still write 'dy_shift1' when shift_y = -2e-3. "
         f"File content: {content!r}.")
 
 
 ################################################################################
-# ZetaShift Optics Tests
+# TimeDelay Optics Tests
 ################################################################################
-def test_optics_writer_writes_dz_for_nonzero_zetashift(tmp_path):
+def test_optics_writer_writes_dz_for_nonzero_timedelay(tmp_path):
     """
-    For a ZetaShift with dzeta != 0, write_optics should write a 'dz_{name}'
-    variable to the optics file.
+    For a TimeDelay with shift_zeta != 0, write_optics should write a
+    'dz_{name}' variable to the optics file.
     """
     content = _optics_content(
-        xt.ZetaShift(dzeta = 3.0E-3), "zshift1", tmp_path)
+        xt.TimeDelay(shift_zeta = 3.0E-3), "zshift1", tmp_path)
 
     assert "dz_zshift1" in content, (
-        "write_optics should write 'dz_zshift1' for a ZetaShift with "
-        f"dzeta = 3e-3. File content: {content!r}.")
+        "write_optics should write 'dz_zshift1' for a TimeDelay with "
+        f"shift_zeta = 3e-3. File content: {content!r}.")
 
 
 ################################################################################
 # Rotation Optics Tests
 ################################################################################
-def test_optics_writer_writes_chi2_for_nonzero_xrotation(tmp_path):
+def test_optics_writer_writes_chi2_for_nonzero_rotation_rot_x_rad(tmp_path):
     """
-    For an XRotation with angle != 0, write_optics should write a
+    For a Rotation with rot_x_rad != 0, write_optics should write a
     'chi2_{name}' variable to the optics file.
     """
     content = _optics_content(
-        xt.XRotation(angle = 1.25), "xrot1", tmp_path)
+        xt.Rotation(rot_x_rad = 1.25), "rot1", tmp_path)
 
-    assert "chi2_xrot1" in content, (
-        "write_optics should write 'chi2_xrot1' for an XRotation with "
-        f"angle = 1.25. File content: {content!r}.")
+    assert "chi2_rot1" in content, (
+        "write_optics should write 'chi2_rot1' for a Rotation with "
+        f"rot_x_rad = 1.25. File content: {content!r}.")
 
 
-def test_optics_writer_writes_chi1_for_nonzero_yrotation(tmp_path):
+def test_optics_writer_writes_chi1_for_nonzero_rotation_rot_y_rad(tmp_path):
     """
-    For a YRotation with angle != 0, write_optics should write a
+    For a Rotation with rot_y_rad != 0, write_optics should write a
     'chi1_{name}' variable to the optics file.
     """
     content = _optics_content(
-        xt.YRotation(angle = -1.25), "yrot1", tmp_path)
+        xt.Rotation(rot_y_rad = -1.25), "rot1", tmp_path)
 
-    assert "chi1_yrot1" in content, (
-        "write_optics should write 'chi1_yrot1' for a YRotation with "
-        f"angle = -1.25. File content: {content!r}.")
+    assert "chi1_rot1" in content, (
+        "write_optics should write 'chi1_rot1' for a Rotation with "
+        f"rot_y_rad = -1.25. File content: {content!r}.")
 
 
-def test_optics_writer_writes_chi3_for_nonzero_srotation(tmp_path):
+def test_optics_writer_writes_chi3_for_nonzero_rotation_rot_s_rad(tmp_path):
     """
-    For an SRotation with angle != 0, write_optics should write a
+    For a Rotation with rot_s_rad != 0, write_optics should write a
     'chi3_{name}' variable to the optics file.
     """
     content = _optics_content(
-        xt.SRotation(angle = 0.75), "srot1", tmp_path)
+        xt.Rotation(rot_s_rad = 0.75), "rot1", tmp_path)
 
-    assert "chi3_srot1" in content, (
-        "write_optics should write 'chi3_srot1' for an SRotation with "
-        f"angle = 0.75. File content: {content!r}.")
+    assert "chi3_rot1" in content, (
+        "write_optics should write 'chi3_rot1' for a Rotation with "
+        f"rot_s_rad = 0.75. File content: {content!r}.")

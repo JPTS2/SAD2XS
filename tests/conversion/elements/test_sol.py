@@ -301,6 +301,7 @@ def _reference_transform_lattice(
 
 def _compare_sol_orbit_twiss(
         write_lattice,
+        rebuild_lattice,
         tmp_path,
         lattice_text,
         filename,
@@ -317,6 +318,7 @@ def _compare_sol_orbit_twiss(
 
     try:
         lattice_path = write_lattice(lattice_text, filename = filename)
+        rebuilt_path = rebuild_lattice(lattice_path)
 
         tw_sad = twiss_sad(
             lattice_filepath        = lattice_path.name,
@@ -332,7 +334,7 @@ def _compare_sol_orbit_twiss(
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
-            sad_lattice_path = str(lattice_path),
+            sad_lattice_path = str(rebuilt_path),
             output_directory = "N/A",
             _verbose         = False,
             _test_mode       = True)
@@ -459,9 +461,7 @@ def test_sol_bound_converter_creates_compound_reference_transform_line(
         "test_sol_bound",
         "test_sol_dxy",
         "test_sol_dz",
-        "test_sol_chi1",
-        "test_sol_chi2",
-        "test_sol_chi3",
+        "test_sol_rot",
     ], (
         "Bound SOL compound line should preserve the documented transform "
         "component order.")
@@ -473,23 +473,15 @@ def test_sol_bound_converter_creates_compound_reference_transform_line(
     assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_sol_dxy",
-        element_type = xt.XYShift)
+        element_type = xt.Translation)
     assert_environment_element(
         environment  = xsuite_environment,
         element_name = "test_sol_dz",
-        element_type = xt.ZetaShift)
+        element_type = xt.TimeDelay)
     assert_environment_element(
         environment  = xsuite_environment,
-        element_name = "test_sol_chi1",
-        element_type = xt.YRotation)
-    assert_environment_element(
-        environment  = xsuite_environment,
-        element_name = "test_sol_chi2",
-        element_type = xt.XRotation)
-    assert_environment_element(
-        environment  = xsuite_environment,
-        element_name = "test_sol_chi3",
-        element_type = xt.SRotation)
+        element_name = "test_sol_rot",
+        element_type = xt.Rotation)
 
 def test_sol_bound_converter_applies_reference_transform_signs(
         parsed_elements,
@@ -517,21 +509,18 @@ def test_sol_bound_converter_applies_reference_transform_signs(
         environment = xsuite_environment,
         config      = sad2xs_config)
 
-    assert xsuite_environment["test_sol_dxy"].dx == pytest.approx(-0.001), (
+    assert xsuite_environment["test_sol_dxy"].shift_x == pytest.approx(-0.001), (
         "Bound SOL DX should use the current SAD2XS sign convention.")
-    assert xsuite_environment["test_sol_dxy"].dy == pytest.approx(0.002), (
+    assert xsuite_environment["test_sol_dxy"].shift_y == pytest.approx(0.002), (
         "Bound SOL DY should use the current SAD2XS sign convention.")
-    assert xsuite_environment["test_sol_dz"].dzeta == pytest.approx(-0.003), (
+    assert xsuite_environment["test_sol_dz"].shift_zeta == pytest.approx(-0.003), (
         "Bound SOL DZ should map to the current SAD2XS longitudinal shift.")
-    assert xsuite_environment["test_sol_chi1"].angle == pytest.approx(
-        np.rad2deg(0.004)), (
-        "Bound SOL CHI1 should use the current SAD2XS rotation convention.")
-    assert xsuite_environment["test_sol_chi2"].angle == pytest.approx(
-        np.rad2deg(0.005)), (
-        "Bound SOL CHI2 should use the current SAD2XS rotation convention.")
-    assert xsuite_environment["test_sol_chi3"].angle == pytest.approx(
-        np.rad2deg(0.006)), (
-        "Bound SOL CHI3 should use the current SAD2XS rotation convention.")
+    assert xsuite_environment["test_sol_rot"].rot_y_rad == pytest.approx(0.004), (
+        "Bound SOL CHI1 should store radians with the current SAD2XS sign convention.")
+    assert xsuite_environment["test_sol_rot"].rot_x_rad == pytest.approx(0.005), (
+        "Bound SOL CHI2 should store radians with the current SAD2XS sign convention.")
+    assert xsuite_environment["test_sol_rot"].rot_s_rad == pytest.approx(0.006), (
+        "Bound SOL CHI3 should store radians with the current SAD2XS sign convention.")
 
 def test_sol_bound_reference_transforms_use_current_xsuite_api(
         parsed_elements,
@@ -570,15 +559,7 @@ def test_sol_bound_reference_transforms_use_current_xsuite_api(
         element_type = xt.TimeDelay)
     assert_environment_element(
         environment  = xsuite_environment,
-        element_name = "test_sol_chi1",
-        element_type = xt.Rotation)
-    assert_environment_element(
-        environment  = xsuite_environment,
-        element_name = "test_sol_chi2",
-        element_type = xt.Rotation)
-    assert_environment_element(
-        environment  = xsuite_environment,
-        element_name = "test_sol_chi3",
+        element_name = "test_sol_rot",
         element_type = xt.Rotation)
 
 ################################################################################
@@ -732,7 +713,11 @@ def test_sol_orbit_matches_sad_twiss_at_end(write_lattice, tmp_path, bz):
 @pytest.mark.parametrize(
     "bz",
     [0.0, -0.1, 0.1])
-def test_sol_optics_matches_sad_twiss_at_end(write_lattice, tmp_path, bz):
+def test_sol_optics_matches_sad_twiss_at_end(
+        write_lattice,
+        rebuild_lattice,
+        tmp_path,
+        bz):
     """
     Converted bound SOL regions should match SAD beta/alpha Twiss values.
 
@@ -747,6 +732,7 @@ def test_sol_optics_matches_sad_twiss_at_end(write_lattice, tmp_path, bz):
         lattice_path = write_lattice(
             lattice_text,
             filename = f"sol_optics_twiss_bz_{bz:+.3f}.sad")
+        rebuilt_path = rebuild_lattice(lattice_path)
 
         tw_sad = twiss_sad(
             lattice_filepath        = lattice_path.name,
@@ -762,7 +748,7 @@ def test_sol_optics_matches_sad_twiss_at_end(write_lattice, tmp_path, bz):
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
-            sad_lattice_path = str(lattice_path),
+            sad_lattice_path = str(rebuilt_path),
             output_directory = "N/A",
             _verbose         = False,
             _test_mode       = True)
@@ -991,6 +977,7 @@ SOL_REFERENCE_LINE_ORIENTATIONS = [
     SOL_REFERENCE_LINE_ORIENTATIONS)
 def test_sol_reference_transform_orbit_matches_sad_twiss(
         write_lattice,
+        rebuild_lattice,
         tmp_path,
         transform_parameters,
         parameters,
@@ -1024,6 +1011,7 @@ def test_sol_reference_transform_orbit_matches_sad_twiss(
         lattice_path = write_lattice(
             lattice_text,
             filename = "sol_reference_transform_legacy_matrix.sad")
+        rebuilt_path = rebuild_lattice(lattice_path)
 
         tw_sad = twiss_sad(
             lattice_filepath        = lattice_path.name,
@@ -1039,7 +1027,7 @@ def test_sol_reference_transform_orbit_matches_sad_twiss(
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
-            sad_lattice_path = str(lattice_path),
+            sad_lattice_path = str(rebuilt_path),
             output_directory = "N/A",
             _verbose         = False,
             _test_mode       = True)
@@ -1106,6 +1094,7 @@ def test_sol_reference_transform_orbit_matches_sad_twiss(
     ["in", "out"])
 def test_sol_reference_transform_restores_design_orbit_at_end(
         write_lattice,
+        rebuild_lattice,
         tmp_path,
         transform_parameters,
         parameters,
@@ -1134,6 +1123,7 @@ def test_sol_reference_transform_restores_design_orbit_at_end(
         lattice_path = write_lattice(
             lattice_text,
             filename = "sol_reference_transform_end_restoration.sad")
+        rebuilt_path = rebuild_lattice(lattice_path)
 
         tw_sad = twiss_sad(
             lattice_filepath        = lattice_path.name,
@@ -1149,7 +1139,7 @@ def test_sol_reference_transform_restores_design_orbit_at_end(
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
-            sad_lattice_path = str(lattice_path),
+            sad_lattice_path = str(rebuilt_path),
             output_directory = "N/A",
             _verbose         = False,
             _test_mode       = True)
@@ -1221,6 +1211,7 @@ SOL_INTERIOR_KICK_CASES = [
     SOL_INTERIOR_KICK_CASES)
 def test_sol_reference_transform_restores_orbit_with_interior_kicks(
         write_lattice,
+        rebuild_lattice,
         tmp_path,
         geo_placement,
         middle_element,
@@ -1257,11 +1248,12 @@ def test_sol_reference_transform_restores_orbit_with_interior_kicks(
     """
 
     _compare_sol_orbit_twiss(
-        write_lattice  = write_lattice,
-        tmp_path       = tmp_path,
-        lattice_text   = lattice_text,
-        filename       = "sol_reference_transform_interior_kicks.sad",
-        test_name      = (
+        write_lattice   = write_lattice,
+        rebuild_lattice = rebuild_lattice,
+        tmp_path        = tmp_path,
+        lattice_text    = lattice_text,
+        filename        = "sol_reference_transform_interior_kicks.sad",
+        test_name       = (
             "test_sol_reference_transform_restores_orbit_with_interior_kicks"),
         sad_marker     = "END",
         xsuite_marker  = "end",
@@ -1298,6 +1290,7 @@ def test_sol_reference_transform_restores_orbit_with_interior_kicks(
     ])
 def test_sol_powered_reference_shift_orbit_matches_sad_at_end(
         write_lattice,
+        rebuild_lattice,
         tmp_path,
         bz,
         transform_parameters,
@@ -1330,11 +1323,12 @@ def test_sol_powered_reference_shift_orbit_matches_sad_at_end(
     """
 
     _compare_sol_orbit_twiss(
-        write_lattice  = write_lattice,
-        tmp_path       = tmp_path,
-        lattice_text   = lattice_text,
-        filename       = "sol_powered_reference_shift_orbit.sad",
-        test_name      = (
+        write_lattice   = write_lattice,
+        rebuild_lattice = rebuild_lattice,
+        tmp_path        = tmp_path,
+        lattice_text    = lattice_text,
+        filename        = "sol_powered_reference_shift_orbit.sad",
+        test_name       = (
             "test_sol_powered_reference_shift_orbit_matches_sad_at_end"),
         sad_marker     = "END",
         xsuite_marker  = "end",

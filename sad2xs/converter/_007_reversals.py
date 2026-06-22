@@ -47,7 +47,7 @@ def reverse_line_element_order(line):
     tt_bend = tt.rows[
         (tt.element_type == "Bend") | (tt.element_type == "RBend")]
     tt_sol  = tt.rows[tt.element_type == "UniformSolenoid"]
-    tt_dxy  = tt.rows[tt.element_type == "XYShift"]
+    tt_dxy  = tt.rows[tt.element_type == "Translation"]
 
     ########################################
     # Get unique elements
@@ -108,8 +108,8 @@ def reverse_line_element_order(line):
 
             if dxy not in env_elements:
                 continue
-            env[dxy].dx *= -1
-            env[dxy].dy *= -1
+            env[dxy].shift_x *= -1
+            env[dxy].shift_y *= -1
 
     return line
 
@@ -148,10 +148,8 @@ def reverse_line_bend_direction(line):
     tt_oct  = tt.rows[tt.element_type == "Octupole"]
     tt_mult = tt.rows[tt.element_type == "Multipole"]
     tt_sol  = tt.rows[tt.element_type == "UniformSolenoid"]
-    tt_dxy  = tt.rows[tt.element_type == "XYShift"]
-    tt_chi1 = tt.rows[tt.element_type == "YRotation"]
-    tt_chi2 = tt.rows[tt.element_type == "XRotation"]
-    tt_chi3 = tt.rows[tt.element_type == "SRotation"]
+    tt_dxy  = tt.rows[tt.element_type == "Translation"]
+    tt_rot  = tt.rows[tt.element_type == "Rotation"]
 
     ########################################
     # Get unique elements
@@ -163,9 +161,7 @@ def reverse_line_bend_direction(line):
     unique_mults    = list(set([name.split("::")[0] for name in tt_mult.name]))
     unique_sols     = list(set([name.split("::")[0] for name in tt_sol.name]))
     unique_dxys     = list(set([name.split("::")[0] for name in tt_dxy.name]))
-    unique_chi1s    = list(set([name.split("::")[0] for name in tt_chi1.name]))
-    unique_chi2s    = list(set([name.split("::")[0] for name in tt_chi2.name]))
-    unique_chi3s    = list(set([name.split("::")[0] for name in tt_chi3.name]))
+    unique_rots     = list(set([name.split("::")[0] for name in tt_rot.name]))
 
     ########################################
     # Get only the non-reversed and handle reverse later
@@ -177,12 +173,8 @@ def reverse_line_bend_direction(line):
         [name[1:] if name.startswith("-") else name for name in unique_sols]))
     unique_dxys     = list(set(
         [name[1:] if name.startswith("-") else name for name in unique_dxys]))
-    unique_chi1s    = list(set(
-        [name[1:] if name.startswith("-") else name for name in unique_chi1s]))
-    unique_chi2s    = list(set(
-        [name[1:] if name.startswith("-") else name for name in unique_chi2s]))
-    unique_chi3s    = list(set(
-        [name[1:] if name.startswith("-") else name for name in unique_chi3s]))
+    unique_rots     = list(set(
+        [name[1:] if name.startswith("-") else name for name in unique_rots]))
 
     ########################################
     # Bend Adjustments
@@ -195,12 +187,9 @@ def reverse_line_bend_direction(line):
             if bend not in env_elements:
                 continue
 
-            if env[bend].k0_from_h is True:
-                env[bend].angle *= -1
-            else:
-                assert env[bend].h == 0
-                env[bend].k0  *= -1
-            env[bend].k1  *= +1
+            env[bend].angle *= -1
+            env[bend].k0    *= -1
+            env[bend].k1    *= +1
 
             # Reverse entry/exit angles of bends
             env[bend].edge_entry_angle  *= -1
@@ -350,34 +339,18 @@ def reverse_line_bend_direction(line):
 
             if dxy not in env_elements:
                 continue
-            env[dxy].dx *= -1
-            env[dxy].dy *= +1
+            env[dxy].shift_x *= -1
+            env[dxy].shift_y *= +1
 
-    for chi1 in unique_chi1s:
-
-        # Handling trying forward and reverse
-        for chi1 in [chi1, "-" + chi1]:
-
-            if chi1 not in env_elements:
-                continue
-            env[chi1].angle *= -1
-
-    for chi2 in unique_chi2s:
+    for rot in unique_rots:
 
         # Handling trying forward and reverse
-        for chi2 in [chi2, "-" + chi2]:
+        for rot in [rot, "-" + rot]:
 
-            if chi2 not in env_elements:
+            if rot not in env_elements:
                 continue
-            env[chi2].angle *= +1
-
-    for chi3 in unique_chi3s:
-
-        # Handling trying forward and reverse
-        for chi3 in [chi3, "-" + chi3]:
-
-            if chi3 not in env_elements:
-                continue
-            env[chi3].angle *= -1
+            env[rot].rot_y_rad *= -1
+            env[rot].rot_x_rad *= +1
+            env[rot].rot_s_rad *= -1
 
     return line
