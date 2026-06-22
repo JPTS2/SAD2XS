@@ -1626,18 +1626,10 @@ def convert_solenoids(
                 shift_zeta = offset_z)
 
             environment.new(
-                name        = f"{ele_name}_chi2",
+                name        = f"{ele_name}_rot",
                 parent      = xt.Rotation,
-                rot_x_rad   = rot_chi2)
-
-            environment.new(
-                name        = f"{ele_name}_chi1",
-                parent      = xt.Rotation,
-                rot_y_rad   = rot_chi1)
-
-            environment.new(
-                name        = f"{ele_name}_chi3",
-                parent      = xt.Rotation,
+                rot_y_rad   = rot_chi1,
+                rot_x_rad   = rot_chi2,
                 rot_s_rad   = rot_chi3)
 
             # No ds shift: is ruins the survey
@@ -1650,9 +1642,7 @@ def convert_solenoids(
                 f"{ele_name}_bound",
                 f"{ele_name}_dxy",
                 f"{ele_name}_dz",
-                f"{ele_name}_chi1",
-                f"{ele_name}_chi2",
-                f"{ele_name}_chi3"]
+                f"{ele_name}_rot"]
             environment.new_line(
                 name        = ele_name,
                 components  = compound_solenoid_components)

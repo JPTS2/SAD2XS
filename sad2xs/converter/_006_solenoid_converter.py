@@ -707,16 +707,14 @@ def solenoid_reference_shift_corrections(
     ############################################################################
     def flip_reference_shifts(solenoid, dxy_sign, chi_sign):
         translation_name = f"{solenoid}_dxy"
-        chi1_shift_name = f"{solenoid}_chi1"
-        chi2_shift_name = f"{solenoid}_chi2"
-        chi3_shift_name = f"{solenoid}_chi3"
+        rot_name = f"{solenoid}_rot"
 
         line[translation_name].shift_x *= dxy_sign
         line[translation_name].shift_y *= dxy_sign
 
-        line[chi1_shift_name].rot_y_rad *= chi_sign
-        line[chi2_shift_name].rot_x_rad *= chi_sign
-        line[chi3_shift_name].rot_s_rad *= chi_sign
+        line[rot_name].rot_y_rad *= chi_sign
+        line[rot_name].rot_x_rad *= chi_sign
+        line[rot_name].rot_s_rad *= chi_sign
 
     ########################################
     # Inbound Geo Forward Forward Solenoids (Complete: test_003)
@@ -912,7 +910,7 @@ def solenoid_reference_shift_corrections(
     for inbound_geo_solenoid in tqdm(inbound_geo_solenoids):
 
         sol_start_ele   = f"{inbound_geo_solenoid}_bound"
-        sol_end_ele     = f"{inbound_geo_solenoid}_chi3"
+        sol_end_ele     = f"{inbound_geo_solenoid}_rot"
 
         # Get the start and end indices
         start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
@@ -924,9 +922,7 @@ def solenoid_reference_shift_corrections(
             new_element_names   = []
             new_element_names   += element_names[:start_idx]
             bound_elements      = [
-                f"{inbound_geo_solenoid}_chi3",
-                f"{inbound_geo_solenoid}_chi2",
-                f"{inbound_geo_solenoid}_chi1",
+                f"{inbound_geo_solenoid}_rot",
                 f"{inbound_geo_solenoid}_dz",
                 f"{inbound_geo_solenoid}_dxy",
                 f"{inbound_geo_solenoid}_bound"]
@@ -941,7 +937,7 @@ def solenoid_reference_shift_corrections(
     for inbound_nongeo_solenoid in tqdm(inbound_nongeo_solenoids):
 
         sol_start_ele   = f"{inbound_nongeo_solenoid}_bound"
-        sol_end_ele     = f"{inbound_nongeo_solenoid}_chi3"
+        sol_end_ele     = f"{inbound_nongeo_solenoid}_rot"
 
         # Get the start and end indices
         start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
@@ -952,19 +948,8 @@ def solenoid_reference_shift_corrections(
 
             new_element_names   = []
             new_element_names   += element_names[:start_idx]
-            if not reverse_line:
-                bound_elements      = [
-                    f"{inbound_nongeo_solenoid}_chi1",
-                    f"{inbound_nongeo_solenoid}_chi2",
-                    f"{inbound_nongeo_solenoid}_chi3",
-                    f"{inbound_nongeo_solenoid}_dz",
-                    f"{inbound_nongeo_solenoid}_dxy",
-                    f"{inbound_nongeo_solenoid}_bound"]
-            else:
-                bound_elements      = [
-                    f"{inbound_nongeo_solenoid}_chi3",
-                    f"{inbound_nongeo_solenoid}_chi2",
-                    f"{inbound_nongeo_solenoid}_chi1",
+            bound_elements      = [
+                    f"{inbound_nongeo_solenoid}_rot",
                     f"{inbound_nongeo_solenoid}_dz",
                     f"{inbound_nongeo_solenoid}_dxy",
                     f"{inbound_nongeo_solenoid}_bound"]
@@ -979,7 +964,7 @@ def solenoid_reference_shift_corrections(
     for outbound_geo_solenoid in tqdm(outbound_geo_solenoids):
 
         sol_start_ele   = f"{outbound_geo_solenoid}_bound"
-        sol_end_ele     = f"{outbound_geo_solenoid}_chi3"
+        sol_end_ele     = f"{outbound_geo_solenoid}_rot"
 
         # Get the start and end indices
         start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
@@ -994,9 +979,7 @@ def solenoid_reference_shift_corrections(
                 f"{outbound_geo_solenoid}_bound",
                 f"{outbound_geo_solenoid}_dxy",
                 f"{outbound_geo_solenoid}_dz",
-                f"{outbound_geo_solenoid}_chi1",
-                f"{outbound_geo_solenoid}_chi2",
-                f"{outbound_geo_solenoid}_chi3"]
+                f"{outbound_geo_solenoid}_rot"]
             new_element_names   += bound_elements
             new_element_names   += element_names[end_idx + 1:]
 
@@ -1008,7 +991,7 @@ def solenoid_reference_shift_corrections(
     for outbound_nongeo_solenoid in tqdm(outbound_nongeo_solenoids):
 
         sol_start_ele   = f"{outbound_nongeo_solenoid}_bound"
-        sol_end_ele     = f"{outbound_nongeo_solenoid}_chi3"
+        sol_end_ele     = f"{outbound_nongeo_solenoid}_rot"
 
         # Get the start and end indices
         start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
@@ -1023,9 +1006,7 @@ def solenoid_reference_shift_corrections(
                 f"{outbound_nongeo_solenoid}_bound",
                 f"{outbound_nongeo_solenoid}_dxy",
                 f"{outbound_nongeo_solenoid}_dz",
-                f"{outbound_nongeo_solenoid}_chi1",
-                f"{outbound_nongeo_solenoid}_chi2",
-                f"{outbound_nongeo_solenoid}_chi3"]
+                f"{outbound_nongeo_solenoid}_rot"]
             new_element_names   += bound_elements
             new_element_names   += element_names[end_idx + 1:]
             element_names       = new_element_names

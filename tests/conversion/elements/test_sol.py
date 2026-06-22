@@ -461,9 +461,7 @@ def test_sol_bound_converter_creates_compound_reference_transform_line(
         "test_sol_bound",
         "test_sol_dxy",
         "test_sol_dz",
-        "test_sol_chi1",
-        "test_sol_chi2",
-        "test_sol_chi3",
+        "test_sol_rot",
     ], (
         "Bound SOL compound line should preserve the documented transform "
         "component order.")
@@ -482,15 +480,7 @@ def test_sol_bound_converter_creates_compound_reference_transform_line(
         element_type = xt.TimeDelay)
     assert_environment_element(
         environment  = xsuite_environment,
-        element_name = "test_sol_chi1",
-        element_type = xt.Rotation)
-    assert_environment_element(
-        environment  = xsuite_environment,
-        element_name = "test_sol_chi2",
-        element_type = xt.Rotation)
-    assert_environment_element(
-        environment  = xsuite_environment,
-        element_name = "test_sol_chi3",
+        element_name = "test_sol_rot",
         element_type = xt.Rotation)
 
 def test_sol_bound_converter_applies_reference_transform_signs(
@@ -525,11 +515,11 @@ def test_sol_bound_converter_applies_reference_transform_signs(
         "Bound SOL DY should use the current SAD2XS sign convention.")
     assert xsuite_environment["test_sol_dz"].shift_zeta == pytest.approx(-0.003), (
         "Bound SOL DZ should map to the current SAD2XS longitudinal shift.")
-    assert xsuite_environment["test_sol_chi1"].rot_y_rad == pytest.approx(0.004), (
+    assert xsuite_environment["test_sol_rot"].rot_y_rad == pytest.approx(0.004), (
         "Bound SOL CHI1 should store radians with the current SAD2XS sign convention.")
-    assert xsuite_environment["test_sol_chi2"].rot_x_rad == pytest.approx(0.005), (
+    assert xsuite_environment["test_sol_rot"].rot_x_rad == pytest.approx(0.005), (
         "Bound SOL CHI2 should store radians with the current SAD2XS sign convention.")
-    assert xsuite_environment["test_sol_chi3"].rot_s_rad == pytest.approx(0.006), (
+    assert xsuite_environment["test_sol_rot"].rot_s_rad == pytest.approx(0.006), (
         "Bound SOL CHI3 should store radians with the current SAD2XS sign convention.")
 
 def test_sol_bound_reference_transforms_use_current_xsuite_api(
@@ -569,15 +559,7 @@ def test_sol_bound_reference_transforms_use_current_xsuite_api(
         element_type = xt.TimeDelay)
     assert_environment_element(
         environment  = xsuite_environment,
-        element_name = "test_sol_chi1",
-        element_type = xt.Rotation)
-    assert_environment_element(
-        environment  = xsuite_environment,
-        element_name = "test_sol_chi2",
-        element_type = xt.Rotation)
-    assert_environment_element(
-        environment  = xsuite_environment,
-        element_name = "test_sol_chi3",
+        element_name = "test_sol_rot",
         element_type = xt.Rotation)
 
 ################################################################################
