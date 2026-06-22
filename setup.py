@@ -35,7 +35,7 @@ setup(
     install_requires                = [
         "numpy>=1.0",
         "pyyaml>=6.0",
-        "xtrack>=0.106"],
+        "xsuite>=0.53.2"],
     license                         = 'Apache 2.0',
     download_url                    = "https://pypi.python.org/pypi/sad2xs",
     project_urls                    = {
