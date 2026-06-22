@@ -53,6 +53,18 @@ types (`dxdy`, `dpx`, `dpy`, `dxdy_dpx_dpy`, `dxdy_chi1_chi2`) crossed with
 reversal modes (`forward`, `rev_in`, `rev_out`, `rev_both`). The failures document
 the production code work remaining for solenoid reference transform physics.
 
+The root cause of all 41 failures is that SAD's GEO solenoid exit transforms are
+computed at runtime during `COD`/`CALC` and depend on the interior elements of the
+solenoid pair. For a GEO=1 boundary solenoid with entry transforms (DX, DPX etc.),
+SAD propagates the reference trajectory through the interior and computes what
+transforms the exit boundary solenoid needs to restore the orbit to zero. When a
+powered quadrupole sits inside the solenoid, it deflects the local trajectory such
+that the angle arriving at the exit boundary differs from the entry angle; the naive
+"inverse of entry transforms" approximation leaves a residual angle comparable to
+`K1 * x_inside * L` and is incorrect in general. The correct exit transforms cannot
+be derived statically from the SAD file — they require running SAD's rebuild. This
+is a SAD-side computation, not a sad2xs production code gap. See issue #58.
+
 ### `test_corrector.py` note
 
 16 failing instances come from 8 test functions, each parametrised over kick

@@ -301,6 +301,7 @@ def _reference_transform_lattice(
 
 def _compare_sol_orbit_twiss(
         write_lattice,
+        rebuild_lattice,
         tmp_path,
         lattice_text,
         filename,
@@ -317,6 +318,7 @@ def _compare_sol_orbit_twiss(
 
     try:
         lattice_path = write_lattice(lattice_text, filename = filename)
+        rebuilt_path = rebuild_lattice(lattice_path)
 
         tw_sad = twiss_sad(
             lattice_filepath        = lattice_path.name,
@@ -332,7 +334,7 @@ def _compare_sol_orbit_twiss(
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
-            sad_lattice_path = str(lattice_path),
+            sad_lattice_path = str(rebuilt_path),
             output_directory = "N/A",
             _verbose         = False,
             _test_mode       = True)
@@ -729,7 +731,11 @@ def test_sol_orbit_matches_sad_twiss_at_end(write_lattice, tmp_path, bz):
 @pytest.mark.parametrize(
     "bz",
     [0.0, -0.1, 0.1])
-def test_sol_optics_matches_sad_twiss_at_end(write_lattice, tmp_path, bz):
+def test_sol_optics_matches_sad_twiss_at_end(
+        write_lattice,
+        rebuild_lattice,
+        tmp_path,
+        bz):
     """
     Converted bound SOL regions should match SAD beta/alpha Twiss values.
 
@@ -744,6 +750,7 @@ def test_sol_optics_matches_sad_twiss_at_end(write_lattice, tmp_path, bz):
         lattice_path = write_lattice(
             lattice_text,
             filename = f"sol_optics_twiss_bz_{bz:+.3f}.sad")
+        rebuilt_path = rebuild_lattice(lattice_path)
 
         tw_sad = twiss_sad(
             lattice_filepath        = lattice_path.name,
@@ -759,7 +766,7 @@ def test_sol_optics_matches_sad_twiss_at_end(write_lattice, tmp_path, bz):
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
-            sad_lattice_path = str(lattice_path),
+            sad_lattice_path = str(rebuilt_path),
             output_directory = "N/A",
             _verbose         = False,
             _test_mode       = True)
@@ -988,6 +995,7 @@ SOL_REFERENCE_LINE_ORIENTATIONS = [
     SOL_REFERENCE_LINE_ORIENTATIONS)
 def test_sol_reference_transform_orbit_matches_sad_twiss(
         write_lattice,
+        rebuild_lattice,
         tmp_path,
         transform_parameters,
         parameters,
@@ -1021,6 +1029,7 @@ def test_sol_reference_transform_orbit_matches_sad_twiss(
         lattice_path = write_lattice(
             lattice_text,
             filename = "sol_reference_transform_legacy_matrix.sad")
+        rebuilt_path = rebuild_lattice(lattice_path)
 
         tw_sad = twiss_sad(
             lattice_filepath        = lattice_path.name,
@@ -1036,7 +1045,7 @@ def test_sol_reference_transform_orbit_matches_sad_twiss(
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
-            sad_lattice_path = str(lattice_path),
+            sad_lattice_path = str(rebuilt_path),
             output_directory = "N/A",
             _verbose         = False,
             _test_mode       = True)
@@ -1103,6 +1112,7 @@ def test_sol_reference_transform_orbit_matches_sad_twiss(
     ["in", "out"])
 def test_sol_reference_transform_restores_design_orbit_at_end(
         write_lattice,
+        rebuild_lattice,
         tmp_path,
         transform_parameters,
         parameters,
@@ -1131,6 +1141,7 @@ def test_sol_reference_transform_restores_design_orbit_at_end(
         lattice_path = write_lattice(
             lattice_text,
             filename = "sol_reference_transform_end_restoration.sad")
+        rebuilt_path = rebuild_lattice(lattice_path)
 
         tw_sad = twiss_sad(
             lattice_filepath        = lattice_path.name,
@@ -1146,7 +1157,7 @@ def test_sol_reference_transform_restores_design_orbit_at_end(
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
-            sad_lattice_path = str(lattice_path),
+            sad_lattice_path = str(rebuilt_path),
             output_directory = "N/A",
             _verbose         = False,
             _test_mode       = True)
@@ -1218,6 +1229,7 @@ SOL_INTERIOR_KICK_CASES = [
     SOL_INTERIOR_KICK_CASES)
 def test_sol_reference_transform_restores_orbit_with_interior_kicks(
         write_lattice,
+        rebuild_lattice,
         tmp_path,
         geo_placement,
         middle_element,
@@ -1254,11 +1266,12 @@ def test_sol_reference_transform_restores_orbit_with_interior_kicks(
     """
 
     _compare_sol_orbit_twiss(
-        write_lattice  = write_lattice,
-        tmp_path       = tmp_path,
-        lattice_text   = lattice_text,
-        filename       = "sol_reference_transform_interior_kicks.sad",
-        test_name      = (
+        write_lattice   = write_lattice,
+        rebuild_lattice = rebuild_lattice,
+        tmp_path        = tmp_path,
+        lattice_text    = lattice_text,
+        filename        = "sol_reference_transform_interior_kicks.sad",
+        test_name       = (
             "test_sol_reference_transform_restores_orbit_with_interior_kicks"),
         sad_marker     = "END",
         xsuite_marker  = "end",
@@ -1295,6 +1308,7 @@ def test_sol_reference_transform_restores_orbit_with_interior_kicks(
     ])
 def test_sol_powered_reference_shift_orbit_matches_sad_at_end(
         write_lattice,
+        rebuild_lattice,
         tmp_path,
         bz,
         transform_parameters,
@@ -1327,11 +1341,12 @@ def test_sol_powered_reference_shift_orbit_matches_sad_at_end(
     """
 
     _compare_sol_orbit_twiss(
-        write_lattice  = write_lattice,
-        tmp_path       = tmp_path,
-        lattice_text   = lattice_text,
-        filename       = "sol_powered_reference_shift_orbit.sad",
-        test_name      = (
+        write_lattice   = write_lattice,
+        rebuild_lattice = rebuild_lattice,
+        tmp_path        = tmp_path,
+        lattice_text    = lattice_text,
+        filename        = "sol_powered_reference_shift_orbit.sad",
+        test_name       = (
             "test_sol_powered_reference_shift_orbit_matches_sad_at_end"),
         sad_marker     = "END",
         xsuite_marker  = "end",

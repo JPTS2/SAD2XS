@@ -18,6 +18,30 @@ Date:       2026-06-21
 import pytest
 import xtrack as xt
 
+from sad2xs.sad_helpers import rebuild_sad_lattice
+
+################################################################################
+# SAD Rebuild Fixture
+################################################################################
+@pytest.fixture
+def rebuild_lattice(tmp_path):
+    """
+    Rebuild a SAD lattice via SAD and return the rebuilt file path.
+
+    Runs rebuild_sad_lattice on the given lattice_path and returns a Path to the
+    rebuilt file. Must be called after os.chdir(tmp_path) so that SAD's relative
+    file references resolve correctly.
+    """
+    def _rebuild_lattice(lattice_path, line_name = "TEST_LINE"):
+        rebuilt_name = lattice_path.name.replace(".sad", "_rebuilt.sad")
+        rebuild_sad_lattice(
+            lattice_filepath = lattice_path.name,
+            line_name        = line_name,
+            output_filepath  = rebuilt_name)
+        return tmp_path / rebuilt_name
+
+    return _rebuild_lattice
+
 ################################################################################
 # Converter Fixtures
 ################################################################################
