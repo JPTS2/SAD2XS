@@ -81,8 +81,8 @@ tw      = line.twiss4d()
 ########################################
 ds              = np.concatenate([[0], tw.s[1:] - tw.s[:-1]])
 dzeta           = np.concatenate([[0], tw.zeta[1:] - tw.zeta[:-1]])
-# Ignore the dzeta at ZetaShift elements
-zeta_shifts     = tt.element_type == "ZetaShift"
+# Ignore the shift_zeta at TimeDelay elements
+zeta_shifts     = tt.element_type == "TimeDelay"
 zeta_shifts     = np.concatenate([[0], zeta_shifts[:-1]])
 dzeta           = np.where(zeta_shifts, 0, dzeta)
 

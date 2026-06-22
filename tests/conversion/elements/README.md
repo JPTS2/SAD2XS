@@ -30,9 +30,9 @@ Total collected from this folder: see `tests/README.md`.
 |------|-----------|------|--------------------|
 | `test_aper.py` | 19 | 4 | `ROTATE` not preserved; combined rect+ellipse conversion unsupported |
 | `test_beambeam.py` | 5 | 0 | — |
-| `test_bend.py` | 23 | 10 | `k0 = angle/length` conversion wrong; symbolic length/angle; thin bend; element offsets |
-| `test_cavi.py` | 10 | 6 | SAD uses phase (`PHI`), converter sets lag; harmonic-driven cavity not converted correctly |
-| `test_coord.py` | 10 | 3 | `DX`/`DY` sign convention wrong in converter |
+| `test_bend.py` | 23 | 7 | Symbolic length/angle; thin bend; element offsets with horizontal shift |
+| `test_cavi.py` | 19 | 0 | — |
+| `test_coord.py` | 10 | 0 | — |
 | `test_corrector.py` | 18 | 16 | Corrector physics incorrect — optics and tracking both wrong for kicks, rotations, offsets |
 | `test_drift.py` | 6 | 2 | Symbolic variable support not implemented (parametric drift length) |
 | `test_mark.py` | 5 | 0 | — |
@@ -41,16 +41,29 @@ Total collected from this folder: see `tests/README.md`.
 | `test_oct.py` | 15 | 3 | Symbolic variable support; thin octupole to `xt.Multipole` conversion |
 | `test_quad.py` | 15 | 5 | Symbolic variable support; thin quadrupole; rotation tracking |
 | `test_sext.py` | 15 | 3 | Symbolic variable support; thin sextupole to `xt.Multipole` conversion |
-| `test_sol.py` | 18 | 42 | `xt.Translation` API change; solenoid reference transform physics |
+| `test_sol.py` | 17 | 41 | Solenoid reference transform physics |
 
 ### `test_sol.py` note
 
-The solenoid tests are the most extensive in this folder. 18 test functions
-expand to 42 failing instances at runtime because three parametrised functions
-carry a full matrix of perturbation types (`dxdy`, `dpx`, `dpy`,
-`dxdy_dpx_dpy`, `dxdy_chi1_chi2`) crossed with reversal modes (`forward`,
-`rev_in`, `rev_out`, `rev_both`). All 42 instances fail — the test structure
-is complete and correct; the failures document the production code work required.
+The solenoid tests are the most extensive in this folder. The `xt.Rotation` API
+migration (slice 3) is now complete, so `test_sol_bound_reference_transforms_use_current_xsuite_api`
+is no longer a known issue. 17 test functions expand to 41 failing instances at
+runtime because three parametrised functions carry a full matrix of perturbation
+types (`dxdy`, `dpx`, `dpy`, `dxdy_dpx_dpy`, `dxdy_chi1_chi2`) crossed with
+reversal modes (`forward`, `rev_in`, `rev_out`, `rev_both`). The failures document
+the production code work remaining for solenoid reference transform physics.
+
+The root cause of all 41 failures is that SAD's GEO solenoid exit transforms are
+computed at runtime during `COD`/`CALC` and depend on the interior elements of the
+solenoid pair. For a GEO=1 boundary solenoid with entry transforms (DX, DPX etc.),
+SAD propagates the reference trajectory through the interior and computes what
+transforms the exit boundary solenoid needs to restore the orbit to zero. When a
+powered quadrupole sits inside the solenoid, it deflects the local trajectory such
+that the angle arriving at the exit boundary differs from the entry angle; the naive
+"inverse of entry transforms" approximation leaves a residual angle comparable to
+`K1 * x_inside * L` and is incorrect in general. The correct exit transforms cannot
+be derived statically from the SAD file — they require running SAD's rebuild. This
+is a SAD-side computation, not a sad2xs production code gap. See issue #58.
 
 ### `test_corrector.py` note
 

@@ -91,15 +91,14 @@ def test_release_metadata_license_field_is_a_non_empty_string():
 ################################################################################
 # Dependencies
 ################################################################################
-def test_release_metadata_xtrack_is_listed_as_a_dependency():
+def test_release_metadata_xsuite_is_listed_as_a_dependency():
     """
-    xtrack is a hard runtime dependency — the package cannot convert or write
-    any lattice without it. It must appear in install_requires so that pip
-    installs it automatically.
+    xsuite is a hard runtime dependency. Requiring the bundle ensures that pip
+    installs mutually compatible Xtrack, Xobjects, and Xdeps versions.
     """
-    assert any("xtrack" in req for req in _REQUIRES), (
-        "Package install_requires should list 'xtrack'. "
-        f"Current requires: {_REQUIRES}")
+    assert any(req.startswith("xsuite>=") for req in _REQUIRES), (
+        "Package install_requires should require a current coherent Xsuite "
+        f"bundle. Current requires: {_REQUIRES}")
 
 
 def test_release_metadata_numpy_is_listed_as_a_dependency():

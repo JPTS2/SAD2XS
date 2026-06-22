@@ -35,7 +35,7 @@ presence so the checks remain valid across version bumps.
 | `test_release_metadata_author_field_is_a_non_empty_string` | `Author` field exists and is non-empty |
 | `test_release_metadata_author_email_contains_at_symbol` | `Author-email` contains `@` |
 | `test_release_metadata_license_field_is_a_non_empty_string` | `License` field exists and is non-empty |
-| `test_release_metadata_xtrack_is_listed_as_a_dependency` | `xtrack` appears in `install_requires` |
+| `test_release_metadata_xsuite_is_listed_as_a_dependency` | A current coherent `xsuite` bundle appears in `install_requires` |
 | `test_release_metadata_numpy_is_listed_as_a_dependency` | `numpy` appears in `install_requires` |
 
 ### `test_import_boundaries.py` — 8 tests, all expected to pass

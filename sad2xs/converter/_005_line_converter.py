@@ -54,7 +54,7 @@ def create_reversed_component(component, environment):
     ########################################
     # Transverse Reference Shift
     ########################################
-    elif isinstance(environment.element_dict[component[1:]], xt.XYShift):
+    elif isinstance(environment.element_dict[component[1:]], xt.Translation):
         environment.new(
             name    = component,
             parent  = component[1:],
@@ -64,7 +64,7 @@ def create_reversed_component(component, environment):
     ########################################
     # Longitudinal Reference Shift
     ########################################
-    elif isinstance(environment.element_dict[component[1:]], xt.ZetaShift):
+    elif isinstance(environment.element_dict[component[1:]], xt.TimeDelay):
         environment.new(
             name    = component,
             parent  = component[1:],
@@ -72,29 +72,9 @@ def create_reversed_component(component, environment):
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
-    # X Rotation
+    # Rotation
     ########################################
-    elif isinstance(environment.element_dict[component[1:]], xt.XRotation):
-        environment.new(
-            name    = component,
-            parent  = component[1:],
-            mode    = "clone")
-        # Here we need the - sign on the element to ID with solenoids
-
-    ########################################
-    # Y Rotation
-    ########################################
-    elif isinstance(environment.element_dict[component[1:]], xt.YRotation):
-        environment.new(
-            name    = component,
-            parent  = component[1:],
-            mode    = "clone")
-        # Here we need the - sign on the element to ID with solenoids
-
-    ########################################
-    # S Rotation
-    ########################################
-    elif isinstance(environment.element_dict[component[1:]], xt.SRotation):
+    elif isinstance(environment.element_dict[component[1:]], xt.Rotation):
         environment.new(
             name    = component,
             parent  = component[1:],
