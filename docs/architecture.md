@@ -74,10 +74,9 @@ Key responsibilities:
 - `_004_element_converter.py`: convert supported SAD element definitions into Xsuite elements.
 - `_005_line_converter.py`: convert SAD line definitions into Xsuite line definitions.
 - `_006_solenoid_converter.py`: handle solenoid-specific conversion details.
-- `_007_harmonic_rf.py`: handle harmonic RF cases (to be retired in Slice 4 Pass 2 — replaced by native `xt.Cavity.harmonic` support in `_004_element_converter.py`).
-- `_008_reversals.py`: construct reversed elements and lines where needed.
-- `_009_offset_markers.py`: install offset marker structures.
-- `_010_write_lattice.py` and `_011_write_optics.py`: writer entry points that assemble output from the `sad2xs/output_writer/` modules.
+- `_007_reversals.py`: construct reversed elements and lines where needed.
+- `_008_offset_markers.py`: install offset marker structures.
+- `_009_write_lattice.py` and `_010_write_optics.py`: writer entry points that assemble output from the `sad2xs/output_writer/` modules.
 
 Next release target: the converter should produce a valid Xsuite model and should not rely on the writer to repair conversion semantics.
 
