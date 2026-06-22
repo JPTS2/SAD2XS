@@ -78,9 +78,6 @@ KNOWN_ISSUE_TESTS = {
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_thin_kick": 55,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_rotated_kicks": 55,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_element_offsets": 55,
-    "tests/conversion/elements/test_sol.py::test_sol_reference_transform_restores_design_orbit_at_end": 58,
-    "tests/conversion/elements/test_sol.py::test_sol_reference_transform_restores_orbit_with_interior_kicks": 58,
-    "tests/conversion/elements/test_sol.py::test_sol_powered_reference_shift_orbit_matches_sad_at_end": 58,
     "tests/conversion/pipeline/test_reverse_charge.py::test_pipeline_reverse_charge_negates_positive_q0": 59,
     "tests/conversion/pipeline/test_reverse_charge.py::test_pipeline_reverse_charge_negates_negative_q0": 59,
     "tests/conversion/pipeline/test_reverse_charge.py::test_pipeline_reverse_charge_does_not_affect_p0c_or_mass0": 59,
@@ -102,11 +99,8 @@ PARTIAL_KNOWN_ISSUES = (
     ("tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_twiss_for_horizontal_kicks", "[0.1]", 55),
     ("tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_horizontal_kicks", "[-0.1]", 55),
     ("tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_horizontal_kicks", "[0.1]", 55),
-    ("tests/conversion/elements/test_sol.py::test_sol_reference_transform_orbit_matches_sad_twiss", "-geo_out-dxdy]", 58),
-    ("tests/conversion/elements/test_sol.py::test_sol_reference_transform_orbit_matches_sad_twiss", "-geo_out-dpx]", 58),
-    ("tests/conversion/elements/test_sol.py::test_sol_reference_transform_orbit_matches_sad_twiss", "-geo_out-dpy]", 58),
-    ("tests/conversion/elements/test_sol.py::test_sol_reference_transform_orbit_matches_sad_twiss", "-geo_out-dxdy_dpx_dpy]", 58),
-    ("tests/conversion/elements/test_sol.py::test_sol_reference_transform_orbit_matches_sad_twiss", "-geo_out-dxdy_chi1_chi2]", 58),
+    ("tests/conversion/elements/test_sol.py::test_sol_reference_transform_restores_design_orbit_at_end", "[out-dxdy]", 58),
+    ("tests/conversion/elements/test_sol.py::test_sol_reference_transform_restores_design_orbit_at_end", "[out-dxdy_dpx_dpy]", 58),
 )
 
 
