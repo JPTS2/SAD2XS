@@ -19,11 +19,6 @@ from ..types import ConfigLike
 from ..helpers import print_section_heading
 
 ################################################################################
-# RAD2DEG Constant
-################################################################################
-RAD2DEG = 180.0 / np.pi
-
-################################################################################
 # Parsing of strings and floats
 ################################################################################
 def parse_expression(expression: str):
@@ -1260,7 +1255,7 @@ def convert_cavities(parsed_elements, environment, config):
         length      = 0.0
         voltage     = 0.0
         freq        = 0.0
-        phi         = 180.0
+        phi         = np.pi
 
         ########################################
         # Read values
@@ -1274,11 +1269,9 @@ def convert_cavities(parsed_elements, environment, config):
         if "phi" in ele_vars:
             phi_offset = parse_expression(ele_vars["phi"])
             if isinstance(phi_offset, float):
-                phi_offset  = np.rad2deg(phi_offset)
-                phi         += phi_offset
+                phi         = np.pi + phi_offset
             elif isinstance(phi_offset, str):
-                phi_offset  = f"({RAD2DEG} * {phi_offset})"
-                phi         = f"{phi} + {phi_offset}"
+                phi         = f"{np.pi} + {phi_offset}"
             else:
                 raise ValueError(f"Unsupported type for phi offset: {type(phi_offset)}")
 
@@ -1294,8 +1287,8 @@ def convert_cavities(parsed_elements, environment, config):
             environment[f"freq_{ele_name}"] = freq
             freq                            = f"freq_{ele_name} * (1 + fshift)"
         if phi != 0:
-            environment[f"lag_{ele_name}"]  = phi
-            phi                             = f"lag_{ele_name}"
+            environment[f"phase_{ele_name}"] = phi
+            phi                              = f"phase_{ele_name}"
 
         ########################################
         # Create Element
@@ -1306,7 +1299,7 @@ def convert_cavities(parsed_elements, environment, config):
             length      = length,
             voltage     = voltage,
             frequency   = freq,
-            lag         = phi)
+            phase       = phi)
         continue
 
 ################################################################################
