@@ -1275,8 +1275,13 @@ def convert_cavities(parsed_elements, environment, config):
             else:
                 raise ValueError(f"Unsupported type for phi offset: {type(phi_offset)}")
 
-        if "harm" in ele_vars and config._verbose:
-            print(f"Cavity {ele_name} is harmonic and addressed later")
+        if "harm" in ele_vars:
+            harm                             = parse_expression(ele_vars["harm"])
+            environment[f"harm_{ele_name}"] = harm
+            harmonic                         = f"harm_{ele_name}"
+            freq                             = 0
+        else:
+            harmonic = 0
 
         ########################################
         # Create variables
@@ -1299,6 +1304,7 @@ def convert_cavities(parsed_elements, environment, config):
             length      = length,
             voltage     = voltage,
             frequency   = freq,
+            harmonic    = harmonic,
             phase       = phi)
         continue
 

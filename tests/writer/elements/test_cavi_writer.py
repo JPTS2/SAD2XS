@@ -463,3 +463,92 @@ def test_cavi_writer_preserves_multiple_cavities_independently(tmp_path):
         "Optics variable 'freq_c1' should be correct after reload.")
     assert env["freq_c2"] == pytest.approx(704.4E6), (
         "Optics variable 'freq_c2' should be correct after reload.")
+
+
+################################################################################
+# Harmonic Cavity
+################################################################################
+def _build_harmonic_cavi_line(harmonic = 400, voltage = 6.0E6, phase = np.pi):
+    """
+    Build a minimal single-cavity Xsuite line using native harmonic mode.
+    harmonic is an integer harmonic number (dimensionless), voltage in V, phase
+    in radians. No frequency is set — xtrack derives it from harmonic * f_rev.
+    """
+    line = xt.Line(
+        elements      = [xt.Marker(), xt.Cavity(
+            harmonic = harmonic,
+            voltage  = voltage,
+            phase    = phase), xt.Marker()],
+        element_names = ["start", "c1", "end"])
+
+    line.particle_ref = xt.Particles(
+        p0c   = 1.0E9,
+        q0    = -1.0,
+        mass0 = xt.ELECTRON_MASS_EV)
+
+    return line
+
+
+def test_cavi_writer_preserves_harmonic(tmp_path):
+    """
+    A cavity built with harmonic mode should roundtrip through the writer with
+    its harmonic number preserved.
+    """
+    original_line = _build_harmonic_cavi_line(harmonic = 400)
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert reloaded_line["c1"].harmonic == pytest.approx(400.0), (
+        f"Writer roundtrip should preserve harmonic. "
+        f"Original: 400, reloaded: {reloaded_line['c1'].harmonic}.")
+
+
+def test_cavi_writer_harm_is_accessible_as_optics_variable(tmp_path):
+    """
+    The optics file should write harm_c1 as a readable environment variable for
+    harmonic cavities.
+    """
+    original_line  = _build_harmonic_cavi_line(harmonic = 400)
+    env, _         = _write_and_load(line = original_line, tmp_path = tmp_path)
+
+    assert "harm_c1" in env.vars.keys(), (
+        "Optics file should define 'harm_c1' for a harmonic cavity.")
+    assert env["harm_c1"] == pytest.approx(400.0), (
+        f"Optics variable 'harm_c1' should equal 400. Got: {env['harm_c1']}.")
+
+
+def test_cavi_writer_harm_is_tunable_via_optics_variable(tmp_path):
+    """
+    Modifying harm_c1 in the environment should update the cavity harmonic
+    number, verifying it is a live deferred expression.
+    """
+    original_line       = _build_harmonic_cavi_line(harmonic = 400)
+    env, reloaded_line  = _write_and_load(line = original_line, tmp_path = tmp_path)
+
+    env["harm_c1"] = 800
+    assert reloaded_line["c1"].harmonic == pytest.approx(800.0), (
+        f"Setting env['harm_c1'] = 800 should update the cavity harmonic. "
+        f"Got: {reloaded_line['c1'].harmonic}.")
+
+
+def test_cavi_writer_harmonic_does_not_write_frequency(tmp_path):
+    """
+    A harmonic cavity should not have a freq_c1 optics variable — the writer
+    should write harm_c1 instead of freq_c1.
+    """
+    original_line  = _build_harmonic_cavi_line(harmonic = 400)
+    env, _         = _write_and_load(line = original_line, tmp_path = tmp_path)
+
+    assert "freq_c1" not in env.vars.keys(), (
+        "Optics file should NOT define 'freq_c1' for a harmonic cavity. "
+        "harm_c1 should be written instead.")
+
+
+def test_cavi_writer_frequency_does_not_write_harmonic(tmp_path):
+    """
+    A frequency-driven cavity should not have a harm_c1 optics variable.
+    """
+    original_line  = _build_cavi_line(frequency = 352.2E6)
+    env, _         = _write_and_load(line = original_line, tmp_path = tmp_path)
+
+    assert "harm_c1" not in env.vars.keys(), (
+        "Optics file should NOT define 'harm_c1' for a frequency-driven cavity.")

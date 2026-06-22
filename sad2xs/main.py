@@ -20,11 +20,10 @@ from .converter._003_expression_converter import convert_expressions
 from .converter._004_element_converter import convert_elements
 from .converter._005_line_converter import convert_lines
 from .converter._006_solenoid_converter import convert_solenoids, solenoid_reference_shift_corrections
-from .converter._007_harmonic_rf import convert_harmonic_rf
-from .converter._008_reversals import reverse_line_bend_direction, reverse_line_element_order
-from .converter._009_offset_markers import convert_offset_markers
-from .converter._010_write_lattice import write_lattice
-from .converter._011_write_optics import write_optics
+from .converter._007_reversals import reverse_line_bend_direction, reverse_line_element_order
+from .converter._008_offset_markers import convert_offset_markers
+from .converter._009_write_lattice import write_lattice
+from .converter._010_write_optics import write_optics
 
 ################################################################################
 # Overall Function
@@ -197,16 +196,6 @@ def convert_sad_to_xsuite(
         reverse_line            = reverse_element_order,
         config                  = config)
     
-    ############################################################################
-    # Harmonic Cavity Correction
-    ############################################################################
-    if config._verbose:
-        print_section_heading("Converting Harmonic Cavities", mode = 'section')
-    convert_harmonic_rf(
-        line                = line,
-        parsed_lattice_data = parsed_lattice_data,
-        config              = config)
-
     ################################################################################
     # Configure Modelling Mode
     ################################################################################
