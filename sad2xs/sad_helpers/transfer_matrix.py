@@ -7,6 +7,7 @@
 ################################################################################
 import os
 import subprocess
+import uuid
 import ast
 import numpy as np
 
@@ -35,7 +36,7 @@ def transfer_matrix_sad(
     end_element : str | None, optional
         Name of the ending element for the transfer matrix calculation.
         If None, the end of the beamline is used.
-    
+
     Returns
     -------
     np.ndarray
@@ -50,10 +51,19 @@ def transfer_matrix_sad(
     if start_element is None and end_element is not None:
         raise ValueError("If end_element is provided, start_element must also be provided")
 
-    ########################################
-    # Generate the Transfer Matrix command
-    ########################################
     print("Creating SAD Command")
+
+    ########################################
+    # SAD changes cwd to the directory of
+    # the input script, so the script must
+    # live in cwd (same dir as the lattice).
+    # Use uuid names to avoid collisions;
+    # try/finally ensures cleanup.
+    ########################################
+    uid      = uuid.uuid4().hex[:12]
+    cmd_file = f"_sad_tmatrix_{uid}.sad"
+    out_file = f"_sad_tmatrix_{uid}.dat"
+
     if start_element is not None and end_element is not None:
         sad_command = f"""OFF ECHO;
 
@@ -76,11 +86,11 @@ CALC;
 TM = TransferMatrix["{start_element}", "{end_element}"];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Print to output
+! Write matrix to file in SAD native format
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-WriteString[6, "! START TM"];
-WriteString[6, TM];
-WriteString[6, "! END TM"];
+fn = OpenWrite["{out_file}"];
+WriteString[fn, TM];
+Close[fn];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -109,11 +119,11 @@ CALC;
 TM = TransferMatrix[1, -1];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Print to output
+! Write matrix to file in SAD native format
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-WriteString[6, "! START TM"];
-WriteString[6, TM];
-WriteString[6, "! END TM"];
+fn = OpenWrite["{out_file}"];
+WriteString[fn, TM];
+Close[fn];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -121,58 +131,41 @@ WriteString[6, "! END TM"];
 abort;
 """
 
-    ########################################
-    # Write the SAD command
-    ########################################
-    with open("temp_sad_tmatrix.sad", "w", encoding = "utf-8") as f:
-        f.write(sad_command)
-    del sad_command
-
-    ########################################
-    # Run the process
-    ########################################
     try:
-        process = subprocess.run(
-            [sad_path, "temp_sad_tmatrix.sad"],
-            capture_output  = True,
-            text            = True,
-            timeout         = wall_time,
-            check           = True)
-    except subprocess.TimeoutExpired:
-        print(f"SAD Twiss timed out at {wall_time}s")
-        if os.path.exists("temp_sad_tmatrix.sad"):
-            os.remove("temp_sad_tmatrix.sad")
-        raise
-    except subprocess.CalledProcessError as e:
-        print(f"SAD exited with non-zero status {e.returncode}")
-        print("stdout:", e.stdout)
-        print("stderr:", e.stderr)
-        if os.path.exists("temp_sad_tmatrix.sad"):
-            os.remove("temp_sad_tmatrix.sad")
-        raise
+        with open(cmd_file, "w", encoding = "utf-8") as f:
+            f.write(sad_command)
+
+        try:
+            subprocess.run(
+                [sad_path, cmd_file],
+                capture_output = True,
+                text           = True,
+                timeout        = wall_time,
+                check          = True)
+        except subprocess.TimeoutExpired:
+            print(f"SAD Twiss timed out at {wall_time}s")
+            raise
+        except subprocess.CalledProcessError as e:
+            print(f"SAD exited with non-zero status {e.returncode}")
+            print("stdout:", e.stdout)
+            print("stderr:", e.stderr)
+            raise
+
+        with open(out_file, "r", encoding = "utf-8") as f:
+            raw = f.read()
+
+        start = raw.find("{{")
+        end   = raw.rfind("}}")
+        if start == -1 or end == -1:
+            raise ValueError("Matrix not found in output file")
+        matrix_str  = raw[start:end + 2]
+        cleaned     = matrix_str.replace("}", "]").replace("{", "[")
+        matrix_list = ast.literal_eval(cleaned)
+        rmatrix     = np.array(matrix_list, dtype = float)
+
     finally:
-        if os.path.exists("temp_sad_tmatrix.sad"):
-            os.remove("temp_sad_tmatrix.sad")
-
-    ########################################
-    # Read the output
-    ########################################
-    raw = process.stdout
-
-    ########################################
-    # Process the output
-    ########################################
-    start   = raw.find("{{")
-    end     = raw.rfind("}}")
-    if start == -1 or end == -1:
-        raise ValueError("Matrix not found in subprocess output")
-    matrix_str = raw[start:end + 2]
-
-    ########################################
-    # Convert to numpy array
-    ########################################
-    cleaned     = matrix_str.replace("}", "]").replace("{", "[")
-    matrix_list = ast.literal_eval(cleaned)
-    rmatrix     = np.array(matrix_list, dtype = float)
+        for path in [cmd_file, out_file]:
+            if os.path.exists(path):
+                os.remove(path)
 
     return rmatrix

@@ -97,7 +97,9 @@ Default wall times are currently short for optics-style helpers and longer for t
 
 ## Temporary files
 
-The helpers currently write fixed temporary filenames in the current working directory, for example:
+`chromaticity_sad` and `transfer_matrix_sad` write UUID-named temporary files directly in the current working directory (e.g. `_sad_chrom_<uid>.sad`, `_sad_chrom_<uid>.dat`) and remove them in a `finally` block, so concurrent calls and interrupted runs are both safe for these two helpers.
+
+The remaining helpers write fixed temporary filenames in the current working directory, for example:
 
 - `temp_sad_twiss.sad`
 - `temp_sad_twiss.tfs`
@@ -106,13 +108,11 @@ The helpers currently write fixed temporary filenames in the current working dir
 - `temp_sad_track.sad`
 - `temp_sad_track.dat`
 - `temp_sad_emit.sad`
-- `temp_sad_tmatrix.sad`
-- `temp_sad_chromaticity.sad`
 - `temp_sad_rebuild_lattice.sad`
 
-This means helper calls should not be run concurrently from the same working directory. It also means failed or interrupted processes may leave temporary files behind.
+For these helpers, concurrent calls from the same working directory are not safe, and failed or interrupted processes may leave temporary files behind.
 
-Next release target: move these helpers to isolated temporary directories, preferably using Python temporary directory APIs or pytest `tmp_path` in tests.
+Note: SAD resolves paths relative to the directory of the input script file, so temporary script files must be written to the same directory as the lattice file (i.e. the Python process cwd).
 
 ## Current safeguards
 
@@ -130,8 +130,8 @@ Known limitations:
 
 - helper imports and execution depend on optional runtime dependencies;
 - top-level package import still re-exports the helper package;
-- temporary files use fixed names in the current working directory;
-- helper calls are not safe to run concurrently from the same directory;
+- most helpers use fixed temporary filenames in cwd; concurrent calls from the same directory are not safe for these;
+- `chromaticity_sad` and `transfer_matrix_sad` use UUID-named files with guaranteed cleanup;
 - `additional_commands` is raw SAD text and is not sandboxed or validated;
 - subprocess output parsing is tailored to the current generated SAD commands;
 - cleanup is not guaranteed for every interrupted or unexpected failure path;

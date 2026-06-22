@@ -7,7 +7,7 @@
 ################################################################################
 import os
 import subprocess
-import ast
+import uuid
 import numpy as np
 
 ################################################################################
@@ -37,7 +37,7 @@ CalculateOffMomentumTune[x_]:={
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Get the fractional tunes
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    FractionalPart[Twiss["NX","$$$"]/(2*Pi)], 
+    FractionalPart[Twiss["NX","$$$"]/(2*Pi)],
     FractionalPart[Twiss["NY","$$$"]/(2*Pi)]
 };
 """
@@ -59,10 +59,19 @@ def chromaticity_sad(
     Generate a SAD command to compute the chromaticity parameters of a lattice.
     """
 
-    ########################################
-    # Generate the twiss command
-    ########################################
     print("Creating SAD Command")
+
+    ########################################
+    # SAD changes cwd to the directory of
+    # the input script, so the script must
+    # live in cwd (same dir as the lattice).
+    # Use uuid names to avoid collisions;
+    # try/finally ensures cleanup.
+    ########################################
+    uid      = uuid.uuid4().hex[:12]
+    cmd_file = f"_sad_chrom_{uid}.sad"
+    out_file = f"_sad_chrom_{uid}.dat"
+
     sad_command = f"""OFF ECHO;
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -95,13 +104,16 @@ SAVE ALL;
 {generate_off_momentum_tune_function()}
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Scan chromaticity
+! Scan chromaticity and write directly to file (dp qx qy per row)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-d = Table[
-    tunes   = CalculateOffMomentumTune[x];
-    {{x, tunes[1], tunes[2]}},
-    {{x, -{dp_extent}, {dp_extent}, {dp_step} }}];
-Print[d];
+fn = OpenWrite["{out_file}"];
+$FORM="12.10";
+Table[
+    tunes = CalculateOffMomentumTune[x];
+    WriteString[fn, x, " ", tunes[1], " ", tunes[2], "\\n"],
+    {{x, -{dp_extent}, {dp_extent}, {dp_step} }}
+];
+Close[fn];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -109,58 +121,32 @@ Print[d];
 abort;
 """
 
-    ########################################
-    # Write the SAD command
-    ########################################
-    with open("temp_sad_chromaticity.sad", "w", encoding = "utf-8") as f:
-        f.write(sad_command)
-
-    ########################################
-    # Run the process
-    ########################################
     try:
-        process = subprocess.run(
-            [sad_path, "temp_sad_chromaticity.sad"],
-            capture_output  = True,
-            text            = True,
-            timeout         = wall_time,
-            check           = True)
-    except subprocess.TimeoutExpired:
-        print(f"SAD Twiss timed out at {wall_time}s")
-        if os.path.exists("temp_sad_chromaticity.sad"):
-            os.remove("temp_sad_chromaticity.sad")
-        raise
-    except subprocess.CalledProcessError as e:
-        print(f"SAD exited with non-zero status {e.returncode}")
-        print("stdout:", e.stdout)
-        print("stderr:", e.stderr)
-        if os.path.exists("temp_sad_chromaticity.sad"):
-            os.remove("temp_sad_chromaticity.sad")
-        raise
+        with open(cmd_file, "w", encoding = "utf-8") as f:
+            f.write(sad_command)
+
+        try:
+            subprocess.run(
+                [sad_path, cmd_file],
+                capture_output = True,
+                text           = True,
+                timeout        = wall_time,
+                check          = True)
+        except subprocess.TimeoutExpired:
+            print(f"SAD Twiss timed out at {wall_time}s")
+            raise
+        except subprocess.CalledProcessError as e:
+            print(f"SAD exited with non-zero status {e.returncode}")
+            print("stdout:", e.stdout)
+            print("stderr:", e.stderr)
+            raise
+
+        chrom_scan = np.loadtxt(out_file, ndmin = 2)
+
     finally:
-        if os.path.exists("temp_sad_chromaticity.sad"):
-            os.remove("temp_sad_chromaticity.sad")
-
-    ########################################
-    # Read the data
-    ########################################
-    raw = process.stdout
-
-    ########################################
-    # Process the output
-    ########################################
-    start   = raw.find("{{")
-    end     = raw.rfind("}}")
-    if start == -1 or end == -1:
-        raise ValueError("Table not found in subprocess output")
-    matrix_str = raw[start:end + 2]
-
-    ########################################
-    # Convert to numpy array
-    ########################################
-    cleaned     = matrix_str.replace("}", "]").replace("{", "[")
-    matrix_list = ast.literal_eval(cleaned)
-    chrom_scan  = np.array(matrix_list, dtype = float)
+        for path in [cmd_file, out_file]:
+            if os.path.exists(path):
+                os.remove(path)
 
     ########################################
     # Data evaluation
