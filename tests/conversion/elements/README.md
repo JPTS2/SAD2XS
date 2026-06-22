@@ -30,7 +30,7 @@ Total collected from this folder: see `tests/README.md`.
 |------|-----------|------|--------------------|
 | `test_aper.py` | 19 | 4 | `ROTATE` not preserved; combined rect+ellipse conversion unsupported |
 | `test_beambeam.py` | 5 | 0 | — |
-| `test_bend.py` | 23 | 10 | `k0 = angle/length` conversion wrong; symbolic length/angle; thin bend; element offsets |
+| `test_bend.py` | 23 | 7 | Symbolic length/angle; thin bend; element offsets with horizontal shift |
 | `test_cavi.py` | 19 | 0 | — |
 | `test_coord.py` | 10 | 0 | — |
 | `test_corrector.py` | 18 | 16 | Corrector physics incorrect — optics and tracking both wrong for kicks, rotations, offsets |

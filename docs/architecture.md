@@ -31,7 +31,7 @@ parse SAD input
   -> convert elements
   -> convert lines
   -> select the requested or longest line
-  -> apply solenoid and harmonic RF corrections
+  -> apply solenoid corrections
   -> configure element models and integrators
   -> apply requested line and charge reversals
   -> install offset markers

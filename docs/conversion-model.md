@@ -34,12 +34,11 @@ For these reasons, SAD2XS should not treat parsed SAD text as the primary model 
 9. Convert SAD line definitions to Xsuite lines.
 10. Select the requested line, or the longest available line.
 11. Apply solenoid-specific corrections.
-12. Apply harmonic RF handling.
-13. Configure models, integrators, and bend edge handling.
-14. Apply requested line order, bend direction, and charge reversals.
-15. Install offset markers.
-16. Write lattice and optics files from the Xsuite model.
-17. Reload the generated files and return the rebuilt Xsuite line.
+12. Configure models, integrators, and bend edge handling.
+13. Apply requested line order, bend direction, and charge reversals.
+14. Install offset markers.
+15. Write lattice and optics files from the Xsuite model.
+16. Reload the generated files and return the rebuilt Xsuite line.
 ```
 
 This describes the current high-level orchestration. Some individual steps need cleanup to fully satisfy the design decisions in this documentation.
