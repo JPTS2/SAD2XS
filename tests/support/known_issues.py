@@ -12,11 +12,6 @@ KNOWN_ISSUE_TESTS = {
     "tests/writer/pipeline/test_line_roundtrip.py::test_writer_roundtrip_preserves_supported_line_contract": 63,
 
     # Thin elements and current Xsuite API migration.
-    "tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_twiss_for_thin_bend": 18,
-    "tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_tracking_for_thin_bend": 18,
-    "tests/conversion/elements/test_oct.py::test_oct_converter_converts_thin_octupole_to_multipole": 18,
-    "tests/conversion/elements/test_quad.py::test_quad_converter_converts_thin_quadrupole_to_multipole": 18,
-    "tests/conversion/elements/test_sext.py::test_sext_converter_converts_thin_sextupole_to_multipole": 18,
     # Parser and expression handling.
     "tests/parser/test_errors.py::test_invalid_deferred_expression_syntax_raises_clear_error": 22,
     "tests/parser/test_errors.py::test_malformed_line_missing_equals_raises_clear_error": 22,

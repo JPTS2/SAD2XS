@@ -497,6 +497,113 @@ def test_sext_converter_converts_thin_sextupole_to_multipole(
     assert multipole.knl[2] == pytest.approx(0.1), (
         "Thin SEXT K2 should be preserved as integrated knl[2].")
 
+def test_sext_converter_thin_element_preserves_offsets_and_rotation(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
+    """
+    Thin SAD SEXT DX, DY, and ROTATE should map to Xsuite Multipole fields.
+    """
+    convert_sextupoles(
+        parsed_elements = parsed_elements(
+            element_type        = "sext",
+            element_name        = "test_sext",
+            element_variables   = {
+                "k2":       0.1,
+                "dx":       1.0E-3,
+                "dy":       -2.0E-3,
+                "rotate":   0.125,
+            }),
+        environment     = xsuite_environment)
+
+    multipole = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_sext",
+        element_type    = xt.Multipole)
+
+    assert multipole.shift_x == pytest.approx(1.0E-3), (
+        "Thin SEXT DX should be preserved as Xsuite shift_x.")
+    assert multipole.shift_y == pytest.approx(-2.0E-3), (
+        "Thin SEXT DY should be preserved as Xsuite shift_y.")
+    assert multipole.rot_s_rad == pytest.approx(-0.125), (
+        "Thin SEXT ROTATE should apply the SAD-to-Xsuite rotation sign.")
+
+@pytest.mark.parametrize(
+    "sad_rotation, expected_knl2, expected_ksl2",
+    [
+        (+np.pi / 6, 0.0, +0.1),
+        (-np.pi / 6, 0.0, -0.1),
+    ])
+def test_sext_converter_thin_element_maps_30_degree_rotations_to_skew_strength(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element,
+        sad_rotation,
+        expected_knl2,
+        expected_ksl2):
+    """
+    30 degree rotated thin SAD SEXT elements should convert to pure skew kicks.
+    """
+    convert_sextupoles(
+        parsed_elements = parsed_elements(
+            element_type        = "sext",
+            element_name        = "test_sext",
+            element_variables   = {
+                "k2":       0.1,
+                "rotate":   sad_rotation,
+            }),
+        environment     = xsuite_environment)
+
+    multipole = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_sext",
+        element_type    = xt.Multipole)
+
+    assert multipole.knl[2] == pytest.approx(expected_knl2), (
+        "30 degree rotated thin SEXT should not retain normal knl[2] kick.")
+    assert multipole.ksl[2] == pytest.approx(expected_ksl2), (
+        "30 degree rotated thin SEXT should map K2 to integrated ksl[2].")
+    assert multipole.rot_s_rad == pytest.approx(0.0), (
+        "Pure skew thin SEXT conversion should remove the residual rotation.")
+
+@pytest.mark.parametrize(
+    "sad_rotation",
+    [
+        +np.pi / 6 - 0.01,
+        +np.pi / 6 + 0.01,
+        -np.pi / 6 - 0.01,
+        -np.pi / 6 + 0.01,
+    ])
+def test_sext_converter_thin_element_near_30_degree_rotations_remain_explicit_rotations(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element,
+        sad_rotation):
+    """
+    Near-30-degree rotated thin SAD SEXT should not trigger the skew shortcut.
+    """
+    convert_sextupoles(
+        parsed_elements = parsed_elements(
+            element_type        = "sext",
+            element_name        = "test_sext",
+            element_variables   = {
+                "k2":       0.1,
+                "rotate":   sad_rotation,
+            }),
+        environment     = xsuite_environment)
+
+    multipole = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_sext",
+        element_type    = xt.Multipole)
+
+    assert multipole.knl[2] == pytest.approx(0.1), (
+        "Near-30-degree thin SEXT should retain normal integrated kick.")
+    assert multipole.ksl[2] == pytest.approx(0.0), (
+        "Near-30-degree thin SEXT should not be rewritten as pure skew.")
+    assert multipole.rot_s_rad == pytest.approx(-sad_rotation), (
+        "Near-30-degree thin SEXT should remain an explicit Xsuite rotation.")
+
 ########################################
 # Pipeline Behaviour
 ########################################
