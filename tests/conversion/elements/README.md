@@ -28,7 +28,7 @@ Total collected from this folder: see `tests/README.md`.
 
 | File | Functions | Fail | Failure root cause |
 |------|-----------|------|--------------------|
-| `test_aper.py` | 19 | 4 | `ROTATE` not preserved; combined rect+ellipse conversion unsupported |
+| `test_aper.py` | 20 | 3 | `ROTATE` not preserved (issue #33) |
 | `test_beambeam.py` | 5 | 0 | — |
 | `test_bend.py` | 23 | 7 | Symbolic length/angle; thin bend; element offsets with horizontal shift |
 | `test_cavi.py` | 19 | 0 | — |
