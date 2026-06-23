@@ -88,23 +88,31 @@ def _build_hbend_line(
         edge_entry_angle_fdown  = 0.0,
         edge_exit_angle_fdown   = 0.0,
         shift_x                 = 0.0,
-        shift_y                 = 0.0):
+        shift_y                 = 0.0,
+        knl                     = None,
+        ksl                     = None):
     """
     Build a minimal single horizontal-bend Xsuite line with a reference
     particle. Horizontal bends have rot_s_rad = 0 (the default).
     angle must be non-zero so the bend writer classifies the element as a bend
     (h = angle/length != 0) rather than a corrector.
     """
+    bend_kwargs = dict(
+        angle                   = angle,
+        length                  = length,
+        edge_entry_angle        = edge_entry_angle,
+        edge_exit_angle         = edge_exit_angle,
+        edge_entry_angle_fdown  = edge_entry_angle_fdown,
+        edge_exit_angle_fdown   = edge_exit_angle_fdown,
+        shift_x                 = shift_x,
+        shift_y                 = shift_y)
+    if knl is not None:
+        bend_kwargs["knl"] = knl
+    if ksl is not None:
+        bend_kwargs["ksl"] = ksl
+
     line = xt.Line(
-        elements      = [xt.Marker(), xt.Bend(
-            angle                   = angle,
-            length                  = length,
-            edge_entry_angle        = edge_entry_angle,
-            edge_exit_angle         = edge_exit_angle,
-            edge_entry_angle_fdown  = edge_entry_angle_fdown,
-            edge_exit_angle_fdown   = edge_exit_angle_fdown,
-            shift_x                 = shift_x,
-            shift_y                 = shift_y), xt.Marker()],
+        elements      = [xt.Marker(), xt.Bend(**bend_kwargs), xt.Marker()],
         element_names = ["start", "b1", "end"])
 
     line.particle_ref = xt.Particles(
@@ -598,3 +606,70 @@ def test_bend_writer_k1_is_preserved_for_combined_function_magnet(tmp_path):
         "Writer roundtrip should preserve combined function Bend k1. "
         "The bend writer does not write k1, so it reloads as 0.0. "
         f"Original: 0.5, reloaded: {reloaded_line['b1'].k1}. See issue #63.")
+
+
+################################################################################
+# Combined Multipole Components
+################################################################################
+########################################
+# Higher-Order knl Components
+########################################
+def test_bend_writer_preserves_knl_combined_multipole_component(tmp_path):
+    """
+    A bend with a combined sextupole component (knl[2] != 0) should preserve
+    that component through a write and reload cycle.
+    """
+    original_line = _build_hbend_line(angle = 0.1, knl = [0.0, 0.0, 5.0E-4])
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    original_knl = np.asarray(original_line["b1"].knl)
+    reloaded_knl = np.asarray(reloaded_line["b1"].knl)
+
+    assert reloaded_knl.tolist() == pytest.approx(original_knl.tolist()), (
+        "Writer roundtrip should preserve bend knl combined multipole components. "
+        f"Original knl: {original_knl.tolist()}, "
+        f"reloaded knl: {reloaded_knl.tolist()}.")
+
+
+########################################
+# Higher-Order ksl Components
+########################################
+def test_bend_writer_preserves_ksl_combined_multipole_component(tmp_path):
+    """
+    A bend with a combined skew sextupole component (ksl[2] != 0) should
+    preserve that component through a write and reload cycle.
+    """
+    original_line = _build_hbend_line(angle = 0.1, ksl = [0.0, 0.0, -3.0E-4])
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    original_ksl = np.asarray(original_line["b1"].ksl)
+    reloaded_ksl = np.asarray(reloaded_line["b1"].ksl)
+
+    assert reloaded_ksl.tolist() == pytest.approx(original_ksl.tolist()), (
+        "Writer roundtrip should preserve bend ksl combined multipole components. "
+        f"Original ksl: {original_ksl.tolist()}, "
+        f"reloaded ksl: {reloaded_ksl.tolist()}.")
+
+
+def test_bend_writer_preserves_knl_and_ksl_components_simultaneously(tmp_path):
+    """
+    A bend carrying both knl and ksl combined multipole components should
+    preserve both through a write and reload cycle.
+    """
+    original_line = _build_hbend_line(
+        angle   = 0.1,
+        knl     = [0.0, 0.0, 5.0E-4],
+        ksl     = [0.0, 0.0, -3.0E-4])
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    original_knl = np.asarray(original_line["b1"].knl)
+    reloaded_knl = np.asarray(reloaded_line["b1"].knl)
+    original_ksl = np.asarray(original_line["b1"].ksl)
+    reloaded_ksl = np.asarray(reloaded_line["b1"].ksl)
+
+    assert reloaded_knl.tolist() == pytest.approx(original_knl.tolist()), (
+        "Writer roundtrip should preserve bend knl. "
+        f"Original: {original_knl.tolist()}, reloaded: {reloaded_knl.tolist()}.")
+    assert reloaded_ksl.tolist() == pytest.approx(original_ksl.tolist()), (
+        "Writer roundtrip should preserve bend ksl. "
+        f"Original: {original_ksl.tolist()}, reloaded: {reloaded_ksl.tolist()}.")

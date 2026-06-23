@@ -15,7 +15,7 @@ import numpy as np
 
 from ._000_helpers import extract_multipole_information, \
     generate_magnet_for_replication_names, check_is_simple_quad_sext_oct, \
-    check_is_skew_quad_sext_oct
+    check_is_skew_quad_sext_oct, get_knl_string
 from ..types import ConfigLike
 
 ################################################################################
@@ -111,6 +111,8 @@ env.new(name = '{replica_name}', parent = '{quad}', k1s = 'k1s_{replica_name}')"
                 shift_x     = line[replica_name].shift_x
                 shift_y     = line[replica_name].shift_y
                 rot_s_rad   = line[replica_name].rot_s_rad
+                knl         = np.asarray(line[replica_name].knl)
+                ksl         = np.asarray(line[replica_name].ksl)
 
                 # Basic information
                 quad_generation = f"""
@@ -136,6 +138,16 @@ env.new(
                 if rot_s_rad != 0:
                     quad_generation += f""",
     rot_s_rad   = '{rot_s_rad}'"""
+
+                # Combined multipole components
+                knl_str = get_knl_string(knl)
+                ksl_str = get_knl_string(ksl)
+                if knl_str != "[]":
+                    quad_generation += f""",
+    knl         = {knl_str}"""
+                if ksl_str != "[]":
+                    quad_generation += f""",
+    ksl         = {ksl_str}"""
 
                 # Close the element definition
                 quad_generation += """)"""
