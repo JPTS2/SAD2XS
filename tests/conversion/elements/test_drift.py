@@ -111,16 +111,20 @@ def _assert_drift_twiss_scan_matches_sad(
 # Direct Converter Behaviour
 ########################################
 @pytest.mark.parametrize(
-    "length",
-    [0.0, 1.0, "l_drift"])
+    "length, expected_length",
+    [(0.0, 0.0), (1.0, 1.0), ("l_drift", 1.5)])
 def test_drift_converter_creates_xsuite_drift(
         parsed_elements,
         xsuite_environment,
         assert_environment_element,
-        length):
+        length,
+        expected_length):
     """
     Parsed SAD DRIFT elements should become Xsuite Drift elements.
     """
+    if isinstance(length, str):
+        xsuite_environment[length] = expected_length
+
     convert_drifts(
         parsed_elements = parsed_elements(
             element_type        = "drift",
@@ -133,8 +137,8 @@ def test_drift_converter_creates_xsuite_drift(
         element_name    = "test_drift",
         element_type    = xt.Drift)
 
-    assert drift.length == length, (
-        "Converted drift length should preserve the parsed SAD length value.")
+    assert drift.length == pytest.approx(expected_length), (
+        "Converted drift length should resolve to the SAD length value.")
 
 def test_drift_converter_creates_all_drifts(
         xsuite_environment,
@@ -142,6 +146,8 @@ def test_drift_converter_creates_all_drifts(
     """
     Multiple parsed SAD DRIFT elements should all be converted.
     """
+    xsuite_environment["l_drift"] = 3.0
+
     parsed_elements = {
         "drift": {
             "d1": {"l": 1.0},
@@ -159,14 +165,14 @@ def test_drift_converter_creates_all_drifts(
     for drift_name, expected_length in [
             ("d1", 1.0),
             ("d2", 2.0),
-            ("d3", "l_drift")]:
+            ("d3", 3.0)]:
         drift = assert_environment_element(
             environment     = xsuite_environment,
             element_name    = drift_name,
             element_type    = xt.Drift)
-        assert drift.length == expected_length, (
-            f"Converted drift '{drift_name}' should preserve its parsed "
-            "length.")
+        assert drift.length == pytest.approx(expected_length), (
+            f"Converted drift '{drift_name}' should resolve to the SAD "
+            "length value.")
 
 def test_drift_converter_requires_length(parsed_elements, xsuite_environment):
     """

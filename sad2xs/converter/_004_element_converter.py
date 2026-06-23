@@ -384,7 +384,7 @@ def convert_bends(parsed_elements, environment, config):
             ########################################
             # Read values
             ########################################
-            length          = float(parse_expression(ele_vars["l"]))
+            length          = parse_expression(ele_vars["l"])
             k0l             = parse_expression(ele_vars["angle"])
 
             if "k1" in ele_vars:
@@ -400,15 +400,15 @@ def convert_bends(parsed_elements, environment, config):
 
             shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
-            if isinstance(k0l, float):
+            if isinstance(k0l, float) and not isinstance(length, str):
                 k0  = k0l / length
             else:
-                k0  = f"{k0l} / {length}"
+                k0  = 0.0 if k0l == 0.0 else f"{k0l} / {length}"
 
-            if isinstance(k1l, float):
+            if isinstance(k1l, float) and not isinstance(length, str):
                 k1  = k1l / length
             else:
-                k1  = f"{k1l} / {length}"
+                k1  = 0.0 if k1l == 0.0 else f"{k1l} / {length}"
 
             edge_entry_angle    = f"{e1} * {k0l} + {ae1}"
             edge_exit_angle     = f"{e2} * {k0l} + {ae2}"
@@ -569,15 +569,15 @@ def convert_quadrupoles(parsed_elements, environment):
                 else:
                     k1l     = ele_vars["k1"]
 
-        if isinstance(k1l, float):
+        if isinstance(k1l, float) and not isinstance(ele_vars["l"], str):
             k1  = k1l / ele_vars["l"]
         else:
-            k1  = f"{k1l} / {ele_vars["l"]}"
+            k1  = 0.0 if k1l == 0.0 else f"{k1l} / {ele_vars["l"]}"
 
-        if isinstance(k1sl, float):
+        if isinstance(k1sl, float) and not isinstance(ele_vars["l"], str):
             k1s = k1sl / ele_vars["l"]
         else:
-            k1s = f"{k1sl} / {ele_vars["l"]}"
+            k1s = 0.0 if k1sl == 0.0 else f"{k1sl} / {ele_vars["l"]}"
 
         ########################################
         # Create variables
@@ -658,15 +658,15 @@ def convert_sextupoles(parsed_elements, environment):
                 else:
                     k2l     = ele_vars["k2"]
 
-        if isinstance(k2l, float):
+        if isinstance(k2l, float) and not isinstance(ele_vars["l"], str):
             k2  = k2l / ele_vars["l"]
         else:
-            k2  = f"{k2l} / {ele_vars["l"]}"
+            k2  = 0.0 if k2l == 0.0 else f"{k2l} / {ele_vars["l"]}"
 
-        if isinstance(k2sl, float):
+        if isinstance(k2sl, float) and not isinstance(ele_vars["l"], str):
             k2s = k2sl / ele_vars["l"]
         else:
-            k2s = f"{k2sl} / {ele_vars["l"]}"
+            k2s = 0.0 if k2sl == 0.0 else f"{k2sl} / {ele_vars["l"]}"
 
         ########################################
         # Create variables
@@ -756,15 +756,15 @@ def convert_octupoles(parsed_elements, environment, config):
                 else:
                     k3l     = ele_vars["k3"]
 
-        if isinstance(k3l, float):
+        if isinstance(k3l, float) and not isinstance(ele_vars["l"], str):
             k3  = k3l / ele_vars["l"]
         else:
-            k3  = f"{k3l} / {ele_vars["l"]}"
+            k3  = 0.0 if k3l == 0.0 else f"{k3l} / {ele_vars["l"]}"
 
-        if isinstance(k3sl, float):
+        if isinstance(k3sl, float) and not isinstance(ele_vars["l"], str):
             k3s = k3sl / ele_vars["l"]
         else:
-            k3s = f"{k3sl} / {ele_vars["l"]}"
+            k3s = 0.0 if k3sl == 0.0 else f"{k3sl} / {ele_vars["l"]}"
 
         ########################################
         # Create variables
