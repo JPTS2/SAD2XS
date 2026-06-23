@@ -2,15 +2,6 @@
 
 KNOWN_ISSUE_TESTS = {
     # Writer issues.
-    "tests/writer/elements/test_oct_writer.py::test_oct_writer_preserves_knl_combined_multipole_component": 17,
-    "tests/writer/elements/test_oct_writer.py::test_oct_writer_preserves_ksl_combined_multipole_component": 17,
-    "tests/writer/elements/test_oct_writer.py::test_oct_writer_preserves_knl_and_ksl_components_simultaneously": 17,
-    "tests/writer/elements/test_quad_writer.py::test_quad_writer_preserves_knl_combined_multipole_component": 17,
-    "tests/writer/elements/test_quad_writer.py::test_quad_writer_preserves_ksl_combined_multipole_component": 17,
-    "tests/writer/elements/test_quad_writer.py::test_quad_writer_preserves_knl_and_ksl_components_simultaneously": 17,
-    "tests/writer/elements/test_sext_writer.py::test_sext_writer_preserves_knl_combined_multipole_component": 17,
-    "tests/writer/elements/test_sext_writer.py::test_sext_writer_preserves_ksl_combined_multipole_component": 17,
-    "tests/writer/elements/test_sext_writer.py::test_sext_writer_preserves_knl_and_ksl_components_simultaneously": 17,
     "tests/writer/elements/test_aper_writer.py::test_aper_writer_limitellipse_a_is_accessible_as_optics_variable": 62,
     "tests/writer/elements/test_aper_writer.py::test_aper_writer_limitellipse_b_is_accessible_as_optics_variable": 62,
     "tests/writer/elements/test_aper_writer.py::test_aper_writer_limitellipse_a_is_tunable_via_optics_variable": 62,
