@@ -30,17 +30,17 @@ Total collected from this folder: see `tests/README.md`.
 |------|-----------|------|--------------------|
 | `test_aper.py` | 20 | 3 | `ROTATE` not preserved (issue #33) |
 | `test_beambeam.py` | 5 | 0 | — |
-| `test_bend.py` | 23 | 7 | Symbolic length/angle; thin bend; element offsets with horizontal shift |
+| `test_bend.py` | 23 | 6 | Thin bend; element offsets with horizontal shift |
 | `test_cavi.py` | 19 | 0 | — |
 | `test_coord.py` | 10 | 0 | — |
 | `test_corrector.py` | 18 | 16 | Corrector physics incorrect — optics and tracking both wrong for kicks, rotations, offsets |
-| `test_drift.py` | 6 | 2 | Symbolic variable support not implemented (parametric drift length) |
+| `test_drift.py` | 6 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
 | `test_mult.py` | 12 | 2 | Combined multipole orders — cross-order physics wrong |
-| `test_oct.py` | 15 | 3 | Symbolic variable support; thin octupole to `xt.Multipole` conversion |
-| `test_quad.py` | 15 | 5 | Symbolic variable support; thin quadrupole; rotation tracking |
-| `test_sext.py` | 15 | 3 | Symbolic variable support; thin sextupole to `xt.Multipole` conversion |
+| `test_oct.py` | 15 | 2 | Thin octupole to `xt.Multipole` conversion |
+| `test_quad.py` | 15 | 4 | Thin quadrupole; rotation tracking |
+| `test_sext.py` | 15 | 2 | Thin sextupole to `xt.Multipole` conversion |
 | `test_sol.py` | 17 | 41 | Solenoid reference transform physics |
 
 ### `test_sol.py` note

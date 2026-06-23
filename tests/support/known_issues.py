@@ -49,11 +49,6 @@ KNOWN_ISSUE_TESTS = {
     "tests/conversion/elements/test_aper.py::test_aper_rotated_limitrect_grid_loss_matches_sad_boundary": 33,
     "tests/conversion/elements/test_mult.py::test_mult_conversion_matches_sad_twiss_for_combined_orders": 33,
     "tests/conversion/elements/test_mult.py::test_mult_conversion_matches_sad_tracking_for_combined_orders": 33,
-    "tests/conversion/elements/test_bend.py::test_bend_converter_supports_symbolic_length_and_angle": 52,
-    "tests/conversion/elements/test_drift.py::test_drift_converter_creates_all_drifts": 52,
-    "tests/conversion/elements/test_oct.py::test_oct_converter_supports_symbolic_length_and_strength": 52,
-    "tests/conversion/elements/test_quad.py::test_quad_converter_supports_symbolic_length_and_strength": 52,
-    "tests/conversion/elements/test_sext.py::test_sext_converter_supports_symbolic_length_and_strength": 52,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_twiss_for_thin_kick": 55,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_twiss_for_rotated_kicks": 55,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_twiss_for_element_offsets": 55,
@@ -68,7 +63,6 @@ KNOWN_ISSUE_TESTS = {
 
 PARTIAL_KNOWN_ISSUES = (
     # (test node prefix, parameter-id fragment, issue number)
-    ("tests/conversion/elements/test_drift.py::test_drift_converter_creates_xsuite_drift", "[l_drift]", 52),
     ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_twiss_for_element_offsets", "[0.001-0.0]", 19),
     ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_twiss_for_element_offsets", "[0.001--0.001]", 19),
     ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_tracking_for_element_offsets", "[0.001-0.0]", 19),
