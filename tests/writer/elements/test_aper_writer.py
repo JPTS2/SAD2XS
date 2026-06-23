@@ -625,6 +625,120 @@ def test_aper_writer_preserves_multiple_limitrects_independently(tmp_path):
         f"Original: 0.015, reloaded: {reloaded_line['apb'].max_y}.")
 
 
+def _build_limitrectellipse_line(
+        max_x   = 0.020,
+        max_y   = 0.015,
+        a       = 0.025,
+        b       = 0.018,
+        shift_x = 0.0,
+        shift_y = 0.0):
+    """
+    Build a minimal single-LimitRectEllipse Xsuite line with a reference particle.
+    """
+    line = xt.Line(
+        elements      = [xt.Marker(), xt.LimitRectEllipse(
+            max_x   = max_x,
+            max_y   = max_y,
+            a       = a,
+            b       = b,
+            shift_x = shift_x,
+            shift_y = shift_y), xt.Marker()],
+        element_names = ["start", "ap1", "end"])
+
+    line.particle_ref = xt.Particles(
+        p0c   = 1.0E9,
+        q0    = -1.0,
+        mass0 = xt.ELECTRON_MASS_EV)
+
+    return line
+
+
+################################################################################
+# LimitRectEllipse
+################################################################################
+def test_aper_writer_limitrectellipse_reloads_as_xsuite_limitrectellipse(tmp_path):
+    """
+    A written LimitRectEllipse element should reload as xt.LimitRectEllipse.
+    """
+    original_line = _build_limitrectellipse_line()
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert isinstance(reloaded_line["ap1"], xt.LimitRectEllipse), (
+        "Written LimitRectEllipse element 'ap1' should reload as xt.LimitRectEllipse. "
+        f"Got: {type(reloaded_line['ap1']).__name__}.")
+
+
+def test_aper_writer_limitrectellipse_preserves_max_x(tmp_path):
+    """
+    The rectangular horizontal half-width max_x should be preserved through a
+    write and reload cycle.
+    """
+    original_line = _build_limitrectellipse_line(max_x = 0.020)
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert reloaded_line["ap1"].max_x == pytest.approx(0.020), (
+        "Writer roundtrip should preserve LimitRectEllipse max_x. "
+        f"Original: 0.020, reloaded: {reloaded_line['ap1'].max_x}.")
+
+
+def test_aper_writer_limitrectellipse_preserves_max_y(tmp_path):
+    """
+    The rectangular vertical half-width max_y should be preserved through a
+    write and reload cycle.
+    """
+    original_line = _build_limitrectellipse_line(max_y = 0.015)
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert reloaded_line["ap1"].max_y == pytest.approx(0.015), (
+        "Writer roundtrip should preserve LimitRectEllipse max_y. "
+        f"Original: 0.015, reloaded: {reloaded_line['ap1'].max_y}.")
+
+
+def test_aper_writer_limitrectellipse_preserves_a(tmp_path):
+    """
+    The ellipse horizontal semi-axis a should be preserved through a write and
+    reload cycle.
+    """
+    original_line = _build_limitrectellipse_line(a = 0.025)
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert reloaded_line["ap1"].a == pytest.approx(0.025), (
+        "Writer roundtrip should preserve LimitRectEllipse a. "
+        f"Original: 0.025, reloaded: {reloaded_line['ap1'].a}.")
+
+
+def test_aper_writer_limitrectellipse_preserves_b(tmp_path):
+    """
+    The ellipse vertical semi-axis b should be preserved through a write and
+    reload cycle.
+    """
+    original_line = _build_limitrectellipse_line(b = 0.018)
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert reloaded_line["ap1"].b == pytest.approx(0.018), (
+        "Writer roundtrip should preserve LimitRectEllipse b. "
+        f"Original: 0.018, reloaded: {reloaded_line['ap1'].b}.")
+
+
+def test_aper_writer_limitrectellipse_preserves_all_fields(tmp_path):
+    """
+    All four fields (max_x, max_y, a, b) should be preserved independently
+    through a single write and reload cycle.
+    """
+    original_line = _build_limitrectellipse_line(
+        max_x = 0.020, max_y = 0.015, a = 0.025, b = 0.018)
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert reloaded_line["ap1"].max_x == pytest.approx(0.020), (
+        "Writer roundtrip should preserve LimitRectEllipse max_x.")
+    assert reloaded_line["ap1"].max_y == pytest.approx(0.015), (
+        "Writer roundtrip should preserve LimitRectEllipse max_y.")
+    assert reloaded_line["ap1"].a     == pytest.approx(0.025), (
+        "Writer roundtrip should preserve LimitRectEllipse a.")
+    assert reloaded_line["ap1"].b     == pytest.approx(0.018), (
+        "Writer roundtrip should preserve LimitRectEllipse b.")
+
+
 ################################################################################
 # Mixed Aperture Types
 ################################################################################

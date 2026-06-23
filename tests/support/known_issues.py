@@ -54,7 +54,6 @@ KNOWN_ISSUE_TESTS = {
 
     # Conversion behavior and physics comparisons.
     "tests/conversion/elements/test_aper.py::test_aper_converter_preserves_rectangle_rotation": 33,
-    "tests/conversion/elements/test_aper.py::test_aper_converter_preserves_combined_rectangular_and_elliptical_limits": 66,
     "tests/conversion/elements/test_aper.py::test_aper_pipeline_preserves_rectangle_rotation": 33,
     "tests/conversion/elements/test_aper.py::test_aper_rotated_limitrect_grid_loss_matches_sad_boundary": 33,
     "tests/conversion/elements/test_mult.py::test_mult_conversion_matches_sad_twiss_for_combined_orders": 33,

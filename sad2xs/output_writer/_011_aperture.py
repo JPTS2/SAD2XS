@@ -38,8 +38,9 @@ def create_aperture_lattice_file_information(
     ########################################
     # Get information
     ########################################
-    unique_limitellipse_names   = []
-    unique_limitrect_names      = []
+    unique_limitellipse_names       = []
+    unique_limitrect_names          = []
+    unique_limitrectellipse_names   = []
 
     for limitellipse in line_table.rows[line_table.element_type == 'LimitEllipse'].name:
         parentname      = get_parentname(limitellipse)
@@ -51,11 +52,17 @@ def create_aperture_lattice_file_information(
         if parentname not in unique_limitrect_names:
             unique_limitrect_names.append(parentname)
 
+    for limitrectellipse in line_table.rows[line_table.element_type == 'LimitRectEllipse'].name:
+        parentname      = get_parentname(limitrectellipse)
+        if parentname not in unique_limitrectellipse_names:
+            unique_limitrectellipse_names.append(parentname)
+
     ########################################
     # Ensure there are reference shifts in the line
     ########################################
     if len(unique_limitellipse_names) == 0 and \
-            len(unique_limitrect_names) == 0:
+            len(unique_limitrect_names) == 0 and \
+            len(unique_limitrectellipse_names) == 0:
         return ""
 
     ########################################
@@ -134,6 +141,42 @@ env.new(
     max_x       = {max_x},
     min_y       = {min_y},
     max_y       = {max_y},
+    shift_x     = {shift_x},
+    shift_y     = {shift_y})"""
+
+        output_string += "\n"
+
+    ########################################
+    # Limit RectEllipses
+    ########################################
+    if len(unique_limitrectellipse_names) != 0:
+        output_string += """
+########################################
+# Limit RectEllipses
+########################################"""
+
+        for limitrectellipse_name in unique_limitrectellipse_names:
+
+            max_x   = line[limitrectellipse_name].max_x
+            max_y   = line[limitrectellipse_name].max_y
+            a       = line[limitrectellipse_name].a
+            b       = line[limitrectellipse_name].b
+            shift_x = line[limitrectellipse_name].shift_x
+            shift_y = line[limitrectellipse_name].shift_y
+
+            if limitrectellipse_name.startswith("-"):
+                root_name = limitrectellipse_name[1:]
+                if root_name not in unique_limitrectellipse_names:
+                    limitrectellipse_name = root_name
+
+            output_string += f"""
+env.new(
+    name        = '{limitrectellipse_name}',
+    parent      = xt.LimitRectEllipse,
+    max_x       = {max_x},
+    max_y       = {max_y},
+    a           = {a},
+    b           = {b},
     shift_x     = {shift_x},
     shift_y     = {shift_y})"""
 
