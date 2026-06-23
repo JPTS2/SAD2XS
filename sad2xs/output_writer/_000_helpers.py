@@ -338,7 +338,9 @@ def check_is_simple_bend_corr(line, replica_name):
             line[replica_name].edge_entry_angle_fdown == 0 and \
             line[replica_name].edge_exit_angle_fdown == 0 and \
             line[replica_name].shift_x == 0 and \
-            line[replica_name].shift_y == 0:
+            line[replica_name].shift_y == 0 and \
+            np.all(np.asarray(line[replica_name].knl) == 0) and \
+            np.all(np.asarray(line[replica_name].ksl) == 0):
         is_simple = True
 
     return is_simple
@@ -354,27 +356,33 @@ def check_is_simple_quad_sext_oct(line, replica_name, mode):
     is_simple   = False
 
     if mode == "Quadrupole":
-        # Simple assumes only one of k1 or k1s is non-zero
+        # Simple assumes only one of k1 or k1s is non-zero, no misalignments, no combined components
         if (line[replica_name].k1 * line[replica_name].k1s) == 0 and \
                 line[replica_name].shift_x == 0 and \
                 line[replica_name].shift_y == 0 and \
-                line[replica_name].rot_s_rad == 0:
+                line[replica_name].rot_s_rad == 0 and \
+                np.all(np.asarray(line[replica_name].knl) == 0) and \
+                np.all(np.asarray(line[replica_name].ksl) == 0):
             is_simple = True
 
     if mode == "Sextupole":
-        # Simple assumes only one of k2 or k2s is non-zero
+        # Simple assumes only one of k2 or k2s is non-zero, no misalignments, no combined components
         if (line[replica_name].k2 * line[replica_name].k2s) == 0 and \
                 line[replica_name].shift_x == 0 and \
                 line[replica_name].shift_y == 0 and \
-                line[replica_name].rot_s_rad == 0:
+                line[replica_name].rot_s_rad == 0 and \
+                np.all(np.asarray(line[replica_name].knl) == 0) and \
+                np.all(np.asarray(line[replica_name].ksl) == 0):
             is_simple = True
 
     if mode == "Octupole":
-        # Simple assumes only one of k3 or k3s is non-zero
+        # Simple assumes only one of k3 or k3s is non-zero, no misalignments, no combined components
         if (line[replica_name].k3 * line[replica_name].k3s) == 0 and \
                 line[replica_name].shift_x == 0 and \
                 line[replica_name].shift_y == 0 and \
-                line[replica_name].rot_s_rad == 0:
+                line[replica_name].rot_s_rad == 0 and \
+                np.all(np.asarray(line[replica_name].knl) == 0) and \
+                np.all(np.asarray(line[replica_name].ksl) == 0):
             is_simple = True
 
     return is_simple
