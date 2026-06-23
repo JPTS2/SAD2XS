@@ -94,7 +94,7 @@ Artifact paths should mirror the test area that produced them, for example
 
 ## Test Counts
 
-Total collected: **1184 tests** (1041 pass, 143 fail) as of the test run on
+Total collected: **1218 tests** (1148 pass, 70 fail) as of the test run on
 this branch. The breakdown by failure group is in the Known Failures section
 below. Individual folder READMEs document per-file counts.
 
@@ -106,20 +106,19 @@ Tests linked to open issues are marked during collection from the central
 mapping in `tests/support/known_issues.py`. They remain ordinary failing tests;
 the marker controls CI selection only and does not use `xfail`.
 
-**Group A — Documented writer issues:** 17 tests (16 in `writer/elements/`, 1
-in `writer/pipeline/`) that expose known writer bugs tracked as issues #17
-(knl/ksl not written for quad/sext/oct), #62 (aperture dimensions not written
-as live expressions), and #63 (k1 not written for combined-function bends).
-These tests must remain failing until the corresponding issues are fixed.
+**Group A — Documented writer issues:** 8 tests (7 in `writer/elements/`, 1
+in `writer/pipeline/`) that expose known writer bugs tracked as issues #62
+(aperture dimensions not written as live expressions) and #63 (k1 not written
+for combined-function bends). These tests must remain failing until the
+corresponding issues are fixed.
 
-**Group B — Exposing production bugs:** 126 tests across
+**Group B — Exposing production bugs:** 62 tests across
 `parser/`, `conversion/elements/`, and `conversion/pipeline/` that document
 known incorrect behaviour in the production code. These tests are the spec for
 the fix work that follows this PR. They must not be modified to pass — they are
 the record of what is broken and what needs to be done.
 
-All 143 currently failing instances are linked to open issues. Combined
-rectangular-and-elliptical aperture conversion is tracked by issue #66.
+All 70 currently failing instances are linked to open issues.
 
 Never modify a failing test to make it pass artificially. Fix the root cause.
 If you add a test that documents a known bug, record it in the relevant folder
