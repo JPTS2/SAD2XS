@@ -515,6 +515,119 @@ def test_oct_converter_converts_thin_octupole_to_multipole(
     assert multipole.knl[3] == pytest.approx(0.1), (
         "Thin OCT K3 should be preserved as integrated knl[3].")
 
+def test_oct_converter_thin_element_preserves_offsets_and_rotation(
+        parsed_elements,
+        xsuite_environment,
+        sad2xs_config,
+        assert_environment_element):
+    """
+    Thin SAD OCT DX, DY, and ROTATE should map to Xsuite Multipole fields.
+    """
+    convert_octupoles(
+        parsed_elements = parsed_elements(
+            element_type        = "oct",
+            element_name        = "test_oct",
+            element_variables   = {
+                "k3":       0.1,
+                "dx":       1.0E-3,
+                "dy":       -2.0E-3,
+                "rotate":   0.125,
+            }),
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
+
+    multipole = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_oct",
+        element_type    = xt.Multipole)
+
+    assert multipole.shift_x == pytest.approx(1.0E-3), (
+        "Thin OCT DX should be preserved as Xsuite shift_x.")
+    assert multipole.shift_y == pytest.approx(-2.0E-3), (
+        "Thin OCT DY should be preserved as Xsuite shift_y.")
+    assert multipole.rot_s_rad == pytest.approx(-0.125), (
+        "Thin OCT ROTATE should apply the SAD-to-Xsuite rotation sign.")
+
+@pytest.mark.parametrize(
+    "sad_rotation, expected_knl3, expected_ksl3",
+    [
+        (+np.pi / 8, 0.0, +0.1),
+        (-np.pi / 8, 0.0, -0.1),
+    ])
+def test_oct_converter_thin_element_maps_22p5_degree_rotations_to_skew_strength(
+        parsed_elements,
+        xsuite_environment,
+        sad2xs_config,
+        assert_environment_element,
+        sad_rotation,
+        expected_knl3,
+        expected_ksl3):
+    """
+    22.5 degree rotated thin SAD OCT elements should convert to pure skew kicks.
+    """
+    convert_octupoles(
+        parsed_elements = parsed_elements(
+            element_type        = "oct",
+            element_name        = "test_oct",
+            element_variables   = {
+                "k3":       0.1,
+                "rotate":   sad_rotation,
+            }),
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
+
+    multipole = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_oct",
+        element_type    = xt.Multipole)
+
+    assert multipole.knl[3] == pytest.approx(expected_knl3), (
+        "22.5 degree rotated thin OCT should not retain normal knl[3] kick.")
+    assert multipole.ksl[3] == pytest.approx(expected_ksl3), (
+        "22.5 degree rotated thin OCT should map K3 to integrated ksl[3].")
+    assert multipole.rot_s_rad == pytest.approx(0.0), (
+        "Pure skew thin OCT conversion should remove the residual rotation.")
+
+@pytest.mark.parametrize(
+    "sad_rotation",
+    [
+        +np.pi / 8 - 0.01,
+        +np.pi / 8 + 0.01,
+        -np.pi / 8 - 0.01,
+        -np.pi / 8 + 0.01,
+    ])
+def test_oct_converter_thin_element_near_22p5_degree_rotations_remain_explicit_rotations(
+        parsed_elements,
+        xsuite_environment,
+        sad2xs_config,
+        assert_environment_element,
+        sad_rotation):
+    """
+    Near-22.5-degree rotated thin SAD OCT should not trigger the skew shortcut.
+    """
+    convert_octupoles(
+        parsed_elements = parsed_elements(
+            element_type        = "oct",
+            element_name        = "test_oct",
+            element_variables   = {
+                "k3":       0.1,
+                "rotate":   sad_rotation,
+            }),
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
+
+    multipole = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_oct",
+        element_type    = xt.Multipole)
+
+    assert multipole.knl[3] == pytest.approx(0.1), (
+        "Near-22.5-degree thin OCT should retain normal integrated kick.")
+    assert multipole.ksl[3] == pytest.approx(0.0), (
+        "Near-22.5-degree thin OCT should not be rewritten as pure skew.")
+    assert multipole.rot_s_rad == pytest.approx(-sad_rotation), (
+        "Near-22.5-degree thin OCT should remain an explicit Xsuite rotation.")
+
 ########################################
 # Pipeline Behaviour
 ########################################

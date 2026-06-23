@@ -387,6 +387,16 @@ def convert_bends(parsed_elements, environment, config):
             length          = parse_expression(ele_vars["l"])
             k0l             = parse_expression(ele_vars["angle"])
 
+            # Thin/zero-length bend → Multipole; hxl required for reference orbit
+            # bending and dispersion generation (without it px and dpx are wrong)
+            if isinstance(length, float) and np.isclose(length, 0.0):
+                environment.new(
+                    name    = ele_name,
+                    parent  = xt.Multipole,
+                    knl     = [k0l],
+                    hxl     = k0l)
+                continue
+
             if "k1" in ele_vars:
                 k1l         = parse_expression(ele_vars["k1"])
             if "e1" in ele_vars:
@@ -527,19 +537,43 @@ def convert_quadrupoles(parsed_elements, environment):
     for ele_name, ele_vars in quads.items():
 
         ########################################
-        # Initialise parameters
+        # Thin/zero-length element → Multipole
         ########################################
-        length      = 0.0
-        k1l         = 0.0
-        k1sl        = 0.0
+        length = parse_expression(ele_vars.get("l", 0.0))
+        if isinstance(length, float) and np.isclose(length, 0.0):
+            k1l  = parse_expression(ele_vars.get("k1", 0.0))
+            k1sl = 0.0
+            if not isinstance(k1l, float):
+                k1l = 0.0
+            shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
+            if isinstance(rotation, float):
+                if np.isclose(rotation, +np.pi / 4, atol = 1E-6):
+                    k1sl = -k1l
+                    k1l  = 0.0
+                    shift_x, shift_y, rotation = get_element_misalignments(
+                        ele_vars            = ele_vars,
+                        rotation_correction = -np.pi / 4)
+                elif np.isclose(rotation, -np.pi / 4, atol = 1E-6):
+                    k1sl = +k1l
+                    k1l  = 0.0
+                    shift_x, shift_y, rotation = get_element_misalignments(
+                        ele_vars            = ele_vars,
+                        rotation_correction = +np.pi / 4)
+            environment.new(
+                name      = ele_name,
+                parent    = xt.Multipole,
+                knl       = [0.0, k1l],
+                ksl       = [0.0, k1sl],
+                shift_x   = shift_x,
+                shift_y   = shift_y,
+                rot_s_rad = rotation)
+            continue
 
         ########################################
-        # Read values
+        # Initialise parameters
         ########################################
-        if "l" in ele_vars:
-            length      = parse_expression(ele_vars["l"])
-        else:
-            raise ValueError(f"Error! Quadrupole {ele_name} missing length.")
+        k1l         = 0.0
+        k1sl        = 0.0
 
         shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
@@ -616,19 +650,43 @@ def convert_sextupoles(parsed_elements, environment):
     for ele_name, ele_vars in sexts.items():
 
         ########################################
-        # Initialise parameters
+        # Thin/zero-length element → Multipole
         ########################################
-        length      = 0.0
-        k2l         = 0.0
-        k2sl        = 0.0
+        length = parse_expression(ele_vars.get("l", 0.0))
+        if isinstance(length, float) and np.isclose(length, 0.0):
+            k2l  = parse_expression(ele_vars.get("k2", 0.0))
+            k2sl = 0.0
+            if not isinstance(k2l, float):
+                k2l = 0.0
+            shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
+            if isinstance(rotation, float):
+                if np.isclose(rotation, +np.pi / 6, atol = 1E-6):
+                    k2sl = -k2l
+                    k2l  = 0.0
+                    shift_x, shift_y, rotation = get_element_misalignments(
+                        ele_vars            = ele_vars,
+                        rotation_correction = -np.pi / 6)
+                elif np.isclose(rotation, -np.pi / 6, atol = 1E-6):
+                    k2sl = +k2l
+                    k2l  = 0.0
+                    shift_x, shift_y, rotation = get_element_misalignments(
+                        ele_vars            = ele_vars,
+                        rotation_correction = +np.pi / 6)
+            environment.new(
+                name      = ele_name,
+                parent    = xt.Multipole,
+                knl       = [0.0, 0.0, k2l],
+                ksl       = [0.0, 0.0, k2sl],
+                shift_x   = shift_x,
+                shift_y   = shift_y,
+                rot_s_rad = rotation)
+            continue
 
         ########################################
-        # Read values
+        # Initialise parameters
         ########################################
-        if "l" in ele_vars:
-            length      = parse_expression(ele_vars["l"])
-        else:
-            raise ValueError(f"Error! Sextupole {ele_name} missing length.")
+        k2l         = 0.0
+        k2sl        = 0.0
 
         shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
@@ -704,29 +762,44 @@ def convert_octupoles(parsed_elements, environment, config):
 
     for ele_name, ele_vars in octs.items():
 
-        if "l" not in ele_vars:
-            # TODO: Improve the handling of this
-            if config._verbose:
-                print(f"Warning! Octupole {ele_name} missing length and installed as marker")
+        ########################################
+        # Thin/zero-length element → Multipole
+        ########################################
+        length = parse_expression(ele_vars.get("l", 0.0))
+        if isinstance(length, float) and np.isclose(length, 0.0):
+            k3l  = parse_expression(ele_vars.get("k3", 0.0))
+            k3sl = 0.0
+            if not isinstance(k3l, float):
+                k3l = 0.0
+            shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
+            if isinstance(rotation, float):
+                if np.isclose(rotation, +np.pi / 8, atol = 1E-6):
+                    k3sl = -k3l
+                    k3l  = 0.0
+                    shift_x, shift_y, rotation = get_element_misalignments(
+                        ele_vars            = ele_vars,
+                        rotation_correction = -np.pi / 8)
+                elif np.isclose(rotation, -np.pi / 8, atol = 1E-6):
+                    k3sl = +k3l
+                    k3l  = 0.0
+                    shift_x, shift_y, rotation = get_element_misalignments(
+                        ele_vars            = ele_vars,
+                        rotation_correction = +np.pi / 8)
             environment.new(
-                name                = ele_name,
-                parent              = xt.Marker)
+                name      = ele_name,
+                parent    = xt.Multipole,
+                knl       = [0.0, 0.0, 0.0, k3l],
+                ksl       = [0.0, 0.0, 0.0, k3sl],
+                shift_x   = shift_x,
+                shift_y   = shift_y,
+                rot_s_rad = rotation)
             continue
 
         ########################################
         # Initialise parameters
         ########################################
-        length      = 0.0
         k3l         = 0.0
         k3sl        = 0.0
-
-        ########################################
-        # Read values
-        ########################################
-        if "l" in ele_vars:
-            length      = parse_expression(ele_vars["l"])
-        else:
-            raise ValueError(f"Error! Octupole {ele_name} missing length.")
 
         shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
