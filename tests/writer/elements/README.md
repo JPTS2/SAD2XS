@@ -14,11 +14,11 @@ remain ordinary failures and are routed to the non-blocking CI job.
 ## Coverage
 
 - `test_drift_writer.py` — `xt.Drift`: length
-- `test_bend_writer.py` — `xt.Bend` (h≠0): `angle` written as a fixed literal (geometry/survey), `k0` tunable via `k0_{name}` optics expression (field strength), length, edge angles (bare literals), shift_x/y, all fields simultaneously, vertical (rot_s_rad=π/2 on base element), skew (rot_s_rad on clone), multiple bends, shared base element for same-length bends; 1 test expected to FAIL (issue #63 — k1 for combined function magnets not written)
-- `test_corr_writer.py` — `xt.Bend` (h=0, k0 set explicitly): k0 via `k0_{name}` optics expression (direct, not via angle×length), length, edge angles (bare literals), shift_x/y, all fields simultaneously, vertical (rot_s_rad=π/2 on base), skew (rot_s_rad on clone), multiple correctors, shared base element for same-length correctors, precision; all 23 tests expected to pass
-- `test_quad_writer.py` — `xt.Quadrupole`: k1, k1s, shift_x/y, rot_s_rad, knl/ksl combined function; 3 tests expected to FAIL (issue #17 — knl/ksl not written by quad writer)
-- `test_sext_writer.py` — `xt.Sextupole`: k2, k2s, shift_x/y, rot_s_rad, knl/ksl; 3 tests expected to FAIL (issue #17 — knl/ksl not written by sext writer)
-- `test_oct_writer.py` — `xt.Octupole`: k3, k3s, shift_x/y, rot_s_rad, knl/ksl; 3 tests expected to FAIL (issue #17 — knl/ksl not written by oct writer)
+- `test_bend_writer.py` — `xt.Bend` (h≠0): `angle` written as a fixed literal (geometry/survey), `k0` tunable via `k0_{name}` optics expression (field strength), length, edge angles (bare literals), shift_x/y, knl/ksl combined multipole components (literal arrays), all fields simultaneously, vertical (rot_s_rad=π/2 on base element), skew (rot_s_rad on clone), multiple bends, shared base element for same-length bends; 1 test expected to FAIL (issue #63 — k1 for combined function magnets not written)
+- `test_corr_writer.py` — `xt.Bend` (h=0, k0 set explicitly): k0 via `k0_{name}` optics expression (direct, not via angle×length), length, edge angles (bare literals), shift_x/y, knl/ksl combined multipole components (literal arrays), all fields simultaneously, vertical (rot_s_rad=π/2 on base), skew (rot_s_rad on clone), multiple correctors, shared base element for same-length correctors, precision; all tests expected to pass
+- `test_quad_writer.py` — `xt.Quadrupole`: k1, k1s, shift_x/y, rot_s_rad, knl/ksl combined multipole components (literal arrays); all tests expected to pass
+- `test_sext_writer.py` — `xt.Sextupole`: k2, k2s, shift_x/y, rot_s_rad, knl/ksl combined multipole components (literal arrays); all tests expected to pass
+- `test_oct_writer.py` — `xt.Octupole`: k3, k3s, shift_x/y, rot_s_rad, knl/ksl combined multipole components (literal arrays); all tests expected to pass
 - `test_mult_writer.py` — `xt.Multipole`: knl/ksl literal arrays (not optics variables), shift_x/y, rot_s_rad
 - `test_sol_writer.py` — `xt.UniformSolenoid`: ks literal number (not optics variable), x0/y0 axis offsets, knl/ksl, shift_x/y, rot_s_rad
 - `test_cavi_writer.py` — `xt.Cavity`: voltage/frequency/phase as optics expressions, fshift global shift mechanism; harmonic mode writes `harm_{name}` instead of `freq_{name}`

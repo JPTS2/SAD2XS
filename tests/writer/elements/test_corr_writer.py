@@ -88,23 +88,31 @@ def _build_hcorr_line(
         edge_entry_angle_fdown  = 0.0,
         edge_exit_angle_fdown   = 0.0,
         shift_x                 = 0.0,
-        shift_y                 = 0.0):
+        shift_y                 = 0.0,
+        knl                     = None,
+        ksl                     = None):
     """
     Build a minimal single horizontal-corrector Xsuite line with a reference
     particle. Horizontal correctors are xt.Bend elements with k0_from_h=False
     (so h = angle/length = 0) and k0 set explicitly. The writer classifies them
     as correctors because line['c1'].h == 0.
     """
+    corr_kwargs = dict(
+        k0                      = k0,
+        length                  = length,
+        edge_entry_angle        = edge_entry_angle,
+        edge_exit_angle         = edge_exit_angle,
+        edge_entry_angle_fdown  = edge_entry_angle_fdown,
+        edge_exit_angle_fdown   = edge_exit_angle_fdown,
+        shift_x                 = shift_x,
+        shift_y                 = shift_y)
+    if knl is not None:
+        corr_kwargs["knl"] = knl
+    if ksl is not None:
+        corr_kwargs["ksl"] = ksl
+
     line = xt.Line(
-        elements      = [xt.Marker(), xt.Bend(
-            k0                      = k0,
-            length                  = length,
-            edge_entry_angle        = edge_entry_angle,
-            edge_exit_angle         = edge_exit_angle,
-            edge_entry_angle_fdown  = edge_entry_angle_fdown,
-            edge_exit_angle_fdown   = edge_exit_angle_fdown,
-            shift_x                 = shift_x,
-            shift_y                 = shift_y), xt.Marker()],
+        elements      = [xt.Marker(), xt.Bend(**corr_kwargs), xt.Marker()],
         element_names = ["start", "c1", "end"])
 
     line.particle_ref = xt.Particles(
@@ -569,3 +577,70 @@ def test_corr_writer_preserves_k0_at_full_double_precision(tmp_path):
         "Writer roundtrip should preserve corrector k0 to full double precision. "
         f"Original: {k0}, reloaded: {reloaded_line['c1'].k0}, "
         f"diff: {abs(reloaded_line['c1'].k0 - k0)}.")
+
+
+################################################################################
+# Combined Multipole Components
+################################################################################
+########################################
+# Higher-Order knl Components
+########################################
+def test_corr_writer_preserves_knl_combined_multipole_component(tmp_path):
+    """
+    A corrector with a combined sextupole component (knl[2] != 0) should
+    preserve that component through a write and reload cycle.
+    """
+    original_line = _build_hcorr_line(k0 = 1.0E-4, knl = [0.0, 0.0, 5.0E-4])
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    original_knl = np.asarray(original_line["c1"].knl)
+    reloaded_knl = np.asarray(reloaded_line["c1"].knl)
+
+    assert reloaded_knl.tolist() == pytest.approx(original_knl.tolist()), (
+        "Writer roundtrip should preserve corrector knl combined multipole components. "
+        f"Original knl: {original_knl.tolist()}, "
+        f"reloaded knl: {reloaded_knl.tolist()}.")
+
+
+########################################
+# Higher-Order ksl Components
+########################################
+def test_corr_writer_preserves_ksl_combined_multipole_component(tmp_path):
+    """
+    A corrector with a combined skew sextupole component (ksl[2] != 0) should
+    preserve that component through a write and reload cycle.
+    """
+    original_line = _build_hcorr_line(k0 = 1.0E-4, ksl = [0.0, 0.0, -3.0E-4])
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    original_ksl = np.asarray(original_line["c1"].ksl)
+    reloaded_ksl = np.asarray(reloaded_line["c1"].ksl)
+
+    assert reloaded_ksl.tolist() == pytest.approx(original_ksl.tolist()), (
+        "Writer roundtrip should preserve corrector ksl combined multipole components. "
+        f"Original ksl: {original_ksl.tolist()}, "
+        f"reloaded ksl: {reloaded_ksl.tolist()}.")
+
+
+def test_corr_writer_preserves_knl_and_ksl_components_simultaneously(tmp_path):
+    """
+    A corrector carrying both knl and ksl combined multipole components should
+    preserve both through a write and reload cycle.
+    """
+    original_line = _build_hcorr_line(
+        k0      = 1.0E-4,
+        knl     = [0.0, 0.0, 5.0E-4],
+        ksl     = [0.0, 0.0, -3.0E-4])
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    original_knl = np.asarray(original_line["c1"].knl)
+    reloaded_knl = np.asarray(reloaded_line["c1"].knl)
+    original_ksl = np.asarray(original_line["c1"].ksl)
+    reloaded_ksl = np.asarray(reloaded_line["c1"].ksl)
+
+    assert reloaded_knl.tolist() == pytest.approx(original_knl.tolist()), (
+        "Writer roundtrip should preserve corrector knl. "
+        f"Original: {original_knl.tolist()}, reloaded: {reloaded_knl.tolist()}.")
+    assert reloaded_ksl.tolist() == pytest.approx(original_ksl.tolist()), (
+        "Writer roundtrip should preserve corrector ksl. "
+        f"Original: {original_ksl.tolist()}, reloaded: {reloaded_ksl.tolist()}.")

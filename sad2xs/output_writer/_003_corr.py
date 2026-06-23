@@ -14,7 +14,7 @@ import xdeps as xd
 import numpy as np
 
 from ._000_helpers import extract_corrector_information, \
-    generate_magnet_for_replication_names, check_is_simple_bend_corr
+    generate_magnet_for_replication_names, check_is_simple_bend_corr, get_knl_string
 from ..types import ConfigLike
 
 ################################################################################
@@ -125,6 +125,15 @@ env.new(
                 if line[replica_name].shift_y != 0:
                     corr_generation += f""",
     shift_y                 = '{line[replica_name].shift_y}'"""
+                # Combined multipole components
+                knl_str = get_knl_string(np.asarray(line[replica_name].knl))
+                ksl_str = get_knl_string(np.asarray(line[replica_name].ksl))
+                if knl_str != "[]":
+                    corr_generation += f""",
+    knl                     = {knl_str}"""
+                if ksl_str != "[]":
+                    corr_generation += f""",
+    ksl                     = {ksl_str}"""
             # Append the missing parenthesis
                 corr_generation += """)"""
 
@@ -174,6 +183,15 @@ env.new(
                 if line[replica_name].shift_y != 0:
                     corr_generation += f""",
     shift_y                 = '{line[replica_name].shift_y}'"""
+                # Combined multipole components
+                knl_str = get_knl_string(np.asarray(line[replica_name].knl))
+                ksl_str = get_knl_string(np.asarray(line[replica_name].ksl))
+                if knl_str != "[]":
+                    corr_generation += f""",
+    knl                     = {knl_str}"""
+                if ksl_str != "[]":
+                    corr_generation += f""",
+    ksl                     = {ksl_str}"""
             # Append the missing parenthesis
                 corr_generation += """)"""
 
@@ -225,6 +243,15 @@ env.new(
             # In the case of a skew corrector, we need to add a rotation
                 corr_generation += f""",
     rot_s_rad               = '{line[replica_name].rot_s_rad}'"""
+                # Combined multipole components
+                knl_str = get_knl_string(np.asarray(line[replica_name].knl))
+                ksl_str = get_knl_string(np.asarray(line[replica_name].ksl))
+                if knl_str != "[]":
+                    corr_generation += f""",
+    knl                     = {knl_str}"""
+                if ksl_str != "[]":
+                    corr_generation += f""",
+    ksl                     = {ksl_str}"""
             # Append the missing parenthesis
                 corr_generation += """)"""
 
