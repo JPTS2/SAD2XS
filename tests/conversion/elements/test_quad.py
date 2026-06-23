@@ -497,6 +497,113 @@ def test_quad_converter_converts_thin_quadrupole_to_multipole(
     assert multipole.knl[1] == pytest.approx(0.1), (
         "Thin QUAD K1 should be preserved as integrated knl[1].")
 
+def test_quad_converter_thin_element_preserves_offsets_and_rotation(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
+    """
+    Thin SAD QUAD DX, DY, and ROTATE should map to Xsuite Multipole fields.
+    """
+    convert_quadrupoles(
+        parsed_elements = parsed_elements(
+            element_type        = "quad",
+            element_name        = "test_quad",
+            element_variables   = {
+                "k1":       0.1,
+                "dx":       1.0E-3,
+                "dy":       -2.0E-3,
+                "rotate":   0.125,
+            }),
+        environment     = xsuite_environment)
+
+    multipole = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_quad",
+        element_type    = xt.Multipole)
+
+    assert multipole.shift_x == pytest.approx(1.0E-3), (
+        "Thin QUAD DX should be preserved as Xsuite shift_x.")
+    assert multipole.shift_y == pytest.approx(-2.0E-3), (
+        "Thin QUAD DY should be preserved as Xsuite shift_y.")
+    assert multipole.rot_s_rad == pytest.approx(-0.125), (
+        "Thin QUAD ROTATE should apply the SAD-to-Xsuite rotation sign.")
+
+@pytest.mark.parametrize(
+    "sad_rotation, expected_knl1, expected_ksl1",
+    [
+        (+np.pi / 4, 0.0, +0.1),
+        (-np.pi / 4, 0.0, -0.1),
+    ])
+def test_quad_converter_thin_element_maps_45_degree_rotations_to_skew_strength(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element,
+        sad_rotation,
+        expected_knl1,
+        expected_ksl1):
+    """
+    45 degree rotated thin SAD QUAD elements should convert to pure skew kicks.
+    """
+    convert_quadrupoles(
+        parsed_elements = parsed_elements(
+            element_type        = "quad",
+            element_name        = "test_quad",
+            element_variables   = {
+                "k1":       0.1,
+                "rotate":   sad_rotation,
+            }),
+        environment     = xsuite_environment)
+
+    multipole = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_quad",
+        element_type    = xt.Multipole)
+
+    assert multipole.knl[1] == pytest.approx(expected_knl1), (
+        "45 degree rotated thin QUAD should not retain normal knl[1] kick.")
+    assert multipole.ksl[1] == pytest.approx(expected_ksl1), (
+        "45 degree rotated thin QUAD should map K1 to integrated ksl[1].")
+    assert multipole.rot_s_rad == pytest.approx(0.0), (
+        "Pure skew thin QUAD conversion should remove the residual rotation.")
+
+@pytest.mark.parametrize(
+    "sad_rotation",
+    [
+        +np.pi / 4 - 0.01,
+        +np.pi / 4 + 0.01,
+        -np.pi / 4 - 0.01,
+        -np.pi / 4 + 0.01,
+    ])
+def test_quad_converter_thin_element_near_45_degree_rotations_remain_explicit_rotations(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element,
+        sad_rotation):
+    """
+    Near-45-degree rotated thin SAD QUAD should not trigger the skew shortcut.
+    """
+    convert_quadrupoles(
+        parsed_elements = parsed_elements(
+            element_type        = "quad",
+            element_name        = "test_quad",
+            element_variables   = {
+                "k1":       0.1,
+                "rotate":   sad_rotation,
+            }),
+        environment     = xsuite_environment)
+
+    multipole = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_quad",
+        element_type    = xt.Multipole)
+
+    assert multipole.knl[1] == pytest.approx(0.1), (
+        "Near-45-degree thin QUAD should retain normal integrated kick.")
+    assert multipole.ksl[1] == pytest.approx(0.0), (
+        "Near-45-degree thin QUAD should not be rewritten as pure skew.")
+    assert multipole.rot_s_rad == pytest.approx(-sad_rotation), (
+        "Near-45-degree thin QUAD should remain an explicit Xsuite rotation.")
+
 ########################################
 # Pipeline Behaviour
 ########################################
