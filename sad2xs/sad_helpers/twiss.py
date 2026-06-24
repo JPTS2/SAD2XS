@@ -12,6 +12,8 @@ import numpy as np
 import tfs
 import xtrack as xt
 
+from ._helpers import _check_mathematica_output
+
 ################################################################################
 # SAD Twiss Print Function
 ################################################################################
@@ -244,15 +246,7 @@ abort;
 
         with open(out_file, encoding="utf-8") as _f:
             _raw = _f.read()
-        _mathematica_undefined  = {
-            "medium", "$DefaultFontWeight", "Indeterminate", "ComplexInfinity",
-            "DirectedInfinity"}
-        _found = [s for s in _mathematica_undefined if s in _raw]
-        if _found:
-            raise ValueError(
-                f"SAD exited 0 but Twiss output contains Mathematica undefined symbols {_found}. "
-                f"The lattice configuration is physically degenerate. "
-                f"SAD warnings may appear in the stdout above.")
+        _check_mathematica_output(_raw)
 
         sad_twiss = tfs.read(out_file)
 
