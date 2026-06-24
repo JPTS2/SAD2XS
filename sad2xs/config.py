@@ -128,12 +128,12 @@ class Config:
     INTEGRATOR_OCT:                 str             = 'uniform'
     INTEGRATOR_CAVI:                str             = 'yoshida4'
 
-    N_INTEGRATOR_KICKS_BEND:        int             = 3
-    N_INTEGRATOR_KICKS_QUAD:        int             = 3
-    N_INTEGRATOR_KICKS_SEXT:        int             = 3
-    N_INTEGRATOR_KICKS_OCT:         int             = 3
-    N_INTEGRATOR_KICKS_MULT:        int             = 3
-    N_INTEGRATOR_KICKS_SOL:         int             = 3
+    N_INTEGRATOR_KICKS_BEND:        int             = 20
+    N_INTEGRATOR_KICKS_QUAD:        int             = 20
+    N_INTEGRATOR_KICKS_SEXT:        int             = 20
+    N_INTEGRATOR_KICKS_OCT:         int             = 20
+    N_INTEGRATOR_KICKS_MULT:        int             = 20
+    N_INTEGRATOR_KICKS_SOL:         int             = 20
 
     ABSOLUTE_TIME_CAVI:             bool            = False
 
