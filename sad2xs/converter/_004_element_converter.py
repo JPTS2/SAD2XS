@@ -693,6 +693,16 @@ def convert_multipoles(
     for ele_name, ele_vars in mults.items():
 
         ########################################
+        # RF parameters are not supported on MULT
+        ########################################
+        for _rf_key in ("volt", "harm", "freq"):
+            if _rf_key in ele_vars:
+                raise NotImplementedError(
+                    f"MULT element '{ele_name}' contains '{_rf_key}'. "
+                    "RF parameters on MULT elements are not yet supported. "
+                    "See https://github.com/JPTS2/SAD2XS/issues/79.")
+
+        ########################################
         # Initialise parameters
         ########################################
         length      = 0.0
