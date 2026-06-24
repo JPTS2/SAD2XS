@@ -1,17 +1,6 @@
 """Central mapping of tests that document open GitHub issues."""
 
 KNOWN_ISSUE_TESTS = {
-    # Writer issues.
-    "tests/writer/elements/test_aper_writer.py::test_aper_writer_limitellipse_a_is_accessible_as_optics_variable": 62,
-    "tests/writer/elements/test_aper_writer.py::test_aper_writer_limitellipse_b_is_accessible_as_optics_variable": 62,
-    "tests/writer/elements/test_aper_writer.py::test_aper_writer_limitellipse_a_is_tunable_via_optics_variable": 62,
-    "tests/writer/elements/test_aper_writer.py::test_aper_writer_limitrect_min_x_is_accessible_as_optics_variable": 62,
-    "tests/writer/elements/test_aper_writer.py::test_aper_writer_limitrect_max_x_is_accessible_as_optics_variable": 62,
-    "tests/writer/elements/test_aper_writer.py::test_aper_writer_limitrect_min_x_is_tunable_via_optics_variable": 62,
-    "tests/writer/elements/test_bend_writer.py::test_bend_writer_k1_is_preserved_for_combined_function_magnet": 63,
-    "tests/writer/pipeline/test_line_roundtrip.py::test_writer_roundtrip_preserves_supported_line_contract": 63,
-
-    # Thin elements and current Xsuite API migration.
     # Parser and expression handling.
     "tests/parser/test_errors.py::test_invalid_deferred_expression_syntax_raises_clear_error": 22,
     "tests/parser/test_errors.py::test_malformed_line_missing_equals_raises_clear_error": 22,
@@ -22,10 +11,6 @@ KNOWN_ISSUE_TESTS = {
     "tests/parser/test_functions.py::test_sad_function_call_in_deferred_expression_converts": 32,
     "tests/parser/test_functions.py::test_sad_function_call_in_element_expression_converts": 32,
     "tests/parser/test_functions.py::test_nested_sad_function_call_in_deferred_expression_converts": 32,
-    "tests/parser/test_line_names.py::test_line_name_containing_line_is_preserved": 45,
-    "tests/parser/test_line_names.py::test_line_reference_containing_line_is_preserved": 45,
-    "tests/parser/test_line_names.py::test_reversed_line_reference_containing_line_is_preserved": 45,
-    "tests/conversion/pipeline/test_convert_sad_to_xsuite.py::test_pipeline_line_name_selects_requested_line": 46,
     "tests/parser/test_element_expressions.py::test_element_expression_with_parentheses_is_preserved": 47,
     "tests/parser/test_element_expressions.py::test_element_expression_with_math_function_is_preserved": 47,
     "tests/parser/test_element_expressions.py::test_parenthesised_length_expression_can_be_evaluated_in_xsuite_environment": 47,
@@ -38,12 +23,8 @@ KNOWN_ISSUE_TESTS = {
     "tests/parser/test_repeated_definitions.py::test_repeated_element_name_across_types_raises_clear_error": 51,
     "tests/parser/test_errors.py::test_protected_element_names_raise_clear_error": 53,
 
-    # Conversion behavior and physics comparisons.
-    "tests/conversion/elements/test_apert.py::test_aper_converter_preserves_rectangle_rotation": 33,
-    "tests/conversion/elements/test_apert.py::test_aper_pipeline_preserves_rectangle_rotation": 33,
-    "tests/conversion/elements/test_apert.py::test_aper_rotated_limitrect_grid_loss_matches_sad_boundary": 33,
+    # Conversion behaviour and physics comparisons.
     "tests/conversion/elements/test_mult.py::test_mult_conversion_matches_sad_twiss_for_combined_orders": 33,
-    "tests/conversion/elements/test_mult.py::test_mult_conversion_matches_sad_tracking_for_combined_orders": 33,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_twiss_for_thin_kick": 55,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_twiss_for_rotated_kicks": 55,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_twiss_for_element_offsets": 55,
@@ -64,8 +45,6 @@ PARTIAL_KNOWN_ISSUES = (
     ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_tracking_for_element_offsets", "[0.001--0.001]", 19),
     ("tests/conversion/elements/test_sol.py::test_sol_optics_matches_sad_twiss_at_end", "[-0.1]", 58),
     ("tests/conversion/elements/test_sol.py::test_sol_optics_matches_sad_twiss_at_end", "[0.1]", 58),
-    ("tests/conversion/elements/test_quad.py::test_quad_conversion_matches_sad_tracking_for_element_rotation", "[0.7853981633974483]", 54),
-    ("tests/conversion/elements/test_quad.py::test_quad_conversion_matches_sad_tracking_for_element_rotation", "[-0.7853981633974483]", 54),
     ("tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_twiss_for_horizontal_kicks", "[-0.1]", 55),
     ("tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_twiss_for_horizontal_kicks", "[0.1]", 55),
     ("tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_horizontal_kicks", "[-0.1]", 55),

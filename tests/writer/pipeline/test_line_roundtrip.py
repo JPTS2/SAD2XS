@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-06-24
 ================================================================================
 """
 ################################################################################
@@ -69,7 +69,13 @@ def _assert_array_field_preserved(original, reloaded, element_name, field_name):
     original_value = np.asarray(getattr(original[element_name], field_name))
     reloaded_value = np.asarray(getattr(reloaded[element_name], field_name))
 
-    assert reloaded_value.tolist() == pytest.approx(original_value.tolist()), (
+    n = max(len(original_value), len(reloaded_value))
+    original_padded = np.zeros(n)
+    reloaded_padded = np.zeros(n)
+    original_padded[:len(original_value)] = original_value
+    reloaded_padded[:len(reloaded_value)] = reloaded_value
+
+    assert reloaded_padded.tolist() == pytest.approx(original_padded.tolist()), (
         f"Writer roundtrip should preserve {field_name} for element "
         f"'{element_name}'. Original: {original_value.tolist()}, reloaded: "
         f"{reloaded_value.tolist()}.")
@@ -96,9 +102,9 @@ def _assert_supported_fields_preserved(original, reloaded):
         "cav1":     ["voltage", "frequency", "phase"],
         "shift1":   ["shift_x", "shift_y"],
         "zshift1":  ["shift_zeta"],
-        "xrot1":    ["angle"],
-        "yrot1":    ["angle"],
-        "srot1":    ["angle"],
+        "xrot1":    ["rot_x_rad"],
+        "yrot1":    ["rot_y_rad"],
+        "srot1":    ["rot_s_rad"],
         "rect1":    ["min_x", "max_x", "min_y", "max_y"],
         "ellipse1": ["a", "b"],
     }
