@@ -1,5 +1,9 @@
 """
-(Unofficial) SAD to XSuite Converter
+(Unofficial) SAD to XSuite Converter: SAD Helpers Twiss
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       24-06-2026
 """
 
 ################################################################################
