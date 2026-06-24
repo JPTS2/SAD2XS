@@ -29,7 +29,7 @@ it is **accepted**.
 
 ## Coverage
 
-187 tests across 12 files. All require the SAD binary.
+190 tests across 13 files. All require the SAD binary.
 
 ### Parameter matrix
 
@@ -75,6 +75,16 @@ treats as a rejection.
 | `test_line_name_containing_line_substring_is_accepted` | Line names containing the substring `line` (e.g. `MYLINE`) are valid identifiers — SAD does not treat the substring as the keyword |
 | `test_nested_line_reference_containing_line_substring_is_accepted` | Such names are also valid when referenced nested inside another LINE definition |
 | `test_line_keyword_with_newline_before_name_is_accepted` | A newline between the `LINE` keyword and the line name/definition is accepted by SAD |
+
+### Angle unit suffixes
+
+`test_angle_units.py` verifies SAD's accepted angle unit forms for the `ROTATE` parameter:
+
+| Test | Verifies |
+|------|----------|
+| `test_rotate_without_unit_suffix_is_accepted` | A plain numeric value is accepted; the default unit is radians |
+| `test_rotate_with_rad_suffix_is_accepted` | An explicit `RAD` suffix is accepted and treated identically to a bare value |
+| `test_rotate_with_deg_suffix_is_accepted` | A `DEG` suffix is accepted; SAD converts the value to radians internally |
 
 ## Elements not tested and why
 

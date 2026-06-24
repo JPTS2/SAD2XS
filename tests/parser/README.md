@@ -32,7 +32,7 @@ fail count exceeds its failing function count.
 | `test_preprocessing.py` | 4 | 1 | `on`/`off` prefix variable names removed during preprocessing instead of preserved |
 | `test_comments.py` | 10 | 0 | — |
 | `test_globals.py` | 10 | 1 | Global name prefix collision not handled correctly |
-| `test_units.py` | 7 | 1 | `RAD` angle unit not parsed as numeric radians |
+| `test_units.py` | 15 | 0 | — |
 | `test_lines.py` | 6 | 0 | — |
 | `test_line_names.py` | 3 | 0 | — |
 | `test_element_parameters.py` | 13 | 0 | — |
