@@ -1,9 +1,9 @@
 """
-(Unofficial) SAD to XSuite Converter: Output Writer - Reference Shifts
+(Unofficial) SAD to XSuite Converter: Output Writer - Apertures
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       24-06-2026
 """
 
 ################################################################################
@@ -81,16 +81,9 @@ def create_aperture_lattice_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_aperture_lattice_file_information
-
-    :param line: Description
-    :type line: xt.Line
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Write env.new() calls for all aperture elements in the line.
+    Dimensions are referenced as named variables; bootstrapped to safe
+    placeholders so LimitEllipse can be constructed before the optics file.
     """
 
     ########################################
@@ -100,7 +93,7 @@ def create_aperture_lattice_file_information(
         unique_limitrectellipse_names = _get_unique_aperture_names(line_table)
 
     ########################################
-    # Ensure there are reference shifts in the line
+    # Ensure there are apertures in the line
     ########################################
     if len(unique_limitellipse_names) == 0 and \
             len(unique_limitrect_names) == 0 and \
@@ -127,18 +120,14 @@ def create_aperture_lattice_file_information(
 
         for limitellipse_name in unique_limitellipse_names:
 
-            # Get the misalignment information
             shift_x     = line[limitellipse_name].shift_x
             shift_y     = line[limitellipse_name].shift_y
             rot_s_rad   = line[limitellipse_name].rot_s_rad
 
-            # Resolve the element/variable name
             limitellipse_name   = _resolve_aperture_name(
                 limitellipse_name, unique_limitellipse_names)
 
-            # Bootstrap the dimension variables to safe placeholders so the
-            # element can be constructed before the optics file (loaded after)
-            # sets the real values. LimitEllipse rejects a/b = 0 at construction.
+            # LimitEllipse rejects a/b=0; bootstrap to 1.0 until optics file sets values.
             ellipse_generation = f"""
 env['a_{limitellipse_name}'] = 1.0
 env['b_{limitellipse_name}'] = 1.0
@@ -169,18 +158,13 @@ env.new(
 
         for limitrect_name in unique_limitrect_names:
 
-            # Get the misalignment information
             shift_x     = line[limitrect_name].shift_x
             shift_y     = line[limitrect_name].shift_y
             rot_s_rad   = line[limitrect_name].rot_s_rad
 
-            # Resolve the element/variable name
             limitrect_name      = _resolve_aperture_name(
                 limitrect_name, unique_limitrect_names)
 
-            # Bootstrap the dimension variables to safe placeholders so the
-            # element can be constructed before the optics file (loaded after)
-            # sets the real values.
             rect_generation = f"""
 env['min_x_{limitrect_name}'] = -1.0
 env['max_x_{limitrect_name}'] = 1.0
@@ -215,18 +199,13 @@ env.new(
 
         for limitrectellipse_name in unique_limitrectellipse_names:
 
-            # Get the misalignment information
             shift_x     = line[limitrectellipse_name].shift_x
             shift_y     = line[limitrectellipse_name].shift_y
             rot_s_rad   = line[limitrectellipse_name].rot_s_rad
 
-            # Resolve the element/variable name
             limitrectellipse_name   = _resolve_aperture_name(
                 limitrectellipse_name, unique_limitrectellipse_names)
 
-            # Bootstrap the dimension variables to safe placeholders so the
-            # element can be constructed before the optics file (loaded after)
-            # sets the real values.
             rectellipse_generation = f"""
 env['max_x_{limitrectellipse_name}'] = 1.0
 env['max_y_{limitrectellipse_name}'] = 1.0
