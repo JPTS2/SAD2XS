@@ -62,7 +62,7 @@ def sad_rejects(tmp_path):
         try:
             _run_sad_twiss(lattice_body, tmp_path)
             raise AssertionError("SAD unexpectedly accepted lattice.")
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, ValueError):
             pass
         finally:
             os.chdir(cwd)

@@ -44,6 +44,17 @@ def test_sol_pair_no_drift_accepts(sad_accepts):
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START SL1 SL2 END);")
 
+def test_sol_pair_no_geo_rejects(sad_rejects):
+    # SAD exits 0 but the Twiss output contains Mathematica undefined symbols
+    # (e.g. `medium`, `$DefaultFontWeight`) when GEO is absent — a physics-level
+    # failure that twiss_sad now detects and raises as ValueError.
+    sad_rejects(
+        "SOL SL1 = (BZ=0.1, BOUND=1);\n"
+        "DRIFT D0 = (L=1.0);\n"
+        "SOL SL2 = (BZ=0.0, BOUND=1);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START SL1 D0 SL2 END);")
+
 def test_sol_pair_with_drift_and_geo_accepts(sad_accepts):
     sad_accepts(
         "SOL SL1 = (BZ=0.1, BOUND=1, GEO=1);\n"
