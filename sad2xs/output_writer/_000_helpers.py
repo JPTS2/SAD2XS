@@ -339,6 +339,7 @@ def check_is_simple_bend_corr(line, replica_name):
             line[replica_name].edge_exit_angle_fdown == 0 and \
             line[replica_name].shift_x == 0 and \
             line[replica_name].shift_y == 0 and \
+            line[replica_name].k1 == 0 and \
             np.all(np.asarray(line[replica_name].knl) == 0) and \
             np.all(np.asarray(line[replica_name].ksl) == 0):
         is_simple = True

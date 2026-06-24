@@ -118,6 +118,9 @@ env.new(
     parent                  = '{hbend}',
     angle                   = {line[replica_name].angle:.24f},
     k0                      = 'k0_{replica_variable}'"""
+                if line[replica_name].k1 != 0:
+                    bend_generation += f""",
+    k1                      = 'k1_{replica_variable}'"""
             # Append edge entry angles
                 if line[replica_name].edge_entry_angle != 0:
                     bend_generation += f""",
@@ -177,6 +180,9 @@ env.new(
     parent                  = '{vbend}',
     angle                   = {line[replica_name].angle:.24f},
     k0                      = 'k0_{replica_variable}'"""
+                if line[replica_name].k1 != 0:
+                    bend_generation += f""",
+    k1                      = 'k1_{replica_variable}'"""
             # Append edge entry angles
                 if line[replica_name].edge_entry_angle != 0:
                     bend_generation += f""",
@@ -235,6 +241,9 @@ env.new(
     parent                  = '{sbend}',
     angle                   = {line[replica_name].angle:.24f},
     k0                      = 'k0_{replica_variable}'"""
+                if line[replica_name].k1 != 0:
+                    bend_generation += f""",
+    k1                      = 'k1_{replica_variable}'"""
             # Append edge entry angles
                 if line[replica_name].edge_entry_angle != 0:
                     bend_generation += f""",
@@ -324,28 +333,36 @@ def create_bend_optics_file_information(
 
     for bend_variable in unique_bend_variables:
         k0 = None
+        k1 = None
 
         try:
             if line[bend_variable].k0_from_h is True:
                 k0  = line[bend_variable].angle / line[bend_variable].length
             else:
                 k0  = line[bend_variable].k0
+            k1  = line[bend_variable].k1
         except KeyError:
             try:
                 if line[f"-{bend_variable}"].k0_from_h is True:
                     k0  = line[f"-{bend_variable}"].angle / line[f"-{bend_variable}"].length
                 else:
                     k0  = line[f"-{bend_variable}"].k0
+                k1  = line[f"-{bend_variable}"].k1
             except KeyError as exc:
                 raise KeyError(
                     f"Could not find bend variable {bend_variable} or -{bend_variable} in line.") from exc
 
         if k0 == 0:
             k0 = None
+        if k1 == 0:
+            k1 = None
 
         if k0 is not None:
             output_string += f"""
     {f'k0_{bend_variable}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k0_{bend_variable}') + 4)}{'= '}{k0:.24f},"""
+        if k1 is not None:
+            output_string += f"""
+    {f'k1_{bend_variable}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1_{bend_variable}') + 4)}{'= '}{k1:.24f},"""
 
     ########################################
     # Return
