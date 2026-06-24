@@ -19,7 +19,6 @@ KNOWN_ISSUE_TESTS = {
     "tests/parser/test_deferred_expressions.py::test_multiline_deferred_expression_converts": 48,
     "tests/parser/test_globals.py::test_global_name_prefix_collisions_remain_deferred_expressions": 49,
     "tests/parser/test_preprocessing.py::test_on_and_off_prefix_variable_names_are_not_removed": 49,
-    "tests/parser/test_units.py::test_radian_angle_units_parse_as_radians": 50,
     "tests/parser/test_repeated_definitions.py::test_repeated_element_name_across_types_raises_clear_error": 51,
     "tests/parser/test_errors.py::test_protected_element_names_raise_clear_error": 53,
 
