@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       24-06-2026
 """
 
 ################################################################################
@@ -1398,6 +1398,7 @@ def convert_apertures(parsed_elements, environment):
         ########################################
         offset_x    = 0.0
         offset_y    = 0.0
+        rotation    = 0.0
         a           = None
         b           = None
         dx1         = None
@@ -1409,10 +1410,7 @@ def convert_apertures(parsed_elements, environment):
         ########################################
         # Read values
         ########################################
-        if "dx" in ele_vars:
-            offset_x    = parse_expression(ele_vars["dx"])
-        if "dy" in ele_vars:
-            offset_y    = parse_expression(ele_vars["dy"])
+        offset_x, offset_y, rotation = get_element_misalignments(ele_vars)
         if "ax" in ele_vars:
             a = parse_expression(ele_vars["ax"])
         if "ay" in ele_vars:
@@ -1553,32 +1551,35 @@ def convert_apertures(parsed_elements, environment):
         ########################################
         if aper_type == "LimitRect":
             environment.new(
-                name    = ele_name,
-                parent  = xt.LimitRect,
-                min_x   = dx1,
-                max_x   = dx2,
-                min_y   = dy1,
-                max_y   = dy2,
-                shift_x = offset_x,
-                shift_y = offset_y)
+                name      = ele_name,
+                parent    = xt.LimitRect,
+                min_x     = dx1,
+                max_x     = dx2,
+                min_y     = dy1,
+                max_y     = dy2,
+                shift_x   = offset_x,
+                shift_y   = offset_y,
+                rot_s_rad = rotation)
         elif aper_type == "LimitEllipse":
             environment.new(
-                name    = ele_name,
-                parent  = xt.LimitEllipse,
-                a       = a,
-                b       = b,
-                shift_x = offset_x,
-                shift_y = offset_y)
+                name      = ele_name,
+                parent    = xt.LimitEllipse,
+                a         = a,
+                b         = b,
+                shift_x   = offset_x,
+                shift_y   = offset_y,
+                rot_s_rad = rotation)
         elif aper_type == "LimitRectEllipse":
             environment.new(
-                name    = ele_name,
-                parent  = xt.LimitRectEllipse,
-                max_x   = dx2,
-                max_y   = dy2,
-                a       = a,
-                b       = b,
-                shift_x = offset_x,
-                shift_y = offset_y)
+                name      = ele_name,
+                parent    = xt.LimitRectEllipse,
+                max_x     = dx2,
+                max_y     = dy2,
+                a         = a,
+                b         = b,
+                shift_x   = offset_x,
+                shift_y   = offset_y,
+                rot_s_rad = rotation)
         else:
             raise ValueError(f"Error! Aperture {ele_name} has unsupported definition.")
         continue
