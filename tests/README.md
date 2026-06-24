@@ -19,10 +19,11 @@ runs are consistent.
 
 ## Running Tests
 
-`pytest.ini` at the repository root sets `testpaths = tests` so that running
-`pytest` from the root directory collects and runs the full suite without
-arguments. The `-ra` flag is set by default, which prints a short summary of
-all non-passing tests at the end of the run.
+`pytest.ini` at the repository root controls the full suite configuration:
+
+- `testpaths` is an explicit ordered list: `installation → sad_helpers → sad → parser → conversion → writer → examples → packaging → observability → ci`. The order ensures SAD is verified before SAD-dependent tests run. **Any new test directory must be added to this list**, or it will not be collected.
+- `-ra` prints a short summary of all non-passing tests at the end of the run.
+- `--import-mode=importlib` is required because `tests/sad/` and `tests/conversion/elements/` share basenames (e.g. `test_bend.py`). Without this, pytest collection fails.
 
 To run a single folder:
 
@@ -62,6 +63,7 @@ the SAD executable and all Python dependencies.
 | `writer/` | No | Generated lattice and optics writer behaviour |
 | `writer/elements/` | No | Per-element-family serialisation roundtrip tests |
 | `writer/pipeline/` | No | Whole-writer entry points and supported-element policy |
+| `sad/` | Yes | SAD syntax assumption tests — empirically verifies which parameters each SAD element type accepts or rejects |
 | `sad_helpers/` | Yes | `sad2xs.sad_helpers` — command construction, output parsing, smoke tests |
 | `examples/` | Yes | Public example lattice conversion, write+reload, and script contracts |
 | `installation/` | Yes | macOS installer, SAD executable smoke test |
@@ -94,7 +96,7 @@ Artifact paths should mirror the test area that produced them, for example
 
 ## Test Counts
 
-Total collected: **1218 tests** (1148 pass, 70 fail) as of the test run on
+Total collected: **1401 tests** (1340 pass, 61 fail) as of the test run on
 this branch. The breakdown by failure group is in the Known Failures section
 below. Individual folder READMEs document per-file counts.
 
@@ -107,17 +109,15 @@ mapping in `tests/support/known_issues.py`. They remain ordinary failing tests;
 the marker controls CI selection only and does not use `xfail`.
 
 **Group A — Documented writer issues:** 2 tests (1 in `writer/elements/`, 1
-in `writer/pipeline/`) that expose known writer bugs tracked as issue #63 (k1
+in `writer/pipeline/`) that expose known writer bugs tracked as issue #63 (`k1`
 not written for combined-function bends). These tests must remain failing until
-the corresponding issue is fixed. (Issue #62 — aperture dimensions not written
-as live optics expressions — is now fixed; those tests pass.)
+the corresponding issue is fixed.
 
-**Group B — Exposing production bugs:** 59 tests across
-`parser/`, `conversion/elements/`, and `conversion/pipeline/` that document
+**Group B — Exposing production bugs:** 59 tests across `parser/`,
+`conversion/elements/`, `conversion/pipeline/`, and `packaging/` that document
 known incorrect behaviour in the production code. These tests are the spec for
-the fix work that follows this PR. They must not be modified to pass — they are
-the record of what is broken and what needs to be done. (Issue #33 — aperture
-ROTATE not preserved — is now fixed; those 3 conversion tests pass.)
+the fix work that follows. They must not be modified to pass — they are the
+record of what is broken and what needs to be done.
 
 All 61 currently failing instances are linked to open issues.
 

@@ -28,7 +28,7 @@ from tests.support.diagnostics import diagnostic_report_path
 ################################################################################
 # Diagnostic Helpers
 ################################################################################
-APER_ARTIFACT_CATEGORY = "conversion/elements/aper"
+APERT_ARTIFACT_CATEGORY = "conversion/elements/apert"
 
 def _format_value(value):
     """
@@ -166,7 +166,7 @@ def _assert_aperture_grid_matches(
     if not np.array_equal(expected_alive, xsuite_alive):
         report_path = diagnostic_report_path(
             test_name  = test_name,
-            category   = APER_ARTIFACT_CATEGORY,
+            category   = APERT_ARTIFACT_CATEGORY,
             parameters = parameters)
         _write_aperture_grid_report(
             report_path          = report_path,

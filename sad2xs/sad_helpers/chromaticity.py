@@ -1,5 +1,9 @@
 """
-(Unofficial) SAD to XSuite Converter
+(Unofficial) SAD to XSuite Converter: SAD Helpers Chromaticity
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       24-06-2026
 """
 
 ################################################################################
@@ -9,6 +13,8 @@ import os
 import subprocess
 import uuid
 import numpy as np
+
+from ._helpers import _check_mathematica_output
 
 ################################################################################
 # SAD Survey Print Function
@@ -140,6 +146,10 @@ abort;
             print("stdout:", e.stdout)
             print("stderr:", e.stderr)
             raise
+
+        with open(out_file, encoding="utf-8") as _f:
+            _raw = _f.read()
+        _check_mathematica_output(_raw)
 
         chrom_scan = np.loadtxt(out_file, ndmin = 2)
 

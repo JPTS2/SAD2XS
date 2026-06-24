@@ -105,6 +105,9 @@ env.new(
     name                    = '{replica_name}',
     parent                  = '{hcorr}',
     k0                      = 'k0_{replica_variable}'"""
+                if line[replica_name].k1 != 0:
+                    corr_generation += f""",
+    k1                      = 'k1_{replica_variable}'"""
             # Append edge entry angles
                 if line[replica_name].edge_entry_angle != 0:
                     corr_generation += f""",
@@ -163,6 +166,9 @@ env.new(
     name                    = '{replica_name}',
     parent                  = '{vcorr}',
     k0                      = 'k0_{replica_variable}'"""
+                if line[replica_name].k1 != 0:
+                    corr_generation += f""",
+    k1                      = 'k1_{replica_variable}'"""
             # Append edge entry angles
                 if line[replica_name].edge_entry_angle != 0:
                     corr_generation += f""",
@@ -220,6 +226,9 @@ env.new(
     name                    = '{replica_name}',
     parent                  = '{scorr}',
     k0                      = 'k0_{replica_variable}'"""
+                if line[replica_name].k1 != 0:
+                    corr_generation += f""",
+    k1                      = 'k1_{replica_variable}'"""
             # Append edge entry angles
                 if line[replica_name].edge_entry_angle != 0:
                     corr_generation += f""",
@@ -311,21 +320,29 @@ def create_corrector_optics_file_information(
 
     for corr_variable in unique_corr_variables:
         k0 = None
+        k1 = None
 
         try:
             k0  = line[corr_variable].k0
+            k1  = line[corr_variable].k1
         except KeyError:
             try:
                 k0  = line[f"-{corr_variable}"].k0
+                k1  = line[f"-{corr_variable}"].k1
             except KeyError:
                 raise KeyError(f"Could not find bend variable {corr_variable} or -{corr_variable} in line.")
 
         if k0 == 0:
             k0 = None
+        if k1 == 0:
+            k1 = None
 
         if k0 is not None:
             output_string += f"""
     {f'k0_{corr_variable}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k0_{corr_variable}') + 4)}{'= '}{k0:.24f},"""
+        if k1 is not None:
+            output_string += f"""
+    {f'k1_{corr_variable}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1_{corr_variable}') + 4)}{'= '}{k1:.24f},"""
 
     ########################################
     # Return

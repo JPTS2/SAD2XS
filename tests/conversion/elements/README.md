@@ -28,7 +28,7 @@ Total collected from this folder: see `tests/README.md`.
 
 | File | Functions | Fail | Failure root cause |
 |------|-----------|------|--------------------|
-| `test_aper.py` | 20 | 0 | — |
+| `test_apert.py` | 20 | 0 | — |
 | `test_beambeam.py` | 5 | 0 | — |
 | `test_bend.py` | 23 | 4 | Element offsets with horizontal shift |
 | `test_cavi.py` | 19 | 0 | — |

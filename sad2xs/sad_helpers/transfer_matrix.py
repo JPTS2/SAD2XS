@@ -1,5 +1,9 @@
 """
-(Unofficial) SAD to XSuite Converter
+(Unofficial) SAD to XSuite Converter: SAD Helpers Transfer Matrix
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       24-06-2026
 """
 
 ################################################################################
@@ -10,6 +14,8 @@ import subprocess
 import uuid
 import ast
 import numpy as np
+
+from ._helpers import _check_mathematica_output
 
 ################################################################################
 # Calculate Transfer Matrix
@@ -153,6 +159,7 @@ abort;
 
         with open(out_file, "r", encoding = "utf-8") as f:
             raw = f.read()
+        _check_mathematica_output(raw)
 
         start = raw.find("{{")
         end   = raw.rfind("}}")
