@@ -502,11 +502,22 @@ def convert_correctors(parsed_elements, environment, config):
             else:
                 k0  = f"{k0l} / {ele_vars["l"]}"
 
+            k1l = 0.0
+            if "k1" in ele_vars:
+                k1l = parse_expression(ele_vars["k1"])
+            if isinstance(k1l, float) and not isinstance(ele_vars["l"], str):
+                k1  = k1l / ele_vars["l"] if k1l != 0.0 else 0.0
+            else:
+                k1  = 0.0 if k1l == 0.0 else f"{k1l} / {ele_vars['l']}"
+
             ########################################
             # Create variables
             ########################################
             environment[f"k0_{ele_name}"]   = k0
             k0                              = f"k0_{ele_name}"
+            if k1 != 0:
+                environment[f"k1_{ele_name}"]   = k1
+                k1                              = f"k1_{ele_name}"
 
             ########################################
             # Create Element
@@ -516,7 +527,7 @@ def convert_correctors(parsed_elements, environment, config):
                 parent              = xt.Bend,
                 length              = length,
                 k0                  = k0,
-                k1                  = 0.0,
+                k1                  = k1,
                 edge_entry_angle    = 0.0,
                 edge_exit_angle     = 0.0,
                 shift_x             = shift_x,
@@ -525,343 +536,145 @@ def convert_correctors(parsed_elements, environment, config):
             continue
 
 ################################################################################
+# Typed multipole helpers (QUAD / SEXT / OCT)
+################################################################################
+def _absorb_rotation_into_field(kl, n: int, rotation: float):
+    """
+    For a typed element with a pure normal field kl (skew = 0):
+    if rotation (Xsuite sign, = -SAD ROTATE) is an integer multiple
+    of π/(2n), rotate the field into (kl_eff, ksl_eff) and signal
+    that the rotation has been absorbed (set to 0).
+
+    n = 2 (quad), 3 (sext), 4 (oct).
+    Returns (kl_eff, ksl_eff, absorbed: bool).
+    """
+    fundamental = np.pi / (2 * n)
+    m           = rotation / fundamental
+    if not np.isclose(m, round(m), atol = 1e-6):
+        return kl, 0.0, False
+
+    phase     = n * rotation                    # integer multiple of π/2
+    cos_p     = int(round(np.cos(phase)))       # ∈ {-1, 0, 1}
+    neg_sin_p = int(round(-np.sin(phase)))      # ∈ {-1, 0, 1}
+
+    def _apply(factor):
+        if factor == 0: return 0.0
+        if factor == 1: return kl
+        return -kl if isinstance(kl, (int, float)) else f"-{kl}"
+
+    return _apply(cos_p), _apply(neg_sin_p), True
+
+def _convert_typed_multipole(ele_name, ele_vars, environment, n, xtype, k_name):
+    """
+    Convert a typed multipole element (QUAD / SEXT / OCT).
+
+    n       = 2 (quad), 3 (sext), 4 (oct)
+    xtype   = xt.Quadrupole / xt.Sextupole / xt.Octupole
+    k_name  = "k1" / "k2" / "k3"
+
+    Any SAD ROTATE that is an integer multiple of π/(2n) is absorbed
+    into the field components and the rotation is dropped from the
+    Xsuite element.  All other rotations are preserved as rot_s_rad.
+    """
+    k_idx   = n - 1           # knl/ksl index
+    ks_name = f"{k_name}s"    # "k1s", "k2s", "k3s"
+
+    length = parse_expression(ele_vars.get("l", 0.0))
+
+    ########################################
+    # Thin/zero-length element → Multipole
+    ########################################
+    if isinstance(length, float) and np.isclose(length, 0.0):
+        kl = parse_expression(ele_vars.get(k_name, 0.0))
+        if not isinstance(kl, float):
+            kl = 0.0
+        shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
+        if isinstance(rotation, float):
+            kl, ksl, absorbed = _absorb_rotation_into_field(kl, n, rotation)
+            if absorbed:
+                rotation = 0.0
+        else:
+            ksl = 0.0
+        knl_arr = [0.0] * (k_idx + 1)
+        ksl_arr = [0.0] * (k_idx + 1)
+        knl_arr[k_idx] = kl
+        ksl_arr[k_idx] = ksl
+        environment.new(
+            name      = ele_name,
+            parent    = xt.Multipole,
+            knl       = knl_arr,
+            ksl       = ksl_arr,
+            shift_x   = shift_x,
+            shift_y   = shift_y,
+            rot_s_rad = rotation)
+        return
+
+    ########################################
+    # Thick element
+    ########################################
+    kl  = 0.0
+    ksl = 0.0
+
+    shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
+
+    if k_name in ele_vars:
+        kl = ele_vars[k_name]
+        if isinstance(rotation, float):
+            kl, ksl, absorbed = _absorb_rotation_into_field(kl, n, rotation)
+            if absorbed:
+                rotation = 0.0
+
+    l_expr = ele_vars["l"]
+
+    if isinstance(kl, float) and not isinstance(l_expr, str):
+        k  = kl  / l_expr if kl  != 0.0 else 0.0
+    else:
+        k  = 0.0 if kl  == 0.0 else f"{kl} / {l_expr}"
+
+    if isinstance(ksl, float) and not isinstance(l_expr, str):
+        ks = ksl / l_expr if ksl != 0.0 else 0.0
+    else:
+        ks = 0.0 if ksl == 0.0 else f"{ksl} / {l_expr}"
+
+    if k != 0:
+        environment[f"{k_name}_{ele_name}"]  = k
+        k  = f"{k_name}_{ele_name}"
+    if ks != 0:
+        environment[f"{ks_name}_{ele_name}"] = ks
+        ks = f"{ks_name}_{ele_name}"
+
+    environment.new(
+        name        = ele_name,
+        parent      = xtype,
+        length      = length,
+        **{k_name: k, ks_name: ks},
+        shift_x     = shift_x,
+        shift_y     = shift_y,
+        rot_s_rad   = rotation)
+
+################################################################################
 # Convert Quadrupoles
 ################################################################################
 def convert_quadrupoles(parsed_elements, environment):
-    """
-    Convert quadrupoles from the SAD parsed data
-    """
-
-    quads  = parsed_elements["quad"]
-
-    for ele_name, ele_vars in quads.items():
-
-        ########################################
-        # Thin/zero-length element → Multipole
-        ########################################
-        length = parse_expression(ele_vars.get("l", 0.0))
-        if isinstance(length, float) and np.isclose(length, 0.0):
-            k1l  = parse_expression(ele_vars.get("k1", 0.0))
-            k1sl = 0.0
-            if not isinstance(k1l, float):
-                k1l = 0.0
-            shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
-            if isinstance(rotation, float):
-                if np.isclose(rotation, +np.pi / 4, atol = 1E-6):
-                    k1sl = -k1l
-                    k1l  = 0.0
-                    shift_x, shift_y, rotation = get_element_misalignments(
-                        ele_vars            = ele_vars,
-                        rotation_correction = -np.pi / 4)
-                elif np.isclose(rotation, -np.pi / 4, atol = 1E-6):
-                    k1sl = +k1l
-                    k1l  = 0.0
-                    shift_x, shift_y, rotation = get_element_misalignments(
-                        ele_vars            = ele_vars,
-                        rotation_correction = +np.pi / 4)
-            environment.new(
-                name      = ele_name,
-                parent    = xt.Multipole,
-                knl       = [0.0, k1l],
-                ksl       = [0.0, k1sl],
-                shift_x   = shift_x,
-                shift_y   = shift_y,
-                rot_s_rad = rotation)
-            continue
-
-        ########################################
-        # Initialise parameters
-        ########################################
-        k1l         = 0.0
-        k1sl        = 0.0
-
-        shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
-
-        if "k1" in ele_vars:
-            if not isinstance(rotation, float):
-                k1l     = f"{ele_vars["k1"]}"
-            else:
-
-                if np.isclose(rotation, +np.pi / 4, atol = 1E-6):
-                    if isinstance(ele_vars["k1"], (float, int)):
-                        k1sl    = -ele_vars["k1"]
-                    else:
-                        k1sl    = f"-{ele_vars["k1"]}"
-                    shift_x, shift_y, rotation  = get_element_misalignments(
-                        ele_vars            = ele_vars,
-                        rotation_correction = -np.pi / 4)
-
-                elif np.isclose(rotation, -np.pi / 4, atol = 1E-6):
-                    if isinstance(ele_vars["k1"], (float, int)):
-                        k1sl    = +ele_vars["k1"]
-                    else:
-                        k1sl    = f"+{ele_vars["k1"]}"
-                    shift_x, shift_y, rotation  = get_element_misalignments(
-                        ele_vars            = ele_vars,
-                        rotation_correction = +np.pi / 4)
-
-                else:
-                    k1l     = ele_vars["k1"]
-
-        if isinstance(k1l, float) and not isinstance(ele_vars["l"], str):
-            k1  = k1l / ele_vars["l"]
-        else:
-            k1  = 0.0 if k1l == 0.0 else f"{k1l} / {ele_vars["l"]}"
-
-        if isinstance(k1sl, float) and not isinstance(ele_vars["l"], str):
-            k1s = k1sl / ele_vars["l"]
-        else:
-            k1s = 0.0 if k1sl == 0.0 else f"{k1sl} / {ele_vars["l"]}"
-
-        ########################################
-        # Create variables
-        ########################################
-        if k1 != 0:
-            environment[f"k1_{ele_name}"]   = k1
-            k1                              = f"k1_{ele_name}"
-        if k1s != 0:
-            environment[f"k1s_{ele_name}"]  = k1s
-            k1s                             = f"k1s_{ele_name}"
-
-        ########################################
-        # Create Element
-        ########################################
-        environment.new(
-            name        = ele_name,
-            parent      = xt.Quadrupole,
-            length      = length,
-            k1          = k1,
-            k1s         = k1s,
-            shift_x     = shift_x,
-            shift_y     = shift_y,
-            rot_s_rad   = rotation)
-        continue
+    """Convert quadrupoles from the SAD parsed data."""
+    for ele_name, ele_vars in parsed_elements["quad"].items():
+        _convert_typed_multipole(ele_name, ele_vars, environment, 2, xt.Quadrupole, "k1")
 
 ################################################################################
 # Convert Sextupoles
 ################################################################################
 def convert_sextupoles(parsed_elements, environment):
-    """
-    Convert sextupoles from the SAD parsed data
-    """
-
-    sexts  = parsed_elements["sext"]
-
-    for ele_name, ele_vars in sexts.items():
-
-        ########################################
-        # Thin/zero-length element → Multipole
-        ########################################
-        length = parse_expression(ele_vars.get("l", 0.0))
-        if isinstance(length, float) and np.isclose(length, 0.0):
-            k2l  = parse_expression(ele_vars.get("k2", 0.0))
-            k2sl = 0.0
-            if not isinstance(k2l, float):
-                k2l = 0.0
-            shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
-            if isinstance(rotation, float):
-                if np.isclose(rotation, +np.pi / 6, atol = 1E-6):
-                    k2sl = -k2l
-                    k2l  = 0.0
-                    shift_x, shift_y, rotation = get_element_misalignments(
-                        ele_vars            = ele_vars,
-                        rotation_correction = -np.pi / 6)
-                elif np.isclose(rotation, -np.pi / 6, atol = 1E-6):
-                    k2sl = +k2l
-                    k2l  = 0.0
-                    shift_x, shift_y, rotation = get_element_misalignments(
-                        ele_vars            = ele_vars,
-                        rotation_correction = +np.pi / 6)
-            environment.new(
-                name      = ele_name,
-                parent    = xt.Multipole,
-                knl       = [0.0, 0.0, k2l],
-                ksl       = [0.0, 0.0, k2sl],
-                shift_x   = shift_x,
-                shift_y   = shift_y,
-                rot_s_rad = rotation)
-            continue
-
-        ########################################
-        # Initialise parameters
-        ########################################
-        k2l         = 0.0
-        k2sl        = 0.0
-
-        shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
-
-        if "k2" in ele_vars:
-            if not isinstance(rotation, float):
-                k2l     = f"{ele_vars["k2"]}"
-            else:
-
-                if np.isclose(rotation, +np.pi / 6, atol = 1E-6):
-                    if isinstance(ele_vars["k2"], (float, int)):
-                        k2sl    = -ele_vars["k2"]
-                    else:
-                        k2sl    = f"-{ele_vars["k2"]}"
-                    shift_x, shift_y, rotation  = get_element_misalignments(
-                        ele_vars            = ele_vars,
-                        rotation_correction = -np.pi / 6)
-
-                elif np.isclose(rotation, -np.pi / 6, atol = 1E-6):
-                    if isinstance(ele_vars["k2"], (float, int)):
-                        k2sl    = +ele_vars["k2"]
-                    else:
-                        k2sl    = f"+{ele_vars["k2"]}"
-                    shift_x, shift_y, rotation  = get_element_misalignments(
-                        ele_vars            = ele_vars,
-                        rotation_correction = +np.pi / 6)
-
-                else:
-                    k2l     = ele_vars["k2"]
-
-        if isinstance(k2l, float) and not isinstance(ele_vars["l"], str):
-            k2  = k2l / ele_vars["l"]
-        else:
-            k2  = 0.0 if k2l == 0.0 else f"{k2l} / {ele_vars["l"]}"
-
-        if isinstance(k2sl, float) and not isinstance(ele_vars["l"], str):
-            k2s = k2sl / ele_vars["l"]
-        else:
-            k2s = 0.0 if k2sl == 0.0 else f"{k2sl} / {ele_vars["l"]}"
-
-        ########################################
-        # Create variables
-        ########################################
-        if k2 != 0:
-            environment[f"k2_{ele_name}"]   = k2
-            k2                              = f"k2_{ele_name}"
-        if k2s != 0:
-            environment[f"k2s_{ele_name}"]  = k2s
-            k2s                             = f"k2s_{ele_name}"
-
-        ########################################
-        # Create Element
-        ########################################
-        environment.new(
-            name        = ele_name,
-            parent      = xt.Sextupole,
-            length      = length,
-            k2          = k2,
-            k2s         = k2s,
-            shift_x     = shift_x,
-            shift_y     = shift_y,
-            rot_s_rad   = rotation)
-        continue
+    """Convert sextupoles from the SAD parsed data."""
+    for ele_name, ele_vars in parsed_elements["sext"].items():
+        _convert_typed_multipole(ele_name, ele_vars, environment, 3, xt.Sextupole, "k2")
 
 ################################################################################
 # Convert Octupoles
 ################################################################################
 def convert_octupoles(parsed_elements, environment, config):
-    """
-    Convert octupoles from the SAD parsed data
-    """
-
-    octs    = parsed_elements["oct"]
-
-    for ele_name, ele_vars in octs.items():
-
-        ########################################
-        # Thin/zero-length element → Multipole
-        ########################################
-        length = parse_expression(ele_vars.get("l", 0.0))
-        if isinstance(length, float) and np.isclose(length, 0.0):
-            k3l  = parse_expression(ele_vars.get("k3", 0.0))
-            k3sl = 0.0
-            if not isinstance(k3l, float):
-                k3l = 0.0
-            shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
-            if isinstance(rotation, float):
-                if np.isclose(rotation, +np.pi / 8, atol = 1E-6):
-                    k3sl = -k3l
-                    k3l  = 0.0
-                    shift_x, shift_y, rotation = get_element_misalignments(
-                        ele_vars            = ele_vars,
-                        rotation_correction = -np.pi / 8)
-                elif np.isclose(rotation, -np.pi / 8, atol = 1E-6):
-                    k3sl = +k3l
-                    k3l  = 0.0
-                    shift_x, shift_y, rotation = get_element_misalignments(
-                        ele_vars            = ele_vars,
-                        rotation_correction = +np.pi / 8)
-            environment.new(
-                name      = ele_name,
-                parent    = xt.Multipole,
-                knl       = [0.0, 0.0, 0.0, k3l],
-                ksl       = [0.0, 0.0, 0.0, k3sl],
-                shift_x   = shift_x,
-                shift_y   = shift_y,
-                rot_s_rad = rotation)
-            continue
-
-        ########################################
-        # Initialise parameters
-        ########################################
-        k3l         = 0.0
-        k3sl        = 0.0
-
-        shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
-
-        if "k3" in ele_vars:
-            if not isinstance(rotation, float):
-                k3l     = f"{ele_vars["k3"]}"
-            else:
-
-                if np.isclose(rotation, +np.pi / 8, atol = 1E-6):
-                    if isinstance(ele_vars["k3"], (float, int)):
-                        k3sl    = -ele_vars["k3"]
-                    else:
-                        k3sl    = f"-{ele_vars["k3"]}"
-                    shift_x, shift_y, rotation  = get_element_misalignments(
-                        ele_vars            = ele_vars,
-                        rotation_correction = -np.pi / 8)
-
-                elif np.isclose(rotation, -np.pi / 8, atol = 1E-6):
-                    if isinstance(ele_vars["k3"], (float, int)):
-                        k3sl    = +ele_vars["k3"]
-                    else:
-                        k3sl    = f"+{ele_vars["k3"]}"
-                    shift_x, shift_y, rotation  = get_element_misalignments(
-                        ele_vars            = ele_vars,
-                        rotation_correction = +np.pi / 8)
-
-                else:
-                    k3l     = ele_vars["k3"]
-
-        if isinstance(k3l, float) and not isinstance(ele_vars["l"], str):
-            k3  = k3l / ele_vars["l"]
-        else:
-            k3  = 0.0 if k3l == 0.0 else f"{k3l} / {ele_vars["l"]}"
-
-        if isinstance(k3sl, float) and not isinstance(ele_vars["l"], str):
-            k3s = k3sl / ele_vars["l"]
-        else:
-            k3s = 0.0 if k3sl == 0.0 else f"{k3sl} / {ele_vars["l"]}"
-
-        ########################################
-        # Create variables
-        ########################################
-        if k3 != 0:
-            environment[f"k3_{ele_name}"]   = k3
-            k3                              = f"k3_{ele_name}"
-        if k3s != 0:
-            environment[f"k3s_{ele_name}"]  = k3s
-            k3s                             = f"k3s_{ele_name}"
-
-        ########################################
-        # Create Element
-        ########################################
-        environment.new(
-            name        = ele_name,
-            parent      = xt.Octupole,
-            length      = length,
-            k3          = k3,
-            k3s         = k3s,
-            shift_x     = shift_x,
-            shift_y     = shift_y,
-            rot_s_rad   = rotation)
-        continue
+    """Convert octupoles from the SAD parsed data."""
+    for ele_name, ele_vars in parsed_elements["oct"].items():
+        _convert_typed_multipole(ele_name, ele_vars, environment, 4, xt.Octupole, "k3")
 
 ################################################################################
 # Convert Multipoles
