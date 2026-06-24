@@ -62,6 +62,7 @@ the SAD executable and all Python dependencies.
 | `writer/` | No | Generated lattice and optics writer behaviour |
 | `writer/elements/` | No | Per-element-family serialisation roundtrip tests |
 | `writer/pipeline/` | No | Whole-writer entry points and supported-element policy |
+| `sad/` | Yes | SAD syntax assumption tests — empirically verifies which parameters each SAD element type accepts or rejects |
 | `sad_helpers/` | Yes | `sad2xs.sad_helpers` — command construction, output parsing, smoke tests |
 | `examples/` | Yes | Public example lattice conversion, write+reload, and script contracts |
 | `installation/` | Yes | macOS installer, SAD executable smoke test |
