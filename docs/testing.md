@@ -45,6 +45,7 @@ has its own README with per-file coverage tables and known-failure documentation
 | `conversion/elements/` | Yes | Individual SAD element conversion |
 | `conversion/pipeline/` | Yes | Public conversion options and pipeline behaviour |
 | `writer/` | No | Generated lattice and optics writer behaviour |
+| `sad/` | Yes | Empirical SAD syntax assumption tests — machine-verified parameter acceptance and rejection per element type |
 | `sad_helpers/` | Yes | Reusable helper APIs that call or prepare external SAD runs |
 | `examples/` | Yes | Public example execution and example lattice checks |
 | `installation/` | Yes | Installer and SAD executable behaviour |
@@ -52,8 +53,35 @@ has its own README with per-file coverage tables and known-failure documentation
 | `ci/` | No | Workflow configuration correctness |
 | `observability/` | Mixed | Output suppression, quiet mode, and helper output policy |
 
-Total collected: **1184 tests** (1041 pass, 143 currently failing) as of
+Total collected: **1401 tests** (1340 pass, 61 currently failing) as of
 this branch. See `tests/README.md` for the breakdown by failure group.
+
+## SAD Syntax Assumption Tests
+
+`tests/sad/` contains empirical tests that machine-verify which parameters each
+SAD element type accepts or rejects at runtime. When the behaviour of any SAD
+element, parameter, or reserved name is uncertain, a test is added here to
+establish ground truth before any converter logic is written or changed. The
+SAD runtime is the authoritative source — not documentation or assumption.
+
+The accepted/rejected parameter matrix for all tested element types is in
+`tests/sad/README.md`. The findings are consistent with direct confirmation from
+K. Oide (SAD author, 2026-06-24) on typed-element parameter restrictions.
+
+Reference: [SAD FFS command documentation](https://acc-physics.kek.jp/SAD/how-to-use-sad/sad-ffs-command-sad-script/)
+
+## pytest Configuration
+
+`pytest.ini` at the repository root sets `testpaths` as an explicit ordered
+list (installation → sad\_helpers → sad → parser → conversion → writer →
+examples → packaging → observability → ci). The order ensures SAD installation
+is verified before SAD-dependent tests run.
+
+`--import-mode=importlib` is also set in `pytest.ini`. It is required because
+`tests/sad/` and `tests/conversion/elements/` share basenames (e.g.
+`test_bend.py`). Without importlib mode pytest uses flat module names and
+collects with errors. Any new test directory added to the suite must also be
+added to `testpaths` in `pytest.ini`.
 
 Large end-to-end lattice tests are useful, but they should not be the only
 protection. Small, targeted regression tests make failures easier to understand
@@ -94,18 +122,15 @@ pytest -m "not known_issue"  # blocking regression selection
 pytest -m "known_issue"      # tests documenting open issues
 ```
 
-**Group A (17 tests)** — known writer bugs, tracked as open issues:
-- Issue #17: `knl`/`ksl` not written for quad, sext, and oct elements
-- Issue #62: aperture dimensions written as literal numbers rather than live expressions
+**Group A (2 tests)** — known writer bugs tracked as open issues:
 - Issue #63: `k1` not written for combined-function bends
 
-**Group B (126 tests)** — converter and parser bugs documented by the tests.
+**Group B (59 tests)** — converter and parser bugs documented by the tests.
 These tests are the spec for the fix work that follows. They must not be
 modified to pass artificially — they are the record of what is broken and what
 needs to be done.
 
-All 143 currently failing instances are linked to open issues; combined
-rectangular-and-elliptical aperture conversion is tracked by issue #66.
+All 61 currently failing instances are linked to open issues.
 
 ## SAD Dependency
 

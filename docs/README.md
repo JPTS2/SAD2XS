@@ -6,6 +6,10 @@ The documentation is intended to define the structure, assumptions, and developm
 
 Some sections describe current behaviour. Others describe agreed direction for upcoming work. Where this distinction matters, the relevant page should state it explicitly.
 
+## Testing philosophy
+
+SAD2XS tests from the ground up: the test suite first verifies what SAD itself does, then verifies that the converter mirrors it exactly. Converter logic is written to match SAD's actual runtime behaviour, not an interpretation of its documentation — the tests are the specification. This is why `tests/sad/` exists: to machine-verify which parameters each element type accepts or rejects before any conversion code is written or changed.
+
 ## Documentation convention
 
 When a section describes behaviour that is not yet implemented, it should use one of these labels:

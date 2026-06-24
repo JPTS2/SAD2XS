@@ -29,7 +29,7 @@ it is **accepted**.
 
 ## Coverage
 
-183 tests across 11 files. All require the SAD binary (`requires_sad` marker).
+184 tests across 11 files. All require the SAD binary.
 
 ### Parameter matrix
 
@@ -41,7 +41,7 @@ it is **accepted**.
 | BEND | ANGLE, K0, K1, DX, DY, ROTATE | SK0, SK1, K2–K4, SK2–SK4, HARM, FREQ, BZ |
 | MULT | ANGLE, K0–K4, SK0–SK4, DX, DY, ROTATE, HARM, FREQ | BZ |
 | CAVI | VOLT, FREQ, HARM, PHI, DX, DY, ROTATE | ANGLE, K0–K4, SK0–SK4, BZ |
-| SOL | BZ, DX, DY, ROTATE (see structural note below) | ANGLE, K0–K4, SK0–SK4, HARM, FREQ |
+| SOL | BZ, DX, DY | ANGLE, K0–K4, SK0–SK4, HARM, FREQ, ROTATE |
 | DRIFT | bare only (L) | ANGLE, K0–K4, SK0–SK4, BZ, HARM, FREQ, DX, DY, ROTATE |
 | APERT | AX, AY, DX, DY, ROTATE | ANGLE, K0–K4, SK0–SK4, BZ, HARM, FREQ |
 | MARK | bare, BZ, DX, DY | K1–K3, ROTATE, FREQ |
@@ -59,6 +59,12 @@ Minimum valid pattern: `SOL(BZ, BOUND=1, GEO=1) + DRIFT + SOL(BZ=0, BOUND=1)`
 `test_sol.py` probes single-element, pair-without-drift, pair-without-GEO, and
 pair-without-BOUND configurations before running the parameter accept/reject tests.
 It also verifies that an inner SOL without BOUND is valid in a three-element chain.
+
+A degenerate SOL pair with BOUND on both elements but no GEO (`test_sol_pair_no_geo_rejects`)
+is not rejected by SAD's exit code — SAD exits 0 but writes Mathematica undefined symbols
+(e.g. `medium`, `$DefaultFontWeight`) into the TFS output, indicating the Twiss computation
+failed silently. `twiss_sad` detects these symbols and raises `ValueError`, which `sad_rejects`
+treats as a rejection.
 
 ## Elements not tested and why
 
