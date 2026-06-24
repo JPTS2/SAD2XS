@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-06-24
 """
 
 ################################################################################
@@ -353,9 +353,10 @@ def parse_sad_file(
         if section_command.startswith("line"):
 
             line_section    = section
-            line_section    = line_section.replace("line", "")
-            line_section    = line_section.replace("\n", "")
-            line_section    = line_section.replace("\t", "")
+            line_section    = line_section.replace("\n", " ")
+            line_section    = line_section.replace("\t", " ")
+            while "  " in line_section:
+                line_section = line_section.replace("  ", " ")
 
             ########################################
             # Split into lines by closing bracket
@@ -366,8 +367,12 @@ def parse_sad_file(
             # Process each line
             ########################################
             for line in lines:
-                if len(line) == 0:
+                line = line.strip()
+                if not line:
                     continue
+
+                if line.startswith("line "):
+                    line = line[5:]
 
                 line_name, line_content = line.split("=")
 

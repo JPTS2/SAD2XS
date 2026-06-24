@@ -29,7 +29,7 @@ it is **accepted**.
 
 ## Coverage
 
-184 tests across 11 files. All require the SAD binary.
+187 tests across 12 files. All require the SAD binary.
 
 ### Parameter matrix
 
@@ -65,6 +65,16 @@ is not rejected by SAD's exit code — SAD exits 0 but writes Mathematica undefi
 (e.g. `medium`, `$DefaultFontWeight`) into the TFS output, indicating the Twiss computation
 failed silently. `twiss_sad` detects these symbols and raises `ValueError`, which `sad_rejects`
 treats as a rejection.
+
+### LINE definitions
+
+`test_line.py` verifies SAD's LINE syntax rather than element parameter acceptance:
+
+| Test | Verifies |
+|------|----------|
+| `test_line_name_containing_line_substring_is_accepted` | Line names containing the substring `line` (e.g. `MYLINE`) are valid identifiers — SAD does not treat the substring as the keyword |
+| `test_nested_line_reference_containing_line_substring_is_accepted` | Such names are also valid when referenced nested inside another LINE definition |
+| `test_line_keyword_with_newline_before_name_is_accepted` | A newline between the `LINE` keyword and the line name/definition is accepted by SAD |
 
 ## Elements not tested and why
 

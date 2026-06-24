@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-06-24
 ================================================================================
 """
 ################################################################################
@@ -32,6 +32,7 @@ FOLDER_WORKFLOW_NAMES = [
     "test_parser.yml",
     "test_writer.yml",
     "test_observability.yml",
+    "test_sad.yml",
     "test_conversion.yml",
     "test_sad_helpers.yml",
     "test_examples.yml",
