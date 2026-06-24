@@ -1,5 +1,9 @@
 """
-(Unofficial) SAD to XSuite Converter
+(Unofficial) SAD to XSuite Converter: SAD Helpers Emittance
+=============================================
+Author(s):  John P T Salvesen
+Email:      john.salvesen@cern.ch
+Date:       24-06-2026
 """
 
 ################################################################################
@@ -8,6 +12,8 @@
 import os
 import subprocess
 import uuid
+
+from ._helpers import _check_mathematica_output
 
 ################################################################################
 # EMIT
@@ -106,6 +112,7 @@ abort;
     # Read the terminal output
     ########################################
     terminal_output = process.stdout
+    _check_mathematica_output(terminal_output)
 
     ########################################
     # Process the data
