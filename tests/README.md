@@ -96,30 +96,23 @@ Artifact paths should mirror the test area that produced them, for example
 
 ## Test Counts
 
-Total collected: **1401 tests** (1340 pass, 61 fail) as of the test run on
+Total collected: **1404 tests** (1353 pass, 51 fail) as of the test run on
 this branch. The breakdown by failure group is in the Known Failures section
 below. Individual folder READMEs document per-file counts.
 
 ## Known Failures
 
-The test suite contains currently failing tests that document known bugs. These fall into two groups:
+The test suite contains currently failing tests that document known bugs.
 
 Tests linked to open issues are marked during collection from the central
 mapping in `tests/support/known_issues.py`. They remain ordinary failing tests;
 the marker controls CI selection only and does not use `xfail`.
 
-**Group A — Documented writer issues:** 2 tests (1 in `writer/elements/`, 1
-in `writer/pipeline/`) that expose known writer bugs tracked as issue #63 (`k1`
-not written for combined-function bends). These tests must remain failing until
-the corresponding issue is fixed.
-
-**Group B — Exposing production bugs:** 59 tests across `parser/`,
-`conversion/elements/`, `conversion/pipeline/`, and `packaging/` that document
-known incorrect behaviour in the production code. These tests are the spec for
-the fix work that follows. They must not be modified to pass — they are the
-record of what is broken and what needs to be done.
-
-All 61 currently failing instances are linked to open issues.
+**51 failing tests** across `parser/`, `conversion/elements/`, and
+`conversion/pipeline/` document known incorrect behaviour in the production
+code. These tests are the spec for the fix work that follows. They must not be
+modified to pass — they are the record of what is broken and what needs to be
+done. All 51 are linked to open issues.
 
 Never modify a failing test to make it pass artificially. Fix the root cause.
 If you add a test that documents a known bug, record it in the relevant folder

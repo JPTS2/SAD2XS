@@ -13,9 +13,7 @@ rather than one serialised element or feature.
   corrector, quad, sext, oct, multipole, solenoid, cavity, all five reference
   shifts, LimitRect, LimitEllipse). Checks element order, element classes,
   particle reference, and supported scalar/array fields for every element in
-  one shot. 1 test expected to FAIL: k1 for the combined-function bend is not
-  written (issue #63 — same limitation exposed at the element level by
-  `test_bend_writer.py`).
+  one shot. All tests expected to pass.
 
 - `test_supported_elements.py` (17 tests) — supported-element policy: one test
   per element type the writer handles. Each test builds a minimal
@@ -53,8 +51,4 @@ rather than one serialised element or feature.
 
 ## Expected Failures
 
-| Test | Count | Issue |
-|------|-------|-------|
-| `test_line_roundtrip.py` — k1 for combined-function bend not preserved | 1 | #63 |
-
-All other pipeline tests are expected to pass.
+None. All writer pipeline tests are expected to pass.
