@@ -143,6 +143,7 @@ def load_and_clean_whitespace(sad_lattice_path: str):
     ########################################
     # Ensure no spaces between the value and its unit
     content     = content.replace(" deg", "deg")
+    content     = content.replace(" rad", "rad")
 
     ########################################
     # Split the file into sections
@@ -462,6 +463,9 @@ def parse_sad_file(
                     if "deg" in var_value:
                         var_value = var_value.replace("deg", "")
                         var_value = np.deg2rad(float(var_value))
+                    elif "rad" in var_value:
+                        var_value = var_value.replace("rad", "")
+                        var_value = float(var_value)
 
                     try:
                         var_value = float(var_value)
