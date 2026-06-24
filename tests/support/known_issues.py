@@ -39,9 +39,9 @@ KNOWN_ISSUE_TESTS = {
     "tests/parser/test_errors.py::test_protected_element_names_raise_clear_error": 53,
 
     # Conversion behavior and physics comparisons.
-    "tests/conversion/elements/test_aper.py::test_aper_converter_preserves_rectangle_rotation": 33,
-    "tests/conversion/elements/test_aper.py::test_aper_pipeline_preserves_rectangle_rotation": 33,
-    "tests/conversion/elements/test_aper.py::test_aper_rotated_limitrect_grid_loss_matches_sad_boundary": 33,
+    "tests/conversion/elements/test_apert.py::test_aper_converter_preserves_rectangle_rotation": 33,
+    "tests/conversion/elements/test_apert.py::test_aper_pipeline_preserves_rectangle_rotation": 33,
+    "tests/conversion/elements/test_apert.py::test_aper_rotated_limitrect_grid_loss_matches_sad_boundary": 33,
     "tests/conversion/elements/test_mult.py::test_mult_conversion_matches_sad_twiss_for_combined_orders": 33,
     "tests/conversion/elements/test_mult.py::test_mult_conversion_matches_sad_tracking_for_combined_orders": 33,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_twiss_for_thin_kick": 55,
