@@ -21,6 +21,7 @@ from ..output_writer._005_sext import create_sextupole_optics_file_information
 from ..output_writer._006_oct import create_octupole_optics_file_information
 from ..output_writer._009_cavity import create_cavity_optics_file_information
 from ..output_writer._010_refshift import create_refshift_optics_file_information
+from ..output_writer._011_aperture import create_aperture_optics_file_information
 
 today   = date.today()
 
@@ -135,6 +136,14 @@ env.vars.update(default_to_zero = True,
     # Reference Shifts
     ########################################
     optics_file_string  += create_refshift_optics_file_information(
+        line        = line,
+        line_table  = line_table,
+        config      = config)
+
+    ########################################
+    # Apertures
+    ########################################
+    optics_file_string  += create_aperture_optics_file_information(
         line        = line,
         line_table  = line_table,
         config      = config)
