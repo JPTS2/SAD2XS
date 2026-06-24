@@ -9,6 +9,8 @@ import os
 import subprocess
 import uuid
 
+from ._helpers import _check_mathematica_output
+
 ################################################################################
 # EMIT
 ################################################################################
@@ -106,6 +108,7 @@ abort;
     # Read the terminal output
     ########################################
     terminal_output = process.stdout
+    _check_mathematica_output(terminal_output)
 
     ########################################
     # Process the data
