@@ -534,7 +534,10 @@ def test_aper_converter_preserves_rectangle_rotation(
         xsuite_environment,
         assert_environment_element):
     """
-    SAD APERT ROTATE should map to Xsuite aperture rotation.
+    SAD APERT ROTATE should map to Xsuite aperture rotation with the SAD->Xsuite
+    sign convention rot_s_rad = -ROTATE (the same negation as magnets). A
+    non-symmetric angle (pi/6) is used so the sign is unambiguous; the sign was
+    validated against real SAD aperture tracking (see issue #33).
     """
     convert_apertures(
         parsed_elements = parsed_elements(
@@ -545,7 +548,7 @@ def test_aper_converter_preserves_rectangle_rotation(
                 "dx2": 0.01,
                 "dy1": -0.02,
                 "dy2": 0.02,
-                "rotate": np.pi / 4.0,
+                "rotate": np.pi / 6.0,
             }),
         environment = xsuite_environment)
 
@@ -554,9 +557,9 @@ def test_aper_converter_preserves_rectangle_rotation(
         element_name = "test_apert",
         element_type = xt.LimitRect)
 
-    assert aperture.rot_s_rad == pytest.approx(np.pi / 4.0), (
-        "Converted rectangular APERT should preserve SAD ROTATE as Xsuite "
-        "rot_s_rad.")
+    assert aperture.rot_s_rad == pytest.approx(-np.pi / 6.0), (
+        "Converted rectangular APERT should map SAD ROTATE to rot_s_rad = "
+        "-ROTATE.")
 
 ########################################
 # Combined Apertures
@@ -717,7 +720,7 @@ def test_aper_pipeline_preserves_rectangle_rotation(write_lattice):
             DX2     = 0.01
             DY1     = -0.02
             DY2     = 0.02
-            ROTATE  = 45 DEG
+            ROTATE  = 30 DEG
         );
 
         MARK        START       = ()
@@ -737,8 +740,8 @@ def test_aper_pipeline_preserves_rectangle_rotation(write_lattice):
         "Converted APERT line should preserve SAD element order and names.")
     assert isinstance(line["test_apert"], xt.LimitRect), (
         "Rectangular SAD APERT should remain an Xsuite LimitRect.")
-    assert line["test_apert"].rot_s_rad == pytest.approx(np.pi / 4.0), (
-        "Pipeline APERT conversion should preserve SAD ROTATE.")
+    assert line["test_apert"].rot_s_rad == pytest.approx(-np.deg2rad(30.0)), (
+        "Pipeline APERT conversion should map SAD ROTATE to rot_s_rad = -ROTATE.")
 
 def test_aper_pipeline_can_install_apertures_as_markers(write_lattice):
     """
@@ -776,32 +779,57 @@ def test_aper_pipeline_can_install_apertures_as_markers(write_lattice):
 ########################################
 # Analytic Grid-Loss Tests
 ########################################
-def test_aper_limitellipse_grid_loss_matches_analytic_boundary():
+def test_aper_limitellipse_grid_loss_matches_analytic_boundary(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
     """
-    Converted elliptical APERT should lose the same particles as SAD's ellipse.
+    A converted elliptical APERT should lose the same particles as SAD's
+    ellipse. The aperture is built by CONVERTING a SAD APERT definition (not
+    hand-constructed) so the converter's AX/AY mapping is tested end-to-end.
     """
     a = 0.01
     b = 0.02
     x_grid, y_grid = _ellipse_grid(a = a, b = b)
     expected_alive = _ellipse_alive(x_grid, y_grid, a = a, b = b)
 
+    convert_apertures(
+        parsed_elements = parsed_elements(
+            element_type      = "apert",
+            element_name      = "test_apert",
+            element_variables = {"ax": a, "ay": b}),
+        environment = xsuite_environment)
+
+    aperture = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_apert",
+        element_type = xt.LimitEllipse)
+
     _assert_aperture_grid_matches(
         test_name            = (
             "test_aper_limitellipse_grid_loss_matches_analytic_boundary"),
-        aperture             = xt.LimitEllipse(a = a, b = b),
+        aperture             = aperture,
         aperture_description = "APERT TEST_APERT = (AX = 0.01 AY = 0.02);",
         x_grid               = x_grid,
         y_grid               = y_grid,
         expected_alive       = expected_alive,
         parameters           = {"ax": a, "ay": b},
         notes                = [
+            "Aperture built by converting a SAD APERT definition so the "
+            "converter AX/AY mapping is tested end-to-end.",
             "The grid intentionally concentrates particles near the aperture "
             "boundary rather than at the centre.",
         ])
 
-def test_aper_limitrect_grid_loss_matches_analytic_boundary():
+def test_aper_limitrect_grid_loss_matches_analytic_boundary(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
     """
-    Converted rectangular APERT should lose the same particles as SAD's rectangle.
+    A converted rectangular APERT should lose the same particles as SAD's
+    rectangle. The aperture is built by CONVERTING a SAD APERT definition (not
+    hand-constructed) so the converter's DX1/DX2/DY1/DY2 mapping is tested
+    end-to-end.
     """
     min_x = -0.01
     max_x = 0.02
@@ -820,14 +848,27 @@ def test_aper_limitrect_grid_loss_matches_analytic_boundary():
         min_y = min_y,
         max_y = max_y)
 
+    convert_apertures(
+        parsed_elements = parsed_elements(
+            element_type      = "apert",
+            element_name      = "test_apert",
+            element_variables = {
+                "dx1": min_x,
+                "dx2": max_x,
+                "dy1": min_y,
+                "dy2": max_y,
+            }),
+        environment = xsuite_environment)
+
+    aperture = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_apert",
+        element_type = xt.LimitRect)
+
     _assert_aperture_grid_matches(
         test_name            = (
             "test_aper_limitrect_grid_loss_matches_analytic_boundary"),
-        aperture             = xt.LimitRect(
-            min_x = min_x,
-            max_x = max_x,
-            min_y = min_y,
-            max_y = max_y),
+        aperture             = aperture,
         aperture_description = (
             "APERT TEST_APERT = "
             "(DX1 = -0.01 DX2 = 0.02 DY1 = -0.03 DY2 = 0.04);"),
@@ -841,13 +882,21 @@ def test_aper_limitrect_grid_loss_matches_analytic_boundary():
             "dy2": max_y,
         },
         notes                = [
+            "Aperture built by converting a SAD APERT definition so the "
+            "converter DX1/DX2/DY1/DY2 mapping is tested end-to-end.",
             "The grid intentionally concentrates particles near all four "
             "aperture edges.",
         ])
 
-def test_aper_offset_limitellipse_grid_loss_matches_analytic_boundary():
+def test_aper_offset_limitellipse_grid_loss_matches_analytic_boundary(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
     """
-    Offset elliptical APERT should lose particles using SAD's shifted boundary.
+    An offset elliptical APERT should lose particles using SAD's shifted
+    boundary. The aperture is built by CONVERTING a SAD APERT definition (not
+    hand-constructed) so the converter's DX/DY -> shift_x/shift_y mapping is
+    tested end-to-end.
     """
     a = 0.01
     b = 0.02
@@ -866,14 +915,27 @@ def test_aper_offset_limitellipse_grid_loss_matches_analytic_boundary():
         shift_x = shift_x,
         shift_y = shift_y)
 
+    convert_apertures(
+        parsed_elements = parsed_elements(
+            element_type      = "apert",
+            element_name      = "test_apert",
+            element_variables = {
+                "ax": a,
+                "ay": b,
+                "dx": shift_x,
+                "dy": shift_y,
+            }),
+        environment = xsuite_environment)
+
+    aperture = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_apert",
+        element_type = xt.LimitEllipse)
+
     _assert_aperture_grid_matches(
         test_name            = (
             "test_aper_offset_limitellipse_grid_loss_matches_analytic_boundary"),
-        aperture             = xt.LimitEllipse(
-            a       = a,
-            b       = b,
-            shift_x = shift_x,
-            shift_y = shift_y),
+        aperture             = aperture,
         aperture_description = (
             "APERT TEST_APERT = "
             "(AX = 0.01 AY = 0.02 DX = 0.001 DY = -0.002);"),
@@ -885,11 +947,21 @@ def test_aper_offset_limitellipse_grid_loss_matches_analytic_boundary():
             "ay": b,
             "dx": shift_x,
             "dy": shift_y,
-        })
+        },
+        notes                = [
+            "Aperture built by converting a SAD APERT definition so the "
+            "converter DX/DY -> shift_x/shift_y mapping is tested end-to-end.",
+        ])
 
-def test_aper_offset_limitrect_grid_loss_matches_analytic_boundary():
+def test_aper_offset_limitrect_grid_loss_matches_analytic_boundary(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
     """
-    Offset rectangular APERT should lose particles using SAD's shifted boundary.
+    An offset rectangular APERT should lose particles using SAD's shifted
+    boundary. The aperture is built by CONVERTING a SAD APERT definition (not
+    hand-constructed) so the converter's bounds and DX/DY -> shift_x/shift_y
+    mapping are tested end-to-end.
     """
     min_x = -0.01
     max_x = 0.02
@@ -914,16 +986,29 @@ def test_aper_offset_limitrect_grid_loss_matches_analytic_boundary():
         shift_x = shift_x,
         shift_y = shift_y)
 
+    convert_apertures(
+        parsed_elements = parsed_elements(
+            element_type      = "apert",
+            element_name      = "test_apert",
+            element_variables = {
+                "dx1": min_x,
+                "dx2": max_x,
+                "dy1": min_y,
+                "dy2": max_y,
+                "dx": shift_x,
+                "dy": shift_y,
+            }),
+        environment = xsuite_environment)
+
+    aperture = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_apert",
+        element_type = xt.LimitRect)
+
     _assert_aperture_grid_matches(
         test_name            = (
             "test_aper_offset_limitrect_grid_loss_matches_analytic_boundary"),
-        aperture             = xt.LimitRect(
-            min_x   = min_x,
-            max_x   = max_x,
-            min_y   = min_y,
-            max_y   = max_y,
-            shift_x = shift_x,
-            shift_y = shift_y),
+        aperture             = aperture,
         aperture_description = (
             "APERT TEST_APERT = "
             "(DX1 = -0.01 DX2 = 0.02 DY1 = -0.03 DY2 = 0.04 "
@@ -938,26 +1023,48 @@ def test_aper_offset_limitrect_grid_loss_matches_analytic_boundary():
             "dy2": max_y,
             "dx": shift_x,
             "dy": shift_y,
-        })
+        },
+        notes                = [
+            "Aperture built by converting a SAD APERT definition so the "
+            "converter bounds and DX/DY -> shift mapping are tested end-to-end.",
+        ])
 
-def test_aper_rotated_limitrect_grid_loss_matches_sad_boundary():
+def test_aper_rotated_limitrect_grid_loss_matches_sad_boundary(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
     """
-    Rotated rectangular APERT should match SAD's rotated survival boundary.
+    A rotated rectangular APERT, once CONVERTED, should lose exactly the
+    particles real SAD loses. The aperture is built by converting a SAD APERT
+    definition (not hand-constructed) so the converter's ROTATE handling is
+    exercised end-to-end.
+
+    A 30 deg angle with off-axis probes makes the rotation sign unambiguous.
+    SAD APERT ROTATE = R corresponds to a coordinate rotation by -R: this was
+    confirmed against real SAD aperture tracking, where at ROTATE = 30 deg the
+    survival of 11 probes matched the analytic model evaluated at -R exactly
+    (e.g. (0.012, 0.012) survives while (-0.012, 0.012) is lost). See issue #33.
     """
     min_x = -0.01
     max_x = 0.01
     min_y = -0.02
     max_y = 0.02
-    rotation = np.pi / 4.0
+    rotation = np.deg2rad(30.0)
+
     x_grid, y_grid = _rectangle_grid(
         min_x = min_x,
         max_x = max_x,
         min_y = min_y,
         max_y = max_y)
-    sad_probe_x = np.array([0.0, 0.005, 0.011, 0.0, 0.0])
-    sad_probe_y = np.array([0.0, 0.0, 0.0, 0.015, 0.021])
+
+    # Off-axis probes that distinguish +rotation from -rotation. Real SAD
+    # tracking at ROTATE = 30 deg gives survival [1, 0, 0, 1] for these.
+    sad_probe_x = np.array([0.012, -0.012,  0.012, -0.012])
+    sad_probe_y = np.array([0.012,  0.012, -0.012, -0.012])
     x_grid = np.concatenate([x_grid, sad_probe_x])
     y_grid = np.concatenate([y_grid, sad_probe_y])
+
+    # SAD APERT ROTATE = R corresponds to a coordinate rotation by -R.
     expected_alive = _rotated_rectangle_alive(
         x_grid,
         y_grid,
@@ -965,20 +1072,34 @@ def test_aper_rotated_limitrect_grid_loss_matches_sad_boundary():
         max_x    = max_x,
         min_y    = min_y,
         max_y    = max_y,
-        rotation = rotation)
+        rotation = -rotation)
+
+    convert_apertures(
+        parsed_elements = parsed_elements(
+            element_type      = "apert",
+            element_name      = "test_apert",
+            element_variables = {
+                "dx1": min_x,
+                "dx2": max_x,
+                "dy1": min_y,
+                "dy2": max_y,
+                "rotate": rotation,
+            }),
+        environment = xsuite_environment)
+
+    aperture = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_apert",
+        element_type = xt.LimitRect)
 
     _assert_aperture_grid_matches(
         test_name            = (
             "test_aper_rotated_limitrect_grid_loss_matches_sad_boundary"),
-        aperture             = xt.LimitRect(
-            min_x = min_x,
-            max_x = max_x,
-            min_y = min_y,
-            max_y = max_y),
+        aperture             = aperture,
         aperture_description = (
             "APERT TEST_APERT = "
             "(DX1 = -0.01 DX2 = 0.01 DY1 = -0.02 DY2 = 0.02 "
-            "ROTATE = pi/4);"),
+            "ROTATE = 30 DEG);"),
         x_grid               = x_grid,
         y_grid               = y_grid,
         expected_alive       = expected_alive,
@@ -990,17 +1111,21 @@ def test_aper_rotated_limitrect_grid_loss_matches_sad_boundary():
             "rotate": rotation,
         },
         notes                = [
-            "A constrained local SAD probe with DAPER gave states "
-            "[1, 1, 1, 0, 0] for particles "
-            "(0,0), (0.005,0), (0.011,0), (0,0.015), (0,0.021) "
-            "through this pi/4 rotated rectangle.",
-            "This test currently fails because APERT ROTATE is not yet mapped "
-            "to the Xsuite aperture element.",
+            "Aperture built by converting a SAD APERT definition so the "
+            "converter ROTATE handling is tested end-to-end.",
+            "Real SAD tracking at ROTATE = 30 deg matched the analytic model "
+            "at -ROTATE; off-axis probes pin the rotation sign.",
         ])
 
-def test_aper_limitrectellipse_grid_loss_matches_analytic_boundary():
+def test_aper_limitrectellipse_grid_loss_matches_analytic_boundary(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
     """
-    Combined SAD APERT limits should use the ellipse/rectangle intersection.
+    Combined SAD APERT limits should use the ellipse/rectangle intersection. The
+    aperture is built by CONVERTING a SAD APERT definition (not hand-constructed)
+    so the converter's combined AX/AY + DX1/DX2/DY1/DY2 mapping is tested
+    end-to-end.
     """
     a = 0.02
     b = 0.03
@@ -1025,14 +1150,29 @@ def test_aper_limitrectellipse_grid_loss_matches_analytic_boundary():
             max_y = max_y)
     )
 
+    convert_apertures(
+        parsed_elements = parsed_elements(
+            element_type      = "apert",
+            element_name      = "test_apert",
+            element_variables = {
+                "ax": a,
+                "ay": b,
+                "dx1": -max_x,
+                "dx2": max_x,
+                "dy1": -max_y,
+                "dy2": max_y,
+            }),
+        environment = xsuite_environment)
+
+    aperture = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_apert",
+        element_type = xt.LimitRectEllipse)
+
     _assert_aperture_grid_matches(
         test_name            = (
             "test_aper_limitrectellipse_grid_loss_matches_analytic_boundary"),
-        aperture             = xt.LimitRectEllipse(
-            max_x = max_x,
-            max_y = max_y,
-            a     = a,
-            b     = b),
+        aperture             = aperture,
         aperture_description = (
             "APERT TEST_APERT = "
             "(AX = 0.02 AY = 0.03 DX1 = -0.01 DX2 = 0.01 "
@@ -1049,6 +1189,8 @@ def test_aper_limitrectellipse_grid_loss_matches_analytic_boundary():
             "dy2": max_y,
         },
         notes                = [
+            "Aperture built by converting a SAD APERT definition so the "
+            "converter combined-limit mapping is tested end-to-end.",
             "SAD documentation defines APERT survival as the intersection of "
             "the ellipse and rectangle conditions.",
         ])
