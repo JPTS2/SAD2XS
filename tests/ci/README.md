@@ -34,7 +34,7 @@ string `"on"`. All trigger access uses a `_triggers(data)` helper that checks
 
 ## Coverage
 
-### `test_workflow_checkout_refs.py` — 23 test functions, ~53 instances, all expected to pass
+### `test_workflow_checkout_refs.py` — 22 test functions, ~52 instances, all expected to pass
 
 **Template tests (7, not parametrised):**
 - Template has `workflow_call` trigger (required for per-folder delegation)
@@ -43,12 +43,12 @@ string `"on"`. All trigger access uses a `_triggers(data)` helper that checks
 - Run job uses `actions/checkout@v4` with no `ref` override (checks out triggering commit)
 - Run job matrix strategy has `fail-fast: false`
 
-**Per-folder workflow tests (3 functions × 9 workflows = 27 instances):**
+**Per-folder workflow tests (3 functions × 10 workflows = 30 instances):**
 
-Parametrised over all 9 per-folder workflows (`test_packaging.yml`,
+Parametrised over all 10 per-folder workflows (`test_packaging.yml`,
 `test_ci.yml`, `test_parser.yml`, `test_writer.yml`, `test_observability.yml`,
-`test_conversion.yml`, `test_sad_helpers.yml`, `test_examples.yml`,
-`test_installation.yml`).
+`test_sad.yml`, `test_conversion.yml`, `test_sad_helpers.yml`,
+`test_examples.yml`, `test_installation.yml`).
 
 - Each workflow has a `workflow_dispatch` trigger for manual re-runs
 - Each workflow delegates to `_test_template.yml` via `uses:`
@@ -59,11 +59,11 @@ Parametrised over all 9 per-folder workflows (`test_packaging.yml`,
 - `run_tests.yml` has a `schedule` trigger (weekly runs for upstream breakage)
 - `run_tests.yml` has a `workflow_dispatch` trigger (manual re-runs)
 
-**Regression-gate tests (6 functions, 8 instances):**
-- SAD-free and SAD-required jobs select `not known_issue`
-- The known-issues job selects `known_issue` and is non-blocking
-- Both regression jobs remain blocking
-- All three jobs check out the triggering commit without a `ref` override
+**Regression-gate tests (5 functions, 5 instances):**
+- The `Run regression tests` step in the single `run-tests` job selects `not known_issue`
+- The `Run known-issue tests` step selects `known_issue` only and is non-blocking (`continue-on-error: true`)
+- The `run-tests` job itself remains blocking
+- The `run-tests` job checks out the triggering commit without a `ref` override
 
 **Docker build tests (4, not parametrised):**
 - `docker-build.yml` name is stable and documented

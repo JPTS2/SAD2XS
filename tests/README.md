@@ -37,13 +37,16 @@ signal upstream Xsuite or SAD API changes that require attention.
 
 ## CI
 
-The master workflow separates merge-blocking regression coverage from visible
-tests for open issues:
+The master workflow runs the full suite in a single job in the order defined
+by `pytest.ini` `testpaths`:
 
-- `run_tests.yml` — master workflow. Its blocking `sad-free` and `sad-required`
-  jobs run tests selected by `-m "not known_issue"`. A parallel, non-blocking
-  `known-issues` job runs `-m "known_issue"` normally so full failure output
-  remains visible without masking new regressions.
+- `run_tests.yml` — master workflow. One job (`run-tests`) with two sequential
+  steps. Step 1 runs `pytest -m "not known_issue" tests/` and is blocking —
+  any failure blocks the PR. Step 2 runs `pytest -m "known_issue" tests/` with
+  `continue-on-error: true` so known-bug failures are visible but never block a
+  merge. The single job ensures `tests/sad/` (SAD syntax assumptions) always
+  runs before `tests/conversion/` (conversion correctness), matching the
+  `testpaths` order.
 
 - Per-folder workflows — one workflow per test folder, all manually triggerable
   via `workflow_dispatch`. Allow targeted re-runs of one area without waiting
