@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-06-24
 ================================================================================
 """
 ################################################################################
@@ -35,6 +35,7 @@ FOLDER_WORKFLOW_NAMES = [
     "test_parser.yml",
     "test_writer.yml",
     "test_observability.yml",
+    "test_sad.yml",
     "test_conversion.yml",
     "test_sad_helpers.yml",
     "test_examples.yml",
@@ -279,47 +280,42 @@ def test_ci_run_all_workflow_has_workflow_dispatch_trigger():
 ################################################################################
 # Run-all workflow — regression gate and known issues
 ################################################################################
-def test_ci_sad_free_job_excludes_known_issues():
+def test_ci_regression_step_excludes_known_issues():
     data = _load(RUN_ALL_PATH)
-    run_text = _job_run_text(data, "sad-free")
-    assert 'not known_issue' in run_text
-    assert 'pip install --no-cache-dir -e .' in run_text
+    step = _step_by_name(data, "run-tests", "Run regression tests")
+    assert step is not None, "run-tests job must have a 'Run regression tests' step."
+    assert 'not known_issue' in step["run"]
+    assert 'pip install --no-cache-dir -e .' in step["run"]
 
 
-def test_ci_sad_required_job_excludes_known_issues():
+def test_ci_known_issues_step_selects_only_known_issues():
     data = _load(RUN_ALL_PATH)
-    run_text = _job_run_text(data, "sad-required")
-    assert 'not known_issue' in run_text
-    assert 'pip install --no-cache-dir -e .' in run_text
+    step = _step_by_name(data, "run-tests", "Run known-issue tests")
+    assert step is not None, "run-tests job must have a 'Run known-issue tests' step."
+    assert 'known_issue' in step["run"]
+    assert 'not known_issue' not in step["run"]
+    assert 'pip install --no-cache-dir -e .' in step["run"]
 
 
-def test_ci_known_issues_job_selects_only_known_issues():
+def test_ci_known_issues_step_is_non_blocking():
     data = _load(RUN_ALL_PATH)
-    run_text = _job_run_text(data, "known-issues")
-    assert 'known_issue' in run_text
-    assert 'not known_issue' not in run_text
-    assert 'pip install --no-cache-dir -e .' in run_text
-
-
-def test_ci_only_known_issues_job_is_non_blocking():
-    data = _load(RUN_ALL_PATH)
-    job = data["jobs"]["known-issues"]
-    assert not job.get("continue-on-error", False)
-    step = _step_by_name(data, "known-issues", "Run known-issue tests")
+    assert not data["jobs"]["run-tests"].get("continue-on-error", False), (
+        "The run-tests job itself must not be continue-on-error.")
+    step = _step_by_name(data, "run-tests", "Run known-issue tests")
     assert step is not None
-    assert step.get("continue-on-error") is True
+    assert step.get("continue-on-error") is True, (
+        "'Run known-issue tests' step must have continue-on-error: true.")
 
 
-def test_ci_regression_jobs_are_blocking():
+def test_ci_regression_job_is_blocking():
     data = _load(RUN_ALL_PATH)
-    for job_name in ("sad-free", "sad-required"):
-        assert not data["jobs"][job_name].get("continue-on-error", False)
+    assert not data["jobs"]["run-tests"].get("continue-on-error", False), (
+        "run-tests job must be blocking (no continue-on-error on the job).")
 
 
-@pytest.mark.parametrize("job_name", ["sad-free", "sad-required", "known-issues"])
-def test_ci_run_all_jobs_do_not_override_checkout_ref(job_name):
+def test_ci_run_all_job_does_not_override_checkout_ref():
     data = _load(RUN_ALL_PATH)
-    step = _checkout_step(data["jobs"][job_name]["steps"])
+    step = _checkout_step(data["jobs"]["run-tests"]["steps"])
     assert step is not None
     assert step.get("with", {}).get("ref") is None
 
