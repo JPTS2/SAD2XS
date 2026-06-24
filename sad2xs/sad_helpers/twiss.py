@@ -242,6 +242,18 @@ abort;
             print("stderr:", e.stderr)
             raise
 
+        with open(out_file, encoding="utf-8") as _f:
+            _raw = _f.read()
+        _mathematica_undefined  = {
+            "medium", "$DefaultFontWeight", "Indeterminate", "ComplexInfinity",
+            "DirectedInfinity"}
+        _found = [s for s in _mathematica_undefined if s in _raw]
+        if _found:
+            raise ValueError(
+                f"SAD exited 0 but Twiss output contains Mathematica undefined symbols {_found}. "
+                f"The lattice configuration is physically degenerate. "
+                f"SAD warnings may appear in the stdout above.")
+
         sad_twiss = tfs.read(out_file)
 
     finally:
