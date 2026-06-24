@@ -16,7 +16,7 @@ should stay focused on pipeline orchestration and public user options.
 
 | File | Functions | Fail | Failure root cause |
 |------|-----------|------|--------------------|
-| `test_convert_sad_to_xsuite.py` | 22 | 1 | `line_name` selection — `KeyError: 'short_line'` (line name lookup not working correctly) |
+| `test_convert_sad_to_xsuite.py` | 22 | 0 | — |
 | `test_excluded_elements.py` | 8 | 0 | — |
 | `test_multipole_replacements.py` | 5 | 0 | — |
 | `test_offset_markers.py` | 7 | 1 | Symbolic s-position expression for offset markers — `NameError: name 'l0' is not defined` |
@@ -29,7 +29,7 @@ should stay focused on pipeline orchestration and public user options.
 
 Covers the entry-point contract in detail: output file creation, output
 filename defaults, line name selection, suppressed-element handling,
-`_test_mode` behaviour, and line name defaulting. 21 of 22 tests pass.
+`_test_mode` behaviour, and line name defaulting. All 22 tests pass.
 
 ### `test_offset_markers.py` note
 
