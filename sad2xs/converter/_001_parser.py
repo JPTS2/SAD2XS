@@ -203,8 +203,9 @@ def load_and_clean_whitespace(sad_lattice_path: str):
 # Parsing Function
 ################################################################################
 def parse_sad_file(
-        sad_lattice_path:       str,
-        config:                 ConfigLike) -> dict:
+        sad_lattice_path:               str,
+        config:                         ConfigLike,
+        install_apertures_as_markers:   bool = False) -> dict:
     """
     Parse lattice definitions from SAD
     Convert a particle accelerator lattice defined in Stratgeic Accelerator 
@@ -546,7 +547,7 @@ def parse_sad_file(
                         # APERT+MARK sharing a name is valid when
                         # install_apertures_as_markers=True — the merge is
                         # handled downstream in main.py after parsing.
-                        if (config._install_apertures_as_markers
+                        if (install_apertures_as_markers
                                 and {other_type, section_command} == {"apert", "mark"}):
                             continue
                         raise ValueError(
