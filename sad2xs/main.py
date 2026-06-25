@@ -3,7 +3,7 @@ Unofficial SAD to XSuite Lattice Converter
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       2026-06-25
 """
 
 ################################################################################
@@ -61,8 +61,9 @@ def convert_sad_to_xsuite(
         print_section_heading("Parsing SAD File", mode = 'section')
 
     parsed_lattice_data = parse_sad_file(
-        sad_lattice_path    = sad_lattice_path,
-        config              = config)
+        sad_lattice_path              = sad_lattice_path,
+        config                        = config,
+        install_apertures_as_markers  = install_apertures_as_markers)
 
     ############################################################################
     # Remove Excluded elements

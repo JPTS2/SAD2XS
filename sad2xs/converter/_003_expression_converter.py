@@ -30,6 +30,8 @@ def parse_expression(expression):
         try:
             return float(expression_stripped)
         except ValueError:
+            expression_stripped = expression_stripped.replace("log(", "log10(")
+            expression_stripped = expression_stripped.replace("ln(",  "log(")
             return expression_stripped
     else:
         raise TypeError(f"Unsupported type: {type(expression)}. Expected str, int, or float.")
@@ -102,8 +104,10 @@ def convert_expressions(
             try:
                 environment[var_name] = var_value
                 converted_expressions.append(var_name)
-            except KeyError:
+            except Exception:
                 continue
 
     if len(converted_expressions) != len(parsed_expressions):
-        raise ValueError("Not all expressions could be parsed. Check the input data.")
+        raise ValueError(
+            "Not all expressions could be evaluated. "
+            "Please check your SAD lattice for invalid expression syntax.")

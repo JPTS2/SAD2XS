@@ -17,6 +17,8 @@ Date:       2026-06-21
 ################################################################################
 import numpy as np
 
+from sad2xs.config import PROTECTED_ELEMENT_NAMES
+
 ################################################################################
 # Tolerances
 ################################################################################
@@ -55,11 +57,6 @@ POSITIVE_TEST_VALUES    = np.logspace(-6, -1, 11)
 STATIC_OFFSET           = float(1E-2)
 
 ################################################################################
-# Protected Names
+# Protected Names — imported from sad2xs.config (single source of truth)
 ################################################################################
-PROTECTED_ELEMENT_NAMES = {
-    "fshift",
-    "mass0",
-    "p0c",
-    "q0",
-}
+__all__ = ["PROTECTED_ELEMENT_NAMES"]
