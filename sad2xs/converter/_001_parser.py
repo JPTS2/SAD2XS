@@ -473,6 +473,13 @@ def parse_sad_file(
                     except ValueError:
                         ele_dict[var_name] = var_value
 
+                for other_type, other_dict in cleaned_elements.items():
+                    if other_type != section_command and ele_name in other_dict:
+                        raise ValueError(
+                            f"Element name '{ele_name}' is already defined as a "
+                            f"'{other_type}' element. SAD does not allow reusing "
+                            f"element names across different element types.")
+
                 section_dict[ele_name] = ele_dict
 
             ########################################
