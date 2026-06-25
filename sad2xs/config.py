@@ -12,6 +12,19 @@ Date:       09-12-2025
 from dataclasses import dataclass, field
 
 ################################################################################
+# Protected Element Names
+#
+# Element names that collide with Xsuite environment variables created during
+# conversion. SAD itself accepts these names; SAD2XS rejects them early to
+# prevent silent corruption of the Xsuite environment.
+################################################################################
+PROTECTED_ELEMENT_NAMES: frozenset[str] = frozenset({
+    "mass0",
+    "p0c",
+    "q0",
+})
+
+################################################################################
 # Config Dataclass
 ################################################################################
 @dataclass

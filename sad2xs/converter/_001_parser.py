@@ -14,6 +14,7 @@ import re
 import xtrack as xt
 import numpy as np
 
+from ..config import PROTECTED_ELEMENT_NAMES
 from ..types import ConfigLike
 from ..helpers import print_section_heading
 
@@ -443,6 +444,11 @@ def parse_sad_file(
                 ########################################
                 ele_name    = ele_name.replace(" ", "")
                 ele_name    = ele_name.replace("=", "")
+
+                if ele_name in PROTECTED_ELEMENT_NAMES:
+                    raise ValueError(
+                        f"Element name '{ele_name}' collides with a protected "
+                        f"SAD2XS reserved name. Choose a different element name.")
 
                 ########################################
                 # Handle the element variables
