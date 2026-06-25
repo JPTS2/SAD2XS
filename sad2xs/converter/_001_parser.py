@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-24
+Date:       2026-06-25
 """
 
 ################################################################################
@@ -543,6 +543,12 @@ def parse_sad_file(
 
                 for other_type, other_dict in cleaned_elements.items():
                     if other_type != section_command and ele_name in other_dict:
+                        # APERT+MARK sharing a name is valid when
+                        # install_apertures_as_markers=True — the merge is
+                        # handled downstream in main.py after parsing.
+                        if (config._install_apertures_as_markers
+                                and {other_type, section_command} == {"apert", "mark"}):
+                            continue
                         raise ValueError(
                             f"Element name '{ele_name}' is already defined as a "
                             f"'{other_type}' element. SAD does not allow reusing "
