@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-06-25
 """
 
 ################################################################################
@@ -40,6 +40,7 @@ class Config:
     _test_mode:                     bool            = False
     _replace_repeated_elements:     bool            = True
     _install_offset_markers:        bool            = True
+    _install_apertures_as_markers:  bool            = False
 
     ############################################################################
     # Constants
