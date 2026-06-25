@@ -40,7 +40,6 @@ class Config:
     _test_mode:                     bool            = False
     _replace_repeated_elements:     bool            = True
     _install_offset_markers:        bool            = True
-    _install_apertures_as_markers:  bool            = False
 
     ############################################################################
     # Constants
