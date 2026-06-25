@@ -78,6 +78,26 @@ def test_repeated_element_name_same_type_is_accepted(sad_accepts):
 
 
 ################################################################################
+# Multiline deferred expressions
+#
+# SAD accepts deferred expressions that span multiple physical lines, treating
+# the continuation as part of the same expression until the closing semicolon.
+################################################################################
+
+def test_multiline_deferred_expression_is_accepted(sad_accepts):
+    """
+    SAD accepts a deferred expression split across two lines and evaluates the
+    full expression correctly. The result should be usable as an element parameter.
+    """
+    sad_accepts(
+        "A = 1.0 +\n"
+        "    2.0;\n"
+        "DRIFT D1 = (L = A);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START D1 END);")
+
+
+################################################################################
 # Protected element names (SAD2XS-level guard)
 #
 # These names collide with Xsuite environment variables created during

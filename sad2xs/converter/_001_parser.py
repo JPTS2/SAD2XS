@@ -524,6 +524,7 @@ def parse_sad_file(
         ########################################
         try:
             variable, expression = section.split("=")
+            expression = " ".join(expression.split())
         except ValueError:
             raise ValueError(
                 f"Error parsing section: {section}. "
