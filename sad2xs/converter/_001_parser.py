@@ -19,6 +19,48 @@ from ..types import ConfigLike
 from ..helpers import print_section_heading
 
 ################################################################################
+# Element Body Splitting
+################################################################################
+
+def _split_element_bodies(element_section: str) -> list[str]:
+    """
+    Split a raw element section into individual element definition strings,
+    correctly handling nested parentheses in parameter values.
+
+    Each element definition has the form 'NAME=(param1 param2 ...)'. A naive
+    split on ')' breaks when a parameter value itself contains parentheses —
+    e.g. 'SQRT(L0)' or '(L0 + DL) / 2'. This function tracks parenthesis
+    depth and only treats a ')' as a definition boundary when it closes the
+    outermost wrapper, i.e. when depth returns to zero.
+
+    Example:
+        Input:  ' d1=(l=sqrt(l0)) d2=(l=1.0)'
+        Output: ['d1=(l=sqrt(l0))', 'd2=(l=1.0)']
+    """
+    element_definitions = []
+    current_definition  = []
+    paren_depth         = 0
+
+    for char in element_section:
+        if char == "(":
+            paren_depth += 1
+        elif char == ")":
+            paren_depth -= 1
+            if paren_depth < 0:
+                raise ValueError(
+                    f"Malformed element definition — closing ')' has no matching "
+                    f"'(': '{element_section.strip()}'")
+            if paren_depth == 0:
+                current_definition.append(char)
+                element_definitions.append("".join(current_definition).strip())
+                current_definition = []
+                continue
+        current_definition.append(char)
+
+    return [defn for defn in element_definitions if defn.strip()]
+
+
+################################################################################
 # Element Parameter Parsing
 ################################################################################
 ELEMENT_PARAMETER_PATTERN = re.compile(r"(?<!\S)([a-z][a-z0-9_]*)\s*=")
@@ -361,6 +403,17 @@ def parse_sad_file(
                 line_section = line_section.replace("  ", " ")
 
             ########################################
+            # Validate parenthesis balance
+            ########################################
+            open_count  = line_section.count("(")
+            close_count = line_section.count(")")
+            if open_count != close_count:
+                raise ValueError(
+                    f"Malformed LINE definition — unmatched parentheses "
+                    f"({open_count} opening, {close_count} closing): "
+                    f"'{line_section.strip()}'")
+
+            ########################################
             # Split into lines by closing bracket
             ########################################
             lines   = line_section.split(")")
@@ -376,7 +429,16 @@ def parse_sad_file(
                 if line.startswith("line "):
                     line = line[5:]
 
-                line_name, line_content = line.split("=")
+                if "=" in line:
+                    line_name, line_content = line.split("=", 1)
+                    if "=" in line_content:
+                        raise ValueError(
+                            f"Malformed LINE definition — multiple '=' found: "
+                            f"'{line.strip()}'")
+                elif "(" in line:
+                    line_name, line_content = line.split("(", 1)
+                else:
+                    continue
 
                 line_name       = line_name.replace(" ", "")
                 line_content    = line_content.replace("(", "")
@@ -415,12 +477,10 @@ def parse_sad_file(
             element_section = element_section.replace(" \n", " ")
             element_section = element_section.replace("\n", " ")
             element_section = element_section.replace("\t", " ")
-            element_section = element_section.replace(")", "),")
-
             ########################################
             # Split the section into elements
             ########################################
-            elements    = element_section.split(",")
+            elements    = _split_element_bodies(element_section)
 
             ########################################
             # Process each element
@@ -437,7 +497,7 @@ def parse_sad_file(
                 ########################################
                 # Split the name and variables
                 ########################################
-                ele_name, ele_vars = element.split("(")
+                ele_name, ele_vars = element.split("(", 1)
 
                 ########################################
                 # Handle the element name
@@ -452,8 +512,10 @@ def parse_sad_file(
 
                 ########################################
                 # Handle the element variables
+                # The depth-aware split guarantees the body ends with the outer
+                # closing ')' — strip exactly that one character.
                 ########################################
-                ele_vars    = ele_vars.replace(")", "")
+                ele_vars    = ele_vars[:-1]
                 ele_vars    = ele_vars.replace("\n", "")
                 while "= " in ele_vars:
                     ele_vars    = ele_vars.replace("= ", "=")

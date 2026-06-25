@@ -42,7 +42,8 @@ def test_multiple_equals_in_deferred_expression_raises_clear_error(write_lattice
 
 def test_invalid_deferred_expression_syntax_raises_clear_error(write_lattice):
     """
-    Invalid expression syntax should fail clearly during conversion.
+    A trailing operator ('A = 1.0 +;') is accepted by SAD but silently corrupts
+    the value. SAD2XS should fail clearly and direct the user to their SAD lattice.
     """
     lattice_path = write_lattice(
         """\
@@ -54,7 +55,7 @@ def test_invalid_deferred_expression_syntax_raises_clear_error(write_lattice):
     parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
     environment = xt.Environment()
 
-    with pytest.raises(ValueError, match = "Not all expressions"):
+    with pytest.raises(ValueError, match = "SAD lattice"):
         convert_expressions(
             parsed_lattice_data = parsed,
             environment         = environment,
@@ -100,33 +101,43 @@ def test_unknown_command_with_parentheses_and_commas_is_ignored(write_lattice):
 ################################################################################
 # Line Errors
 ################################################################################
-def test_malformed_line_missing_equals_raises_clear_error(write_lattice):
+def test_line_without_equals_is_parsed_correctly(write_lattice):
     """
-    Line definitions without '=' should fail instead of parsing silently.
+    SAD accepts LINE definitions without '=' (e.g. 'LINE RING (A B)').
+    The converter must handle this and produce the correct element list.
     """
     lattice_path = write_lattice(
         """\
         MOMENTUM = 1.0 GEV;
+        DRIFT A = (L = 1.0);
+        DRIFT B = (L = 2.0);
         LINE RING (A B);
         """,
-        filename = "error_line_missing_equals.sad")
+        filename = "line_without_equals.sad")
 
-    with pytest.raises(ValueError, match = "line"):
-        parse_sad_file(str(lattice_path), Config(_verbose = False))
+    parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
 
-def test_malformed_line_missing_parentheses_raises_clear_error(write_lattice):
+    assert parsed["lines"]["ring"] == ["a", "b"], (
+        "LINE without '=' should parse to the correct element list.")
+
+def test_line_without_parentheses_is_parsed_correctly(write_lattice):
     """
-    Line definitions without parentheses should fail clearly.
+    SAD accepts LINE definitions without parentheses (e.g. 'LINE RING = A B').
+    The converter must handle this and produce the correct element list.
     """
     lattice_path = write_lattice(
         """\
         MOMENTUM = 1.0 GEV;
+        DRIFT A = (L = 1.0);
+        DRIFT B = (L = 2.0);
         LINE RING = A B;
         """,
-        filename = "error_line_missing_parentheses.sad")
+        filename = "line_without_parentheses.sad")
 
-    with pytest.raises(ValueError, match = "line"):
-        parse_sad_file(str(lattice_path), Config(_verbose = False))
+    parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
+
+    assert parsed["lines"]["ring"] == ["a", "b"], (
+        "LINE without parentheses should parse to the correct element list.")
 
 def test_malformed_line_multiple_equals_raises_clear_error(write_lattice):
     """
