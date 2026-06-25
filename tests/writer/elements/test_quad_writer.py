@@ -379,7 +379,7 @@ def test_quad_writer_preserves_k1_and_k1s_simultaneously(tmp_path):
 ################################################################################
 # shift_x, shift_y, and rot_s_rad are NOT written as optics variables.
 # They are written as literal numeric strings in the lattice file, e.g.:
-#   env.new(name = 'q1', parent = 'quad_0.5', shift_x = '0.001')
+#   env.new(name = 'q1', prototype = 'quad_0.5', shift_x = '0.001')
 # The string is evaluated by Xsuite's expression engine when the file is
 # loaded. The tests below verify that positive, negative, and scientific-
 # notation values all survive this literal-string encoding correctly.

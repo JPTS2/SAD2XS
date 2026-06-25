@@ -31,8 +31,8 @@ def _write_and_load(line, tmp_path):
     clean Xsuite environment, and return the environment and reloaded line.
 
     The bend writer outputs:
-      - A base element: env.new(name='hbend...', parent=xt.Bend, length=L)
-      - A clone:        env.new(name='b1', parent='hbend...', angle='k0_b1 * L')
+      - A base element: env.new(name='hbend...', prototype=xt.Bend, length=L)
+      - A clone:        env.new(name='b1', prototype='hbend...', angle='k0_b1 * L')
       - Optics file:    k0_b1 = angle/length   (24 decimal places)
 
     The angle is therefore a live deferred expression: modifying env['k0_b1']

@@ -63,15 +63,15 @@ def create_corrector_lattice_file_information(
 
     for hcorr_name, hcorr_length in zip(hcorr_names, hcorr_lengths):
         output_string += f"""
-env.new(name = '{hcorr_name}', parent = xt.Bend, length = {hcorr_length})"""
+env.new(name = '{hcorr_name}', prototype = xt.Bend, length = {hcorr_length})"""
 
     for vcorr_name, vcorr_length in zip(vcorr_names, vcorr_lengths):
         output_string += f"""
-env.new(name = '{vcorr_name}', parent = xt.Bend, length = {vcorr_length}, rot_s_rad = +np.pi/2)"""
+env.new(name = '{vcorr_name}', prototype = xt.Bend, length = {vcorr_length}, rot_s_rad = +np.pi/2)"""
 
     for scorr_name, scorr_length in zip(scorr_names, scorr_lengths):
         output_string += f"""
-env.new(name = '{scorr_name}', parent = xt.Bend, length = {scorr_length})"""
+env.new(name = '{scorr_name}', prototype = xt.Bend, length = {scorr_length})"""
 
     output_string += "\n"
 
@@ -96,14 +96,14 @@ env.new(name = '{scorr_name}', parent = xt.Bend, length = {scorr_length})"""
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):
                 corr_generation = f"""
-env.new(name = '{replica_name}', parent = '{hcorr}', k0 = 'k0_{replica_variable}')"""
+env.new(name = '{replica_name}', prototype = '{hcorr}', k0 = 'k0_{replica_variable}')"""
 
             # Otherwise do the full version
             else:
                 corr_generation = f"""
 env.new(
     name                    = '{replica_name}',
-    parent                  = '{hcorr}',
+    prototype               = '{hcorr}',
     k0                      = 'k0_{replica_variable}'"""
                 if line[replica_name].k1 != 0:
                     corr_generation += f""",
@@ -157,14 +157,14 @@ env.new(
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):
                 corr_generation = f"""
-env.new(name = '{replica_name}', parent = '{vcorr}', k0 = 'k0_{replica_variable}')"""
+env.new(name = '{replica_name}', prototype = '{vcorr}', k0 = 'k0_{replica_variable}')"""
 
             # Otherwise do the full version
             else:
                 corr_generation = f"""
 env.new(
     name                    = '{replica_name}',
-    parent                  = '{vcorr}',
+    prototype               = '{vcorr}',
     k0                      = 'k0_{replica_variable}'"""
                 if line[replica_name].k1 != 0:
                     corr_generation += f""",
@@ -217,14 +217,14 @@ env.new(
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):
                 corr_generation = f"""
-env.new(name = '{replica_name}', parent = '{scorr}', k0 = 'k0_{replica_variable}', rot_s_rad = '{line[replica_name].rot_s_rad}')"""
+env.new(name = '{replica_name}', prototype = '{scorr}', k0 = 'k0_{replica_variable}', rot_s_rad = '{line[replica_name].rot_s_rad}')"""
 
             # Otherwise do the full version
             else:
                 corr_generation = f"""
 env.new(
     name                    = '{replica_name}',
-    parent                  = '{scorr}',
+    prototype               = '{scorr}',
     k0                      = 'k0_{replica_variable}'"""
                 if line[replica_name].k1 != 0:
                     corr_generation += f""",
