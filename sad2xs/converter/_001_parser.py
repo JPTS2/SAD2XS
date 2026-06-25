@@ -249,11 +249,11 @@ def parse_sad_file(
     for section in parsed_sections[:]:
         section_command = section.split()[0]
 
-        if section_command.startswith("on"):
+        if section_command == "on":
             parsed_sections.remove(section)
             continue
 
-        if section_command.startswith("off"):
+        if section_command == "off":
             parsed_sections.remove(section)
             continue
 
@@ -269,7 +269,7 @@ def parse_sad_file(
         ########################################
         # Momentum
         ########################################
-        if section_command.startswith("momentum"):
+        if section_command.split("=")[0] == "momentum":
 
             momentum    = section
             momentum    = momentum.replace("momentum", "")
@@ -288,7 +288,7 @@ def parse_sad_file(
         ########################################
         # Mass
         ########################################
-        if section_command.startswith("mass"):
+        if section_command.split("=")[0] == "mass":
 
             mass    = section
             mass    = mass.replace("mass", "")
@@ -307,7 +307,7 @@ def parse_sad_file(
         ########################################
         # Charge
         ########################################
-        if section_command.startswith("charge"):
+        if section_command.split("=")[0] == "charge":
 
             charge  = section
             charge  = charge.replace("charge", "")
@@ -326,7 +326,7 @@ def parse_sad_file(
         ########################################
         # Frequency Shift
         ########################################
-        if section_command.startswith("fshift"):
+        if section_command.split("=")[0] == "fshift":
 
             fshift  = section
             fshift  = fshift.replace("fshift", "")
