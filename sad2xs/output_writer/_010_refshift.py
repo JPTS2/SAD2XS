@@ -102,7 +102,7 @@ def create_refshift_lattice_file_information(
             output_string += f"""
 env.new(
     name        = '{translation_name}',
-    parent      = xt.Translation,
+    prototype   = xt.Translation,
     shift_x     = 'dx_{translation_variable_name}',
     shift_y     = 'dy_{translation_variable_name}')"""
 
@@ -129,7 +129,7 @@ env.new(
             output_string += f"""
 env.new(
     name        = '{timedelay_name}',
-    parent      = xt.TimeDelay,
+    prototype   = xt.TimeDelay,
     shift_zeta  = 'dz_{timedelay_variable_name}')"""
 
         output_string += "\n"
@@ -155,7 +155,7 @@ env.new(
             output_string += f"""
 env.new(
     name        = '{rotation_name}',
-    parent      = xt.Rotation,
+    prototype   = xt.Rotation,
     rot_y_rad   = 'chi1_{rotation_variable_name}',
     rot_x_rad   = 'chi2_{rotation_variable_name}',
     rot_s_rad   = 'chi3_{rotation_variable_name}')"""

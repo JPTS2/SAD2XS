@@ -33,9 +33,9 @@ def create_reversed_component(component, environment):
     ########################################
     if isinstance(environment.element_dict[component[1:]], xt.Bend):
         environment.new(
-            name    = component,
-            parent  = component[1:],
-            mode    = "clone")
+            name      = component,
+            prototype = component[1:],
+            mode      = "clone")
         environment[component].edge_entry_angle  =\
             environment[component[1:]].edge_exit_angle
         environment[component].edge_exit_angle   =\
@@ -46,9 +46,9 @@ def create_reversed_component(component, environment):
     ########################################
     elif isinstance(environment.element_dict[component[1:]], xt.UniformSolenoid):
         environment.new(
-            name    = component,
-            parent  = component[1:],
-            mode    = "clone")
+            name      = component,
+            prototype = component[1:],
+            mode      = "clone")
         environment[component].ks  *= -1
 
     ########################################
@@ -56,9 +56,9 @@ def create_reversed_component(component, environment):
     ########################################
     elif isinstance(environment.element_dict[component[1:]], xt.Translation):
         environment.new(
-            name    = component,
-            parent  = component[1:],
-            mode    = "clone")
+            name      = component,
+            prototype = component[1:],
+            mode      = "clone")
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
@@ -66,9 +66,9 @@ def create_reversed_component(component, environment):
     ########################################
     elif isinstance(environment.element_dict[component[1:]], xt.TimeDelay):
         environment.new(
-            name    = component,
-            parent  = component[1:],
-            mode    = "clone")
+            name      = component,
+            prototype = component[1:],
+            mode      = "clone")
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
@@ -76,9 +76,9 @@ def create_reversed_component(component, environment):
     ########################################
     elif isinstance(environment.element_dict[component[1:]], xt.Rotation):
         environment.new(
-            name    = component,
-            parent  = component[1:],
-            mode    = "clone")
+            name      = component,
+            prototype = component[1:],
+            mode      = "clone")
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################

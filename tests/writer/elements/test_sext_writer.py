@@ -379,7 +379,7 @@ def test_sext_writer_preserves_k2_and_k2s_simultaneously(tmp_path):
 ################################################################################
 # shift_x, shift_y, and rot_s_rad are NOT written as optics variables.
 # They are written as literal numeric strings in the lattice file, e.g.:
-#   env.new(name = 's1', parent = 'sext_0.3', shift_x = '0.001')
+#   env.new(name = 's1', prototype = 'sext_0.3', shift_x = '0.001')
 # The string is evaluated by Xsuite's expression engine when the file is
 # loaded. The tests below verify that positive, negative, and scientific-
 # notation values all survive this literal-string encoding correctly.

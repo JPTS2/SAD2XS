@@ -85,7 +85,7 @@ ALL_MARKERS = [
         subsequent_indent   = '    ',
         break_on_hyphens    = False)}]
 for marker in ALL_MARKERS:
-    env.new(name = marker, parent = xt.Marker)"""
+    env.new(name = marker, prototype = xt.Marker)"""
 
     ########################################
     # Return
