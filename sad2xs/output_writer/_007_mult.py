@@ -77,7 +77,7 @@ def create_multipole_lattice_file_information(
         output_string += f"""
 env.new(
     name                = '{mult_name}',
-    parent              = xt.Multipole,
+    prototype           = xt.Multipole,
     length              = {mult_length},
     _isthick            = True,
     order               = {config.MAX_KNL_ORDER})"""
@@ -103,7 +103,7 @@ env.new(
 
             if check_is_simple_unpowered_multipole(line, replica_name):
                 output_string += f"""
-env.new(name = '{replica_name}', parent = '{mult}')"""
+env.new(name = '{replica_name}', prototype = '{mult}')"""
 
             else:
                 # Get the replica information
@@ -117,7 +117,7 @@ env.new(name = '{replica_name}', parent = '{mult}')"""
                 mult_generation = f"""
 env.new(
     name        = '{replica_name}',
-    parent      = '{mult}'"""
+    prototype   = '{mult}'"""
 
                 # Strength information                    
                 if knl != "[]":

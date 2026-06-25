@@ -334,9 +334,9 @@ def convert_drifts(parsed_elements, environment):
         # Create Element
         ########################################
         environment.new(
-            name    = ele_name,
-            parent  = xt.Drift,
-            length  = length)
+            name      = ele_name,
+            prototype = xt.Drift,
+            length    = length)
 
 ################################################################################
 # Convert Bends
@@ -365,7 +365,7 @@ def convert_bends(parsed_elements, environment, config):
                         print(f"Warning! Bend {ele_name} missing length and installed as marker")
                     environment.new(
                         name                = ele_name,
-                        parent              = xt.Marker)
+                        prototype           = xt.Marker)
                     continue
 
             ########################################
@@ -391,10 +391,10 @@ def convert_bends(parsed_elements, environment, config):
             # bending and dispersion generation (without it px and dpx are wrong)
             if isinstance(length, float) and np.isclose(length, 0.0):
                 environment.new(
-                    name    = ele_name,
-                    parent  = xt.Multipole,
-                    knl     = [k0l],
-                    hxl     = k0l)
+                    name      = ele_name,
+                    prototype = xt.Multipole,
+                    knl       = [k0l],
+                    hxl       = k0l)
                 continue
 
             if "k1" in ele_vars:
@@ -438,7 +438,7 @@ def convert_bends(parsed_elements, environment, config):
             ########################################
             environment.new(
                 name                = ele_name,
-                parent              = xt.Bend,
+                prototype           = xt.Bend,
                 length              = length,
                 angle               = angle,
                 k0                  = k0,
@@ -491,8 +491,8 @@ def convert_correctors(parsed_elements, environment, config):
                     print(f"Warning! Corrector {ele_name} missing length and installed as marker")
 
                 environment.new(
-                    name    = ele_name,
-                    parent  = xt.Marker)
+                    name      = ele_name,
+                    prototype = xt.Marker)
                 continue
 
             if "k0" in ele_vars:
@@ -524,7 +524,7 @@ def convert_correctors(parsed_elements, environment, config):
             ########################################
             environment.new(
                 name                = ele_name,
-                parent              = xt.Bend,
+                prototype           = xt.Bend,
                 length              = length,
                 k0                  = k0,
                 k1                  = k1,
@@ -601,7 +601,7 @@ def _convert_typed_multipole(ele_name, ele_vars, environment, n, xtype, k_name):
         ksl_arr[k_idx] = ksl
         environment.new(
             name      = ele_name,
-            parent    = xt.Multipole,
+            prototype = xt.Multipole,
             knl       = knl_arr,
             ksl       = ksl_arr,
             shift_x   = shift_x,
@@ -645,7 +645,7 @@ def _convert_typed_multipole(ele_name, ele_vars, environment, n, xtype, k_name):
 
     environment.new(
         name        = ele_name,
-        parent      = xtype,
+        prototype   = xtype,
         length      = length,
         **{k_name: k, ks_name: ks},
         shift_x     = shift_x,
@@ -788,7 +788,7 @@ def convert_multipoles(
                     ####################
                     environment.new(
                         name                = ele_name,
-                        parent              = xt.Bend,
+                        prototype           = xt.Bend,
                         length              = length,
                         k0                  = k0,
                         shift_x             = shift_x,
@@ -828,7 +828,7 @@ def convert_multipoles(
                     ####################
                     environment.new(
                         name                = ele_name,
-                        parent              = xt.Quadrupole,
+                        prototype           = xt.Quadrupole,
                         length              = length,
                         k1                  = k1,
                         k1s                 = k1s,
@@ -869,7 +869,7 @@ def convert_multipoles(
                     ####################
                     environment.new(
                         name                = ele_name,
-                        parent              = xt.Sextupole,
+                        prototype           = xt.Sextupole,
                         length              = length,
                         k2                  = k2,
                         k2s                 = k2s,
@@ -910,7 +910,7 @@ def convert_multipoles(
                     ####################
                     environment.new(
                         name                = ele_name,
-                        parent              = xt.Octupole,
+                        prototype           = xt.Octupole,
                         length              = length,
                         k3                  = k3,
                         k3s                 = k3s,
@@ -971,7 +971,7 @@ def convert_multipoles(
                 ####################
                 environment.new(
                     name                = ele_name,
-                    parent              = xt.Bend,
+                    prototype           = xt.Bend,
                     length              = length,
                     k0                  = k0,
                     shift_x             = shift_x,
@@ -1016,7 +1016,7 @@ def convert_multipoles(
                 ####################
                 environment.new(
                     name                = ele_name,
-                    parent              = xt.Quadrupole,
+                    prototype           = xt.Quadrupole,
                     length              = length,
                     k1                  = k1,
                     k1s                 = k1s,
@@ -1062,7 +1062,7 @@ def convert_multipoles(
                 ####################
                 environment.new(
                     name                = ele_name,
-                    parent              = xt.Sextupole,
+                    prototype           = xt.Sextupole,
                     length              = length,
                     k2                  = k2,
                     k2s                 = k2s,
@@ -1108,7 +1108,7 @@ def convert_multipoles(
                 ####################
                 environment.new(
                     name                = ele_name,
-                    parent              = xt.Octupole,
+                    prototype           = xt.Octupole,
                     length              = length,
                     k3                  = k3,
                     k3s                 = k3s,
@@ -1122,7 +1122,7 @@ def convert_multipoles(
         ########################################
         environment.new(
             name        = ele_name,
-            parent      = xt.Multipole,
+            prototype   = xt.Multipole,
             _isthick    = True,
             length      = length,
             knl         = knl,
@@ -1196,7 +1196,7 @@ def convert_cavities(parsed_elements, environment, config):
         ########################################
         environment.new(
             name        = ele_name,
-            parent      = xt.Cavity,
+            prototype   = xt.Cavity,
             length      = length,
             voltage     = voltage,
             frequency   = freq,
@@ -1375,7 +1375,7 @@ def convert_apertures(parsed_elements, environment):
         if aper_type == "LimitRect":
             environment.new(
                 name      = ele_name,
-                parent    = xt.LimitRect,
+                prototype = xt.LimitRect,
                 min_x     = dx1,
                 max_x     = dx2,
                 min_y     = dy1,
@@ -1386,7 +1386,7 @@ def convert_apertures(parsed_elements, environment):
         elif aper_type == "LimitEllipse":
             environment.new(
                 name      = ele_name,
-                parent    = xt.LimitEllipse,
+                prototype = xt.LimitEllipse,
                 a         = a,
                 b         = b,
                 shift_x   = offset_x,
@@ -1395,7 +1395,7 @@ def convert_apertures(parsed_elements, environment):
         elif aper_type == "LimitRectEllipse":
             environment.new(
                 name      = ele_name,
-                parent    = xt.LimitRectEllipse,
+                prototype = xt.LimitRectEllipse,
                 max_x     = dx2,
                 max_y     = dy2,
                 a         = a,
@@ -1565,24 +1565,24 @@ def convert_solenoids(
             # Create the elements
             ########################################
             environment.new(
-                name    = f"{ele_name}_bound",
-                parent  = xt.UniformSolenoid,
-                ks      = ks)
+                name      = f"{ele_name}_bound",
+                prototype = xt.UniformSolenoid,
+                ks        = ks)
 
             environment.new(
-                name    = f"{ele_name}_dxy",
-                parent  = xt.Translation,
-                shift_x = offset_x,
-                shift_y = offset_y)
+                name      = f"{ele_name}_dxy",
+                prototype = xt.Translation,
+                shift_x   = offset_x,
+                shift_y   = offset_y)
 
             environment.new(
-                name    = f"{ele_name}_dz",
-                parent  = xt.TimeDelay,
+                name       = f"{ele_name}_dz",
+                prototype  = xt.TimeDelay,
                 shift_zeta = offset_z)
 
             environment.new(
                 name        = f"{ele_name}_rot",
-                parent      = xt.Rotation,
+                prototype   = xt.Rotation,
                 rot_y_rad   = rot_chi1,
                 rot_x_rad   = rot_chi2,
                 rot_s_rad   = rot_chi3)
@@ -1604,9 +1604,9 @@ def convert_solenoids(
             continue
         else:
             environment.new(
-                name    = f"{ele_name}",
-                parent  = xt.UniformSolenoid,
-                ks      = ks)
+                name      = f"{ele_name}",
+                prototype = xt.UniformSolenoid,
+                ks        = ks)
             continue
 
 ################################################################################
@@ -1625,8 +1625,8 @@ def convert_markers(parsed_elements, environment):
         # Create Element
         ########################################
         environment.new(
-                name    = ele_name,
-                parent  = xt.Marker)
+                name      = ele_name,
+                prototype = xt.Marker)
         continue
 
 ################################################################################
@@ -1645,8 +1645,8 @@ def convert_monitors(parsed_elements, environment):
         # Create Element
         ########################################
         environment.new(
-                name    = ele_name,
-                parent  = xt.Marker)
+                name      = ele_name,
+                prototype = xt.Marker)
         continue
 
 ################################################################################
@@ -1665,8 +1665,8 @@ def convert_beam_beam(parsed_elements, environment):
         # Create Element
         ########################################
         environment.new(
-                name    = ele_name,
-                parent  = xt.Marker)
+                name      = ele_name,
+                prototype = xt.Marker)
         continue
 
 ################################################################################
@@ -1806,8 +1806,8 @@ def convert_coordinate_transformations(
         if n_transforms == 0:
             # In this case, it is some transform, but we don"t know what, so guess this
             environment.new(
-                name    = ele_name,
-                parent  = xt.Translation)
+                name      = ele_name,
+                prototype = xt.Translation)
             if config._verbose:
                 print(
                     f"Warning! Coordinate transformation {ele_name} has no transformations defined, " +\
@@ -1816,35 +1816,35 @@ def convert_coordinate_transformations(
         elif n_transforms == 1:
             if offset_x != 0:
                 environment.new(
-                    name    = ele_name,
-                    parent  = xt.Translation,
-                    shift_x = offset_x)
+                    name      = ele_name,
+                    prototype = xt.Translation,
+                    shift_x   = offset_x)
             if offset_y != 0:
                 environment.new(
-                    name    = ele_name,
-                    parent  = xt.Translation,
-                    shift_y = offset_y)
+                    name      = ele_name,
+                    prototype = xt.Translation,
+                    shift_y   = offset_y)
             if rot_chi1 != 0:
                 environment.new(
                     name        = ele_name,
-                    parent      = xt.Rotation,
+                    prototype   = xt.Rotation,
                     rot_y_rad   = rot_chi1)
             if rot_chi2 != 0:
                 environment.new(
                     name        = ele_name,
-                    parent      = xt.Rotation,
+                    prototype   = xt.Rotation,
                     rot_x_rad   = rot_chi2)
             if rot_chi3 != 0:
                 environment.new(
                     name        = ele_name,
-                    parent      = xt.Rotation,
+                    prototype   = xt.Rotation,
                     rot_s_rad   = rot_chi3)
         elif n_transforms == 2 and offset_x != 0 and offset_y != 0:
             environment.new(
-                name    = ele_name,
-                parent  = xt.Translation,
-                shift_x = offset_x,
-                shift_y = offset_y)
+                name      = ele_name,
+                prototype = xt.Translation,
+                shift_x   = offset_x,
+                shift_y   = offset_y)
         else:
             compound_coord_transform_components = []
             # Order from testing and agrees with the SAD manual online
@@ -1854,30 +1854,30 @@ def convert_coordinate_transformations(
                 if rot_chi1 != 0:
                     environment.new(
                         name        = f"{ele_name}_chi1",
-                        parent      = xt.Rotation,
+                        prototype   = xt.Rotation,
                         rot_y_rad   = rot_chi1)
                     compound_coord_transform_components.append(f"{ele_name}_chi1")
                 # chi2 (rot_x_rad) Second
                 if rot_chi2 != 0:
                     environment.new(
                         name        = f"{ele_name}_chi2",
-                        parent      = xt.Rotation,
+                        prototype   = xt.Rotation,
                         rot_x_rad   = rot_chi2)
                     compound_coord_transform_components.append(f"{ele_name}_chi2")
                 # chi3 (rot_s_rad) Third
                 if rot_chi3 != 0:
                     environment.new(
                         name        = f"{ele_name}_chi3",
-                        parent      = xt.Rotation,
+                        prototype   = xt.Rotation,
                         rot_s_rad   = rot_chi3)
                     compound_coord_transform_components.append(f"{ele_name}_chi3")
                 # Transverse Shifts Last
                 if offset_x != 0 or offset_y != 0:
                     environment.new(
-                        name    = f"{ele_name}_dxy",
-                        parent  = xt.Translation,
-                        shift_x = offset_x,
-                        shift_y = offset_y)
+                        name      = f"{ele_name}_dxy",
+                        prototype = xt.Translation,
+                        shift_x   = offset_x,
+                        shift_y   = offset_y)
                     compound_coord_transform_components.append(f"{ele_name}_dxy")
 
                 environment.new_line(
@@ -1888,30 +1888,30 @@ def convert_coordinate_transformations(
                 # Transverse Shifts First
                 if offset_x != 0 or offset_y != 0:
                     environment.new(
-                        name    = f"{ele_name}_dxy",
-                        parent  = xt.Translation,
-                        shift_x = offset_x,
-                        shift_y = offset_y)
+                        name      = f"{ele_name}_dxy",
+                        prototype = xt.Translation,
+                        shift_x   = offset_x,
+                        shift_y   = offset_y)
                     compound_coord_transform_components.append(f"{ele_name}_dxy")
                 # chi1 (rot_y_rad) Second
                 if rot_chi1 != 0:
                     environment.new(
                         name        = f"{ele_name}_chi1",
-                        parent      = xt.Rotation,
+                        prototype   = xt.Rotation,
                         rot_y_rad   = rot_chi1)
                     compound_coord_transform_components.append(f"{ele_name}_chi1")
                 # chi2 (rot_x_rad) Third
                 if rot_chi2 != 0:
                     environment.new(
                         name        = f"{ele_name}_chi2",
-                        parent      = xt.Rotation,
+                        prototype   = xt.Rotation,
                         rot_x_rad   = rot_chi2)
                     compound_coord_transform_components.append(f"{ele_name}_chi2")
                 # chi3 (rot_s_rad) Fourth
                 if rot_chi3 != 0:
                     environment.new(
                         name        = f"{ele_name}_chi3",
-                        parent      = xt.Rotation,
+                        prototype   = xt.Rotation,
                         rot_s_rad   = rot_chi3)
                     compound_coord_transform_components.append(f"{ele_name}_chi3")
 

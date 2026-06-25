@@ -264,9 +264,9 @@ def test_element_expression_uses_converted_deferred_expression(write_lattice):
 
     parsed, environment = parse_and_convert_expressions(lattice_path)
     environment.new(
-        name    = "d1",
-        parent  = xt.Drift,
-        length  = parsed["elements"]["drift"]["d1"]["l"])
+        name      = "d1",
+        prototype = xt.Drift,
+        length    = parsed["elements"]["drift"]["d1"]["l"])
 
     assert environment["d1"].length == pytest.approx(2.0), (
         "Element parameters should resolve converted deferred expressions.")

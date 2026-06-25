@@ -74,7 +74,7 @@ def create_sextupole_lattice_file_information(
 
     for sext_name, sext_length in zip(sext_names, sext_lengths):
         output_string += f"""
-env.new(name = '{sext_name}', parent = xt.Sextupole, length = {sext_length})"""
+env.new(name = '{sext_name}', prototype = xt.Sextupole, length = {sext_length})"""
 
     output_string += "\n"
 
@@ -99,10 +99,10 @@ env.new(name = '{sext_name}', parent = xt.Sextupole, length = {sext_length})"""
 
                 if not check_is_skew_quad_sext_oct(line, replica_name, "Sextupole"):
                     output_string += f"""
-env.new(name = '{replica_name}', parent = '{sext}', k2 = 'k2_{replica_name}')"""
+env.new(name = '{replica_name}', prototype = '{sext}', k2 = 'k2_{replica_name}')"""
                 else:
                     output_string += f"""
-env.new(name = '{replica_name}', parent = '{sext}', k2s = 'k2s_{replica_name}')"""
+env.new(name = '{replica_name}', prototype = '{sext}', k2s = 'k2s_{replica_name}')"""
 
             else:
                 # Get the replica information
@@ -118,7 +118,7 @@ env.new(name = '{replica_name}', parent = '{sext}', k2s = 'k2s_{replica_name}')"
                 sext_generation = f"""
 env.new(
     name        = '{replica_name}',
-    parent      = '{sext}'"""
+    prototype   = '{sext}'"""
 
                 # Strength information
                 if k2 != 0:

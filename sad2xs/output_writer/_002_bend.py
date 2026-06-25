@@ -75,15 +75,15 @@ def create_bend_lattice_file_information(
 
     for hbend_name, hbend_length in zip(hbend_names, hbend_lengths):
         output_string += f"""
-env.new(name = '{hbend_name}', parent = xt.Bend, length = {hbend_length})"""
+env.new(name = '{hbend_name}', prototype = xt.Bend, length = {hbend_length})"""
 
     for vbend_name, vbend_length in zip(vbend_names, vbend_lengths):
         output_string += f"""
-env.new(name = '{vbend_name}', parent = xt.Bend, length = {vbend_length}, rot_s_rad = +np.pi/2)"""
+env.new(name = '{vbend_name}', prototype = xt.Bend, length = {vbend_length}, rot_s_rad = +np.pi/2)"""
 
     for sbend_name, sbend_length in zip(sbend_names, sbend_lengths):
         output_string += f"""
-env.new(name = '{sbend_name}', parent = xt.Bend, length = {sbend_length})"""
+env.new(name = '{sbend_name}', prototype = xt.Bend, length = {sbend_length})"""
 
     output_string += "\n"
 
@@ -108,14 +108,14 @@ env.new(name = '{sbend_name}', parent = xt.Bend, length = {sbend_length})"""
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):
                 bend_generation = f"""
-env.new(name = '{replica_name}', parent = '{hbend}', angle = {line[replica_name].angle:.24f}, k0 = 'k0_{replica_variable}')"""
+env.new(name = '{replica_name}', prototype = '{hbend}', angle = {line[replica_name].angle:.24f}, k0 = 'k0_{replica_variable}')"""
 
             # Otherwise do the full version
             else:
                 bend_generation = f"""
 env.new(
     name                    = '{replica_name}',
-    parent                  = '{hbend}',
+    prototype               = '{hbend}',
     angle                   = {line[replica_name].angle:.24f},
     k0                      = 'k0_{replica_variable}'"""
                 if line[replica_name].k1 != 0:
@@ -170,14 +170,14 @@ env.new(
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):
                 bend_generation = f"""
-env.new(name = '{replica_name}', parent = '{vbend}', angle = {line[replica_name].angle:.24f}, k0 = 'k0_{replica_variable}')"""
+env.new(name = '{replica_name}', prototype = '{vbend}', angle = {line[replica_name].angle:.24f}, k0 = 'k0_{replica_variable}')"""
 
             # Otherwise do the full version
             else:
                 bend_generation = f"""
 env.new(
     name                    = '{replica_name}',
-    parent                  = '{vbend}',
+    prototype               = '{vbend}',
     angle                   = {line[replica_name].angle:.24f},
     k0                      = 'k0_{replica_variable}'"""
                 if line[replica_name].k1 != 0:
@@ -231,14 +231,14 @@ env.new(
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, replica_name):
                 bend_generation = f"""
-env.new(name = '{replica_name}', parent = '{sbend}', angle = {line[replica_name].angle:.24f}, k0 = 'k0_{replica_variable}', rot_s_rad = '{line[replica_name].rot_s_rad}')"""
+env.new(name = '{replica_name}', prototype = '{sbend}', angle = {line[replica_name].angle:.24f}, k0 = 'k0_{replica_variable}', rot_s_rad = '{line[replica_name].rot_s_rad}')"""
 
             # Otherwise do the full version
             else:
                 bend_generation = f"""
 env.new(
     name                    = '{replica_name}',
-    parent                  = '{sbend}',
+    prototype               = '{sbend}',
     angle                   = {line[replica_name].angle:.24f},
     k0                      = 'k0_{replica_variable}'"""
                 if line[replica_name].k1 != 0:

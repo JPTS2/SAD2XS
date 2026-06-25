@@ -64,7 +64,7 @@ def create_drift_lattice_file_information(
     for drift in unique_drift_names:
         length          = line[drift].length
         output_string   += f"""
-env.new(name = '{drift}', parent = xt.Drift, length = {length})"""
+env.new(name = '{drift}', prototype = xt.Drift, length = {length})"""
 
     ########################################
     # Return

@@ -76,7 +76,7 @@ def create_solenoid_lattice_file_information(
         output_string += f"""
 env.new(
     name                = '{sol_name}',
-    parent              = xt.UniformSolenoid,
+    prototype           = xt.UniformSolenoid,
     length              = {sol_length},
     order               = {config.MAX_KNL_ORDER})"""
 
@@ -119,7 +119,7 @@ env.new(
             sol_generation = f"""
 env.new(
     name        = '{replica_name}',
-    parent      = '{sol}'"""
+    prototype   = '{sol}'"""
 
             # Strength information
             if ks != 0:
