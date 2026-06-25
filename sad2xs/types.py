@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       2026-06-25
 """
 
 ################################################################################
@@ -24,6 +24,7 @@ class ConfigLike(Protocol):
     _test_mode:                     bool
     _replace_repeated_elements:     bool
     _install_offset_markers:        bool
+    _install_apertures_as_markers:  bool
 
     ASCII_LOGO:                     str
 
