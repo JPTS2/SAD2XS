@@ -14,6 +14,8 @@ Date:       2026-06-25
 """
 import pytest
 
+from sad2xs.config import PROTECTED_ELEMENT_NAMES
+
 ################################################################################
 # Global keyword prefix collisions
 #
@@ -73,6 +75,38 @@ def test_repeated_element_name_same_type_is_accepted(sad_accepts):
         "DRIFT E1 = (L = 2.0);\n"
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START E1 END);")
+
+
+################################################################################
+# Protected element names (SAD2XS-level guard)
+#
+# These names collide with Xsuite environment variables created during
+# conversion. SAD itself has no restriction on using them as element names —
+# the protection is a SAD2XS concern, not a SAD concern.
+################################################################################
+
+@pytest.mark.parametrize("protected_name", sorted(PROTECTED_ELEMENT_NAMES))
+def test_protected_element_name_is_accepted_by_sad(sad_accepts, protected_name):
+    """
+    SAD accepts element definitions whose names collide with SAD2XS protected
+    names. The SAD2XS guard is needed precisely because SAD does not enforce it.
+    """
+    sad_accepts(
+        f"DRIFT {protected_name.upper()} = (L = 1.0);\n"
+        f"MARK START = ()\n     END   = ();\n"
+        f"LINE TEST = (START {protected_name.upper()} END);")
+
+
+def test_fshift_as_element_name_is_rejected_by_sad(sad_rejects):
+    """
+    FSHIFT is a SAD global keyword: SAD rejects it as an element name.
+    It is therefore not in the SAD2XS protected-name set — SAD handles this
+    case itself before conversion is ever attempted.
+    """
+    sad_rejects(
+        "DRIFT FSHIFT = (L = 1.0);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START FSHIFT END);")
 
 
 ################################################################################
