@@ -81,7 +81,7 @@ def create_cavity_lattice_file_information(
         cavity_generation   = f"""
 env.new(
     name        = '{cavi_name}',
-    parent      = xt.Cavity"""
+    prototype   = xt.Cavity"""
         if length != 0:
             cavity_generation += f""",
     length      = {length}"""

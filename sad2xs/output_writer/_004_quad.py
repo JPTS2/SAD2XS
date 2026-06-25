@@ -74,7 +74,7 @@ def create_quadrupole_lattice_file_information(
 
     for quad_name, quad_length in zip(quad_names, quad_lengths):
         output_string += f"""
-env.new(name = '{quad_name}', parent = xt.Quadrupole, length = {quad_length})"""
+env.new(name = '{quad_name}', prototype = xt.Quadrupole, length = {quad_length})"""
 
     output_string += "\n"
 
@@ -99,10 +99,10 @@ env.new(name = '{quad_name}', parent = xt.Quadrupole, length = {quad_length})"""
 
                 if not check_is_skew_quad_sext_oct(line, replica_name, "Quadrupole"):
                     output_string += f"""
-env.new(name = '{replica_name}', parent = '{quad}', k1 = 'k1_{replica_name}')"""
+env.new(name = '{replica_name}', prototype = '{quad}', k1 = 'k1_{replica_name}')"""
                 else:
                     output_string += f"""
-env.new(name = '{replica_name}', parent = '{quad}', k1s = 'k1s_{replica_name}')"""
+env.new(name = '{replica_name}', prototype = '{quad}', k1s = 'k1s_{replica_name}')"""
 
             else:
                 # Get the replica information
@@ -118,7 +118,7 @@ env.new(name = '{replica_name}', parent = '{quad}', k1s = 'k1s_{replica_name}')"
                 quad_generation = f"""
 env.new(
     name        = '{replica_name}',
-    parent      = '{quad}'"""
+    prototype   = '{quad}'"""
 
                 # Strength information
                 if k1 != 0:

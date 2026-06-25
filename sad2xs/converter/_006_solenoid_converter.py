@@ -211,10 +211,10 @@ def convert_solenoids(
 
                     if new_element_name not in environment.element_dict:        # type: ignore
                         environment.new(
-                            name    = new_element_name,
-                            parent  = xt.UniformSolenoid,
-                            length  = length,
-                            ks      = ks)
+                            name      = new_element_name,
+                            prototype = xt.UniformSolenoid,
+                            length    = length,
+                            ks        = ks)
                     line.element_names[idx] = new_element_name
 
                     if config._verbose:
@@ -246,7 +246,7 @@ def convert_solenoids(
                     if new_element_name not in environment.element_dict:        # type: ignore
                         environment.new(
                             name        = new_element_name,
-                            parent      = xt.UniformSolenoid,
+                            prototype   = xt.UniformSolenoid,
                             length      = length,
                             ks          = ks,
                             knl         = knl,
@@ -287,7 +287,7 @@ def convert_solenoids(
                     if new_element_name not in environment.element_dict:        # type: ignore
                         environment.new(
                             name				= new_element_name,
-                            parent				= xt.UniformSolenoid,
+                            prototype			= xt.UniformSolenoid,
                             length				= length,
                             ks					= ks,
                             knl					= knl,
@@ -328,7 +328,7 @@ def convert_solenoids(
                     if new_element_name not in environment.element_dict:     # type: ignore
                         environment.new(
                             name				= new_element_name,
-                            parent				= xt.UniformSolenoid,
+                            prototype			= xt.UniformSolenoid,
                             length				= length,
                             ks					= ks,
                             knl					= knl,
@@ -369,7 +369,7 @@ def convert_solenoids(
                     if new_element_name not in environment.element_dict:    # type: ignore
                         environment.new(
                             name				= new_element_name,
-                            parent				= xt.UniformSolenoid,
+                            prototype			= xt.UniformSolenoid,
                             length				= length,
                             ks					= ks,
                             knl					= knl,
@@ -406,7 +406,7 @@ def convert_solenoids(
                     environment.element_dict.pop(element)                       # type: ignore
                     environment.new(
                         name				= element,
-                        parent				= xt.UniformSolenoid,
+                        prototype			= xt.UniformSolenoid,
                         length				= length,
                         ks					= ks,
                         knl					= knl,

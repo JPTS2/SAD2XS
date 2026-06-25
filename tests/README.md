@@ -113,9 +113,9 @@ the marker controls CI selection only and does not use `xfail`.
 
 **50 failing tests** across `parser/`, `conversion/elements/`, and
 `conversion/pipeline/` document known incorrect behaviour in the production
-code. All 50 are linked to open GitHub issues. These tests are the spec for the fix work that follows. They must not be
-modified to pass — they are the record of what is broken and what needs to be
-done. All 51 are linked to open issues.
+code. All 50 are linked to open GitHub issues. These tests are the spec for the
+fix work that follows. They must not be modified to pass — they are the record
+of what is broken and what needs to be done.
 
 Never modify a failing test to make it pass artificially. Fix the root cause.
 If you add a test that documents a known bug, record it in the relevant folder

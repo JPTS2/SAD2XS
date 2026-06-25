@@ -32,17 +32,17 @@ def test_xsuite_environment_variable_and_element_installation():
     environment["k_test"] = 0.2
 
     environment.new(
-        name   = "test_quad",
-        parent = xt.Quadrupole,
-        length = 1.5,
-        k1     = "k_test")
+        name      = "test_quad",
+        prototype = xt.Quadrupole,
+        length    = 1.5,
+        k1        = "k_test")
 
     assert environment["k_test"] == pytest.approx(0.2), (
         "Xsuite Environment should preserve scalar variables assigned by SAD2XS.")
     assert "test_quad" in environment.element_dict, (
         "Xsuite Environment should expose created elements through element_dict.")
     assert isinstance(environment.element_dict["test_quad"], xt.Quadrupole), (
-        "Xsuite Environment should create elements with the requested parent class.")
+        "Xsuite Environment should create elements with the requested prototype class.")
     assert environment["test_quad"].k1 == pytest.approx(0.2), (
         "Xsuite Environment should resolve element fields backed by variables.")
 
@@ -53,16 +53,16 @@ def test_xsuite_environment_clone_mode_preserves_reversal_dependencies():
     environment = xt.Environment()
     environment.new(
         name            = "test_bend",
-        parent          = xt.Bend,
+        prototype       = xt.Bend,
         length          = 1.5,
         angle           = 0.03,
         edge_entry_angle = 0.01,
         edge_exit_angle  = 0.02)
 
     environment.new(
-        name   = "-test_bend",
-        parent = "test_bend",
-        mode   = "clone")
+        name      = "-test_bend",
+        prototype = "test_bend",
+        mode      = "clone")
 
     assert "-test_bend" in environment.element_dict, (
         "Xsuite Environment clone mode should create the reversed element name.")

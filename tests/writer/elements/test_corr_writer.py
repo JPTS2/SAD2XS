@@ -32,8 +32,8 @@ def _write_and_load(line, tmp_path):
 
     Correctors are xt.Bend elements with h = 0 (k0_from_h=False, angle=0,
     k0 set explicitly). The corrector writer outputs:
-      - A base element: env.new(name='hcorr...', parent=xt.Bend, length=L)
-      - A clone:        env.new(name='c1', parent='hcorr...', k0='k0_c1')
+      - A base element: env.new(name='hcorr...', prototype=xt.Bend, length=L)
+      - A clone:        env.new(name='c1', prototype='hcorr...', k0='k0_c1')
       - Optics file:    k0_c1 = <value>   (24 decimal places)
 
     This differs from the bend writer, which encodes the angle as a deferred

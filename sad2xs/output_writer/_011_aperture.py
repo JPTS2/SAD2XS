@@ -20,7 +20,7 @@ from ..types import ConfigLike
 ################################################################################
 def _get_unique_aperture_names(line_table: xd.table.Table) -> tuple:
     """
-    Collect the unique parent names of each aperture type in the line.
+    Collect the unique prototype names of each aperture type in the line.
 
     :param line_table: Table describing the line elements.
     :return: (unique_limitellipse_names, unique_limitrect_names,
@@ -133,7 +133,7 @@ env['a_{limitellipse_name}'] = 1.0
 env['b_{limitellipse_name}'] = 1.0
 env.new(
     name        = '{limitellipse_name}',
-    parent      = xt.LimitEllipse,
+    prototype   = xt.LimitEllipse,
     a           = 'a_{limitellipse_name}',
     b           = 'b_{limitellipse_name}',
     shift_x     = {shift_x},
@@ -172,7 +172,7 @@ env['min_y_{limitrect_name}'] = -1.0
 env['max_y_{limitrect_name}'] = 1.0
 env.new(
     name        = '{limitrect_name}',
-    parent      = xt.LimitRect,
+    prototype   = xt.LimitRect,
     min_x       = 'min_x_{limitrect_name}',
     max_x       = 'max_x_{limitrect_name}',
     min_y       = 'min_y_{limitrect_name}',
@@ -213,7 +213,7 @@ env['a_{limitrectellipse_name}'] = 1.0
 env['b_{limitrectellipse_name}'] = 1.0
 env.new(
     name        = '{limitrectellipse_name}',
-    parent      = xt.LimitRectEllipse,
+    prototype   = xt.LimitRectEllipse,
     max_x       = 'max_x_{limitrectellipse_name}',
     max_y       = 'max_y_{limitrectellipse_name}',
     a           = 'a_{limitrectellipse_name}',

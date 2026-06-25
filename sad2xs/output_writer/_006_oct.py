@@ -74,7 +74,7 @@ def create_octupole_lattice_file_information(
 
     for oct_name, oct_length in zip(oct_names, oct_lengths):
         output_string += f"""
-env.new(name = '{oct_name}', parent = xt.Octupole, length = {oct_length})"""
+env.new(name = '{oct_name}', prototype = xt.Octupole, length = {oct_length})"""
 
     output_string += "\n"
 
@@ -99,10 +99,10 @@ env.new(name = '{oct_name}', parent = xt.Octupole, length = {oct_length})"""
 
                 if not check_is_skew_quad_sext_oct(line, replica_name, "Octupole"):
                     output_string += f"""
-env.new(name = '{replica_name}', parent = '{oct}', k3 = 'k3_{replica_name}')"""
+env.new(name = '{replica_name}', prototype = '{oct}', k3 = 'k3_{replica_name}')"""
                 else:
                     output_string += f"""
-env.new(name = '{replica_name}', parent = '{oct}', k3s = 'k3s_{replica_name}')"""
+env.new(name = '{replica_name}', prototype = '{oct}', k3s = 'k3s_{replica_name}')"""
 
             else:
                 # Get the replica information
@@ -118,7 +118,7 @@ env.new(name = '{replica_name}', parent = '{oct}', k3s = 'k3s_{replica_name}')""
                 oct_generation = f"""
 env.new(
     name        = '{replica_name}',
-    parent      = '{oct}'"""
+    prototype   = '{oct}'"""
 
                 # Strength information
                 if k3 != 0:
