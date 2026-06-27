@@ -3,7 +3,7 @@ Unofficial SAD to XSuite Lattice Converter
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-25
+Date:       2026-06-27
 """
 
 ################################################################################
@@ -12,7 +12,7 @@ Date:       2026-06-25
 import xtrack as xt
 
 from .config import Config
-from .helpers import print_section_heading
+from .helpers import print_section_heading, species_from_mass_and_charge
 
 from .converter._001_parser import parse_sad_file
 from .converter._002_element_exclusion import exclude_elements
@@ -115,12 +115,22 @@ def convert_sad_to_xsuite(
         config              = config)
 
     ########################################
+    # Apply reverse_charge before element conversion so brho is correct
+    ########################################
+    if reverse_charge:
+        env['q0'] = -env['q0']
+
+    ########################################
     # Add reference particle from globals
     ########################################
-    env.particle_ref    = xt.Particles(
-        p0c     = env['p0c'],
-        q0      = env['q0'],
-        mass0   = env['mass0'])
+    species = species_from_mass_and_charge(env['mass0'], env['q0'])
+    if species is not None:
+        env.particle_ref = xt.Particles(species, p0c=env['p0c'])
+    else:
+        env.particle_ref = xt.Particles(
+            p0c     = env['p0c'],
+            q0      = env['q0'],
+            mass0   = env['mass0'])
 
     ############################################################################
     # Convert Elements
@@ -274,13 +284,6 @@ def convert_sad_to_xsuite(
         if config._verbose:
             print_section_heading("Reversing Bend Directions of Line", mode = 'section')
         line = reverse_line_bend_direction(line)
-
-    if reverse_charge:
-        if config._verbose:
-            print_section_heading("Reversing Charge of Line", mode = 'section')
-        line.particle_ref.q0    *= -1
-        env.particle_ref.q0     *= -1
-        env["q0"]               *= -1
 
     ############################################################################
     # Handle Offset Markers

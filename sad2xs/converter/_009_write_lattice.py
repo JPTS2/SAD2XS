@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-06-27
 """
 
 ################################################################################
@@ -13,6 +13,7 @@ from datetime import date
 import xtrack as xt
 
 from ..types import ConfigLike
+from ..helpers import species_from_mass_and_charge
 
 from ..output_writer._001_drift import create_drift_lattice_file_information
 from ..output_writer._002_bend import create_bend_lattice_file_information
@@ -82,6 +83,19 @@ def write_lattice(
         line["fshift"]  = 0.0
 
     ########################################
+    # Determine species string for reference particle
+    ########################################
+    species             = species_from_mass_and_charge(line["mass0"], line["q0"])
+    if species is not None:
+        _particle_ref_line = f'xt.Particles("{species}", p0c=env["p0c"])'
+    else:
+        _particle_ref_line = (
+            f'xt.Particles(\n'
+            f'    mass0   = env["mass0"],\n'
+            f'    p0c     = env["p0c"],\n'
+            f'    q0      = env["q0"])')
+
+    ########################################
     # Initialise the lattice file
     ########################################
     lattice_file_string = f'''"""
@@ -117,10 +131,7 @@ env["fshift"]   = {line["fshift"]}
 ########################################
 # Reference Particle
 ########################################
-env.particle_ref    = xt.Particles(
-    mass0   = env["mass0"],
-    p0c     = env["p0c"],
-    q0      = env["q0"])
+env.particle_ref    = {_particle_ref_line}
 
 ################################################################################
 # Import lattice
