@@ -252,7 +252,12 @@ abort;
             _raw = _f.read()
         _check_mathematica_output(_raw)
 
-        sad_twiss = tfs.read(out_file)
+        try:
+            sad_twiss = tfs.read(out_file)
+        except Exception as exc:
+            raise ValueError(
+                f"The lattice configuration is physically degenerate "
+                f"— TFS output could not be parsed: {exc}") from exc
 
     finally:
         for path in [cmd_file, out_file]:
