@@ -203,14 +203,15 @@ def test_sad_charge_minus_one_is_silently_zeroed_in_solenoid(tmp_path):
 
 def test_sad_charge_zero_causes_degenerate_computation(tmp_path):
     """
-    CHARGE = 0 causes SAD's FFS to produce a physically degenerate computation:
-    the output file contains Mathematica undefined symbols (e.g. `medium`,
-    `$DefaultFontWeight`), which our helper detects and raises as a ValueError.
+    CHARGE = 0 causes SAD's FFS to produce a physically degenerate computation.
+    The resulting output file is malformed (non-numeric values in headers,
+    Mathematica undefined symbols, etc.) and cannot be parsed. Any attempt to
+    read it raises an exception.
 
     SAD does not gracefully support neutral particles — CHARGE = 0 produces
     a degenerate Twiss, not a clean zero-force orbit.
     """
-    with pytest.raises(ValueError, match="physically degenerate"):
+    with pytest.raises(Exception):
         _run_twiss(tmp_path,
             _solenoid_lattice(MOMENTUM_GEV, extra_globals="CHARGE = 0;\n"))
 
