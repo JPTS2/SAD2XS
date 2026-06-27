@@ -211,7 +211,7 @@ def test_sad_charge_zero_causes_degenerate_computation(tmp_path):
     SAD does not gracefully support neutral particles — CHARGE = 0 produces
     a degenerate Twiss, not a clean zero-force orbit.
     """
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError, match="physically degenerate"):
         _run_twiss(tmp_path,
             _solenoid_lattice(MOMENTUM_GEV, extra_globals="CHARGE = 0;\n"))
 
