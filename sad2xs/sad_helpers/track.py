@@ -352,7 +352,7 @@ abort;
         for line in process.stdout:                                 # type: ignore
             stdout_lines.append(line)
 
-            if process.poll() is not None:
+            if process.poll() not in (None, 0):
                 raise RuntimeError(f"Subprocess died early with code {process.returncode}")
 
             if "TRACKING COMPLETE" in line:

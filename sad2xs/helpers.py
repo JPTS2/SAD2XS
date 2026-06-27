@@ -3,8 +3,24 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       2026-06-27
 """
+
+################################################################################
+# Required Packages
+################################################################################
+import xtrack as xt
+
+################################################################################
+# Reference Particle Species
+################################################################################
+def species_from_mass_and_charge(mass0_ev, q0):
+    """Map (mass, charge) to an xtrack species string, or None if unrecognised."""
+    if abs(mass0_ev - xt.ELECTRON_MASS_EV) / xt.ELECTRON_MASS_EV < 1e-3:
+        return "electron" if q0 < 0 else "positron"
+    if abs(mass0_ev - xt.PROTON_MASS_EV) / xt.PROTON_MASS_EV < 1e-3:
+        return "antiproton" if q0 < 0 else "proton"
+    return None
 
 ################################################################################
 # Section Heading Function

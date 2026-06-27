@@ -17,9 +17,6 @@ KNOWN_ISSUE_TESTS = {
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_rotated_kicks": 55,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_element_offsets": 55,
     "tests/conversion/pipeline/test_offset_markers.py::test_pipeline_offset_marker_symbolic_expression_resolves_to_computed_s_position": 22,
-    "tests/conversion/pipeline/test_reverse_charge.py::test_pipeline_reverse_charge_negates_positive_q0": 59,
-    "tests/conversion/pipeline/test_reverse_charge.py::test_pipeline_reverse_charge_negates_negative_q0": 59,
-    "tests/conversion/pipeline/test_reverse_charge.py::test_pipeline_reverse_charge_does_not_affect_p0c_or_mass0": 59,
 }
 
 
