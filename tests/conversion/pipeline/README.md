@@ -22,7 +22,7 @@ should stay focused on pipeline orchestration and public user options.
 | `test_offset_markers.py` | 7 | 1 | Symbolic s-position expression for offset markers — `NameError: name 'l0' is not defined` |
 | `test_reference_particle.py` | 10 | 0 | — |
 | `test_reverse_bend_direction.py` | 10 | 0 | — |
-| `test_reverse_charge.py` | 4 | 3 | `reverse_charge=True` does not negate `q0` — feature not working |
+| `test_reverse_charge.py` | 8 | 0 | — |
 | `test_reverse_element_order.py` | 6 | 0 | — |
 
 ### `test_convert_sad_to_xsuite.py` note
@@ -39,6 +39,7 @@ fails because the expression is not resolved before the marker is placed.
 
 ### `test_reverse_charge.py` note
 
-`reverse_charge=True` should negate `q0` for all charge signs. Currently the
-feature has no effect. All three physics tests fail; the structural test
-(that the parameter is accepted without error) passes.
+Covers `reverse_charge=True` and species-aware reference particle setup.
+Tests: default positron species, proton mass → proton species, charge sign
+reversal (positron → electron, proton → antiproton), p0c/mass0 isolation, and
+UserWarning emission when `CHARGE != 1` is found in the SAD file. All 8 pass.

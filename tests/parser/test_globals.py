@@ -80,8 +80,12 @@ def test_mass_energy_units_parse_to_ev(write_lattice, unit, expected):
 ################################################################################
 def test_charge_and_fshift_parse_as_globals(write_lattice):
     """
-    CHARGE and FSHIFT should parse into q0 and fshift globals.
+    CHARGE is a recognised protected global. CHARGE != 1 emits a UserWarning
+    and is ignored — q0 always defaults to +1 (SAD only supports positrons).
+    FSHIFT is unrelated and should still parse into fshift as normal.
     """
+    import warnings
+
     lattice_path = write_lattice(
         """\
         MOMENTUM = 1.0 GEV;
@@ -90,17 +94,26 @@ def test_charge_and_fshift_parse_as_globals(write_lattice):
         """,
         filename = "globals_charge_fshift.sad")
 
-    parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
 
-    assert parsed["globals"]["q0"] == pytest.approx(-1.0), (
-        "CHARGE should parse into q0.")
+    assert any(issubclass(w.category, UserWarning) and "CHARGE" in str(w.message)
+               for w in caught), (
+        "CHARGE != 1 should emit a UserWarning mentioning CHARGE.")
+    assert parsed["globals"]["q0"] == pytest.approx(1.0), (
+        "CHARGE is ignored by SAD — q0 should default to +1 (positron).")
     assert parsed["globals"]["fshift"] == pytest.approx(0.01), (
         "FSHIFT should parse into fshift.")
 
 def test_compact_lowercase_global_assignments_parse(write_lattice):
     """
     Compact lowercase global assignments should parse like spaced uppercase ones.
+    CHARGE is recognised even in compact form and emits the same UserWarning
+    when != 1; q0 defaults to +1 regardless.
     """
+    import warnings
+
     lattice_path = write_lattice(
         """\
         momentum=1.0gev;
@@ -110,14 +123,19 @@ def test_compact_lowercase_global_assignments_parse(write_lattice):
         """,
         filename = "globals_compact_lowercase.sad")
 
-    parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
 
     assert parsed["globals"]["p0c"] == pytest.approx(1.0E9), (
         "Compact lowercase momentum should parse into p0c.")
     assert parsed["globals"]["mass0"] == pytest.approx(0.511E6), (
         "Compact lowercase mass should parse into mass0.")
-    assert parsed["globals"]["q0"] == pytest.approx(-1.0), (
-        "Compact lowercase charge should parse into q0.")
+    assert any(issubclass(w.category, UserWarning) and "CHARGE" in str(w.message)
+               for w in caught), (
+        "Compact lowercase charge != 1 should emit a UserWarning.")
+    assert parsed["globals"]["q0"] == pytest.approx(1.0), (
+        "Compact lowercase charge is ignored — q0 should default to +1 (positron).")
     assert parsed["globals"]["fshift"] == pytest.approx(0.01), (
         "Compact lowercase fshift should parse into fshift.")
 
