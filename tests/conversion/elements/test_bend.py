@@ -477,21 +477,82 @@ def test_bend_converter_preserves_offsets_and_rotation(
     assert bend.rot_s_rad == pytest.approx(-np.pi / 2), (
         "Converted bend should apply the SAD-to-Xsuite rotation sign.")
 
-def test_bend_converter_requires_length_for_nonzero_angle(
+def test_bend_converter_without_length_creates_thin_multipole(
         parsed_elements,
         xsuite_environment,
-        sad2xs_config):
+        sad2xs_config,
+        assert_environment_element):
     """
-    A non-zero-angle SAD BEND without length should fail clearly.
+    A SAD BEND with a non-zero ANGLE but no L should convert to a thin
+    Multipole with hxl set — matching SAD's own treatment of this case.
     """
-    with pytest.raises(ValueError, match = "missing length"):
-        convert_bends(
-            parsed_elements = parsed_elements(
-                element_type        = "bend",
-                element_name        = "test_bend",
-                element_variables   = {"angle": 0.1}),
-            environment     = xsuite_environment,
-            config          = sad2xs_config)
+    convert_bends(
+        parsed_elements = parsed_elements(
+            element_type        = "bend",
+            element_name        = "test_bend",
+            element_variables   = {"angle": 0.1}),
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
+
+    ele = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_bend",
+        element_type    = xt.Multipole)
+    assert ele.knl[0] == pytest.approx(0.1), (
+        "Thin BEND without L should set knl[0] to the ANGLE value.")
+    assert ele.hxl == pytest.approx(0.1), (
+        "Thin BEND without L must set hxl to model reference-orbit bending.")
+
+def test_bend_converter_without_length_preserves_k1_in_knl(
+        parsed_elements,
+        xsuite_environment,
+        sad2xs_config,
+        assert_environment_element):
+    """
+    K1 in a no-L SAD BEND is an integrated quadrupole strength and must appear
+    in knl[1] of the resulting Multipole. Verified against SAD tracking.
+    """
+    convert_bends(
+        parsed_elements = parsed_elements(
+            element_type        = "bend",
+            element_name        = "test_bend",
+            element_variables   = {"angle": 0.1, "k1": 0.5}),
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
+
+    ele = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_bend",
+        element_type    = xt.Multipole)
+    assert ele.knl[0] == pytest.approx(0.1), (
+        "Thin BEND without L should set knl[0] to the ANGLE value.")
+    assert ele.knl[1] == pytest.approx(0.5), (
+        "K1 in a no-L BEND is integrated — must be preserved as knl[1].")
+    assert ele.hxl == pytest.approx(0.1), (
+        "Thin BEND without L must set hxl.")
+
+def test_bend_converter_zero_length_preserves_k1_in_knl(
+        parsed_elements,
+        xsuite_environment,
+        sad2xs_config,
+        assert_environment_element):
+    """
+    K1 in an explicit L=0 SAD BEND is also integrated and must appear in knl[1].
+    """
+    convert_bends(
+        parsed_elements = parsed_elements(
+            element_type        = "bend",
+            element_name        = "test_bend",
+            element_variables   = {"angle": 0.1, "k1": 0.5, "l": 0.0}),
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
+
+    ele = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_bend",
+        element_type    = xt.Multipole)
+    assert ele.knl[1] == pytest.approx(0.5), (
+        "K1 in an explicit L=0 BEND is integrated — must be preserved as knl[1].")
 
 ########################################
 # Pipeline Behaviour

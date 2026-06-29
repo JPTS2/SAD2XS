@@ -238,17 +238,18 @@ def convert_bends(parsed_elements, environment, config):
                 continue
 
             if "l" not in ele_vars:
-                # TODO: Improve the handling of this
-                k0l             = parse_expression(ele_vars["angle"])
-                if k0l != 0:
-                    raise ValueError(f"Error! Bend {ele_name} missing length.")
-                else:
-                    if config._verbose:
-                        print(f"Warning! Bend {ele_name} missing length and installed as marker")
-                    environment.new(
-                        name                = ele_name,
-                        prototype           = xt.Marker)
-                    continue
+                k0l = parse_expression(ele_vars["angle"])
+                k1l = parse_expression(ele_vars.get("k1", 0.0))
+                shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
+                environment.new(
+                    name      = ele_name,
+                    prototype = xt.Multipole,
+                    knl       = [k0l, k1l],
+                    hxl       = k0l,
+                    shift_x   = shift_x,
+                    shift_y   = shift_y,
+                    rot_s_rad = rotation)
+                continue
 
             ########################################
             # Initialise parameters
@@ -268,6 +269,8 @@ def convert_bends(parsed_elements, environment, config):
             ########################################
             length          = parse_expression(ele_vars["l"])
             k0l             = parse_expression(ele_vars["angle"])
+            k1l             = parse_expression(ele_vars.get("k1", 0.0))
+            shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
             # Thin/zero-length bend → Multipole; hxl required for reference orbit
             # bending and dispersion generation (without it px and dpx are wrong)
@@ -275,12 +278,13 @@ def convert_bends(parsed_elements, environment, config):
                 environment.new(
                     name      = ele_name,
                     prototype = xt.Multipole,
-                    knl       = [k0l],
-                    hxl       = k0l)
+                    knl       = [k0l, k1l],
+                    hxl       = k0l,
+                    shift_x   = shift_x,
+                    shift_y   = shift_y,
+                    rot_s_rad = rotation)
                 continue
 
-            if "k1" in ele_vars:
-                k1l         = parse_expression(ele_vars["k1"])
             if "e1" in ele_vars:
                 e1          = parse_expression(ele_vars["e1"])
             if "e2" in ele_vars:
@@ -289,8 +293,6 @@ def convert_bends(parsed_elements, environment, config):
                 ae1         = parse_expression(ele_vars["ae1"])
             if "ae2" in ele_vars:
                 ae2         = parse_expression(ele_vars["ae2"])
-
-            shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
             k0  = divide_integrated_strength(k0l, length)
             k1  = divide_integrated_strength(k1l, length)
@@ -358,12 +360,15 @@ def convert_correctors(parsed_elements, environment, config):
             shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
             if length == 0:
-                if config._verbose:
-                    print(f"Warning! Corrector {ele_name} missing length and installed as marker")
-
+                k0l = parse_expression(ele_vars.get("k0", 0.0))
+                k1l = parse_expression(ele_vars.get("k1", 0.0))
                 environment.new(
                     name      = ele_name,
-                    prototype = xt.Marker)
+                    prototype = xt.Multipole,
+                    knl       = [k0l, k1l],
+                    shift_x   = shift_x,
+                    shift_y   = shift_y,
+                    rot_s_rad = rotation)
                 continue
 
             if "k0" in ele_vars:

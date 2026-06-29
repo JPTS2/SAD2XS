@@ -120,3 +120,13 @@ def test_oct_rejects_bz(sad_rejects):
         "OCT O1 = (L=1.0, BZ=0.1);\n"
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START O1 END);")
+
+def test_oct_without_length_is_accepted_by_sad(sad_accepts):
+    """
+    SAD accepts an OCT with K3 but no L parameter (thin/integrated octupole).
+    The converter handles this via ele_vars.get('l', 0.0) defaulting to zero.
+    """
+    sad_accepts(
+        "OCT O1 = (K3=0.05);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START O1 END);")

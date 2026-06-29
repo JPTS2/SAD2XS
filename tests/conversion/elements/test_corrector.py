@@ -454,26 +454,53 @@ def test_corrector_converter_preserves_offsets_and_rotation(
     assert corrector.rot_s_rad == pytest.approx(-np.pi / 2), (
         "Converted corrector should apply the SAD-to-Xsuite rotation sign.")
 
-def test_corrector_converter_missing_length_installs_marker(
+def test_corrector_converter_without_length_creates_thin_multipole(
         parsed_elements,
         xsuite_environment,
         sad2xs_config,
         assert_environment_element):
     """
-    Current missing-length corrector policy installs a marker.
+    A corrector with K0 and K1 but no L should convert to a thin Multipole.
+    Both K0 and K1 are integrated strengths — both must appear in knl.
     """
     convert_correctors(
         parsed_elements = parsed_elements(
             element_type        = "bend",
             element_name        = "test_corr",
-            element_variables   = {"angle": 0.0, "k0": 0.1}),
+            element_variables   = {"angle": 0.0, "k0": 0.1, "k1": 0.2}),
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
+
+    ele = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_corr",
+        element_type    = xt.Multipole)
+    assert ele.knl[0] == pytest.approx(0.1), (
+        "Thin corrector without L should set knl[0] to the K0 value.")
+    assert ele.knl[1] == pytest.approx(0.2), (
+        "K1 in a thin corrector is integrated — must be preserved as knl[1].")
+
+def test_corrector_converter_without_length_and_zero_kick_installs_multipole(
+        parsed_elements,
+        xsuite_environment,
+        sad2xs_config,
+        assert_environment_element):
+    """
+    A corrector with no L and zero K0/K1 still installs as a Multipole.
+    No silent Marker conversions — thin elements are always Multipole.
+    """
+    convert_correctors(
+        parsed_elements = parsed_elements(
+            element_type        = "bend",
+            element_name        = "test_corr",
+            element_variables   = {"angle": 0.0}),
         environment     = xsuite_environment,
         config          = sad2xs_config)
 
     assert_environment_element(
         environment     = xsuite_environment,
         element_name    = "test_corr",
-        element_type    = xt.Marker)
+        element_type    = xt.Multipole)
 
 ########################################
 # Pipeline Behaviour
