@@ -261,7 +261,7 @@ def test_marker_writer_offset_marker_is_inserted_at_correct_s_position(tmp_path)
         tmp_path                = tmp_path,
         offset_marker_locations = {"om1": [0.5]})
 
-    s_om1 = reloaded_line.get_s_position("om1")
+    s_om1 = reloaded_line.get_table()['s', 'om1']
     assert s_om1 == pytest.approx(0.5), (
         "Offset marker 'om1' should be inserted at s = 0.5 m. "
         f"Got: s = {s_om1}.")
@@ -284,8 +284,8 @@ def test_marker_writer_multiple_offset_markers_at_distinct_positions(tmp_path):
     assert "omb" in names, (
         f"Offset marker 'omb' should be in the reloaded line. Got: {names}.")
 
-    s_oma = reloaded_line.get_s_position("oma")
-    s_omb = reloaded_line.get_s_position("omb")
+    s_oma = reloaded_line.get_table()['s', 'oma']
+    s_omb = reloaded_line.get_table()['s', 'omb']
     assert s_oma == pytest.approx(0.3), (
         f"Offset marker 'oma' should be at s = 0.3. Got: {s_oma}.")
     assert s_omb == pytest.approx(0.7), (

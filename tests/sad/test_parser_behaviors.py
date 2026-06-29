@@ -349,3 +349,34 @@ def test_on_off_prefix_variable_is_accepted_as_variable(
         f"DRIFT D1 = (L = {name});\n"
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START D1 END);")
+
+################################################################################
+# MOMENTUM requirement
+#
+# Verify whether SAD itself requires a MOMENTUM statement. The conftest helper
+# always prepends MOMENTUM, so this test calls twiss_sad directly.
+################################################################################
+def test_sad_rejects_lattice_without_momentum(tmp_path):
+    """
+    SAD should reject a lattice that has no MOMENTUM statement.
+    Confirms that the converter's ValueError for missing momentum mirrors SAD's
+    own behaviour, and that there is no SAD default momentum to discover.
+    """
+    import subprocess
+    lattice = tmp_path / "no_momentum.sad"
+    lattice.write_text(
+        "MARK START = ();\n"
+        "LINE TEST = (START);\n")
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        with pytest.raises((subprocess.CalledProcessError, ValueError)):
+            twiss_sad(
+                lattice_filepath    = lattice.name,
+                line_name           = "TEST",
+                calc6d              = False,
+                closed              = False,
+                additional_commands = "")
+    finally:
+        os.chdir(cwd)
