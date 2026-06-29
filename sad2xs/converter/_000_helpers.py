@@ -17,6 +17,8 @@ Date:       2026-06-29
 ################################################################################
 import xtrack as xt
 
+from ..helpers import species_from_mass_and_charge
+
 ################################################################################
 # Expression Parsing
 ################################################################################
@@ -187,16 +189,5 @@ def only_index_nonzero(
 
 ################################################################################
 # Reference Particle Species
+# Canonical definition: sad2xs/helpers.py
 ################################################################################
-def species_from_mass_and_charge(mass0_ev: float, q0: float):
-    """
-    Map (mass0_ev, q0) to an xtrack species string, or None if unrecognised.
-
-    Recognised species: electron, positron, proton, antiproton.
-    Identification uses a 0.1% mass tolerance.
-    """
-    if abs(mass0_ev - xt.ELECTRON_MASS_EV) / xt.ELECTRON_MASS_EV < 1e-3:
-        return "electron" if q0 < 0 else "positron"
-    if abs(mass0_ev - xt.PROTON_MASS_EV) / xt.PROTON_MASS_EV < 1e-3:
-        return "antiproton" if q0 < 0 else "proton"
-    return None

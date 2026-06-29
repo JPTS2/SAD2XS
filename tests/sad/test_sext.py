@@ -120,3 +120,13 @@ def test_sext_rejects_bz(sad_rejects):
         "SEXT S1 = (L=1.0, BZ=0.1);\n"
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START S1 END);")
+
+def test_sext_without_length_is_accepted_by_sad(sad_accepts):
+    """
+    SAD accepts a SEXT with K2 but no L parameter (thin/integrated sextupole).
+    The converter handles this via ele_vars.get('l', 0.0) defaulting to zero.
+    """
+    sad_accepts(
+        "SEXT S1 = (K2=0.1);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START S1 END);")
