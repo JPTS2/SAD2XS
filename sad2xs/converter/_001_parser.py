@@ -656,7 +656,6 @@ def parse_sad_file(
             print("Warning! Mass found in SAD file and function input: Using user provided value")
 
     if "p0c" not in cleaned_globals and config.ref_particle_p0c is None:
-        # TODO: From SAD find what the nominal value is
         raise ValueError("Notice! No momentum found in SAD file or function input")
     if "p0c" not in cleaned_globals:
         cleaned_globals["p0c"] = config.ref_particle_p0c

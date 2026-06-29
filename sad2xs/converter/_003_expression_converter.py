@@ -13,28 +13,7 @@ import xtrack as xt
 
 from ..types import ConfigLike
 from ..helpers import print_section_heading
-
-################################################################################
-# Parsing of strings and floats
-################################################################################
-def parse_expression(expression):
-    """
-    Try to convert s to float; if that fails, return s stripped
-    """
-    if isinstance(expression, float):
-        return expression
-    elif isinstance(expression, int):
-        return float(expression)
-    elif isinstance(expression, str):
-        expression_stripped  = expression.strip()
-        try:
-            return float(expression_stripped)
-        except ValueError:
-            expression_stripped = expression_stripped.replace("log(", "log10(")
-            expression_stripped = expression_stripped.replace("ln(",  "log(")
-            return expression_stripped
-    else:
-        raise TypeError(f"Unsupported type: {type(expression)}. Expected str, int, or float.")
+from ._000_helpers import parse_expression
 
 ################################################################################
 # Convert Deferred Expressions
