@@ -453,8 +453,6 @@ def _convert_typed_multipole(ele_name, ele_vars, environment, n, xtype, k_name):
     ########################################
     if isinstance(length, float) and np.isclose(length, 0.0):
         kl = parse_expression(ele_vars.get(k_name, 0.0))
-        if not isinstance(kl, float):
-            kl = 0.0
         shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
         if isinstance(rotation, float):
             kl, ksl, absorbed = _absorb_rotation_into_field(kl, n, rotation)
@@ -485,7 +483,7 @@ def _convert_typed_multipole(ele_name, ele_vars, environment, n, xtype, k_name):
     shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
 
     if k_name in ele_vars:
-        kl = ele_vars[k_name]
+        kl = parse_expression(ele_vars[k_name])
         if isinstance(rotation, float):
             kl, ksl, absorbed = _absorb_rotation_into_field(kl, n, rotation)
             if absorbed:
