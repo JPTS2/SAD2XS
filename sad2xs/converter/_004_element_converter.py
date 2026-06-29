@@ -17,131 +17,13 @@ from scipy.constants import e as qe
 
 from ..types import ConfigLike
 from ..helpers import print_section_heading
-
-################################################################################
-# Parsing of strings and floats
-################################################################################
-def parse_expression(expression: str):
-    """
-    Try to convert s to float; if that fails, return s stripped
-    """
-    if isinstance(expression, float):
-        return expression
-    elif isinstance(expression, int):
-        return float(expression)
-    elif isinstance(expression, str):
-        expression_stripped  = expression.strip()
-        try:
-            return float(expression_stripped)
-        except ValueError:
-            return expression_stripped
-    else:
-        raise TypeError(f"Unsupported type: {type(expression)}. Expected str, int, or float.")
-
-################################################################################
-# Check that only one index in knl array is non zero
-################################################################################
-def only_index_nonzero(
-    length: float,
-    knl:    list,
-    ksl:    list,
-    idx:    int,
-    tol:    float) -> bool:
-    """
-    Check that:
-      1. length != 0 (within tol)
-      2. All entries *except* at index `idx` in both knl and ksl are zero (within tol)
-         - Elements may be floats or strings; non-numeric strings count as non-zero.
-      3. If require_nonzero_at_idx: at least one of knl[idx], ksl[idx] is non-zero.
-    """
-    # 1) length check
-    if abs(length) <= tol:
-        return False
-
-    # helper to test “is this value zero?”
-    def is_zero(val) -> bool:
-        try:
-            return abs(float(val)) <= tol
-        except (ValueError, TypeError):
-            # non‐numeric ⇒ treat as non‐zero
-            return False
-
-    # 2) check every position except idx
-    max_len = max(len(knl), len(ksl))
-    for arr in (knl, ksl):
-        if len(arr) < max_len:
-            # pad shorter list with zeros
-            arr = arr + [0] * (max_len - len(arr))
-        for i, v in enumerate(arr):
-            if i == idx:
-                continue
-            if not is_zero(v):
-                return False
-
-    # 3) ensure at least one of knl[idx], ksl[idx] is non‐zero
-    if is_zero(knl[idx] if idx < len(knl) else 0) and \
-        is_zero(ksl[idx] if idx < len(ksl) else 0):
-        return False
-    return True
-
-################################################################################
-# Get element misalignments
-################################################################################
-def get_element_misalignments(ele_vars, rotation_correction = 0.0):
-    """
-    Docstring for get_element_misalignments
-    
-    :param ele_vars: Description
-    :param rotation_correction: Description
-    """
-    ########################################
-    # Define as float zero
-    ########################################
-    shift_x     = 0.0
-    shift_y     = 0.0
-    rotation    = 0.0
-
-    ########################################
-    # Read values
-    ########################################
-    if "dx" in ele_vars:
-        shift_x     = parse_expression(ele_vars["dx"])
-    if "dy" in ele_vars:
-        shift_y     = parse_expression(ele_vars["dy"])
-    if "rotate" in ele_vars:
-        rotation    = parse_expression(ele_vars["rotate"])
-
-    ########################################
-    # Rotations in SAD are negative w.r.t. Xsuite
-    ########################################
-    if isinstance(rotation, str):
-        rotation    = f"-{rotation} + {rotation_correction}"
-    elif isinstance(rotation, (float, int)):
-        rotation    = -rotation + rotation_correction
-    else:
-        raise TypeError(f"Error reading rotation: type {type(rotation)}")
-
-    # ########################################
-    # # Composition of rotations is different in SAD
-    # ########################################
-    # if isinstance(rotation, float) and isinstance(shift_x, float) and isinstance(shift_y, float):
-    #     shift_r     = np.sqrt(shift_x**2 + shift_y**2)
-    #     theta_rot   = np.arctan2(shift_y, shift_x)
-
-    #     shift_x  = shift_r * np.cos(theta_rot - rotation)
-    #     shift_y  = shift_r * np.sin(theta_rot - rotation)
-    # else:
-    #     shift_x     = str(shift_x)
-    #     shift_y     = str(shift_y)
-    #     rotation    = str(rotation)
-
-    #     shift_r     = f"sqrt({shift_x}**2 + {shift_y}**2)"
-    #     theta_rot   = f"arctan2({shift_y}, {shift_x})"
-
-    #     shift_x  = f"{shift_r} * cos({theta_rot} - {rotation})"
-    #     shift_y  = f"{shift_r} * sin({theta_rot} - {rotation})"
-
-    return shift_x, shift_y, rotation
+from ._000_helpers import (
+    parse_expression,
+    get_element_misalignments,
+    only_index_nonzero,
+    divide_integrated_strength,
+    define_strength_variable,
+)
 
 ################################################################################
 # Convert all
@@ -410,15 +292,8 @@ def convert_bends(parsed_elements, environment, config):
 
             shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
 
-            if isinstance(k0l, float) and not isinstance(length, str):
-                k0  = k0l / length
-            else:
-                k0  = 0.0 if k0l == 0.0 else f"{k0l} / {length}"
-
-            if isinstance(k1l, float) and not isinstance(length, str):
-                k1  = k1l / length
-            else:
-                k1  = 0.0 if k1l == 0.0 else f"{k1l} / {length}"
+            k0  = divide_integrated_strength(k0l, length)
+            k1  = divide_integrated_strength(k1l, length)
 
             edge_entry_angle    = f"{e1} * {k0l} + {ae1}"
             edge_exit_angle     = f"{e2} * {k0l} + {ae2}"
@@ -426,12 +301,8 @@ def convert_bends(parsed_elements, environment, config):
             ########################################
             # Create variables
             ########################################
-            environment[f"k0_{ele_name}"]   = k0
-            k0                              = f"k0_{ele_name}"
-
-            if k1 != 0:
-                environment[f"k1_{ele_name}"]   = k1
-                k1                              = f"k1_{ele_name}"
+            k0  = define_strength_variable(environment, ele_name, "k0", k0)
+            k1  = define_strength_variable(environment, ele_name, "k1", k1)
 
             ########################################
             # Create Element
@@ -496,28 +367,19 @@ def convert_correctors(parsed_elements, environment, config):
                 continue
 
             if "k0" in ele_vars:
-                k0l             = parse_expression(ele_vars["k0"])
-            if isinstance(k0l, float):
-                k0  = k0l / ele_vars["l"]
-            else:
-                k0  = f"{k0l} / {ele_vars["l"]}"
+                k0l = parse_expression(ele_vars["k0"])
+            k0  = divide_integrated_strength(k0l, length)
 
             k1l = 0.0
             if "k1" in ele_vars:
                 k1l = parse_expression(ele_vars["k1"])
-            if isinstance(k1l, float) and not isinstance(ele_vars["l"], str):
-                k1  = k1l / ele_vars["l"] if k1l != 0.0 else 0.0
-            else:
-                k1  = 0.0 if k1l == 0.0 else f"{k1l} / {ele_vars['l']}"
+            k1  = divide_integrated_strength(k1l, length)
 
             ########################################
             # Create variables
             ########################################
-            environment[f"k0_{ele_name}"]   = k0
-            k0                              = f"k0_{ele_name}"
-            if k1 != 0:
-                environment[f"k1_{ele_name}"]   = k1
-                k1                              = f"k1_{ele_name}"
+            k0  = define_strength_variable(environment, ele_name, "k0", k0)
+            k1  = define_strength_variable(environment, ele_name, "k1", k1)
 
             ########################################
             # Create Element
@@ -624,24 +486,11 @@ def _convert_typed_multipole(ele_name, ele_vars, environment, n, xtype, k_name):
             if absorbed:
                 rotation = 0.0
 
-    l_expr = ele_vars["l"]
+    k  = divide_integrated_strength(kl,  length)
+    ks = divide_integrated_strength(ksl, length)
 
-    if isinstance(kl, float) and not isinstance(l_expr, str):
-        k  = kl  / l_expr if kl  != 0.0 else 0.0
-    else:
-        k  = 0.0 if kl  == 0.0 else f"{kl} / {l_expr}"
-
-    if isinstance(ksl, float) and not isinstance(l_expr, str):
-        ks = ksl / l_expr if ksl != 0.0 else 0.0
-    else:
-        ks = 0.0 if ksl == 0.0 else f"{ksl} / {l_expr}"
-
-    if k != 0:
-        environment[f"{k_name}_{ele_name}"]  = k
-        k  = f"{k_name}_{ele_name}"
-    if ks != 0:
-        environment[f"{ks_name}_{ele_name}"] = ks
-        ks = f"{ks_name}_{ele_name}"
+    k  = define_strength_variable(environment, ele_name, k_name,  k)
+    ks = define_strength_variable(environment, ele_name, ks_name, ks)
 
     environment.new(
         name        = ele_name,
@@ -771,17 +620,8 @@ def convert_multipoles(
                     else:
                         k0l = 0.0
 
-                    if isinstance(k0l, float):
-                        k0  = k0l / ele_vars["l"]
-                    else:
-                        k0  = f"{k0l} / {ele_vars["l"]}"
-
-                    ####################
-                    # Create variables
-                    ####################
-                    if k0 != 0:
-                        environment[f"k0_{ele_name}"]   = k0
-                        k0                              = f"k0_{ele_name}"
+                    k0  = divide_integrated_strength(k0l, length)
+                    k0  = define_strength_variable(environment, ele_name, "k0", k0)
 
                     ####################
                     # Create Element
@@ -804,24 +644,10 @@ def convert_multipoles(
                     k1l     = knl[1]
                     k1sl    = ksl[1]
 
-                    if isinstance(k1l, float):
-                        k1  = k1l / ele_vars["l"]
-                    else:
-                        k1  = f"{k1l} / {ele_vars["l"]}"
-                    if isinstance(k1sl, float):
-                        k1s = k1sl / ele_vars["l"]
-                    else:
-                        k1s = f"{k1sl} / {ele_vars["l"]}"
-
-                    ####################
-                    # Create variables
-                    ####################
-                    if k1 != 0:
-                        environment[f"k1_{ele_name}"]   = k1
-                        k1                              = f"k1_{ele_name}"
-                    if k1s != 0:
-                        environment[f"k1s_{ele_name}"]  = k1s
-                        k1s                             = f"k1s_{ele_name}"
+                    k1  = divide_integrated_strength(k1l,  length)
+                    k1s = divide_integrated_strength(k1sl, length)
+                    k1  = define_strength_variable(environment, ele_name, "k1",  k1)
+                    k1s = define_strength_variable(environment, ele_name, "k1s", k1s)
 
                     ####################
                     # Create Element
@@ -845,24 +671,10 @@ def convert_multipoles(
                     k2l     = knl[2]
                     k2sl    = ksl[2]
 
-                    if isinstance(k2l, float):
-                        k2  = k2l / ele_vars["l"]
-                    else:
-                        k2  = f"{k2l} / {ele_vars["l"]}"
-                    if isinstance(k2sl, float):
-                        k2s = k2sl / ele_vars["l"]
-                    else:
-                        k2s = f"{k2sl} / {ele_vars["l"]}"
-
-                    ####################
-                    # Create variables
-                    ####################
-                    if k2 != 0:
-                        environment[f"k2_{ele_name}"]   = k2
-                        k2                              = f"k2_{ele_name}"
-                    if k2s != 0:
-                        environment[f"k2s_{ele_name}"]  = k2s
-                        k2s                             = f"k2s_{ele_name}"
+                    k2  = divide_integrated_strength(k2l,  length)
+                    k2s = divide_integrated_strength(k2sl, length)
+                    k2  = define_strength_variable(environment, ele_name, "k2",  k2)
+                    k2s = define_strength_variable(environment, ele_name, "k2s", k2s)
 
                     ####################
                     # Create Element
@@ -886,24 +698,10 @@ def convert_multipoles(
                     k3l     = knl[3]
                     k3sl    = ksl[3]
 
-                    if isinstance(k3l, float):
-                        k3  = k3l / ele_vars["l"]
-                    else:
-                        k3  = f"{k3l} / {ele_vars["l"]}"
-                    if isinstance(k3sl, float):
-                        k3s = k3sl / ele_vars["l"]
-                    else:
-                        k3s = f"{k3sl} / {ele_vars["l"]}"
-
-                    ####################
-                    # Create variables
-                    ####################
-                    if k3 != 0:
-                        environment[f"k3_{ele_name}"]   = k3
-                        k3                              = f"k3_{ele_name}"
-                    if k3s != 0:
-                        environment[f"k3s_{ele_name}"]  = k3s
-                        k3s                             = f"k3s_{ele_name}"
+                    k3  = divide_integrated_strength(k3l,  length)
+                    k3s = divide_integrated_strength(k3sl, length)
+                    k3  = define_strength_variable(environment, ele_name, "k3",  k3)
+                    k3s = define_strength_variable(environment, ele_name, "k3s", k3s)
 
                     ####################
                     # Create Element
@@ -930,7 +728,7 @@ def convert_multipoles(
             # Correctors stored as multipoles
             ########################################
             if only_index_nonzero(
-                    length  = float(length),
+                    length  = length,
                     knl     = knl,
                     ksl     = ksl,
                     idx     = 0,
@@ -954,17 +752,8 @@ def convert_multipoles(
                 else:
                     k0l = 0
 
-                if isinstance(k0l, float):
-                    k0  = k0l / ele_vars["l"]
-                else:
-                    k0  = f"{k0l} / {ele_vars["l"]}"
-
-                ####################
-                # Create variables
-                ####################
-                if k0 != 0:
-                    environment[f"k0_{ele_name}"]   = k0
-                    k0                              = f"k0_{ele_name}"
+                k0  = divide_integrated_strength(k0l, length)
+                k0  = define_strength_variable(environment, ele_name, "k0", k0)
 
                 ####################
                 # Create Element
@@ -983,7 +772,7 @@ def convert_multipoles(
             # Quadrupoles stored as multipoles
             ########################################
             if only_index_nonzero(
-                    length  = float(length),
+                    length  = length,
                     knl     = knl,
                     ksl     = ksl,
                     idx     = 1,
@@ -992,24 +781,10 @@ def convert_multipoles(
                 k1l     = knl[1]
                 k1sl    = ksl[1]
 
-                if isinstance(k1l, float):
-                    k1  = k1l / ele_vars["l"]
-                else:
-                    k1  = f"{k1l} / {ele_vars["l"]}"
-                if isinstance(k1sl, float):
-                    k1s = k1sl / ele_vars["l"]
-                else:
-                    k1s = f"{k1sl} / {ele_vars["l"]}"
-
-                ####################
-                # Create variables
-                ####################
-                if k1 != 0:
-                    environment[f"k1_{ele_name}"]   = k1
-                    k1                              = f"k1_{ele_name}"
-                if k1s != 0:
-                    environment[f"k1s_{ele_name}"]  = k1s
-                    k1s                             = f"k1s_{ele_name}"
+                k1  = divide_integrated_strength(k1l,  length)
+                k1s = divide_integrated_strength(k1sl, length)
+                k1  = define_strength_variable(environment, ele_name, "k1",  k1)
+                k1s = define_strength_variable(environment, ele_name, "k1s", k1s)
 
                 ####################
                 # Create Element
@@ -1029,7 +804,7 @@ def convert_multipoles(
             # Sextupoles stored as multipoles
             ########################################
             if only_index_nonzero(
-                    length  = float(length),
+                    length  = length,
                     knl     = knl,
                     ksl     = ksl,
                     idx     = 2,
@@ -1038,24 +813,10 @@ def convert_multipoles(
                 k2l     = knl[2]
                 k2sl    = ksl[2]
 
-                if isinstance(k2l, float):
-                    k2  = k2l / ele_vars["l"]
-                else:
-                    k2  = f"{k2l} / {ele_vars["l"]}"
-                if isinstance(k2sl, float):
-                    k2s = k2sl / ele_vars["l"]
-                else:
-                    k2s = f"{k2sl} / {ele_vars["l"]}"
-
-                ####################
-                # Create variables
-                ####################
-                if k2 != 0:
-                    environment[f"k2_{ele_name}"]   = k2
-                    k2                              = f"k2_{ele_name}"
-                if k2s != 0:
-                    environment[f"k2s_{ele_name}"]  = k2s
-                    k2s                             = f"k2s_{ele_name}"
+                k2  = divide_integrated_strength(k2l,  length)
+                k2s = divide_integrated_strength(k2sl, length)
+                k2  = define_strength_variable(environment, ele_name, "k2",  k2)
+                k2s = define_strength_variable(environment, ele_name, "k2s", k2s)
 
                 ####################
                 # Create Element
@@ -1075,7 +836,7 @@ def convert_multipoles(
             # Octupoles stored as multipoles
             ########################################
             if only_index_nonzero(
-                    length  = float(length),
+                    length  = length,
                     knl     = knl,
                     ksl     = ksl,
                     idx     = 3,
@@ -1084,24 +845,10 @@ def convert_multipoles(
                 k3l     = knl[3]
                 k3sl    = ksl[3]
 
-                if isinstance(k3l, float):
-                    k3  = k3l / ele_vars["l"]
-                else:
-                    k3  = f"{k3l} / {ele_vars["l"]}"
-                if isinstance(k3sl, float):
-                    k3s = k3sl / ele_vars["l"]
-                else:
-                    k3s = f"{k3sl} / {ele_vars["l"]}"
-
-                ####################
-                # Create variables
-                ####################
-                if k3 != 0:
-                    environment[f"k3_{ele_name}"]   = k3
-                    k3                              = f"k3_{ele_name}"
-                if k3s != 0:
-                    environment[f"k3s_{ele_name}"]  = k3s
-                    k3s                             = f"k3s_{ele_name}"
+                k3  = divide_integrated_strength(k3l,  length)
+                k3s = divide_integrated_strength(k3sl, length)
+                k3  = define_strength_variable(environment, ele_name, "k3",  k3)
+                k3s = define_strength_variable(environment, ele_name, "k3s", k3s)
 
                 ####################
                 # Create Element
