@@ -625,7 +625,7 @@ def test_corrector_conversion_matches_sad_twiss_for_horizontal_kicks(
             calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
-            reverse_bend_direction  = False,
+            reverse_survey_horizontal  = False,
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
@@ -690,7 +690,7 @@ def test_corrector_conversion_matches_sad_twiss_for_thin_kick(
             calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
-            reverse_bend_direction  = False,
+            reverse_survey_horizontal  = False,
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
@@ -765,7 +765,7 @@ def test_corrector_conversion_matches_sad_twiss_for_rotated_kicks(
             calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
-            reverse_bend_direction  = False,
+            reverse_survey_horizontal  = False,
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
@@ -847,7 +847,7 @@ def test_corrector_conversion_matches_sad_twiss_for_element_offsets(
             calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
-            reverse_bend_direction  = False,
+            reverse_survey_horizontal  = False,
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(

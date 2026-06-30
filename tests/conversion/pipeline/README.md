@@ -6,8 +6,7 @@ owned by one SAD element family.
 Use this folder for options and line-level behaviour: the public
 `convert_sad_to_xsuite` entry point, explicit line selection, write/reload
 behaviour, excluded elements, offset markers, reference-particle setup,
-multipole replacements, reverse charge, reverse element order, and reverse bend
-direction.
+multipole replacements, reverse charge sign, reverse element order, and reverse survey horizontal.
 
 Element-family physics belongs in `tests/conversion/elements/`. This folder
 should stay focused on pipeline orchestration and public user options.
@@ -21,8 +20,8 @@ should stay focused on pipeline orchestration and public user options.
 | `test_multipole_replacements.py` | 5 | 0 | — |
 | `test_offset_markers.py` | 7 | 1 | Symbolic s-position expression for offset markers — `NameError: name 'l0' is not defined` |
 | `test_reference_particle.py` | 10 | 0 | — |
-| `test_reverse_bend_direction.py` | 10 | 0 | — |
-| `test_reverse_charge.py` | 8 | 0 | — |
+| `test_reverse_survey_horizontal.py` | 10 | 0 | — |
+| `test_reverse_charge_sign.py` | 8 | 0 | — |
 | `test_reverse_element_order.py` | 6 | 0 | — |
 
 ### `test_convert_sad_to_xsuite.py` note
@@ -37,9 +36,9 @@ Covers offset marker installation: dict format, s-position values, multiple
 markers, marker names. The symbolic s-position test (`l0` as a named variable)
 fails because the expression is not resolved before the marker is placed.
 
-### `test_reverse_charge.py` note
+### `test_reverse_charge_sign.py` note
 
-Covers `reverse_charge=True` and species-aware reference particle setup.
+Covers `reverse_charge_sign=True` and species-aware reference particle setup.
 Tests: default positron species, proton mass → proton species, charge sign
 reversal (positron → electron, proton → antiproton), p0c/mass0 isolation, and
 UserWarning emission when `CHARGE != 1` is found in the SAD file. All 8 pass.

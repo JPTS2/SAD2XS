@@ -568,7 +568,7 @@ def test_cavi_conversion_matches_sad_twiss_for_phase(
             calc6d                  = True,
             closed                  = False,
             reverse_element_order   = False,
-            reverse_bend_direction  = False,
+            reverse_survey_horizontal  = False,
             rfsw              = True,
             additional_commands     = "")
 
