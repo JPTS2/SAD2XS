@@ -181,7 +181,7 @@ def test_sad_charge_minus_one_is_silently_zeroed_in_solenoid(tmp_path):
     The positron (default) gives y != 0; CHARGE = -1 gives y = 0.
 
     Confirmed by Oide (2026-06-27): SAD has never supported non-positron CHARGE.
-    Use reverse_charge=True in the SAD2XS converter to simulate electron rings.
+    Use reverse_charge_sign=True in the SAD2XS converter to simulate electron rings.
     """
     result_positron = _run_track_solenoid(tmp_path,
         _solenoid_lattice(MOMENTUM_GEV),

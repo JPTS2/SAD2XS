@@ -42,7 +42,7 @@ instance count exceeds its function count.
 containing it do not cause parse errors. However, SAD only supports positrons
 and silently ignores `CHARGE` at runtime (confirmed by K. Oide, 2026-06-27),
 so the parser does not store `CHARGE` in `q0`. Any `CHARGE != 1` line emits a
-`UserWarning` directing users to `reverse_charge=True`. The `q0` global always
+`UserWarning` directing users to `reverse_charge_sign=True`. The `q0` global always
 defaults to `+1` regardless of what `CHARGE` is set to.
 
 ### `test_functions.py` note

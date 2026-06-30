@@ -1,6 +1,6 @@
 """
 ================================================================================
-Tests for the reverse_bend_direction parameter of the SAD2XS conversion pipeline
+Tests for the reverse_survey_horizontal parameter of the SAD2XS conversion pipeline
 ================================================================================
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
@@ -21,9 +21,9 @@ import sad2xs as s2x
 ################################################################################
 # Default Behaviour
 ################################################################################
-def test_pipeline_reverse_bend_direction_false_preserves_bend_angle(write_lattice):
+def test_pipeline_reverse_survey_horizontal_false_preserves_bend_angle(write_lattice):
     """
-    When reverse_bend_direction is not set, the bend angle should retain its
+    When reverse_survey_horizontal is not set, the bend angle should retain its
     sign from the SAD definition. SAD ANGLE = 0.1 rad maps directly to Xsuite
     angle = 0.1 rad.
     """
@@ -47,16 +47,16 @@ def test_pipeline_reverse_bend_direction_false_preserves_bend_angle(write_lattic
         _test_mode             = True)
 
     assert line["b1"].angle == pytest.approx(0.1), (
-        "Without reverse_bend_direction, bend angle should retain SAD ANGLE = 0.1 "
+        "Without reverse_survey_horizontal, bend angle should retain SAD ANGLE = 0.1 "
         f"rad. Got: {line['b1'].angle}.")
 
 
 ################################################################################
 # Bend Adjustments
 ################################################################################
-def test_pipeline_reverse_bend_direction_negates_bend_angle_and_edge_angles(write_lattice):
+def test_pipeline_reverse_survey_horizontal_negates_bend_angle_and_edge_angles(write_lattice):
     """
-    reverse_bend_direction=True should negate the bend angle and both edge angles.
+    reverse_survey_horizontal=True should negate the bend angle and both edge angles.
     Asymmetric E1 != E2 makes this test sensitive to the distinction between
     negation and swap: a swap would produce entry=-exit_forward, exit=-entry_forward,
     which differs from the expected negation entry=-entry_forward, exit=-exit_forward.
@@ -77,14 +77,14 @@ def test_pipeline_reverse_bend_direction_negates_bend_angle_and_edge_angles(writ
     line_forward = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = False,
+        reverse_survey_horizontal = False,
         _verbose               = False,
         _test_mode             = True)
 
     line_reversed = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = True,
+        reverse_survey_horizontal = True,
         _verbose               = False,
         _test_mode             = True)
 
@@ -104,22 +104,22 @@ def test_pipeline_reverse_bend_direction_negates_bend_angle_and_edge_angles(writ
         "Asymmetric E1 != E2 should produce distinct entry and exit angles.")
 
     assert angle_reversed == pytest.approx(-angle_forward), (
-        "reverse_bend_direction=True should negate the bend angle. "
+        "reverse_survey_horizontal=True should negate the bend angle. "
         f"Forward: {angle_forward}, reversed: {angle_reversed}.")
     assert entry_reversed == pytest.approx(-entry_forward), (
-        "reverse_bend_direction=True should negate the entry edge angle, not swap it. "
+        "reverse_survey_horizontal=True should negate the entry edge angle, not swap it. "
         f"Forward entry: {entry_forward}, reversed entry: {entry_reversed}.")
     assert exit_reversed == pytest.approx(-exit_forward), (
-        "reverse_bend_direction=True should negate the exit edge angle, not swap it. "
+        "reverse_survey_horizontal=True should negate the exit edge angle, not swap it. "
         f"Forward exit: {exit_forward}, reversed exit: {exit_reversed}.")
 
 
 ################################################################################
 # Quadrupole Adjustments
 ################################################################################
-def test_pipeline_reverse_bend_direction_quad_k1_unchanged_and_k1s_negated(write_lattice):
+def test_pipeline_reverse_survey_horizontal_quad_k1_unchanged_and_k1s_negated(write_lattice):
     """
-    reverse_bend_direction=True should leave k1 unchanged (odd-order normal) and
+    reverse_survey_horizontal=True should leave k1 unchanged (odd-order normal) and
     negate k1s (odd-order skew). Two quadrupoles cover both sides of the contract:
     a standard QUAD for k1 and a ROTATE=+pi/4 skew QUAD for k1s. The rotation
     maps K1 entirely into k1s (k1 becomes zero for the skew element).
@@ -141,14 +141,14 @@ def test_pipeline_reverse_bend_direction_quad_k1_unchanged_and_k1s_negated(write
     line_forward = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = False,
+        reverse_survey_horizontal = False,
         _verbose               = False,
         _test_mode             = True)
 
     line_reversed = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = True,
+        reverse_survey_horizontal = True,
         _verbose               = False,
         _test_mode             = True)
 
@@ -163,19 +163,19 @@ def test_pipeline_reverse_bend_direction_quad_k1_unchanged_and_k1s_negated(write
         "Forward skew quadrupole k1s should be non-zero for K1 = 0.2 with ROTATE = pi/4.")
 
     assert k1_reversed == pytest.approx(k1_forward), (
-        "reverse_bend_direction=True should leave k1 unchanged (odd-order normal). "
+        "reverse_survey_horizontal=True should leave k1 unchanged (odd-order normal). "
         f"Forward: {k1_forward}, reversed: {k1_reversed}.")
     assert k1s_reversed == pytest.approx(-k1s_forward), (
-        "reverse_bend_direction=True should negate k1s (odd-order skew). "
+        "reverse_survey_horizontal=True should negate k1s (odd-order skew). "
         f"Forward: {k1s_forward}, reversed: {k1s_reversed}.")
 
 
 ################################################################################
 # Sextupole Adjustments
 ################################################################################
-def test_pipeline_reverse_bend_direction_sext_k2_negated_and_k2s_unchanged(write_lattice):
+def test_pipeline_reverse_survey_horizontal_sext_k2_negated_and_k2s_unchanged(write_lattice):
     """
-    reverse_bend_direction=True should negate k2 (even-order normal) and leave
+    reverse_survey_horizontal=True should negate k2 (even-order normal) and leave
     k2s unchanged (even-order skew). Two sextupoles cover both sides: a standard
     SEXT for k2 and a ROTATE=+pi/6 skew SEXT for k2s.
     """
@@ -196,14 +196,14 @@ def test_pipeline_reverse_bend_direction_sext_k2_negated_and_k2s_unchanged(write
     line_forward = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = False,
+        reverse_survey_horizontal = False,
         _verbose               = False,
         _test_mode             = True)
 
     line_reversed = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = True,
+        reverse_survey_horizontal = True,
         _verbose               = False,
         _test_mode             = True)
 
@@ -218,19 +218,19 @@ def test_pipeline_reverse_bend_direction_sext_k2_negated_and_k2s_unchanged(write
         "Forward skew sextupole k2s should be non-zero for K2 = 0.15 with ROTATE = pi/6.")
 
     assert k2_reversed == pytest.approx(-k2_forward), (
-        "reverse_bend_direction=True should negate k2 (even-order normal). "
+        "reverse_survey_horizontal=True should negate k2 (even-order normal). "
         f"Forward: {k2_forward}, reversed: {k2_reversed}.")
     assert k2s_reversed == pytest.approx(k2s_forward), (
-        "reverse_bend_direction=True should leave k2s unchanged (even-order skew). "
+        "reverse_survey_horizontal=True should leave k2s unchanged (even-order skew). "
         f"Forward: {k2s_forward}, reversed: {k2s_reversed}.")
 
 
 ################################################################################
 # Octupole Adjustments
 ################################################################################
-def test_pipeline_reverse_bend_direction_oct_k3_unchanged_and_k3s_negated(write_lattice):
+def test_pipeline_reverse_survey_horizontal_oct_k3_unchanged_and_k3s_negated(write_lattice):
     """
-    reverse_bend_direction=True should leave k3 unchanged (odd-order normal) and
+    reverse_survey_horizontal=True should leave k3 unchanged (odd-order normal) and
     negate k3s (odd-order skew). Two octupoles cover both sides: a standard OCT
     for k3 and a ROTATE=+pi/8 skew OCT for k3s.
     """
@@ -251,14 +251,14 @@ def test_pipeline_reverse_bend_direction_oct_k3_unchanged_and_k3s_negated(write_
     line_forward = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = False,
+        reverse_survey_horizontal = False,
         _verbose               = False,
         _test_mode             = True)
 
     line_reversed = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = True,
+        reverse_survey_horizontal = True,
         _verbose               = False,
         _test_mode             = True)
 
@@ -273,19 +273,19 @@ def test_pipeline_reverse_bend_direction_oct_k3_unchanged_and_k3s_negated(write_
         "Forward skew octupole k3s should be non-zero for K3 = 0.1 with ROTATE = pi/8.")
 
     assert k3_reversed == pytest.approx(k3_forward), (
-        "reverse_bend_direction=True should leave k3 unchanged (odd-order normal). "
+        "reverse_survey_horizontal=True should leave k3 unchanged (odd-order normal). "
         f"Forward: {k3_forward}, reversed: {k3_reversed}.")
     assert k3s_reversed == pytest.approx(-k3s_forward), (
-        "reverse_bend_direction=True should negate k3s (odd-order skew). "
+        "reverse_survey_horizontal=True should negate k3s (odd-order skew). "
         f"Forward: {k3s_forward}, reversed: {k3s_reversed}.")
 
 
 ################################################################################
 # Multipole Adjustments
 ################################################################################
-def test_pipeline_reverse_bend_direction_mult_knl_ksl_sign_convention(write_lattice):
+def test_pipeline_reverse_survey_horizontal_mult_knl_ksl_sign_convention(write_lattice):
     """
-    reverse_bend_direction=True should apply the even/odd sign rule to the knl
+    reverse_survey_horizontal=True should apply the even/odd sign rule to the knl
     and ksl arrays of a SAD MULT element:
       knl (even order): negated   ksl (even order): unchanged
       knl (odd order):  unchanged ksl (odd order):  negated
@@ -308,14 +308,14 @@ def test_pipeline_reverse_bend_direction_mult_knl_ksl_sign_convention(write_latt
     line_forward = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = False,
+        reverse_survey_horizontal = False,
         _verbose               = False,
         _test_mode             = True)
 
     line_reversed = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = True,
+        reverse_survey_horizontal = True,
         _verbose               = False,
         _test_mode             = True)
 
@@ -339,25 +339,25 @@ def test_pipeline_reverse_bend_direction_mult_knl_ksl_sign_convention(write_latt
         "Forward multipole ksl[2] should be non-zero for SK2 = 0.03.")
 
     assert knl1_rev == pytest.approx(knl1_fwd), (
-        "reverse_bend_direction=True should leave knl[1] unchanged (odd-order normal). "
+        "reverse_survey_horizontal=True should leave knl[1] unchanged (odd-order normal). "
         f"Forward: {knl1_fwd}, reversed: {knl1_rev}.")
     assert knl2_rev == pytest.approx(-knl2_fwd), (
-        "reverse_bend_direction=True should negate knl[2] (even-order normal). "
+        "reverse_survey_horizontal=True should negate knl[2] (even-order normal). "
         f"Forward: {knl2_fwd}, reversed: {knl2_rev}.")
     assert ksl1_rev == pytest.approx(-ksl1_fwd), (
-        "reverse_bend_direction=True should negate ksl[1] (odd-order skew). "
+        "reverse_survey_horizontal=True should negate ksl[1] (odd-order skew). "
         f"Forward: {ksl1_fwd}, reversed: {ksl1_rev}.")
     assert ksl2_rev == pytest.approx(ksl2_fwd), (
-        "reverse_bend_direction=True should leave ksl[2] unchanged (even-order skew). "
+        "reverse_survey_horizontal=True should leave ksl[2] unchanged (even-order skew). "
         f"Forward: {ksl2_fwd}, reversed: {ksl2_rev}.")
 
 
 ################################################################################
 # Solenoid Adjustments
 ################################################################################
-def test_pipeline_reverse_bend_direction_negates_solenoid_ks(write_lattice):
+def test_pipeline_reverse_survey_horizontal_negates_solenoid_ks(write_lattice):
     """
-    reverse_bend_direction=True should negate the solenoid field strength ks.
+    reverse_survey_horizontal=True should negate the solenoid field strength ks.
     The reversed ks is compared against the forward conversion to avoid
     dependence on the BZ-to-ks conversion formula.
     """
@@ -377,14 +377,14 @@ def test_pipeline_reverse_bend_direction_negates_solenoid_ks(write_lattice):
     line_forward = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = False,
+        reverse_survey_horizontal = False,
         _verbose               = False,
         _test_mode             = True)
 
     line_reversed = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = True,
+        reverse_survey_horizontal = True,
         _verbose               = False,
         _test_mode             = True)
 
@@ -394,17 +394,17 @@ def test_pipeline_reverse_bend_direction_negates_solenoid_ks(write_lattice):
     assert ks_forward != pytest.approx(0.0), (
         "Forward solenoid ks should be non-zero for BZ = 0.1.")
     assert ks_reversed == pytest.approx(-ks_forward), (
-        "reverse_bend_direction=True should negate solenoid ks. "
+        "reverse_survey_horizontal=True should negate solenoid ks. "
         f"Forward: {ks_forward}, reversed: {ks_reversed}.")
 
 
 ################################################################################
 # Element Offset Adjustments
 ################################################################################
-def test_pipeline_reverse_bend_direction_negates_shift_x_and_rot_s_rad_preserves_shift_y(
+def test_pipeline_reverse_survey_horizontal_negates_shift_x_and_rot_s_rad_preserves_shift_y(
         write_lattice):
     """
-    reverse_bend_direction=True should negate shift_x and rot_s_rad but leave
+    reverse_survey_horizontal=True should negate shift_x and rot_s_rad but leave
     shift_y unchanged on all magnetic element types. A QUAD with DX, DY, and
     ROTATE parameters exercises this path. ROTATE = 0.1 rad (not ±pi/4) avoids
     the k1-to-k1s mapping so the quadrupole path is taken, not the skew path.
@@ -428,14 +428,14 @@ def test_pipeline_reverse_bend_direction_negates_shift_x_and_rot_s_rad_preserves
     line_forward = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = False,
+        reverse_survey_horizontal = False,
         _verbose               = False,
         _test_mode             = True)
 
     line_reversed = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = True,
+        reverse_survey_horizontal = True,
         _verbose               = False,
         _test_mode             = True)
 
@@ -455,22 +455,22 @@ def test_pipeline_reverse_bend_direction_negates_shift_x_and_rot_s_rad_preserves
         "Forward QUAD rot_s_rad should be non-zero for ROTATE = 0.1.")
 
     assert shift_x_rev == pytest.approx(-shift_x_fwd), (
-        "reverse_bend_direction=True should negate shift_x. "
+        "reverse_survey_horizontal=True should negate shift_x. "
         f"Forward: {shift_x_fwd}, reversed: {shift_x_rev}.")
     assert shift_y_rev == pytest.approx(shift_y_fwd), (
-        "reverse_bend_direction=True should leave shift_y unchanged. "
+        "reverse_survey_horizontal=True should leave shift_y unchanged. "
         f"Forward: {shift_y_fwd}, reversed: {shift_y_rev}.")
     assert rot_s_rad_rev == pytest.approx(-rot_s_rad_fwd), (
-        "reverse_bend_direction=True should negate rot_s_rad. "
+        "reverse_survey_horizontal=True should negate rot_s_rad. "
         f"Forward: {rot_s_rad_fwd}, reversed: {rot_s_rad_rev}.")
 
 
 ################################################################################
 # Reference Shift Adjustment
 ################################################################################
-def test_pipeline_reverse_bend_direction_negates_coord_dx_preserves_dy(write_lattice):
+def test_pipeline_reverse_survey_horizontal_negates_coord_dx_preserves_dy(write_lattice):
     """
-    reverse_bend_direction=True should negate dx but leave dy unchanged.
+    reverse_survey_horizontal=True should negate dx but leave dy unchanged.
     This contrasts with reverse_element_order, which negates both dx and dy.
     """
     lattice_path = write_lattice(
@@ -489,14 +489,14 @@ def test_pipeline_reverse_bend_direction_negates_coord_dx_preserves_dy(write_lat
     line_forward = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = False,
+        reverse_survey_horizontal = False,
         _verbose               = False,
         _test_mode             = True)
 
     line_reversed = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = True,
+        reverse_survey_horizontal = True,
         _verbose               = False,
         _test_mode             = True)
 
@@ -510,10 +510,10 @@ def test_pipeline_reverse_bend_direction_negates_coord_dx_preserves_dy(write_lat
     assert dy_forward != pytest.approx(0.0), (
         "Forward COORD shift_y should be non-zero for DY = 0.02.")
     assert dx_reversed == pytest.approx(-dx_forward), (
-        "reverse_bend_direction=True should negate COORD shift_x. "
+        "reverse_survey_horizontal=True should negate COORD shift_x. "
         f"Forward: {dx_forward}, reversed: {dx_reversed}.")
     assert dy_reversed == pytest.approx(dy_forward), (
-        "reverse_bend_direction=True should leave COORD shift_y unchanged "
+        "reverse_survey_horizontal=True should leave COORD shift_y unchanged "
         "(unlike reverse_element_order which negates both shift_x and shift_y). "
         f"Forward: {dy_forward}, reversed: {dy_reversed}.")
 
@@ -521,10 +521,10 @@ def test_pipeline_reverse_bend_direction_negates_coord_dx_preserves_dy(write_lat
 ################################################################################
 # Coordinate Rotation Adjustment
 ################################################################################
-def test_pipeline_reverse_bend_direction_coord_chi1_negated_chi2_unchanged_chi3_negated(
+def test_pipeline_reverse_survey_horizontal_coord_chi1_negated_chi2_unchanged_chi3_negated(
         write_lattice):
     """
-    reverse_bend_direction=True should negate chi1 (rot_y_rad) and chi3
+    reverse_survey_horizontal=True should negate chi1 (rot_y_rad) and chi3
     (rot_s_rad) but leave chi2 (rot_x_rad) unchanged. A single COORD with all
     three components produces elements named c1_chi1, c1_chi2, c1_chi3.
     The chi2 assertion is the non-trivial one: it confirms the asymmetry between
@@ -546,14 +546,14 @@ def test_pipeline_reverse_bend_direction_coord_chi1_negated_chi2_unchanged_chi3_
     line_forward = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = False,
+        reverse_survey_horizontal = False,
         _verbose               = False,
         _test_mode             = True)
 
     line_reversed = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
-        reverse_bend_direction = True,
+        reverse_survey_horizontal = True,
         _verbose               = False,
         _test_mode             = True)
 
@@ -573,11 +573,88 @@ def test_pipeline_reverse_bend_direction_coord_chi1_negated_chi2_unchanged_chi3_
         "Forward c1_chi3 rot_s_rad should be non-zero for CHI3 = 0.02.")
 
     assert chi1_rev == pytest.approx(-chi1_fwd), (
-        "reverse_bend_direction=True should negate the chi1 rot_y_rad. "
+        "reverse_survey_horizontal=True should negate the chi1 rot_y_rad. "
         f"Forward: {chi1_fwd}, reversed: {chi1_rev}.")
     assert chi2_rev == pytest.approx(chi2_fwd), (
-        "reverse_bend_direction=True should leave chi2 rot_x_rad unchanged. "
+        "reverse_survey_horizontal=True should leave chi2 rot_x_rad unchanged. "
         f"Forward: {chi2_fwd}, reversed: {chi2_rev}.")
     assert chi3_rev == pytest.approx(-chi3_fwd), (
-        "reverse_bend_direction=True should negate the chi3 rot_s_rad. "
+        "reverse_survey_horizontal=True should negate the chi3 rot_s_rad. "
         f"Forward: {chi3_fwd}, reversed: {chi3_rev}.")
+
+
+################################################################################
+# Twiss self-consistency
+################################################################################
+def test_pipeline_reverse_survey_horizontal_twiss_beta_functions_unchanged(write_lattice):
+    """
+    reverse_survey_horizontal=True is a horizontal mirror of the lattice: every
+    element is reflected in the x-s plane.  A horizontal mirror preserves the
+    focusing strength in both planes (k1 is unchanged; k0 sign flip and k2/k3
+    sign flips produce no net change to the linear transfer matrix).  The 4D
+    Twiss beta functions at the end of the line must therefore be identical
+    whether or not the flag is set.
+
+    Physical reasoning
+    ------------------
+    The linear betatron motion is governed by k1 (quadrupole gradient) and the
+    second-order effect of the dispersion generated by k0.  Under the horizontal
+    mirror:
+      - k1 is unchanged (same focusing)
+      - k0 changes sign (dispersion generated in opposite direction)
+      - k2 changes sign (cancels the dispersion-driven chromaticity change)
+    The combined result is that twiss4d beta functions — which depend on the
+    linear transfer matrix — are invariant.
+
+    This test exercises a lattice containing a BEND, QUAD, SEXT, and DRIFT so
+    that each element type that participates in the mirror transformation is
+    exercised in a single optics consistency check.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND        B1      = (L = 1.0 ANGLE = 0.05);
+        QUAD        Q1      = (L = 1.0 K1 = 0.5);
+        SEXT        S1      = (L = 0.3 K2 = 1.0);
+        DRIFT       D1      = (L = 1.0);
+
+        MARK        START   = ()
+                    END     = ();
+
+        LINE        TEST_LINE = (START B1 Q1 D1 S1 D1 END);
+        """,
+        filename = "rev_bend_dir_twiss.sad")
+
+    line_forward = s2x.convert_sad_to_xsuite(
+        sad_lattice_path       = str(lattice_path),
+        output_directory       = "N/A",
+        reverse_survey_horizontal = False,
+        _verbose               = False,
+        _test_mode             = True)
+
+    line_reversed = s2x.convert_sad_to_xsuite(
+        sad_lattice_path       = str(lattice_path),
+        output_directory       = "N/A",
+        reverse_survey_horizontal = True,
+        _verbose               = False,
+        _test_mode             = True)
+
+    tw_fwd = line_forward.twiss4d(betx=1.0, bety=1.0)
+    tw_rev = line_reversed.twiss4d(betx=1.0, bety=1.0)
+
+    betx_fwd = tw_fwd.betx[-1]
+    bety_fwd = tw_fwd.bety[-1]
+    betx_rev = tw_rev.betx[-1]
+    bety_rev = tw_rev.bety[-1]
+
+    assert betx_rev == pytest.approx(betx_fwd, rel=1e-9), (
+        "reverse_survey_horizontal=True is a horizontal mirror: betx must be "
+        "unchanged. The mirror changes the sign of k0 and k2 but not k1 — the "
+        "linear focusing (beta functions) is therefore invariant. "
+        f"Forward betx={betx_fwd:.6f}, reversed betx={betx_rev:.6f}.")
+    assert bety_rev == pytest.approx(bety_fwd, rel=1e-9), (
+        "reverse_survey_horizontal=True is a horizontal mirror: bety must be "
+        "unchanged. The mirror changes the sign of k0 and k2 but not k1 — the "
+        "linear focusing (beta functions) is therefore invariant. "
+        f"Forward bety={bety_fwd:.6f}, reversed bety={bety_rev:.6f}.")

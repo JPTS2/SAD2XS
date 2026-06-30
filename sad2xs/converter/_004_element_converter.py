@@ -1169,7 +1169,7 @@ def convert_solenoids(
     """
 
     p0j     = environment["p0c"] * qe / clight
-    brho    = p0j / qe / environment["q0"]
+    brho    = p0j / qe
 
     solenoids   = parsed_elements["sol"]
 

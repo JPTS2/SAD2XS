@@ -45,7 +45,7 @@ def write_minimal_bend_lattice(tmp_path):
     """
     Write a minimal SAD transfer-line lattice: a 1 m bend (ANGLE = 0.1 rad)
     between a START and END marker. The bend produces non-zero horizontal
-    dispersion, used to test reverse_bend_direction sign-flip behaviour.
+    dispersion, used to test reverse_survey_horizontal sign-flip behaviour.
     Returns (filename, line_name) for direct use as sad_helpers arguments after
     monkeypatch.chdir(tmp_path).
     """
