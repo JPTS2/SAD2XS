@@ -134,7 +134,7 @@ def reverse_line_element_order(line):
 ################################################################################
 # Line Bend Direction Reversal
 ################################################################################
-def reverse_line_bend_direction(line):
+def reverse_line_survey_horizontal(line):
     """ Reverse the order of elements in a line and adjust their parameters
     accordingly to maintain the same physics but in the opposite direction.
 

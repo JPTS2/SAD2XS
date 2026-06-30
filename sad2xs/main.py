@@ -20,7 +20,7 @@ from .converter._003_expression_converter import convert_expressions
 from .converter._004_element_converter import convert_elements
 from .converter._005_line_converter import convert_lines
 from .converter._006_solenoid_converter import convert_solenoids, solenoid_reference_shift_corrections
-from .converter._007_reversals import reverse_line_bend_direction, reverse_line_element_order
+from .converter._007_reversals import reverse_line_survey_horizontal, reverse_line_element_order
 from .converter._008_offset_markers import convert_offset_markers
 from .converter._009_write_lattice import write_lattice
 from .converter._010_write_optics import write_optics
@@ -37,8 +37,8 @@ def convert_sad_to_xsuite(
         excluded_elements:              list | None = None,
         user_multipole_replacements:    dict | None = None,
         reverse_element_order:          bool        = False,
-        reverse_bend_direction:         bool        = False,
-        reverse_charge:                 bool        = False,
+        reverse_survey_horizontal:         bool        = False,
+        reverse_charge_sign:                 bool        = False,
         install_apertures_as_markers:   bool        = False,
         **kwargs):
     
@@ -115,9 +115,9 @@ def convert_sad_to_xsuite(
         config              = config)
 
     ########################################
-    # Apply reverse_charge before element conversion so brho is correct
+    # Apply reverse_charge_sign before element conversion so brho is correct
     ########################################
-    if reverse_charge:
+    if reverse_charge_sign:
         env['q0'] = -env['q0']
 
     ########################################
@@ -280,10 +280,10 @@ def convert_sad_to_xsuite(
             print_section_heading("Reversing Element order of Line", mode = 'section')
         line = reverse_line_element_order(line)
 
-    if reverse_bend_direction:
+    if reverse_survey_horizontal:
         if config._verbose:
             print_section_heading("Reversing Bend Directions of Line", mode = 'section')
-        line = reverse_line_bend_direction(line)
+        line = reverse_line_survey_horizontal(line)
 
     ############################################################################
     # Handle Offset Markers

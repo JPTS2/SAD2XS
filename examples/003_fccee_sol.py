@@ -43,7 +43,7 @@ tw_sad  = s2x.sad_helpers.twiss_sad(
     calc6d                  = False,
     closed                  = True,
     reverse_element_order   = False,
-    reverse_bend_direction  = False,
+    reverse_survey_horizontal  = False,
     additional_commands     = "")
 
 ################################################################################
@@ -55,8 +55,8 @@ line    = s2x.convert_sad_to_xsuite(
     excluded_elements           = None,
     user_multipole_replacements = None,
     reverse_element_order       = False,
-    reverse_bend_direction      = False,
-    reverse_charge              = False,
+    reverse_survey_horizontal      = False,
+    reverse_charge_sign              = False,
     output_directory            = OUTPUT_DIR,
     output_filename             = "fcc_sol",
     output_header               = "FCC-ee LCC With Solenoid")
