@@ -291,19 +291,19 @@ def test_survey_sad_reverse_element_order_flips_s_axis(
         f"expected: {total_length}.")
 
 
-def test_survey_sad_reverse_bend_direction_flips_x_plane_coordinates(
+def test_survey_sad_reverse_survey_horizontal_flips_x_plane_coordinates(
         tmp_path,
         monkeypatch):
     """
-    reverse_bend_direction=True should negate X, theta, and psi everywhere
+    reverse_survey_horizontal=True should negate X, theta, and psi everywhere
     (the x-plane geometry is reflected), leaving Y, Z, and phi unchanged. The
     test requires a lattice with a non-zero bend angle so that X != 0 and the
     sign-flip is meaningful.
     """
     sv_forward  = _run_survey_on_bend_lattice(
-        tmp_path, monkeypatch, reverse_bend_direction = False)
+        tmp_path, monkeypatch, reverse_survey_horizontal = False)
     sv_reversed = _run_survey_on_bend_lattice(
-        tmp_path, monkeypatch, reverse_bend_direction = True)
+        tmp_path, monkeypatch, reverse_survey_horizontal = True)
 
     X_fwd = np.asarray(sv_forward.X)
     X_rev = np.asarray(sv_reversed.X)
@@ -312,24 +312,24 @@ def test_survey_sad_reverse_bend_direction_flips_x_plane_coordinates(
         "The bend lattice should produce non-zero X so that the sign-flip "
         f"can be verified. Got X_forward: {list(X_fwd)}.")
     assert np.allclose(X_rev, -X_fwd, atol = 1E-12), (
-        "reverse_bend_direction=True should negate X everywhere. "
+        "reverse_survey_horizontal=True should negate X everywhere. "
         f"X_forward: {list(X_fwd)}; X_reversed: {list(X_rev)}.")
 
     theta_fwd = np.asarray(sv_forward.theta)
     theta_rev = np.asarray(sv_reversed.theta)
     assert np.allclose(theta_rev, -theta_fwd, atol = 1E-12), (
-        "reverse_bend_direction=True should negate theta everywhere. "
+        "reverse_survey_horizontal=True should negate theta everywhere. "
         f"theta_forward: {list(theta_fwd)}; theta_reversed: {list(theta_rev)}.")
 
     psi_fwd = np.asarray(sv_forward.psi)
     psi_rev = np.asarray(sv_reversed.psi)
     assert np.allclose(psi_rev, -psi_fwd, atol = 1E-12), (
-        "reverse_bend_direction=True should negate psi everywhere. "
+        "reverse_survey_horizontal=True should negate psi everywhere. "
         f"psi_forward: {list(psi_fwd)}; psi_reversed: {list(psi_rev)}.")
 
     for column in ("Y", "Z", "phi"):
         fwd = np.asarray(getattr(sv_forward, column))
         rev = np.asarray(getattr(sv_reversed, column))
         assert np.allclose(rev, fwd, atol = 1E-12), (
-            f"reverse_bend_direction=True should leave {column} unchanged. "
+            f"reverse_survey_horizontal=True should leave {column} unchanged. "
             f"{column}_forward: {list(fwd)}; {column}_reversed: {list(rev)}.")

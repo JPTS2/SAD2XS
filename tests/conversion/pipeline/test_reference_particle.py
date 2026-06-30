@@ -137,7 +137,7 @@ def test_pipeline_reference_particle_explicit_charge_is_ignored_with_warning(wri
     SAD does not support non-positron CHARGE (confirmed by Oide, 2026-06-27).
     A SAD CHARGE != 1 must be silently ignored and a UserWarning emitted.
     The reference particle q0 should always be +1 regardless of the SAD value.
-    Use reverse_charge=True in the converter to simulate electron/antiproton rings.
+    Use reverse_charge_sign=True in the converter to simulate electron/antiproton rings.
     """
     import warnings
 

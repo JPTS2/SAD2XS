@@ -302,20 +302,20 @@ def test_twiss_sad_reverse_element_order_puts_end_before_start(
         f"Got names: {names}.")
 
 
-def test_twiss_sad_reverse_bend_direction_flips_x_plane_dispersion(
+def test_twiss_sad_reverse_survey_horizontal_flips_x_plane_dispersion(
         tmp_path,
         monkeypatch):
     """
-    reverse_bend_direction=True should negate the horizontal dispersion (dx,
+    reverse_survey_horizontal=True should negate the horizontal dispersion (dx,
     dpx) everywhere, leaving dy/dpy unchanged. This transformation is applied
     in our wrapper code to handle lattices where the bend direction is reversed
     with respect to the SAD coordinate convention. The test requires a lattice
     with a non-zero bend angle so that dx != 0 at the END marker.
     """
     twiss_forward  = _run_twiss_on_bend_lattice(
-        tmp_path, monkeypatch, reverse_bend_direction = False)
+        tmp_path, monkeypatch, reverse_survey_horizontal = False)
     twiss_reversed = _run_twiss_on_bend_lattice(
-        tmp_path, monkeypatch, reverse_bend_direction = True)
+        tmp_path, monkeypatch, reverse_survey_horizontal = True)
 
     dx_forward  = np.asarray(twiss_forward.dx)
     dx_reversed = np.asarray(twiss_reversed.dx)
@@ -324,14 +324,14 @@ def test_twiss_sad_reverse_bend_direction_flips_x_plane_dispersion(
         "The bend lattice should produce non-zero dispersion dx so that the "
         f"sign-flip can be verified. Got dx_forward: {list(dx_forward)}.")
     assert np.allclose(dx_reversed, -dx_forward, atol = 1E-12), (
-        "reverse_bend_direction=True should negate dx everywhere. "
+        "reverse_survey_horizontal=True should negate dx everywhere. "
         f"dx_forward: {list(dx_forward)}; dx_reversed: {list(dx_reversed)}.")
 
     dpx_forward  = np.asarray(twiss_forward.dpx)
     dpx_reversed = np.asarray(twiss_reversed.dpx)
 
     assert np.allclose(dpx_reversed, -dpx_forward, atol = 1E-12), (
-        "reverse_bend_direction=True should negate dpx everywhere. "
+        "reverse_survey_horizontal=True should negate dpx everywhere. "
         f"dpx_forward: {list(dpx_forward)}; dpx_reversed: {list(dpx_reversed)}.")
 
 

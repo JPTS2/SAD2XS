@@ -106,7 +106,7 @@ def survey_sad(
         line_name:              str,
         closed:                 bool    = True,
         reverse_element_order:  bool    = False,
-        reverse_bend_direction: bool    = False,
+        reverse_survey_horizontal: bool    = False,
         additional_commands:    str     = "",
         wall_time:              int     = 30,
         sad_path:               str     = "sad"):
@@ -257,7 +257,7 @@ abort;
     ########################################
     # Bend Direction Reversal
     ########################################
-    if reverse_bend_direction:
+    if reverse_survey_horizontal:
         sv_sad.X        *= -1                       # pylint: disable=no-member
         sv_sad.Y        *= +1                       # pylint: disable=no-member
         sv_sad.Z        *= +1                       # pylint: disable=no-member

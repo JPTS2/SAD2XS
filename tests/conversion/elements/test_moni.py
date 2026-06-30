@@ -164,7 +164,7 @@ def test_moni_conversion_matches_sad_zero_length_line(write_lattice, tmp_path):
             calc6d                  = False,
             closed                  = False,
             reverse_element_order   = False,
-            reverse_bend_direction  = False,
+            reverse_survey_horizontal  = False,
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(

@@ -150,7 +150,7 @@ def twiss_sad(
         lattice_filepath:       str,
         line_name:              str,
         reverse_element_order:  bool    = False,
-        reverse_bend_direction: bool    = False,
+        reverse_survey_horizontal: bool    = False,
         closed:                 bool    = True,
         calc6d:                 bool    = False,
         rfsw:                   bool    = True,
@@ -347,7 +347,7 @@ abort;
     ########################################
     # Bend Direction Reversal
     ########################################
-    if reverse_bend_direction:
+    if reverse_survey_horizontal:
         tw_sad.x        *= -1
         tw_sad.px       *= -1
         tw_sad.y        *= +1
@@ -382,7 +382,7 @@ def compute_second_order_dispersions(
         line_name:              str,
         sad_twiss:              xt.TwissTable | None    = None,
         reverse_element_order:  bool                    = False,
-        reverse_bend_direction: bool                    = False,
+        reverse_survey_horizontal: bool                    = False,
         closed:                 bool                    = True,
         calc6d:                 bool                    = False,
         rfsw:                   bool                    = True,
@@ -407,7 +407,7 @@ def compute_second_order_dispersions(
         lattice_filepath        = lattice_filepath,
         line_name               = line_name,
         reverse_element_order   = reverse_element_order,
-        reverse_bend_direction  = reverse_bend_direction,
+        reverse_survey_horizontal  = reverse_survey_horizontal,
         closed                  = closed,
         calc6d                  = calc6d,
         rfsw                    = rfsw,
@@ -443,7 +443,7 @@ def compute_second_order_dispersions(
         lattice_filepath        = lattice_filepath,
         line_name               = line_name,
         reverse_element_order   = reverse_element_order,
-        reverse_bend_direction  = reverse_bend_direction,
+        reverse_survey_horizontal  = reverse_survey_horizontal,
         closed                  = closed,
         calc6d                  = calc6d,
         rfsw                    = rfsw,
@@ -506,7 +506,7 @@ def compute_chromatic_functions(
         line_name:              str,
         sad_twiss:              xt.TwissTable | None    = None,
         reverse_element_order:  bool                    = False,
-        reverse_bend_direction: bool                    = False,
+        reverse_survey_horizontal: bool                    = False,
         closed:                 bool                    = True,
         calc6d:                 bool                    = False,
         rfsw:                   bool                    = True,
@@ -531,7 +531,7 @@ def compute_chromatic_functions(
         lattice_filepath        = lattice_filepath,
         line_name               = line_name,
         reverse_element_order   = reverse_element_order,
-        reverse_bend_direction  = reverse_bend_direction,
+        reverse_survey_horizontal  = reverse_survey_horizontal,
         closed                  = closed,
         calc6d                  = calc6d,
         rfsw                    = rfsw,
@@ -567,7 +567,7 @@ def compute_chromatic_functions(
         lattice_filepath        = lattice_filepath,
         line_name               = line_name,
         reverse_element_order   = reverse_element_order,
-        reverse_bend_direction  = reverse_bend_direction,
+        reverse_survey_horizontal  = reverse_survey_horizontal,
         closed                  = closed,
         calc6d                  = calc6d,
         rfsw                    = rfsw,
@@ -586,7 +586,7 @@ def compute_chromatic_functions(
         lattice_filepath        = lattice_filepath,
         line_name               = line_name,
         reverse_element_order   = reverse_element_order,
-        reverse_bend_direction  = reverse_bend_direction,
+        reverse_survey_horizontal  = reverse_survey_horizontal,
         closed                  = closed,
         calc6d                  = calc6d,
         rfsw                    = rfsw,

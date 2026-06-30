@@ -185,9 +185,14 @@ def load_and_clean_whitespace(sad_lattice_path: str):
     ########################################
     # Angle Handling
     ########################################
-    # Ensure no spaces between the value and its unit
-    content     = content.replace(" deg", "deg")
-    content     = content.replace(" rad", "rad")
+    # Collapse " deg" / " rad" only when they are unit suffixes on a number,
+    # not when "deg" or "rad" begins a parameter name (e.g. "radius", "degree").
+    # The negative lookahead (?![a-z]) ensures we only match " rad" / " deg"
+    # when the next character is NOT a letter — i.e. only at end-of-token.
+    # A plain str.replace(" rad", "rad") would corrupt "3 radius" → "3radius",
+    # which the element splitter then fails to parse correctly.
+    content     = re.sub(r' deg(?![a-z])', 'deg', content)
+    content     = re.sub(r' rad(?![a-z])', 'rad', content)
 
     ########################################
     # Split the file into sections
@@ -368,7 +373,7 @@ def parse_sad_file(
                     f"SAD lattice specifies CHARGE = {charge}. SAD does not "
                     "support non-positron reference particles and silently "
                     "ignores this setting. To simulate an electron or "
-                    "antiproton ring, use reverse_charge=True in the converter.",
+                    "antiproton ring, use reverse_charge_sign=True in the converter.",
                     UserWarning,
                     stacklevel=2)
 
@@ -537,12 +542,12 @@ def parse_sad_file(
                     ########################################
                     # Angle handling
                     ########################################
-                    if "deg" in var_value:
-                        var_value = var_value.replace("deg", "")
-                        var_value = np.deg2rad(float(var_value))
-                    elif "rad" in var_value:
-                        var_value = var_value.replace("rad", "")
-                        var_value = float(var_value)
+                    # Use endswith to avoid matching "deg"/"rad" embedded in
+                    # parameter names (e.g. "degree", "radius", "gradient").
+                    if var_value.endswith("deg"):
+                        var_value = np.deg2rad(float(var_value[:-3]))
+                    elif var_value.endswith("rad"):
+                        var_value = float(var_value[:-3])
 
                     try:
                         var_value = float(var_value)
