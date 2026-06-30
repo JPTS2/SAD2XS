@@ -101,6 +101,22 @@ def reverse_line_element_order(line):
     ########################################
     # Reference Shifts
     ########################################
+    # Two categories of Translation element require different treatment:
+    #
+    # 1. Solenoid GEO translations (suffix "_dxy", e.g. sol_in_dxy / sol_out_dxy)
+    #    These are created by the solenoid converter to express the GEO-computed
+    #    reference-frame entry/exit offsets.  When the element order is reversed,
+    #    SOL_OUT becomes the new entry and SOL_IN becomes the new exit, so both
+    #    shifts must be negated to keep the beam on-axis through the solenoid.
+    #    Empirically verified against SAD's LINE TESTREV = (-TEST) with BZ > 0
+    #    and DX != 0 after rebuild_sad_lattice bakes in the GEO values.
+    #
+    # 2. Standalone COORD translations (any name without the "_dxy" suffix)
+    #    A COORD offset is a geometric property of the beampipe at that point —
+    #    it does not change sign when the beam direction is reversed.  SAD's own
+    #    LINE TESTREV = (-TEST) gives identical x displacement to the forward
+    #    line for a COORD(DX=d) element, confirming that no negation is applied.
+    #    Negating here would produce the wrong orbit.
     for dxy in unique_dxys:
 
         # Handling trying forward and reverse
@@ -108,8 +124,10 @@ def reverse_line_element_order(line):
 
             if dxy not in env_elements:
                 continue
-            env[dxy].shift_x *= -1
-            env[dxy].shift_y *= -1
+
+            if dxy.lstrip("-").endswith("_dxy"):
+                env[dxy].shift_x *= -1
+                env[dxy].shift_y *= -1
 
     return line
 

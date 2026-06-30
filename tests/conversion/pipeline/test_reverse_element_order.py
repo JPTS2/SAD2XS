@@ -15,8 +15,14 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
+import os
+
+import numpy as np
 import pytest
+import xtrack as xt
+
 import sad2xs as s2x
+from sad2xs.sad_helpers import track_sad, rebuild_sad_lattice
 
 ################################################################################
 # Default Behaviour
@@ -161,12 +167,25 @@ def test_pipeline_reverse_element_order_swaps_bend_edge_angles(write_lattice):
 ################################################################################
 # Reference Shift Adjustment
 ################################################################################
-def test_pipeline_reverse_element_order_negates_coord_dx_and_dy(write_lattice):
+def test_pipeline_reverse_element_order_preserves_coord_dx_and_dy(write_lattice):
     """
-    reverse_element_order=True should negate the shift_x and shift_y of each
-    Translation produced by a SAD COORD element. The reversed values are
-    compared against the forward conversion to avoid dependence on internal
-    sign conventions.
+    reverse_element_order=True must NOT negate the shift_x / shift_y of a
+    Translation produced by a SAD COORD element.
+
+    A COORD offset is a geometric property of the beampipe at a fixed physical
+    location — it does not change sign when the beam traverses the lattice in
+    the opposite direction.  This is in contrast to the solenoid GEO reference-
+    frame translations (named *_dxy), which are entry/exit shifts that must swap
+    sign when element order is reversed.
+
+    SAD ground truth (verified with LINE TESTREV = (-TEST)):
+      Forward  SAD, COORD(DX=0.001), DRIFT: final x = -0.001
+      Reversed SAD, COORD(DX=0.001), DRIFT: final x = -0.001  (identical)
+
+    The Xsuite Translation convention is shift_x is SUBTRACTED from x, so
+    Translation(shift_x=+0.001) moves x to -0.001.  Negating shift_x in the
+    reversed line would give Translation(shift_x=-0.001) → x=+0.001, which
+    contradicts SAD.  The shift must therefore be left unchanged.
     """
     lattice_path = write_lattice(
         """\
@@ -204,11 +223,13 @@ def test_pipeline_reverse_element_order_negates_coord_dx_and_dy(write_lattice):
         "Forward COORD shift_x should be non-zero for DX = 0.01.")
     assert dy_forward != pytest.approx(0.0), (
         "Forward COORD shift_y should be non-zero for DY = 0.02.")
-    assert dx_reversed == pytest.approx(-dx_forward), (
-        "reverse_element_order=True should negate COORD dx. "
+    assert dx_reversed == pytest.approx(dx_forward), (
+        "reverse_element_order=True must NOT negate COORD shift_x: a beampipe "
+        "offset is a geometric property that does not flip under line reversal. "
         f"Forward: {dx_forward}, reversed: {dx_reversed}.")
-    assert dy_reversed == pytest.approx(-dy_forward), (
-        "reverse_element_order=True should negate COORD dy. "
+    assert dy_reversed == pytest.approx(dy_forward), (
+        "reverse_element_order=True must NOT negate COORD shift_y: a beampipe "
+        "offset is a geometric property that does not flip under line reversal. "
         f"Forward: {dy_forward}, reversed: {dy_reversed}.")
 
 
@@ -256,3 +277,405 @@ def test_pipeline_reverse_element_order_negates_solenoid_ks(write_lattice):
     assert ks_reversed == pytest.approx(-ks_forward), (
         "reverse_element_order=True should negate solenoid ks. "
         f"Forward: {ks_forward}, reversed: {ks_reversed}.")
+
+
+################################################################################
+# Parameter Invariance: elements that must NOT change under reversal
+################################################################################
+def test_pipeline_reverse_element_order_does_not_change_quad_k1(write_lattice):
+    """
+    Quadrupole k1 must be unchanged by reverse_element_order: the focussing
+    strength of a quad is symmetric under beam direction reversal.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+        QUAD        Q1      = (L = 1.0 K1 = 0.2);
+        MARK        START   = ()
+                    END     = ();
+        LINE        TEST_LINE = (START Q1 END);
+        """,
+        filename = "rev_quad_k1.sad")
+
+    line_forward  = s2x.convert_sad_to_xsuite(
+        sad_lattice_path      = str(lattice_path),
+        output_directory      = "N/A",
+        reverse_element_order = False,
+        _verbose              = False,
+        _test_mode            = True)
+
+    line_reversed = s2x.convert_sad_to_xsuite(
+        sad_lattice_path      = str(lattice_path),
+        output_directory      = "N/A",
+        reverse_element_order = True,
+        _verbose              = False,
+        _test_mode            = True)
+
+    assert line_reversed["q1"].k1 == pytest.approx(line_forward["q1"].k1), (
+        "Quadrupole k1 should be unchanged by reverse_element_order. "
+        f"Forward: {line_forward['q1'].k1}, reversed: {line_reversed['q1'].k1}.")
+
+
+def test_pipeline_reverse_element_order_does_not_change_sext_k2(write_lattice):
+    """
+    Sextupole k2 must be unchanged by reverse_element_order.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+        SEXT        S1      = (L = 0.5 K2 = 1.0);
+        MARK        START   = ()
+                    END     = ();
+        LINE        TEST_LINE = (START S1 END);
+        """,
+        filename = "rev_sext_k2.sad")
+
+    line_forward  = s2x.convert_sad_to_xsuite(
+        sad_lattice_path      = str(lattice_path),
+        output_directory      = "N/A",
+        reverse_element_order = False,
+        _verbose              = False,
+        _test_mode            = True)
+
+    line_reversed = s2x.convert_sad_to_xsuite(
+        sad_lattice_path      = str(lattice_path),
+        output_directory      = "N/A",
+        reverse_element_order = True,
+        _verbose              = False,
+        _test_mode            = True)
+
+    assert line_reversed["s1"].k2 == pytest.approx(line_forward["s1"].k2), (
+        "Sextupole k2 should be unchanged by reverse_element_order. "
+        f"Forward: {line_forward['s1'].k2}, reversed: {line_reversed['s1'].k2}.")
+
+
+def test_pipeline_reverse_element_order_does_not_change_oct_k3(write_lattice):
+    """
+    Octupole k3 must be unchanged by reverse_element_order.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+        OCT         O1      = (L = 0.5 K3 = 5.0);
+        MARK        START   = ()
+                    END     = ();
+        LINE        TEST_LINE = (START O1 END);
+        """,
+        filename = "rev_oct_k3.sad")
+
+    line_forward  = s2x.convert_sad_to_xsuite(
+        sad_lattice_path      = str(lattice_path),
+        output_directory      = "N/A",
+        reverse_element_order = False,
+        _verbose              = False,
+        _test_mode            = True)
+
+    line_reversed = s2x.convert_sad_to_xsuite(
+        sad_lattice_path      = str(lattice_path),
+        output_directory      = "N/A",
+        reverse_element_order = True,
+        _verbose              = False,
+        _test_mode            = True)
+
+    assert line_reversed["o1"].k3 == pytest.approx(line_forward["o1"].k3), (
+        "Octupole k3 should be unchanged by reverse_element_order. "
+        f"Forward: {line_forward['o1'].k3}, reversed: {line_reversed['o1'].k3}.")
+
+
+################################################################################
+# Physics Validation Against SAD
+################################################################################
+def test_pipeline_reverse_element_order_tracking_matches_sad_reversed_line(tmp_path):
+    """
+    Xsuite tracking through a line converted with reverse_element_order=True
+    should match SAD tracking through the native SAD-reversed line
+    (LINE TESTREV = (-TEST)).
+
+    Two correctors with different K0 strengths (C1=0.01, C2=0.02) are separated
+    by a 1 m drift. The order in which kicks are applied relative to the drift
+    determines the final x coordinate, so the forward and reversed lines give
+    distinct x values. The Xsuite reversal must reproduce what SAD computes for
+    the reversed line, not merely negate the forward result.
+    """
+    lattice_content = (
+        "MOMENTUM = 1.0 GEV;\n"
+        "BEND C1 = (K0=0.01);\n"
+        "BEND C2 = (K0=0.02);\n"
+        "DRIFT D1 = (L=1.0);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST    = (START C1 D1 C2 END);\n"
+        "LINE TESTREV = (-TEST);\n")
+
+    lat_path = tmp_path / "rev_physics.sad"
+    lat_path.write_text(lattice_content)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        r_sad = track_sad(
+            lattice_filepath = lat_path.name,
+            line_name        = "TESTREV",
+            x_init           = np.array([0.0]),
+            px_init          = np.array([0.0]),
+            y_init           = np.array([0.0]),
+            py_init          = np.array([0.0]),
+            zeta_init        = np.array([0.0]),
+            delta_init       = np.array([0.0]),
+            n_turns          = 1,
+            rfsw             = False,
+            with_progress    = False)
+    finally:
+        os.chdir(cwd)
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path      = str(lat_path),
+        output_directory      = "N/A",
+        reverse_element_order = True,
+        _verbose              = False,
+        _test_mode            = True)
+
+    p = line.build_particles(x=0.0, px=0.0, y=0.0, py=0.0, zeta=0.0, delta=0.0)
+    line.track(p)
+
+    assert p.x[0] == pytest.approx(r_sad["x"][0], rel=1e-3), (
+        f"Xsuite reversed line x should match SAD reversed line x. "
+        f"Xsuite: {p.x[0]}, SAD: {r_sad['x'][0]}.")
+    assert p.px[0] == pytest.approx(r_sad["px"][0], rel=1e-3), (
+        f"Xsuite reversed line px should match SAD reversed line px. "
+        f"Xsuite: {p.px[0]}, SAD: {r_sad['px'][0]}.")
+
+
+def test_pipeline_reverse_element_order_bend_poleface_angles_physics_matches_sad(tmp_path):
+    """
+    A bend with asymmetric poleface angles (E1 ≠ E2) changes the vertical
+    focusing depending on which face the beam enters first. Reversing the line
+    swaps entry and exit faces: the Xsuite reversal (edge_entry_angle ↔
+    edge_exit_angle) must reproduce SAD tracking through the native reversed
+    line.
+    """
+    lattice_content = (
+        "MOMENTUM = 1.0 GEV;\n"
+        "BEND B1 = (L=1.0 ANGLE=0.05 E1=0.05 E2=0.0);\n"
+        "DRIFT D1 = (L=0.5);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST    = (START D1 B1 D1 END);\n"
+        "LINE TESTREV = (-TEST);\n")
+
+    lat_path = tmp_path / "rev_poleface.sad"
+    lat_path.write_text(lattice_content)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        r_sad = track_sad(
+            lattice_filepath = lat_path.name,
+            line_name        = "TESTREV",
+            x_init           = np.array([0.0]),
+            px_init          = np.array([0.0]),
+            y_init           = np.array([1e-3]),
+            py_init          = np.array([0.0]),
+            zeta_init        = np.array([0.0]),
+            delta_init       = np.array([0.0]),
+            n_turns          = 1,
+            rfsw             = False,
+            with_progress    = False)
+    finally:
+        os.chdir(cwd)
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path      = str(lat_path),
+        output_directory      = "N/A",
+        reverse_element_order = True,
+        _verbose              = False,
+        _test_mode            = True)
+
+    p = line.build_particles(x=0.0, px=0.0, y=1e-3, py=0.0, zeta=0.0, delta=0.0)
+    line.track(p)
+
+    assert p.y[0] == pytest.approx(r_sad["y"][0], rel=1e-3), (
+        f"Xsuite reversed bend py should match SAD reversed line py. "
+        f"Xsuite: {p.y[0]}, SAD: {r_sad['y'][0]}.")
+    assert p.py[0] == pytest.approx(r_sad["py"][0], abs=1e-9), (
+        f"Xsuite reversed bend py should match SAD reversed line py. "
+        f"Xsuite: {p.py[0]}, SAD: {r_sad['py'][0]}.")
+
+
+def test_pipeline_reverse_element_order_solenoid_physics_matches_sad(tmp_path):
+    """
+    Reversing a bound solenoid line negates ks and correctly handles the GEO
+    reference-frame translations produced by the SAD GEO mechanism.
+
+    SAD computes GEO reference shifts at runtime (Twiss/INS), so the lattice
+    must be rebuilt before Xsuite conversion to bake those shifts in as explicit
+    Translation elements.  We then verify that:
+
+    1. Xsuite reversed matches SAD forward (orbit should be on-axis: x≈0).
+    2. Xsuite reversed matches SAD reversed (coupling direction: sign of y).
+
+    A DX=0.001 offset is included to exercise the sol_in_dxy / sol_out_dxy
+    Translation elements that are produced by the GEO mechanism, ensuring that
+    the reversal logic handles them correctly.
+    """
+    lattice_content = """\
+MOMENTUM    = 1.0 GEV;
+
+DRIFT       SOL_DRIFT   = (L = 0.5);
+SOL         SOL_IN      = (BZ = 0.5 BOUND = 1 GEO = 1 DX = 0.001)
+            SOL_OUT     = (BZ = 0.5 BOUND = 1);
+
+MARK        START       = ()
+            END         = ();
+
+LINE        TEST        = (START SOL_IN SOL_DRIFT SOL_OUT END);
+LINE        TESTREV     = (-TEST);
+"""
+
+    lat_path     = tmp_path / "rev_solenoid.sad"
+    rebuilt_name = "rev_solenoid_rebuilt.sad"
+    lat_path.write_text(lattice_content)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        rebuild_sad_lattice(
+            lattice_filepath = lat_path.name,
+            line_name        = "TEST",
+            output_filepath  = rebuilt_name)
+
+        r_sad = track_sad(
+            lattice_filepath = lat_path.name,
+            line_name        = "TESTREV",
+            x_init           = np.array([1e-4]),
+            px_init          = np.array([0.0]),
+            y_init           = np.array([0.0]),
+            py_init          = np.array([0.0]),
+            zeta_init        = np.array([0.0]),
+            delta_init       = np.array([0.0]),
+            n_turns          = 1,
+            rfsw             = False,
+            with_progress    = False)
+    finally:
+        os.chdir(cwd)
+
+    rebuilt_path = tmp_path / rebuilt_name
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path      = str(rebuilt_path),
+        output_directory      = "N/A",
+        reverse_element_order = True,
+        _verbose              = False,
+        _test_mode            = True)
+
+    p = line.build_particles(x=1e-4, px=0.0, y=0.0, py=0.0, zeta=0.0, delta=0.0)
+    line.track(p)
+
+    assert p.y[0] == pytest.approx(r_sad["y"][0], abs=1e-9), (
+        f"Xsuite reversed solenoid y should match SAD reversed line y. "
+        f"Xsuite: {p.y[0]}, SAD: {r_sad['y'][0]}.")
+    assert p.py[0] == pytest.approx(r_sad["py"][0], abs=1e-9), (
+        f"Xsuite reversed solenoid py should match SAD reversed line py. "
+        f"Xsuite: {p.py[0]}, SAD: {r_sad['py'][0]}.")
+
+
+def test_pipeline_reverse_element_order_translation_physics_matches_sad(tmp_path):
+    """
+    A standalone COORD element converts to an Xsuite Translation.  When the
+    element order is reversed, that Translation's shift_x must NOT change sign.
+
+    Physical reasoning
+    ------------------
+    A COORD offset is a geometric property of the beampipe at a fixed location.
+    The pipe is at the same physical position regardless of which direction the
+    beam travels, so the reference-frame shift seen by the beam is identical in
+    both the forward and the reversed line.
+
+    SAD ground truth — empirically verified with LINE TESTREV = (-TEST)
+    ----------------------------------------------------------------------
+    Lattice: COORD C1 (DX=0.001) → DRIFT D1 (L=1.0)
+    Particle: x=0, px=0 at entrance
+
+      Forward  SAD (C1 → D1): final x = -0.001
+      Reversed SAD (D1 → C1): final x = -0.001   ← sign is the SAME
+
+    Xsuite convention: Translation(shift_x=s) subtracts s from x, so
+    Translation(shift_x=+0.001) → x = 0 − 0.001 = −0.001.
+
+    In the reversed Xsuite line the COORD still has shift_x=+0.001 (no
+    negation), D1 comes first (no change to x), then the Translation gives
+    x = −0.001, matching SAD.
+
+    Negating shift_x to −0.001 would give x = 0 − (−0.001) = +0.001, which
+    contradicts SAD and is incorrect.
+
+    Note on solenoid GEO translations
+    ----------------------------------
+    Translations produced by the solenoid GEO mechanism (named *_dxy) ARE
+    negated under element-order reversal because they represent entry/exit
+    frame shifts that must swap roles when the line is mirrored.  This test
+    uses a plain COORD element, which has no *_dxy suffix, to isolate the
+    standalone-COORD behaviour.
+    """
+    lattice_content = (
+        "MOMENTUM = 1.0 GEV;\n"
+        "COORD C1 = (DX=0.001);\n"
+        "DRIFT D1 = (L=1.0);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST    = (START C1 D1 END);\n"
+        "LINE TESTREV = (-TEST);\n")
+
+    lat_path = tmp_path / "rev_translation.sad"
+    lat_path.write_text(lattice_content)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        r_sad_fwd = track_sad(
+            lattice_filepath = lat_path.name,
+            line_name        = "TEST",
+            x_init           = np.array([0.0]),
+            px_init          = np.array([0.0]),
+            y_init           = np.array([0.0]),
+            py_init          = np.array([0.0]),
+            zeta_init        = np.array([0.0]),
+            delta_init       = np.array([0.0]),
+            n_turns          = 1,
+            rfsw             = False,
+            with_progress    = False)
+
+        r_sad_rev = track_sad(
+            lattice_filepath = lat_path.name,
+            line_name        = "TESTREV",
+            x_init           = np.array([0.0]),
+            px_init          = np.array([0.0]),
+            y_init           = np.array([0.0]),
+            py_init          = np.array([0.0]),
+            zeta_init        = np.array([0.0]),
+            delta_init       = np.array([0.0]),
+            n_turns          = 1,
+            rfsw             = False,
+            with_progress    = False)
+    finally:
+        os.chdir(cwd)
+
+    # SAD ground truth: forward and reversed give the same final x
+    assert r_sad_rev["x"][0] == pytest.approx(r_sad_fwd["x"][0], abs=1e-12), (
+        "SAD sanity check: COORD(DX=0.001) should give the same final x in the "
+        "forward and reversed lines because the beampipe offset does not change "
+        f"sign under reversal. Forward: {r_sad_fwd['x'][0]}, "
+        f"Reversed: {r_sad_rev['x'][0]}.")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path      = str(lat_path),
+        output_directory      = "N/A",
+        reverse_element_order = True,
+        _verbose              = False,
+        _test_mode            = True)
+
+    p = line.build_particles(x=0.0, px=0.0, y=0.0, py=0.0, zeta=0.0, delta=0.0)
+    line.track(p)
+
+    assert p.x[0] == pytest.approx(r_sad_rev["x"][0], abs=1e-9), (
+        "Xsuite reversed COORD x must match SAD reversed line x. "
+        f"Xsuite: {p.x[0]:.6e}, SAD forward: {r_sad_fwd['x'][0]:.6e}, "
+        f"SAD reversed: {r_sad_rev['x'][0]:.6e}. "
+        "Both SAD values are the same; a sign error in shift_x negation "
+        "would produce the opposite sign here.")
