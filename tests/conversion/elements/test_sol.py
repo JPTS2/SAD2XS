@@ -1065,46 +1065,33 @@ def test_sol_reference_transform_orbit_matches_sad_twiss(
 ########################################
 @pytest.mark.parametrize(
     "transform_parameters, parameters",
-    [
-        pytest.param(
-            "DX = 0.001 DY = -0.002",
-            {"transform": "dxdy", "dx": 0.001, "dy": -0.002},
-            id = "dxdy"),
-        pytest.param(
-            "DPX = 0.001",
-            {"transform": "dpx", "dpx": 0.001},
-            id = "dpx"),
-        pytest.param(
-            "DPY = -0.001",
-            {"transform": "dpy", "dpy": -0.001},
-            id = "dpy"),
-        pytest.param(
-            "DX = 0.001 DY = -0.002 DPX = 0.001 DPY = -0.001",
-            {
-                "transform": "dxdy_dpx_dpy",
-                "dx":  0.001,
-                "dy":  -0.002,
-                "dpx": 0.001,
-                "dpy": -0.001,
-            },
-            id = "dxdy_dpx_dpy"),
-    ])
+    SOL_REFERENCE_TRANSFORMS)
 @pytest.mark.parametrize(
     "geo_placement",
     ["in", "out"])
+@pytest.mark.parametrize(
+    "orientation, line_expression",
+    SOL_REFERENCE_LINE_ORIENTATIONS)
 def test_sol_reference_transform_restores_design_orbit_at_end(
         write_lattice,
         rebuild_lattice,
         tmp_path,
         transform_parameters,
         parameters,
-        geo_placement):
+        geo_placement,
+        orientation,
+        line_expression):
     """
     Bound GEO SOL transforms should return to the SAD design orbit at END.
 
-    This intentionally checks the marker after SOL_OUT. It is separate from the
-    internal marker checks because failures here diagnose exit restoration/order
-    semantics, not the internal zero-field transform.
+    This intentionally checks the END marker after the full solenoid region.
+    It is separate from the internal marker checks because failures here
+    diagnose exit restoration / element-order semantics, not the internal
+    zero-field transform.
+
+    Parametrised identically to test_sol_reference_transform_orbit_matches_sad_twiss
+    (same transforms, same geo placements, same line orientations) so the two
+    suites together give complete coverage of all 16 converter categories.
     """
     if geo_placement == "in":
         sol_in_parameters = f"GEO = 1 {transform_parameters}"
@@ -1119,7 +1106,8 @@ def test_sol_reference_transform_restores_design_orbit_at_end(
     try:
         lattice_text = _reference_transform_lattice(
             sol_in_parameters  = sol_in_parameters,
-            sol_out_parameters = sol_out_parameters)
+            sol_out_parameters = sol_out_parameters,
+            line_expression    = line_expression)
         lattice_path = write_lattice(
             lattice_text,
             filename = "sol_reference_transform_end_restoration.sad")
@@ -1164,13 +1152,14 @@ def test_sol_reference_transform_restores_design_orbit_at_end(
         xsuite_values  = xsuite_values,
         parameters     = {
             **parameters,
-            "geo": "geo_" + geo_placement,
-            "marker": "end",
+            "geo":         "geo_" + geo_placement,
+            "orientation": orientation,
+            "marker":      "end",
         },
         notes          = [
-            "This checks the marker after SOL_OUT. A failure here points to "
-            "exit restoration/order semantics rather than the internal "
-            "reference transform.",
+            "This checks the END marker after the full solenoid region. "
+            "A failure here points to exit restoration / element-order "
+            "semantics rather than the internal reference transform.",
         ])
 
 ########################################
