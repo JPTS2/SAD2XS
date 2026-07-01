@@ -716,8 +716,13 @@ def solenoid_reference_shift_corrections(
         line[rot_name].rot_x_rad *= chi_sign
         line[rot_name].rot_s_rad *= chi_sign
 
+    # Signs verified by:
+    #   test_sol_reference_transform_orbit_matches_sad_twiss      (internal marker)
+    #   test_sol_reference_transform_restores_design_orbit_at_end (END restoration)
+    # dxy_sign controls Translation.shift_{x,y}; chi_sign controls Rotation.rot_{x,y,s}_rad.
+
     ########################################
-    # Inbound Geo Forward Forward Solenoids (Complete: test_003)
+    # Inbound Geo Forward Forward Solenoids
     ########################################
     for inbound_geo_forward_forward_solenoid in inbound_geo_forward_forward_solenoids:
         flip_reference_shifts(
@@ -726,7 +731,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = +1)
 
     ########################################
-    # Inbound Geo Forward Reverse Solenoids (Complete: test_003)
+    # Inbound Geo Forward Reverse Solenoids
     ########################################
     for inbound_geo_forward_reverse_solenoid in inbound_geo_forward_reverse_solenoids:
         flip_reference_shifts(
@@ -735,7 +740,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = +1)
 
     ########################################
-    # Inbound Geo Reverse Forward Solenoids (Complete: test_003)
+    # Inbound Geo Reverse Forward Solenoids
     ########################################
     for inbound_geo_reverse_forward_solenoid in inbound_geo_reverse_forward_solenoids:
         flip_reference_shifts(
@@ -744,7 +749,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Inbound Geo Reverse Reverse Solenoids (Complete: test_003)
+    # Inbound Geo Reverse Reverse Solenoids
     ########################################
     for inbound_geo_reverse_reverse_solenoid in inbound_geo_reverse_reverse_solenoids:
         flip_reference_shifts(
@@ -753,7 +758,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Inbound Non-Geo Forward Forward Solenoids (Complete: test_005)
+    # Inbound Non-Geo Forward Forward Solenoids
     ########################################
     for inbound_nongeo_forward_forward_solenoid in inbound_nongeo_forward_forward_solenoids:
         flip_reference_shifts(
@@ -762,7 +767,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Inbound Non-Geo Forward Reverse Solenoids (Complete: test_005)
+    # Inbound Non-Geo Forward Reverse Solenoids
     ########################################
     for inbound_nongeo_forward_reverse_solenoid in inbound_nongeo_forward_reverse_solenoids:
         flip_reference_shifts(
@@ -771,7 +776,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Inbound Non-Geo Reverse Forward Solenoids (Complete: test_005)
+    # Inbound Non-Geo Reverse Forward Solenoids
     ########################################
     for inbound_nongeo_reverse_forward_solenoid in inbound_nongeo_reverse_forward_solenoids:
         flip_reference_shifts(
@@ -780,7 +785,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Inbound Non-Geo Reverse Reverse Solenoids (Complete: test_005)
+    # Inbound Non-Geo Reverse Reverse Solenoids
     ########################################
     for inbound_nongeo_reverse_reverse_solenoid in inbound_nongeo_reverse_reverse_solenoids:
         flip_reference_shifts(
@@ -789,16 +794,16 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Outbound Geo Forward Forward Solenoids (Complete: test_006)
+    # Outbound Geo Forward Forward Solenoids
     ########################################
     for outbound_geo_forward_forward_solenoid in outbound_geo_forward_forward_solenoids:
         flip_reference_shifts(
             outbound_geo_forward_forward_solenoid,
-            dxy_sign    = +1,
+            dxy_sign    = -1,
             chi_sign    = -1)
 
     ########################################
-    # Outbound Geo Forward Reverse Solenoids (Complete: test_006)
+    # Outbound Geo Forward Reverse Solenoids
     ########################################
     for outbound_geo_forward_reverse_solenoid in outbound_geo_forward_reverse_solenoids:
         flip_reference_shifts(
@@ -807,25 +812,25 @@ def solenoid_reference_shift_corrections(
             chi_sign    = +1)
 
     ########################################
-    # Outbound Geo Reverse Forward Solenoids (Complete: test_006)
+    # Outbound Geo Reverse Forward Solenoids
     ########################################
     for outbound_geo_reverse_forward_solenoid in outbound_geo_reverse_forward_solenoids:
         flip_reference_shifts(
             outbound_geo_reverse_forward_solenoid,
             dxy_sign    = +1,
-            chi_sign    = +1)
+            chi_sign    = -1)
 
     ########################################
-    # Outbound Geo Reverse Reverse Solenoids (Complete: test_006)
+    # Outbound Geo Reverse Reverse Solenoids
     ########################################
     for outbound_geo_reverse_reverse_solenoid in outbound_geo_reverse_reverse_solenoids:
         flip_reference_shifts(
             outbound_geo_reverse_reverse_solenoid,
-            dxy_sign    = +1,
+            dxy_sign    = -1,
             chi_sign    = +1)
 
     ########################################
-    # Outbound Non-Geo Forward Forward Solenoids (Complete: test_004)
+    # Outbound Non-Geo Forward Forward Solenoids
     ########################################
     for outbound_nongeo_forward_forward_solenoid in outbound_nongeo_forward_forward_solenoids:
         flip_reference_shifts(
@@ -834,7 +839,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Outbound Non-Geo Forward Reverse Solenoids (Complete: test_004)
+    # Outbound Non-Geo Forward Reverse Solenoids
     ########################################
     for outbound_nongeo_forward_reverse_solenoid in outbound_nongeo_forward_reverse_solenoids:
         flip_reference_shifts(
@@ -843,7 +848,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Outbound Non-Geo Reverse Forward Solenoids (Complete: test_004)
+    # Outbound Non-Geo Reverse Forward Solenoids
     ########################################
     for outbound_nongeo_reverse_forward_solenoid in outbound_nongeo_reverse_forward_solenoids:
         flip_reference_shifts(
@@ -852,7 +857,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Outbound Non-Geo Reverse Reverse Solenoids (Complete: test_004)
+    # Outbound Non-Geo Reverse Reverse Solenoids
     ########################################
     for outbound_nongeo_reverse_reverse_solenoid in outbound_nongeo_reverse_reverse_solenoids:
         flip_reference_shifts(
