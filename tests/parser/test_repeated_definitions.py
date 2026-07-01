@@ -41,13 +41,9 @@ def test_repeated_momentum_definition_uses_last_value(write_lattice):
 
 def test_repeated_optional_global_definitions_use_last_values(write_lattice):
     """
-    Repeated MASS and FSHIFT definitions should use final values.
-    Repeated CHARGE definitions are each recognised as a protected global:
-    any CHARGE != 1 emits a UserWarning; all CHARGE values are ignored and
-    q0 defaults to +1 regardless of how many CHARGE lines appear.
+    Repeated MASS, CHARGE, and FSHIFT definitions should each use their
+    final value.
     """
-    import warnings
-
     lattice_path = write_lattice(
         """\
         MOMENTUM = 1.0 GEV;
@@ -60,18 +56,12 @@ def test_repeated_optional_global_definitions_use_last_values(write_lattice):
         """,
         filename = "repeated_optional_globals_last_wins.sad")
 
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
+    parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
 
     assert parsed["globals"]["mass0"] == pytest.approx(1.0E6), (
         "Repeated MASS definitions should use the final value.")
-    assert any(issubclass(w.category, UserWarning) and "CHARGE" in str(w.message)
-               for w in caught), (
-        "The CHARGE = -1 line should emit a UserWarning.")
-    assert parsed["globals"]["q0"] == pytest.approx(1.0), (
-        "CHARGE is ignored by SAD — q0 should default to +1 regardless of "
-        "how many CHARGE lines are present.")
+    assert parsed["globals"]["q0"] == pytest.approx(-1.0), (
+        "Repeated CHARGE definitions should use the final value (-1.0).")
     assert parsed["globals"]["fshift"] == pytest.approx(0.02), (
         "Repeated FSHIFT definitions should use the final value.")
 
