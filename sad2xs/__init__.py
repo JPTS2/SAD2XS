@@ -7,6 +7,11 @@ Date:       20-11-2025
 """
 
 ################################################################################
+# Required Packages
+################################################################################
+import importlib
+
+################################################################################
 # Main conversion function
 ################################################################################
 from .main import convert_sad_to_xsuite
@@ -20,4 +25,10 @@ from .converter._010_write_optics import write_optics
 ################################################################################
 # SAD Helpers Functions
 ################################################################################
-from . import sad_helpers
+# Has optional dependencies, so lazy import (PEP 562).
+def __getattr__(name):
+    if name == "sad_helpers":
+        module = importlib.import_module(".sad_helpers", __name__)
+        globals()["sad_helpers"] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

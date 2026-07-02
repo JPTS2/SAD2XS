@@ -4,17 +4,19 @@ The `sad2xs.sad_helpers` package contains Python wrappers around external SAD ca
 
 These helpers are separate from the core SAD-to-Xsuite converter. They are used for comparison, validation, and workflows where SAD remains useful alongside the converted Xsuite model.
 
-Current status: the top-level package imports `sad_helpers`, so full import-time decoupling is not complete.
+`sad2xs.sad_helpers` is lazily imported, so a bare `import sad2xs` does not require its dependencies. Install them with:
 
-Next release target: these helpers should remain optional relative to the core SAD-to-Xsuite converter.
+```
+pip install sad2xs[sad_helpers]
+```
 
 ## Requirements
 
 The helper functions require:
 
-- a working SAD executable;
+- a working SAD executable — this is not pip-installable and must be installed/licensed separately;
 - input lattice files that SAD can read;
-- Python dependencies used by the helper being called, such as `numpy`, `tfs`, `xtrack`, and `tqdm`;
+- the `sad_helpers` extra (`tfs-pandas`, `tqdm`), plus `numpy` and `xtrack` from the core dependencies;
 - a writable current working directory for temporary command and output files.
 
 By default the helpers call an executable named `sad`. A different executable path can be passed with the `sad_path` argument.
@@ -117,10 +119,6 @@ The helper layer currently provides these safeguards:
 
 Known limitations:
 
-- helper imports and execution depend on optional runtime dependencies;
-- top-level package import still re-exports the helper package;
 - `additional_commands` is raw SAD text and is not sandboxed or validated;
 - subprocess output parsing is tailored to the current generated SAD commands;
 - some error messages still use generic wording from earlier Twiss-only implementations.
-
-Next release target: address these limitations incrementally without making the core converter depend on an external SAD installation.
