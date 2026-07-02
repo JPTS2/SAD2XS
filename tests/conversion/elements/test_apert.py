@@ -145,7 +145,33 @@ def _assert_aperture_grid_matches(
     """
     Track a grid through one aperture and compare the alive mask.
     """
-    line = xt.Line(elements = [aperture], element_names = ["test_apert"])
+    _assert_apertures_grid_matches(
+        test_name             = test_name,
+        apertures             = [aperture],
+        aperture_names        = ["test_apert"],
+        aperture_description  = aperture_description,
+        x_grid                = x_grid,
+        y_grid                = y_grid,
+        expected_alive        = expected_alive,
+        parameters            = parameters,
+        notes                 = notes)
+
+def _assert_apertures_grid_matches(
+        test_name,
+        apertures,
+        aperture_names,
+        aperture_description,
+        x_grid,
+        y_grid,
+        expected_alive,
+        parameters,
+        notes = None):
+    """
+    Track a grid through one or more consecutive (same-s) apertures and
+    compare the AND of their alive masks, as SAD applies combined APERT
+    conditions.
+    """
+    line = xt.Line(elements = apertures, element_names = aperture_names)
     particles = xt.Particles(
         p0c   = 1.0E9,
         mass0 = xt.ELECTRON_MASS_EV,
@@ -570,6 +596,8 @@ def test_aper_converter_preserves_combined_rectangular_and_elliptical_limits(
         assert_environment_element):
     """
     SAD APERT supports the intersection of rectangular and elliptical limits.
+    Provably symmetric bounds (DX1 == -DX2, DY1 == -DY2) collapse to a
+    single xt.LimitRectEllipse.
     """
     convert_apertures(
         parsed_elements = parsed_elements(
@@ -598,6 +626,164 @@ def test_aper_converter_preserves_combined_rectangular_and_elliptical_limits(
         "Combined APERT should preserve the elliptical horizontal axis.")
     assert aperture.b == pytest.approx(0.03), (
         "Combined APERT should preserve the elliptical vertical axis.")
+    assert "test_apert" not in xsuite_environment.lines, (
+        "A provably-symmetric combined APERT should not be split into a "
+        "sub-line.")
+
+def test_aper_converter_splits_asymmetric_combined_limits_into_rect_and_ellipse(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
+    """
+    An off-centre rectangular window (DX1 != -DX2) can't be represented by a
+    single xt.LimitRectEllipse, so the converter splits it into a
+    LimitRect + LimitEllipse pair sharing the same shift/rotation (see
+    tests/sad/test_apert.py::
+    test_apert_combined_rect_and_ellipse_grid_requires_both for the real-SAD
+    behaviour this mirrors).
+    """
+    convert_apertures(
+        parsed_elements = parsed_elements(
+            element_type      = "apert",
+            element_name      = "test_apert",
+            element_variables = {
+                "ax": 0.02,
+                "ay": 0.03,
+                "dx1": -0.005,
+                "dx2": 0.02,
+                "dy1": -0.03,
+                "dy2": 0.005,
+                "dx": 0.001,
+                "dy": -0.002,
+                "rotate": np.pi / 6.0,
+            }),
+        environment = xsuite_environment)
+
+    assert "test_apert" in xsuite_environment.lines, (
+        "An asymmetric combined APERT should be built as a named sub-line.")
+    assert xsuite_environment.lines["test_apert"].element_names == [
+        "test_apert_rect", "test_apert_ellipse"], (
+        "The sub-line should reference the split Rect and Ellipse, in order.")
+
+    rect = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_apert_rect",
+        element_type = xt.LimitRect)
+    ellipse = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_apert_ellipse",
+        element_type = xt.LimitEllipse)
+
+    assert rect.min_x == pytest.approx(-0.005), "Rect should preserve DX1."
+    assert rect.max_x == pytest.approx(0.02), "Rect should preserve DX2."
+    assert rect.min_y == pytest.approx(-0.03), "Rect should preserve DY1."
+    assert rect.max_y == pytest.approx(0.005), "Rect should preserve DY2."
+    assert ellipse.a == pytest.approx(0.02), "Ellipse should preserve AX."
+    assert ellipse.b == pytest.approx(0.03), "Ellipse should preserve AY."
+
+    for aperture, label in [(rect, "rect"), (ellipse, "ellipse")]:
+        assert aperture.shift_x == pytest.approx(0.001), (
+            f"Split combined APERT {label} should share the DX shift.")
+        assert aperture.shift_y == pytest.approx(-0.002), (
+            f"Split combined APERT {label} should share the DY shift.")
+        assert aperture.rot_s_rad == pytest.approx(-np.pi / 6.0), (
+            f"Split combined APERT {label} should share the ROTATE rotation.")
+
+def test_aper_converter_split_sub_line_flattens_into_parent_line(
+        parsed_elements,
+        xsuite_environment):
+    """
+    Referencing a split combined APERT's name as a component of another
+    line (as convert_lines does for every SAD LINE) should transparently
+    flatten it to its two constituent elements, at every occurrence.
+    """
+    xsuite_environment.new("d1", xt.Drift, length = 1.0)
+    convert_apertures(
+        parsed_elements = parsed_elements(
+            element_type      = "apert",
+            element_name      = "test_apert",
+            element_variables = {
+                "ax": 0.02, "ay": 0.03,
+                "dx1": -0.005, "dx2": 0.02,
+                "dy1": -0.03, "dy2": 0.005,
+            }),
+        environment = xsuite_environment)
+
+    line = xsuite_environment.new_line(
+        name       = "l",
+        components = ["d1", "test_apert", "d1", "test_apert", "d1"])
+
+    assert line.element_names == [
+        "d1", "test_apert_rect", "test_apert_ellipse",
+        "d1", "test_apert_rect", "test_apert_ellipse",
+        "d1"], (
+        "Every occurrence of the split aperture should flatten to its Rect "
+        "and Ellipse components.")
+
+@pytest.mark.parametrize(
+    "element_variables",
+    [
+        {"ax": 0.01, "ay": 0.01, "dx1": 0.0, "dx2": 0.0,
+         "dy1": -0.005, "dy2": 0.02},
+    ])
+def test_aper_converter_treats_degenerate_axis_as_unconstrained(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element,
+        element_variables):
+    """
+    DX1 == DX2 leaves that axis unconstrained rather than zero-width (see
+    tests/sad/test_apert.py::test_apert_degenerate_rectangle_bound_behavior).
+    The y-axis stays asymmetric here, so this still splits into Rect + Ellipse.
+    """
+    convert_apertures(
+        parsed_elements = parsed_elements(
+            element_type      = "apert",
+            element_name      = "test_apert",
+            element_variables = element_variables),
+        environment = xsuite_environment)
+
+    assert xsuite_environment.lines["test_apert"].element_names == [
+        "test_apert_rect", "test_apert_ellipse"]
+    rect = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_apert_rect",
+        element_type = xt.LimitRect)
+    assert rect.min_x < -1.0E9 and rect.max_x > 1.0E9, (
+        "A degenerate x-axis bound (DX1 == DX2) should leave x effectively "
+        "unconstrained on the Rect, not zero-width.")
+    assert rect.min_y == pytest.approx(-0.005)
+    assert rect.max_y == pytest.approx(0.02)
+
+def test_aper_converter_treats_fully_degenerate_rect_as_ellipse_only(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
+    """
+    When both rectangular axes are degenerate (DX1 == DX2 and DY1 == DY2),
+    no rectangular constraint survives on either axis, so a single
+    LimitEllipse is sufficient and no split is needed.
+    """
+    convert_apertures(
+        parsed_elements = parsed_elements(
+            element_type      = "apert",
+            element_name      = "test_apert",
+            element_variables = {
+                "ax": 0.01, "ay": 0.02,
+                "dx1": 0.0, "dx2": 0.0,
+                "dy1": 3.0, "dy2": 3.0,
+            }),
+        environment = xsuite_environment)
+
+    assert "test_apert" not in xsuite_environment.lines, (
+        "A fully-degenerate rectangular bound should collapse to a single "
+        "LimitEllipse, not a split sub-line.")
+    ellipse = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_apert",
+        element_type = xt.LimitEllipse)
+    assert ellipse.a == pytest.approx(0.01)
+    assert ellipse.b == pytest.approx(0.02)
 
 ################################################################################
 # Error Handling
@@ -1193,4 +1379,80 @@ def test_aper_limitrectellipse_grid_loss_matches_analytic_boundary(
             "converter combined-limit mapping is tested end-to-end.",
             "SAD documentation defines APERT survival as the intersection of "
             "the ellipse and rectangle conditions.",
+        ])
+
+
+def test_aper_split_rect_and_ellipse_grid_loss_matches_analytic_boundary(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
+    """
+    Tracking through a split (asymmetric-window) combined APERT's Rect and
+    Ellipse should match the intersection of both analytic masks, same as
+    real SAD (see tests/sad/test_apert.py::
+    test_apert_combined_rect_and_ellipse_grid_requires_both).
+    """
+    a, b = 0.02, 0.02
+    min_x, max_x, min_y, max_y = -0.005, 0.03, -0.03, 0.005
+    x_grid, y_grid = _rectangle_grid(min_x, max_x, min_y, max_y)
+    expected_alive = (
+        _rectangle_alive(x_grid, y_grid, min_x, max_x, min_y, max_y) &
+        _ellipse_alive(x_grid, y_grid, a, b)
+    )
+
+    convert_apertures(
+        parsed_elements = parsed_elements(
+            element_type      = "apert",
+            element_name      = "test_apert",
+            element_variables = {
+                "ax": a,
+                "ay": b,
+                "dx1": min_x,
+                "dx2": max_x,
+                "dy1": min_y,
+                "dy2": max_y,
+            }),
+        environment = xsuite_environment)
+
+    assert xsuite_environment.lines["test_apert"].element_names == [
+        "test_apert_rect", "test_apert_ellipse"], (
+        "This asymmetric combined APERT should have been split.")
+
+    rect = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_apert_rect",
+        element_type = xt.LimitRect)
+    ellipse = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_apert_ellipse",
+        element_type = xt.LimitEllipse)
+
+    _assert_apertures_grid_matches(
+        test_name            = (
+            "test_aper_split_rect_and_ellipse_grid_loss_matches_analytic_boundary"),
+        apertures            = [rect, ellipse],
+        aperture_names       = ["test_apert_rect", "test_apert_ellipse"],
+        aperture_description = (
+            "APERT TEST_APERT = "
+            "(AX = 0.02 AY = 0.02 DX1 = -0.005 DX2 = 0.03 "
+            "DY1 = -0.03 DY2 = 0.005);"),
+        x_grid               = x_grid,
+        y_grid               = y_grid,
+        expected_alive       = expected_alive,
+        parameters           = {
+            "ax": a,
+            "ay": b,
+            "dx1": min_x,
+            "dx2": max_x,
+            "dy1": min_y,
+            "dy2": max_y,
+        },
+        notes                = [
+            "Aperture built by converting a SAD APERT definition, split "
+            "into LimitRect + LimitEllipse inside a named sub-line, and "
+            "tracked as a two-element line so the converter's split path "
+            "is tested end-to-end.",
+            "The rectangular window is deliberately asymmetric; a converter "
+            "that forced it into a single symmetric LimitRectEllipse would "
+            "fail this comparison.",
         ])

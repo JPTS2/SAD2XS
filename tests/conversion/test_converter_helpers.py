@@ -26,7 +26,9 @@ from sad2xs.converter._000_helpers import (
     get_element_misalignments,
     is_effectively_zero,
     only_index_nonzero,
-    species_from_mass_and_charge)
+    species_from_mass_and_charge,
+    values_provably_equal,
+    values_provably_opposite)
 
 ################################################################################
 # parse_expression
@@ -70,6 +72,43 @@ def test_is_effectively_zero_respects_custom_tolerance():
     """
     assert is_effectively_zero(0.5, tol=1.0), (
         "A value within the supplied tolerance should be effectively zero.")
+
+################################################################################
+# values_provably_equal
+################################################################################
+def test_values_provably_equal_returns_true_for_equal_numbers():
+    assert values_provably_equal(0.01, 0.01)
+
+def test_values_provably_equal_returns_false_for_different_numbers():
+    assert not values_provably_equal(0.01, 0.02)
+
+def test_values_provably_equal_returns_true_for_identical_expressions():
+    assert values_provably_equal("w", "w")
+
+def test_values_provably_equal_returns_false_for_different_expressions():
+    assert not values_provably_equal("w", "v")
+
+def test_values_provably_equal_returns_false_for_mixed_types():
+    assert not values_provably_equal(0.01, "w")
+
+################################################################################
+# values_provably_opposite
+################################################################################
+def test_values_provably_opposite_returns_true_for_opposite_numbers():
+    assert values_provably_opposite(0.01, -0.01)
+
+def test_values_provably_opposite_returns_false_for_equal_numbers():
+    assert not values_provably_opposite(0.01, 0.01)
+
+def test_values_provably_opposite_returns_true_for_negated_expression():
+    assert values_provably_opposite("w", "-w")
+    assert values_provably_opposite("-w", "w")
+
+def test_values_provably_opposite_returns_false_for_unrelated_expressions():
+    assert not values_provably_opposite("w", "v")
+
+def test_values_provably_opposite_returns_false_for_mixed_types():
+    assert not values_provably_opposite(0.01, "w")
 
 ################################################################################
 # get_element_length
