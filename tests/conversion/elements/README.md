@@ -33,25 +33,21 @@ Total collected from this folder: see `tests/README.md`.
 | `test_bend.py` | 23 | 4 | Element offsets with horizontal shift |
 | `test_cavi.py` | 19 | 0 | — |
 | `test_coord.py` | 10 | 0 | — |
-| `test_corrector.py` | 18 | 16 | Corrector physics incorrect — optics and tracking both wrong for kicks, rotations, offsets |
+| `test_corrector.py` | 18 | 14 | Corrector physics incorrect — optics and tracking both wrong for kicks, rotations, offsets |
 | `test_drift.py` | 6 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
-| `test_mult.py` | 12 | 2 | Combined multipole orders — cross-order physics wrong |
+| `test_mult.py` | 12 | 1 | Combined multipole orders — cross-order physics wrong |
 | `test_oct.py` | 18 | 0 | — |
-| `test_quad.py` | 18 | 2 | Rotation tracking (±45°) |
+| `test_quad.py` | 18 | 0 | — |
 | `test_sext.py` | 18 | 0 | — |
-| `test_sol.py` | 17 | 4 | Solenoid GEO exit-transform physics (issue #58) |
+| `test_sol.py` | 17 | 2 | Solenoid GEO exit-transform physics (issue #58) |
 
 ### `test_sol.py` note
 
 The solenoid test functions are heavily parametrised. Most combinations pass
-following the `xt.Rotation` API migration (issue #19). The 4 remaining failing
-instances are:
-
-- `test_sol_optics_matches_sad_twiss_at_end[±0.1]` (2 instances)
-- `test_sol_reference_transform_restores_design_orbit_at_end[out-dxdy]` and
-  `[out-dxdy_dpx_dpy]` (2 instances)
+following the `xt.Rotation` API migration (issue #19). The 2 remaining failing
+instances are `test_sol_optics_matches_sad_twiss_at_end[±0.1]`.
 
 The root cause is that SAD's GEO solenoid exit transforms are computed at
 runtime during `COD`/`CALC` and depend on the interior elements of the solenoid
@@ -60,10 +56,10 @@ pair. The correct exit transforms cannot be derived statically from the SAD file
 
 ### `test_corrector.py` note
 
-16 failing instances come from 8 test functions, each parametrised over kick
+14 failing instances come from 6 test functions, each parametrised over kick
 sign or offset direction (2–3 parameter values each). Optics and tracking both
-fail for horizontal kicks, thin kicks, rotated kicks, and element offsets,
-confirming the corrector physics is broadly wrong in the converter.
+fail for horizontal kicks, rotated kicks, and element offsets, confirming the
+corrector physics is broadly wrong in the converter.
 
 ## Shared Fixtures
 
