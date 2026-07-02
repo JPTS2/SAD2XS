@@ -398,6 +398,74 @@ def test_pipeline_reverse_survey_horizontal_negates_solenoid_ks(write_lattice):
         f"Forward: {ks_forward}, reversed: {ks_reversed}.")
 
 
+def test_pipeline_reverse_survey_horizontal_negates_solenoid_ks_with_charge_minus_one(
+        write_lattice):
+    """
+    Composability check (internal consistency only — see note below): does a
+    genuine CHARGE=-1 lattice, which now bakes the reference charge into the
+    solenoid's base ks (see sad2xs/converter/_004_element_converter.py's
+    convert_solenoids), still get correctly negated by
+    reverse_survey_horizontal's geometric-mirror ks negation?
+
+    NOTE ON SCOPE: unlike the equivalent check for reverse_element_order
+    (test_pipeline_reverse_element_order_solenoid_physics_matches_sad_with_charge_minus_one
+    in test_reverse_element_order.py, verified against real SAD's native
+    "-LINE" reversal), this file has NO real-SAD-verified test for
+    reverse_survey_horizontal at all — every test here only checks the
+    converter's internal Python logic for self-consistency, not real SAD
+    output. That is a pre-existing gap in this file's coverage, not
+    something newly introduced or resolved here: reverse_survey_horizontal
+    is a whole-lattice geometric mirror with no direct native SAD operator
+    to run for comparison (unlike -LINE for element-order reversal), so
+    building an equivalent real-SAD check would mean hand-constructing a
+    mirrored lattice file rather than reusing an existing SAD command.  This
+    test only confirms the two ks negations (charge-dependent base value,
+    then geometric-mirror) compose arithmetically in the converter code —
+    it does not confirm the result matches real SAD.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+        CHARGE      = -1;
+
+        SOL         S1      = (L = 0.5 BZ = 0.1);
+
+        MARK        START   = ()
+                    END     = ();
+
+        LINE        TEST_LINE = (START S1 END);
+        """,
+        filename = "rev_survey_solenoid_charge.sad")
+
+    line_forward = s2x.convert_sad_to_xsuite(
+        sad_lattice_path       = str(lattice_path),
+        output_directory       = "N/A",
+        reverse_survey_horizontal = False,
+        _verbose               = False,
+        _test_mode             = True)
+
+    line_reversed = s2x.convert_sad_to_xsuite(
+        sad_lattice_path       = str(lattice_path),
+        output_directory       = "N/A",
+        reverse_survey_horizontal = True,
+        _verbose               = False,
+        _test_mode             = True)
+
+    assert float(line_forward.particle_ref.q0) == pytest.approx(-1.0), (
+        "Sanity check: CHARGE=-1 in the SAD file should give q0=-1 on the "
+        "converted line's reference particle.")
+
+    ks_forward  = line_forward["s1"].ks
+    ks_reversed = line_reversed["s1"].ks
+
+    assert ks_forward != pytest.approx(0.0), (
+        "Forward solenoid ks (CHARGE=-1) should be non-zero for BZ = 0.1.")
+    assert ks_reversed == pytest.approx(-ks_forward), (
+        "reverse_survey_horizontal=True should negate solenoid ks even when "
+        "the base ks is already charge-adjusted (CHARGE=-1). "
+        f"Forward: {ks_forward}, reversed: {ks_reversed}.")
+
+
 ################################################################################
 # Element Offset Adjustments
 ################################################################################

@@ -23,17 +23,48 @@ import pytest
 from sad2xs.sad_helpers import twiss_sad
 
 ################################################################################
+# Shared Constants
+#
+# Default values used across tests/sad/*.py that build their own lattice
+# strings directly (rather than going through the sad_accepts/sad_rejects
+# fixtures, which already hardcode MOMENTUM = 1.0 GEV via _run_sad_twiss
+# below). Centralised here so every file uses the same defaults rather than
+# each redefining its own copy.
+################################################################################
+DEFAULT_MOMENTUM_GEV    = 1.0
+ELECTRON_MASS_MEV       = 0.51099895    # positron/electron mass
+PROTON_MASS_MEV         = 938.27208816  # proton mass
+
+################################################################################
 # Helpers
 ################################################################################
 def _run_sad_twiss(lattice_body: str, tmp_path) -> None:
     lattice = tmp_path / "test.sad"
-    lattice.write_text(f"MOMENTUM = 1.0 GEV;\n{lattice_body}\n")
+    lattice.write_text(f"MOMENTUM = {DEFAULT_MOMENTUM_GEV} GEV;\n{lattice_body}\n")
     twiss_sad(
         lattice_filepath    = lattice.name,
         line_name           = "TEST",
         calc6d              = False,
         closed              = False,
         additional_commands = "")
+
+def assert_particle_survived(result: dict, particle_index: int = 0) -> None:
+    """
+    Assert that a track_sad result reports the given particle as alive.
+
+    SAD's "state" flag is 1 for a surviving particle and 0 for one lost on
+    an aperture or other boundary. A lost particle's other returned
+    coordinates (x, px, y, py, ...) are SAD-internal sentinel values, not
+    physical results — any orbit/energy assertion made on a lost particle's
+    coordinates is checking noise, not physics. Call this immediately after
+    track_sad and before any assertion on the returned coordinates.
+    """
+    state = result["state"][particle_index]
+    assert state == 1, (
+        f"Particle {particle_index} was lost during tracking (state={state}), "
+        "not survived (state=1). Its returned x/px/y/py/zeta/delta are SAD's "
+        "lost-particle sentinel values, not physical results — check the "
+        "lattice is valid before trusting any orbit assertion on this result.")
 
 ################################################################################
 # Fixtures

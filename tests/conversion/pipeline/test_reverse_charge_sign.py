@@ -50,26 +50,24 @@ import sad2xs as s2x
 ################################################################################
 # Structural: what changes and what does not
 ################################################################################
-def test_pipeline_reverse_charge_sign_does_not_change_solenoid_ks(write_lattice):
+def test_pipeline_reverse_charge_sign_negates_solenoid_ks(write_lattice):
     """
-    reverse_charge_sign=True must NOT change the solenoid ks.
+    reverse_charge_sign=True MUST negate the solenoid ks.
 
-    SAD's BZ is a physical field strength [T], but the SAD convention treats
-    the reference particle as having unit positive charge (q = +e) for
-    normalisation purposes.  The converter always uses brho = p0 / e
-    (ignoring the sign of q0), giving ks = BZ / (p0/e).
+    SAD's BZ is a physical field strength [T]; ks = BZ / brho where
+    brho = p0/(q0*e) depends on the reference particle's actual charge q0,
+    not a fixed unit-positive-charge assumption. This was verified
+    empirically against real SAD (tests/sad/test_reference_particle.py and
+    dev/sad_charge/*.sad): CHARGE=-1 gives the exact sign-reversed solenoid
+    coupling (y flips sign), not a charge-independent result. An earlier
+    version of this test asserted the opposite — that ks is "charge-sign-
+    neutral" — based on a belief later found to be a comma-parsing-bug
+    artifact affecting both this project's own test lattices and hand-written
+    exploration scripts (the bug silently dropped BOUND/GEO/DX in element
+    definitions containing commas, removing the solenoid's reference-frame
+    setup entirely and making electron/positron cases spuriously identical).
 
-    This makes ks charge-sign-neutral — consistent with k0, k1, k1s, and
-    all other element parameters in the converter.  It means:
-
-      - reverse_charge_sign=True changes only the reference particle label (q0).
-      - The solenoid coupling direction in Xsuite is UNCHANGED.
-      - Skew-quad coupling corrections tuned against the solenoid remain valid.
-
-    Without this convention, reverse_charge_sign would invert ks while leaving k1s
-    (skew quads) unchanged, breaking any solenoid coupling compensation scheme.
-    Empirically verified: a particle with x=1 mm initial offset exits the
-    solenoid with the same y for both reverse_charge_sign=False and reverse_charge_sign=True.
+    reverse_charge_sign=True negates q0, so it must also negate ks.
     """
     lattice_path = write_lattice(
         """\
@@ -117,11 +115,67 @@ def test_pipeline_reverse_charge_sign_does_not_change_solenoid_ks(write_lattice)
         assert ks_d != pytest.approx(0.0), (
             f"Default solenoid {name_d}.ks should be non-zero for BZ = 0.5. "
             f"Got {ks_d}.")
-        assert ks_r == pytest.approx(ks_d), (
-            f"reverse_charge_sign=True must NOT change solenoid ks. "
-            f"Default: {ks_d:.6f}, reversed: {ks_r:.6f}. "
-            "ks is computed with brho = p0/e (always unit positive charge), "
-            "making it charge-sign-neutral like all other element parameters.")
+        assert ks_r == pytest.approx(-ks_d), (
+            f"reverse_charge_sign=True must negate solenoid ks (it negates "
+            f"q0, and ks depends on q0 via brho). "
+            f"Default: {ks_d:.6f}, reversed: {ks_r:.6f}.")
+
+
+def test_pipeline_charge_in_file_and_reverse_charge_sign_compound(write_lattice):
+    """
+    CHARGE in the SAD file and reverse_charge_sign=True are independent
+    multipliers on q0 and compound: CHARGE=-1 combined with
+    reverse_charge_sign=True gives q0=+1 again (double negation), matching
+    the positron-default solenoid ks — not a special-cased "ignore one or
+    the other" behaviour. This is a deliberate design choice (see project
+    discussion): callers who write CHARGE=-1 in their file AND pass
+    reverse_charge_sign=True will get this compounding, not an error.
+    """
+    def build(charge_line):
+        return write_lattice(
+            f"""\
+            MOMENTUM    = 1.0 GEV;
+            {charge_line}
+
+            DRIFT       SOL_DRIFT   = (L = 0.5);
+            SOL         SOL_IN      = (BZ = 0.5 BOUND = 1 GEO = 1)
+                        SOL_OUT     = (BZ = 0.5 BOUND = 1);
+
+            MARK        START       = ()
+                        END         = ();
+
+            LINE        TEST_LINE   = (START SOL_IN SOL_DRIFT SOL_OUT END);
+            """,
+            filename = f"charge_compound_{abs(hash(charge_line)) % 10000}.sad")
+
+    def solenoid_ks(line):
+        tt = line.get_table(attr=True)
+        names = [n for n in tt.rows[tt.element_type == "UniformSolenoid"].name
+                 if "::" not in n]
+        return line[names[0]].ks
+
+    line_positron_default = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(build("")),
+        output_directory = "N/A",
+        reverse_charge_sign = False,
+        _verbose         = False,
+        _test_mode       = True)
+
+    line_charge_minus_one_reversed = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(build("CHARGE = -1;")),
+        output_directory = "N/A",
+        reverse_charge_sign = True,
+        _verbose         = False,
+        _test_mode       = True)
+
+    ks_positron_default = solenoid_ks(line_positron_default)
+    ks_compounded       = solenoid_ks(line_charge_minus_one_reversed)
+
+    assert ks_compounded == pytest.approx(ks_positron_default), (
+        f"CHARGE=-1 in the file combined with reverse_charge_sign=True should "
+        f"compound (double negation) back to the same q0=+1 result as the "
+        f"positron default. Default: {ks_positron_default:.6f}, "
+        f"compounded: {ks_compounded:.6f}.")
 
 
 def test_pipeline_reverse_charge_sign_does_not_change_bend_k0(write_lattice):
