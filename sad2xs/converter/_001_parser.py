@@ -22,7 +22,7 @@ from ..helpers import print_section_heading
 # Element Body Splitting
 ################################################################################
 
-def _split_element_bodies(element_section: str) -> list[str]:
+def _split_element_bodies(element_section: str, line_no: int | None = None) -> list[str]:
     """
     Split a raw element section into individual element definition strings,
     correctly handling nested parentheses in parameter values.
@@ -40,6 +40,7 @@ def _split_element_bodies(element_section: str) -> list[str]:
     element_definitions = []
     current_definition  = []
     paren_depth         = 0
+    line_prefix         = f"line {line_no}: " if line_no is not None else ""
 
     for char in element_section:
         if char == "(":
@@ -48,8 +49,8 @@ def _split_element_bodies(element_section: str) -> list[str]:
             paren_depth -= 1
             if paren_depth < 0:
                 raise ValueError(
-                    f"Malformed element definition — closing ')' has no matching "
-                    f"'(': '{element_section.strip()}'")
+                    f"{line_prefix}Malformed element definition — closing ')' has "
+                    f"no matching '(': '{element_section.strip()}'")
             if paren_depth == 0:
                 current_definition.append(char)
                 element_definitions.append("".join(current_definition).strip())
@@ -59,6 +60,14 @@ def _split_element_bodies(element_section: str) -> list[str]:
 
     return [defn for defn in element_definitions if defn.strip()]
 
+
+################################################################################
+# Deferred Expression Numeric Literal Detection
+################################################################################
+# Matches plain decimal/exponential numeric literals only (e.g. '1.0', '-.5',
+# '1.0e9'), never bare words like 'inf'/'nan' that Python's float() would
+# otherwise silently accept as floating-point special values.
+NUMERIC_LITERAL_PATTERN = re.compile(r"[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?")
 
 ################################################################################
 # Element Parameter Parsing
@@ -102,6 +111,23 @@ def split_element_parameters(ele_vars: str) -> list[tuple[str, str]]:
     return parameters
 
 ################################################################################
+# Scalar Global Extraction
+################################################################################
+def _extract_scalar_global(section: str, keyword: str) -> str:
+    """
+    Strip a scalar global's keyword and all whitespace/assignment characters
+    from its section, leaving the bare value text (e.g. 'momentum = 1.0 gev'
+    with keyword 'momentum' -> '1.0gev').
+    """
+    value = section
+    value = value.replace(keyword, "")
+    value = value.replace("\n", "")
+    value = value.replace("\t", "")
+    value = value.replace(" ", "")
+    value = value.replace("=", "")
+    return value
+
+################################################################################
 # Electron Volt Conversion
 ################################################################################
 def ev_text_to_float(value_in_ev: str):
@@ -139,6 +165,37 @@ def strip_sad_comments(content: str) -> str:
         cleaned_lines.append(line.split("!", 1)[0])
 
     return "\n".join(cleaned_lines)
+
+def _split_sections_with_line_numbers(content: str) -> list[tuple[int, str]]:
+    """
+    Split semicolon-separated SAD content into sections, pairing each with the
+    source line number it starts on so later parse errors can cite it.
+    """
+    def _append_section(text, first_line_no):
+        # 'text' may begin with newlines carried over from the previous
+        # section's terminator — count them so the reported line matches
+        # where the section's own text actually begins, not one line early.
+        leading_newlines = len(text) - len(text.lstrip("\n"))
+        sections.append((first_line_no + leading_newlines, text))
+
+    sections    = []
+    line_no     = 1
+    start_line  = 1
+    chunk       = []
+
+    for char in content:
+        if char == ";":
+            _append_section("".join(chunk), start_line)
+            chunk       = []
+            start_line  = line_no
+            continue
+        chunk.append(char)
+        if char == "\n":
+            line_no += 1
+
+    _append_section("".join(chunk), start_line)
+
+    return sections
 
 def load_and_clean_whitespace(sad_lattice_path: str):
     """
@@ -196,8 +253,9 @@ def load_and_clean_whitespace(sad_lattice_path: str):
     ########################################
     # Split the file into sections
     ########################################
-    # Semicolons are used to separate element sections
-    sections    = content.split(";")
+    # Semicolons are used to separate element sections. Track the original
+    # source line each section starts on so parse errors can cite it.
+    sections    = _split_sections_with_line_numbers(content)
 
     ########################################
     # Return the section information
@@ -251,7 +309,7 @@ def parse_sad_file(
     if config._verbose:
         print_section_heading("Cleaning Element Sections", mode = "subsection")
 
-    for section in sad_sections:
+    for line_no, section in sad_sections:
         current_section = section
 
         ########################################
@@ -282,28 +340,23 @@ def parse_sad_file(
             continue
 
         ########################################
-        # Get the "Command" of the Section
-        ########################################
-        section_command = current_section.split()[0]
-
-        ########################################
         # Output the cleaned section
         ########################################
-        parsed_sections.append(current_section)
+        parsed_sections.append((line_no, current_section))
 
     ############################################################################
     # Remove SAD simulation commands
     ############################################################################
     # e.g. on rad, on cod...
-    for section in parsed_sections[:]:
+    for line_no, section in parsed_sections[:]:
         section_command = section.split()[0]
 
         if section_command == "on":
-            parsed_sections.remove(section)
+            parsed_sections.remove((line_no, section))
             continue
 
         if section_command == "off":
-            parsed_sections.remove(section)
+            parsed_sections.remove((line_no, section))
             continue
 
     ############################################################################
@@ -312,83 +365,41 @@ def parse_sad_file(
     if config._verbose:
         print_section_heading("Parsing Global Variables", mode = "subsection")
 
-    for section in parsed_sections[:]:
+    for line_no, section in parsed_sections[:]:
         section_command = section.split()[0]
 
         ########################################
         # Momentum
         ########################################
         if section_command.split("=")[0] == "momentum":
-
-            momentum    = section
-            momentum    = momentum.replace("momentum", "")
-            momentum    = momentum.replace("\n", "")
-            momentum    = momentum.replace("\t", "")
-            momentum    = momentum.replace(" ", "")
-            momentum    = momentum.replace("=", "")
-
-            momentum    = ev_text_to_float(momentum)
-
-            cleaned_globals["p0c"] = momentum
-
-            parsed_sections.remove(section)
+            cleaned_globals["p0c"] = ev_text_to_float(
+                _extract_scalar_global(section, "momentum"))
+            parsed_sections.remove((line_no, section))
             continue
 
         ########################################
         # Mass
         ########################################
         if section_command.split("=")[0] == "mass":
-
-            mass    = section
-            mass    = mass.replace("mass", "")
-            mass    = mass.replace("\n", "")
-            mass    = mass.replace("\t", "")
-            mass    = mass.replace(" ", "")
-            mass    = mass.replace("=", "")
-
-            mass    = ev_text_to_float(mass)
-
-            cleaned_globals["mass0"] = mass
-
-            parsed_sections.remove(section)
+            cleaned_globals["mass0"] = ev_text_to_float(
+                _extract_scalar_global(section, "mass"))
+            parsed_sections.remove((line_no, section))
             continue
 
         ########################################
         # Charge
         ########################################
         if section_command.split("=")[0] == "charge":
-
-            charge  = section
-            charge  = charge.replace("charge", "")
-            charge  = charge.replace("\n", "")
-            charge  = charge.replace("\t", "")
-            charge  = charge.replace(" ", "")
-            charge  = charge.replace("=", "")
-
-            charge  = float(charge)
-
-            cleaned_globals["q0"] = charge
-
-            parsed_sections.remove(section)
+            cleaned_globals["q0"] = float(_extract_scalar_global(section, "charge"))
+            parsed_sections.remove((line_no, section))
             continue
 
         ########################################
         # Frequency Shift
         ########################################
         if section_command.split("=")[0] == "fshift":
-
-            fshift  = section
-            fshift  = fshift.replace("fshift", "")
-            fshift  = fshift.replace("\n", "")
-            fshift  = fshift.replace("\t", "")
-            fshift  = fshift.replace(" ", "")
-            fshift  = fshift.replace("=", "")
-
-            fshift  = float(fshift)
-
-            cleaned_globals["fshift"] = fshift
-
-            parsed_sections.remove(section)
+            cleaned_globals["fshift"] = float(_extract_scalar_global(section, "fshift"))
+            parsed_sections.remove((line_no, section))
             continue
 
     ############################################################################
@@ -397,7 +408,7 @@ def parse_sad_file(
     if config._verbose:
         print_section_heading("Parsing Lines", mode = "subsection")
 
-    for section in parsed_sections[:]:
+    for line_no, section in parsed_sections[:]:
         section_command = section.split()[0]
 
         if section_command.startswith("line"):
@@ -415,8 +426,8 @@ def parse_sad_file(
             close_count = line_section.count(")")
             if open_count != close_count:
                 raise ValueError(
-                    f"Malformed LINE definition — unmatched parentheses "
-                    f"({open_count} opening, {close_count} closing): "
+                    f"line {line_no}: Malformed LINE definition — unmatched "
+                    f"parentheses ({open_count} opening, {close_count} closing): "
                     f"'{line_section.strip()}'")
 
             ########################################
@@ -439,8 +450,8 @@ def parse_sad_file(
                     line_name, line_content = line.split("=", 1)
                     if "=" in line_content:
                         raise ValueError(
-                            f"Malformed LINE definition — multiple '=' found: "
-                            f"'{line.strip()}'")
+                            f"line {line_no}: Malformed LINE definition — "
+                            f"multiple '=' found: '{line.strip()}'")
                 elif "(" in line:
                     line_name, line_content = line.split("(", 1)
                 else:
@@ -459,7 +470,7 @@ def parse_sad_file(
 
                 cleaned_lines[line_name] = line_elements
 
-            parsed_sections.remove(section)
+            parsed_sections.remove((line_no, section))
             continue
 
     ############################################################################
@@ -468,7 +479,7 @@ def parse_sad_file(
     if config._verbose:
         print_section_heading("Parsing Elements", mode = "subsection")
 
-    for section in parsed_sections[:]:
+    for line_no, section in parsed_sections[:]:
         section_command = section.split()[0]
 
         if section_command in config.SAD_ALLOWED_ELEMENTS:
@@ -486,7 +497,7 @@ def parse_sad_file(
             ########################################
             # Split the section into elements
             ########################################
-            elements    = _split_element_bodies(element_section)
+            elements    = _split_element_bodies(element_section, line_no)
 
             ########################################
             # Process each element
@@ -513,8 +524,9 @@ def parse_sad_file(
 
                 if ele_name in PROTECTED_ELEMENT_NAMES:
                     raise ValueError(
-                        f"Element name '{ele_name}' collides with a protected "
-                        f"SAD2XS reserved name. Choose a different element name.")
+                        f"line {line_no}: Element name '{ele_name}' collides with "
+                        f"a protected SAD2XS reserved name. Choose a different "
+                        f"element name.")
 
                 ########################################
                 # Handle the element variables
@@ -529,7 +541,12 @@ def parse_sad_file(
                 ########################################
                 # Process data in each element
                 ########################################
-                for var_name, var_value in split_element_parameters(ele_vars):
+                try:
+                    element_parameters = split_element_parameters(ele_vars)
+                except ValueError as exc:
+                    raise ValueError(f"line {line_no}: {exc}") from exc
+
+                for var_name, var_value in element_parameters:
 
                     ########################################
                     # Angle handling
@@ -556,9 +573,10 @@ def parse_sad_file(
                                 and {other_type, section_command} == {"apert", "mark"}):
                             continue
                         raise ValueError(
-                            f"Element name '{ele_name}' is already defined as a "
-                            f"'{other_type}' element. SAD does not allow reusing "
-                            f"element names across different element types.")
+                            f"line {line_no}: Element name '{ele_name}' is "
+                            f"already defined as a '{other_type}' element. SAD "
+                            f"does not allow reusing element names across "
+                            f"different element types.")
 
                 section_dict[ele_name] = ele_dict
 
@@ -570,7 +588,7 @@ def parse_sad_file(
             else:
                 cleaned_elements[section_command] = section_dict
 
-            parsed_sections.remove(section)
+            parsed_sections.remove((line_no, section))
             continue
 
     ############################################################################
@@ -579,7 +597,7 @@ def parse_sad_file(
     if config._verbose:
         print_section_heading("Parsing Deferred Expressions", mode = "subsection")
 
-    for section in parsed_sections[:]:
+    for line_no, section in parsed_sections[:]:
         section_command = section.split()[0]
 
         ########################################
@@ -590,8 +608,17 @@ def parse_sad_file(
                 print("Unknown Section Includes the following information:")
                 print(section)
 
-            parsed_sections.remove(section)
+            parsed_sections.remove((line_no, section))
             continue
+
+        ########################################
+        # Reject SAD function definitions explicitly (':=') instead of
+        # silently misparsing them as a garbage deferred expression.
+        ########################################
+        if ":=" in section:
+            raise ValueError(
+                f"line {line_no}: SAD function definitions ('name[args] := "
+                f"expression') are not supported: '{section.strip()}'.")
 
         ########################################
         # Split information based on the equals sign
@@ -601,40 +628,39 @@ def parse_sad_file(
             expression = " ".join(expression.split())
         except ValueError:
             raise ValueError(
-                f"Error parsing section: {section}. "
+                f"line {line_no}: Error parsing section: {section}. "
                 "Expected format 'name = expression'.")
 
         ########################################
         # Convert to Float if Possible
         ########################################
-        if all(char in "0123456789-." for char in expression) \
-                and expression.count(".") <= 1 \
-                and expression.count("-") <= 1:
-
+        # A strict numeric-literal regex (not bare float()) so that variable
+        # references such as 'INF' or 'NAN' are never mistaken for the
+        # floating-point special values Python's float() would parse them as.
+        if NUMERIC_LITERAL_PATTERN.fullmatch(expression):
             cleaned_expressions[variable] = float(expression)
             continue
+
+        ########################################
+        # Check if the expression is duplicated
+        ########################################
+        if variable not in cleaned_expressions:
+            cleaned_expressions[variable] = expression
+            continue
         else:
-
             ########################################
-            # Check if the expression is duplicated
+            # If duplicate, create new with all dependencies
             ########################################
-            if variable not in cleaned_expressions:
-                cleaned_expressions[variable] = expression
-                continue
-            else:
-                ########################################
-                # If duplicate, create new with all dependencies
-                ########################################
-                previous_expression = cleaned_expressions[variable]
+            previous_expression = cleaned_expressions[variable]
 
-                if isinstance(previous_expression, float):
-                    previous_expression = str(previous_expression)
+            if isinstance(previous_expression, float):
+                previous_expression = str(previous_expression)
 
-                new_expression      = expression.replace(
-                    variable, previous_expression)
+            new_expression      = expression.replace(
+                variable, previous_expression)
 
-                cleaned_expressions[variable] = new_expression
-                continue
+            cleaned_expressions[variable] = new_expression
+            continue
 
     ############################################################################
     # Address missing momentum and mass and charge

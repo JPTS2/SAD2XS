@@ -1,13 +1,6 @@
 """Central mapping of tests that document open GitHub issues."""
 
 KNOWN_ISSUE_TESTS = {
-    # Parser and expression handling.
-    "tests/parser/test_functions.py::test_sad_function_definition_is_preserved": 32,
-    "tests/parser/test_functions.py::test_sad_function_definition_with_module_body_is_preserved": 32,
-    "tests/parser/test_functions.py::test_sad_function_call_in_deferred_expression_converts": 32,
-    "tests/parser/test_functions.py::test_sad_function_call_in_element_expression_converts": 32,
-    "tests/parser/test_functions.py::test_nested_sad_function_call_in_deferred_expression_converts": 32,
-
     # Conversion behaviour and physics comparisons.
     "tests/conversion/elements/test_mult.py::test_mult_conversion_matches_sad_twiss_for_combined_orders": 33,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_twiss_for_thin_kick": 55,
