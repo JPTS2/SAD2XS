@@ -788,6 +788,80 @@ def test_pipeline_write_reload_preserves_test_mode_line_contract(
             "after reload.")
 
 
+@pytest.mark.parametrize(
+    "apert_block, expected_extra_names",
+    [
+        (
+            "APERT       APT1    = (AX = 0.02 AY = 0.03 "
+            "DX1 = -0.01 DX2 = 0.01 DY1 = -0.015 DY2 = 0.015)",
+            ["apt1"],
+        ),
+        (
+            "APERT       APT1    = (AX = 0.02 AY = 0.03 "
+            "DX1 = -0.005 DX2 = 0.02 DY1 = -0.03 DY2 = 0.005)",
+            ["apt1_rect", "apt1_ellipse"],
+        ),
+    ],
+    ids = ["symmetric_single_limitrectellipse", "asymmetric_split_rect_and_ellipse"])
+def test_pipeline_write_reload_preserves_combined_apert_line_contract(
+        write_lattice,
+        tmp_path,
+        apert_block,
+        expected_extra_names):
+    """
+    A combined (rect + ellipse) SAD APERT must survive the write/reload
+    round trip, both as a single xt.LimitRectEllipse (symmetric bounds) and
+    as a split LimitRect + LimitEllipse pair (asymmetric bounds). Regression
+    test: ALLOWED_ELEMENTS previously omitted "LimitRectEllipse", so a
+    symmetric combined APERT was silently dropped by the writer.
+    """
+    lattice_path = write_lattice(
+        f"""\
+        MOMENTUM    = 1.0 GEV;
+
+        DRIFT       D1      = (L = 1.0);
+        {apert_block};
+
+        MARK        START   = ()
+                    END     = ();
+
+        LINE        TEST_LINE = (START D1 APT1 END);
+        """,
+        filename = f"pipeline_combined_apert_reload_{'_'.join(expected_extra_names)}.sad")
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+
+    line_test_mode = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = str(output_dir),
+        output_filename  = "combined_apert_reload",
+        _verbose         = False,
+        _test_mode       = True)
+
+    line_reloaded = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = str(output_dir),
+        output_filename  = "combined_apert_reload",
+        _verbose         = False)
+
+    assert line_reloaded.element_names == line_test_mode.element_names, (
+        "The write/reload path should preserve a combined APERT's line "
+        f"element names. Test mode: {line_test_mode.element_names}; "
+        f"reloaded: {line_reloaded.element_names}.")
+
+    for name in expected_extra_names:
+        assert name in line_reloaded.element_names, (
+            f"Expected combined APERT component '{name}' to survive the "
+            "write/reload round trip.")
+
+    for element_name in line_test_mode.element_names:
+        assert type(line_reloaded[element_name]) is type(line_test_mode[element_name]), (
+            "The write/reload path should preserve combined APERT element "
+            f"classes. Element '{element_name}' was "
+            f"{type(line_test_mode[element_name]).__name__} in test mode and "
+            f"{type(line_reloaded[element_name]).__name__} after reload.")
+
+
 def test_pipeline_generated_lattice_file_imports_into_xsuite_environment(
         write_lattice,
         tmp_path):

@@ -429,7 +429,9 @@ def convert_solenoids(
                         xt.TimeDelay,
                         xt.Rotation,
                         xt.Marker,
-                        xt.LimitEllipse)):
+                        xt.LimitEllipse,
+                        xt.LimitRect,
+                        xt.LimitRectEllipse)):
                     # Known elements that don"t need conversion
                     continue
                 elif config._verbose:
