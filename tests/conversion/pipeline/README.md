@@ -18,7 +18,7 @@ should stay focused on pipeline orchestration and public user options.
 | `test_convert_sad_to_xsuite.py` | 22 | 0 | — |
 | `test_excluded_elements.py` | 8 | 0 | — |
 | `test_multipole_replacements.py` | 5 | 0 | — |
-| `test_offset_markers.py` | 7 | 1 | Symbolic s-position expression for offset markers — `NameError: name 'l0' is not defined` |
+| `test_offset_markers.py` | 7 | 0 | — |
 | `test_reference_particle.py` | 10 | 0 | — |
 | `test_reverse_survey_horizontal.py` | 10 | 0 | — |
 | `test_reverse_charge_sign.py` | 8 | 0 | — |
@@ -33,8 +33,9 @@ filename defaults, line name selection, suppressed-element handling,
 ### `test_offset_markers.py` note
 
 Covers offset marker installation: dict format, s-position values, multiple
-markers, marker names. The symbolic s-position test (`l0` as a named variable)
-fails because the expression is not resolved before the marker is placed.
+markers, marker names, and symbolic s-position expressions (`l0` as a named
+variable), which are resolved through the line's `xt.Environment` rather than
+bare `eval()` (issue #22). All 7 pass.
 
 ### `test_reverse_charge_sign.py` note
 
