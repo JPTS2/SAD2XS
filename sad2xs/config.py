@@ -163,7 +163,7 @@ class Config:
         "Bend", "Quadrupole", "Sextupole", "Octupole", "Multipole",
         "UniformSolenoid",
         "Cavity", "Translation", "TimeDelay", "Rotation",
-        "LimitEllipse", "LimitRect"})
+        "LimitEllipse", "LimitRect", "LimitRectEllipse"})
 
     ########################################
     # Marker Insertion Tolerance
