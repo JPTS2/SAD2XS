@@ -576,6 +576,88 @@ LINE        TESTREV     = (-TEST);
         f"Xsuite: {p.py[0]}, SAD: {r_sad['py'][0]}.")
 
 
+def test_pipeline_reverse_element_order_solenoid_physics_matches_sad_with_charge_minus_one(
+        tmp_path):
+    """
+    Composability check: does a genuine CHARGE=-1 lattice (which now bakes
+    the reference charge into solenoid ks — see
+    sad2xs/converter/_004_element_converter.py's convert_solenoids and
+    dev/sad_charge/*.sad) still match real SAD after ALSO reversing element
+    order (which negates ks a second time, for a different, independent
+    reason — see docs/line-reversals.md)?
+
+    Identical to test_pipeline_reverse_element_order_solenoid_physics_matches_sad
+    above except for one added line (CHARGE = -1;). If the two ks negations
+    (charge-dependent base value, then direction-reversal) don't compose
+    correctly, this is the test that would catch it — verified against real
+    SAD's own "-LINE" reversal of the same CHARGE=-1 lattice, not just
+    internal converter self-consistency.
+    """
+    lattice_content = """\
+MOMENTUM    = 1.0 GEV;
+CHARGE      = -1;
+
+DRIFT       SOL_DRIFT   = (L = 0.5);
+SOL         SOL_IN      = (BZ = 0.5 BOUND = 1 GEO = 1 DX = 0.001)
+            SOL_OUT     = (BZ = 0.5 BOUND = 1);
+
+MARK        START       = ()
+            END         = ();
+
+LINE        TEST        = (START SOL_IN SOL_DRIFT SOL_OUT END);
+LINE        TESTREV     = (-TEST);
+"""
+
+    lat_path     = tmp_path / "rev_solenoid_charge.sad"
+    rebuilt_name = "rev_solenoid_charge_rebuilt.sad"
+    lat_path.write_text(lattice_content)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        rebuild_sad_lattice(
+            lattice_filepath = lat_path.name,
+            line_name        = "TEST",
+            output_filepath  = rebuilt_name)
+
+        r_sad = track_sad(
+            lattice_filepath = lat_path.name,
+            line_name        = "TESTREV",
+            x_init           = np.array([1e-4]),
+            px_init          = np.array([0.0]),
+            y_init           = np.array([0.0]),
+            py_init          = np.array([0.0]),
+            zeta_init        = np.array([0.0]),
+            delta_init       = np.array([0.0]),
+            n_turns          = 1,
+            rfsw             = False,
+            with_progress    = False)
+    finally:
+        os.chdir(cwd)
+
+    rebuilt_path = tmp_path / rebuilt_name
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path      = str(rebuilt_path),
+        output_directory      = "N/A",
+        reverse_element_order = True,
+        _verbose              = False,
+        _test_mode            = True)
+
+    assert float(line.particle_ref.q0) == pytest.approx(-1.0), (
+        "Sanity check: the converted line's reference particle should be "
+        "the electron (q0=-1) specified by CHARGE=-1 in the SAD file.")
+
+    p = line.build_particles(x=1e-4, px=0.0, y=0.0, py=0.0, zeta=0.0, delta=0.0)
+    line.track(p)
+
+    assert p.y[0] == pytest.approx(r_sad["y"][0], abs=1e-9), (
+        f"Xsuite reversed solenoid y (CHARGE=-1) should match SAD reversed "
+        f"line y. Xsuite: {p.y[0]}, SAD: {r_sad['y'][0]}.")
+    assert p.py[0] == pytest.approx(r_sad["py"][0], abs=1e-9), (
+        f"Xsuite reversed solenoid py (CHARGE=-1) should match SAD reversed "
+        f"line py. Xsuite: {p.py[0]}, SAD: {r_sad['py'][0]}.")
+
+
 def test_pipeline_reverse_element_order_translation_physics_matches_sad(tmp_path):
     """
     A standalone COORD element converts to an Xsuite Translation.  When the

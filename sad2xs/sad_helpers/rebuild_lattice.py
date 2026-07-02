@@ -78,6 +78,8 @@ SAVE ALL;
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 of  = OpenWrite["./{output_filepath}"];
 WriteString[of, "MOMENTUM = "//MOMENTUM//";\\n"];
+WriteString[of, "MASS = "//MASS//";\\n"];
+WriteString[of, "CHARGE = "//CHARGE//";\\n"];
 WriteString[of, "FSHIFT = "//FSHIFT//";\\n"];
 FFS["output "//of//" type"];
 WriteBeamLine[of, ExtractBeamLine[], Format->"MAIN", Name->{{"{line_name}"}}];

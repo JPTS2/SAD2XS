@@ -10,7 +10,6 @@ Date:       2026-06-27
 # Required Packages
 ################################################################################
 import re
-import warnings
 
 import xtrack as xt
 import numpy as np
@@ -368,14 +367,7 @@ def parse_sad_file(
 
             charge  = float(charge)
 
-            if charge != 1.0:
-                warnings.warn(
-                    f"SAD lattice specifies CHARGE = {charge}. SAD does not "
-                    "support non-positron reference particles and silently "
-                    "ignores this setting. To simulate an electron or "
-                    "antiproton ring, use reverse_charge_sign=True in the converter.",
-                    UserWarning,
-                    stacklevel=2)
+            cleaned_globals["q0"] = charge
 
             parsed_sections.remove(section)
             continue

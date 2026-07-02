@@ -7,35 +7,62 @@ decisions behind the three line-transformation flags in `convert_sad_to_xsuite`:
 - `reverse_charge_sign`
 - `reverse_survey_horizontal`
 
+and the reference-particle `CHARGE` handling that interacts with all three.
+
 ---
 
-## Xsuite element parameters are charge-sign-neutral
+## Solenoid `ks` depends on the reference particle's charge
 
-A fundamental property of Xsuite (confirmed empirically) is that element
-parameters do not depend on the sign of the reference particle charge q0.
-The same `k1` focuses equally for electrons (q0=−1) and positrons (q0=+1).
-The same `ks` produces the same coupling strength for both species.
+**Corrected 2026-07-01.** An earlier version of this document claimed the opposite
+of what's below — that `ks` is charge-sign-neutral and the converter should always
+compute it assuming unit positive charge. That claim, and the SAD parser code that
+implemented it, were based on a belief (partly reinforced by a since-fixed
+lattice-string comma-parsing bug, see below) that SAD "silently ignores" non-unity
+`CHARGE`. Both the belief and the code have been corrected; see
+`tests/sad/README.md` and `dev/codebase_review_2026-07-01.md` for the full
+investigation history.
 
-This is a deliberate API choice in Xsuite: the physics encoded in a parameter
-is the **effect on the beam**, not the raw field.
+**What's actually true, verified against real SAD:**
 
-### Consequence for the converter
+- SAD's own Twiss and tracking computations DO respect `CHARGE`: `CHARGE=-1`
+  gives the exact sign-reversed solenoid orbit/coupling, `CHARGE=2` gives a
+  different (nonlinearly scaled) effect, `CHARGE=0` gives exactly zero coupling.
+  Verified via `twiss_sad` and `track_sad` in `tests/sad/test_reference_particle.py`,
+  and independently via hand-written standalone SAD scripts in `dev/sad_charge/`.
+- **Xsuite's own tracking does NOT auto-scale solenoid coupling by the tracked
+  particle's `q0`** — verified directly: the same `ks` gives an identical `y` for
+  a `q0=+1` and a `q0=-1` particle tracked through the same `UniformSolenoid`.
+  This part of the original document was correct, and it's *why* the converter
+  must bake the reference charge into `ks` at conversion time: Xsuite will not
+  correct for it during tracking.
 
-Because Xsuite parameters are charge-sign-neutral, the converter should also
-produce charge-sign-neutral parameters wherever possible.  The only SAD input
-that naively introduces a charge dependence is the solenoid field `BZ` [T],
-which must be normalised to `ks = BZ / Bρ`.
+**Convention now implemented**: `sad2xs/converter/_004_element_converter.py`'s
+`convert_solenoids` computes `brho = p0 / (q0 * e)`, using the actual reference
+particle charge `environment["q0"]`, not a fixed unit-positive-charge assumption.
+`ks = BZ / brho` therefore correctly flips sign for an electron reference particle
+and scales for other charge magnitudes.
 
-**Convention adopted**: the converter always uses `Bρ = p0 / e` (unit positive
-charge) when computing `ks`, regardless of the reference particle q0.  This
-means:
+### Why the wrong belief seemed to hold up
 
-- `ks` is charge-sign-neutral, consistent with `k0`, `k1`, `k1s`, etc.
-- `reverse_charge_sign=True` does **not** change `ks`.
+Two independent things reinforced the incorrect "CHARGE is ignored" belief before
+this was corrected:
 
-Without this convention, `reverse_charge_sign=True` would invert `ks` while leaving
-`k1s` (skew quadrupoles) unchanged, breaking any coupling-compensation scheme
-where skew quads are tuned against the solenoid.
+1. **A lattice-string comma bug.** SAD's LALR parser silently drops parameters
+   after a comma inside an element's `(...)` list (e.g. `SOL S1 = (BZ=3.0, BOUND=1,
+   GEO=1, DX=0.001)` silently loses `BOUND`, `GEO`, and `DX`), with no non-zero exit
+   code. Both this project's own test lattices and the hand-written exploration
+   scripts in `dev/sad_charge/` originally used commas, and the resulting broken
+   solenoid definitions had no reference-frame setup at all, making CHARGE=-1 and
+   CHARGE=+1 spuriously give identical (both-broken) results. Fixed throughout
+   `tests/sad/` — see that folder's README for the full comma-bug writeup.
+2. **A real, but separate, historical fact.** K. Oide (SAD author, confirmed
+   2026-07-01) noted that real-world SAD lattice files — e.g. the SuperKEKB HER
+   lattice, which is an electron ring — do not actually declare `CHARGE = -1;`,
+   for historical reasons; they're written as if positron rings regardless of true
+   species. That's a **lattice-authoring convention** problem, not a claim that
+   SAD's computation engine ignores `CHARGE` when it *is* present. Both things are
+   true simultaneously, which is why `reverse_charge_sign` remains useful (see
+   below) even though the parser now reads `CHARGE` directly.
 
 ---
 
@@ -62,13 +89,29 @@ Xsuite line.  Both give identical final `y` and `py`.
 
 Reversing the element order means the beam traverses the solenoid field in the
 opposite longitudinal direction.  The axial field now acts as if `BZ` has
-changed sign, so `ks` must be negated for each solenoid.
+changed sign, so `ks` must be negated for each solenoid — **in addition to**,
+not instead of, the charge-dependent base value described above. These two
+effects compose by simple negation of whatever `ks` the solenoid already has
+(the charge-adjusted base value), so no special-casing is needed in the code.
 
 **Verified**: a BOUND solenoid with `DX = 0.001 GEO = 1` (requiring
 `rebuild_sad_lattice` to bake in GEO reference shifts) was tracked through
 `LINE TESTREV = (-TEST)` in SAD and through the sad2xs-reversed Xsuite line.
 Both give identical final `y` and `py`.  The negation of `ks` in
 `reverse_line_element_order` is correct.
+
+**Composability with a genuine non-unity CHARGE, verified against real SAD**:
+`test_pipeline_reverse_element_order_solenoid_physics_matches_sad_with_charge_minus_one`
+in `tests/conversion/pipeline/test_reverse_element_order.py` repeats the above
+check with `CHARGE = -1;` added to the same lattice, confirming the two `ks`
+negations (charge-dependent base value, then direction-reversal) compose
+correctly — Xsuite-reversed `y`/`py` match real SAD's own `-LINE` reversal of the
+same electron lattice to `1e-9`. This test also caught a third bug in the
+process: `rebuild_sad_lattice` was silently dropping `MASS`/`CHARGE` when
+regenerating the lattice file (only `MOMENTUM`/`FSHIFT` were written back out),
+which would have silently reset the reference species for any bound-solenoid
+(GEO) lattice with non-unity `CHARGE`. Fixed in
+`sad2xs/sad_helpers/rebuild_lattice.py`.
 
 ### 3. Translations: solenoid GEO vs COORD
 
@@ -103,26 +146,40 @@ left unchanged.
 
 ### What it does
 
-Changes `q0` on the Xsuite reference particle from +1 to −1 (or vice versa).
+Changes `q0` on the Xsuite reference particle from +1 to −1 (or vice versa) —
+and, as of the correction above, **also negates solenoid `ks`**, since `ks` now
+depends on `q0` via `brho`. Tracking and Twiss results are therefore **not**
+identical before and after `reverse_charge_sign=True`; the solenoid coupling
+direction genuinely flips, matching what real SAD does for the equivalent
+charge change.
 
-**Element parameters are not changed.**  Specifically, `ks` is not changed
-(see the charge-sign-neutral convention above).  This means tracking and Twiss
-results are **identical** before and after `reverse_charge_sign=True`.
+**Verified**: `test_pipeline_reverse_charge_sign_negates_solenoid_ks` in
+`tests/conversion/pipeline/test_reverse_charge_sign.py`.
+
+### Interaction with `CHARGE` in the SAD file
+
+Since the parser now reads `CHARGE` directly into `q0`, and `reverse_charge_sign`
+independently negates whatever `q0` results, the two **compound**: a file with
+`CHARGE = -1;` combined with `reverse_charge_sign=True` gives `q0=+1` again (double
+negation), not an error and not a no-op. This is a deliberate design choice — see
+`test_pipeline_charge_in_file_and_reverse_charge_sign_compound` in the same file —
+rather than treating the two inputs as mutually exclusive.
 
 ### When to use it
 
-Use `reverse_charge_sign=True` to relabel the reference particle species without
-affecting physics — for example, to set q0=−1 on a lattice that was designed
-and converted assuming q0=+1.  This can matter for radiation integral
-calculations or output file species labelling, but does not affect element
-focusing, coupling, or orbit.
+Use `reverse_charge_sign=True` to convert a lattice as the opposite species from
+whatever its `CHARGE` global says (or defaults to) — for example, a real-world
+historical lattice file that, per the note above, doesn't declare `CHARGE=-1` even
+though it represents an electron ring (SuperKEKB HER is the motivating example).
+This is now a genuine physics change (unlike the pre-correction behaviour), so it
+should be used when you know the file's stated species is wrong, not merely to
+relabel the reference particle.
 
 ### What it does NOT do
 
-- It does **not** invert `ks`.
 - It does **not** model "run the opposite species through the same physical
-  magnets" (that would require also inverting all skew-quad corrections, which
-  is not done).
+  magnets while leaving the solenoid untouched" — `ks` changes precisely because
+  the physical magnet's effect on that species genuinely differs.
 - It is **not** the same as `reverse_survey_horizontal`.
 
 ---
@@ -147,7 +204,7 @@ are transformed to be consistent with a lattice mirrored in the x-z plane.
 | Sextupole | `k2` negates; knl/ksl parity pattern; offsets negate |
 | Octupole | `k3s` negates; knl/ksl parity pattern; offsets negate |
 | Multipole | knl/ksl parity pattern; offsets negate |
-| Solenoid | `ks` negates; knl/ksl parity; offsets negate |
+| Solenoid | `ks` negates (on top of the charge-dependent base value, same composition as `reverse_element_order` above); knl/ksl parity; offsets negate |
 | Translation | `shift_x` negates, `shift_y` unchanged |
 | Rotation | `rot_y_rad` negates, `rot_s_rad` negates, `rot_x_rad` unchanged |
 
@@ -161,6 +218,19 @@ DRIFT.  The k0/k2 sign changes cancel in the optics; k1 is unchanged.
 
 `reverse_survey_horizontal` and `reverse_charge_sign` are fully independent flags.
 They address different physical questions and can be combined freely.
+
+### Composability with a genuine non-unity CHARGE — internal consistency only
+
+`test_pipeline_reverse_survey_horizontal_negates_solenoid_ks_with_charge_minus_one`
+in `tests/conversion/pipeline/test_reverse_survey_horizontal.py` confirms the two
+`ks` negations (charge-dependent base value, then geometric-mirror) compose
+arithmetically in the converter code. **This is not verified against real SAD** —
+unlike `reverse_element_order`, this file has no real-SAD-verified test at all for
+any element, since `reverse_survey_horizontal` is a whole-lattice geometric mirror
+with no single native SAD operator to run for comparison (unlike `-LINE` for
+element-order reversal). Closing this gap would mean hand-constructing an
+equivalent mirrored SAD lattice file rather than reusing an existing SAD command —
+noted as a known open item, not resolved here.
 
 ---
 
@@ -176,6 +246,10 @@ executable and inspecting output, to confirm assumptions used in the converter:
 | COORD(DX=d) gives same x in forward and reversed SAD line | Tracked both; final x matches to < 1e-12 |
 | Solenoid GEO shifts must be baked in before conversion | `rebuild_sad_lattice` required; without it, GEO offsets are zero in converter |
 | Asymmetric bend poleface reversal matches SAD reversed line | y/py match after element-order reversal |
+| BEND ANGLE sign negates under `-LINE` reversal | `test_reversed_line_bend_angle_sign_matches_converter_assumption` in `tests/sad/test_line_reversal.py` — sign/magnitude confirmed; small linear-in-angle residual found and tolerance-covered, cause not identified |
+| QUAD K1 unchanged under `-LINE` reversal | `test_reversed_line_quad_k1_sign_matches_converter_assumption` — confirmed exactly |
+| SOL BZ negates and GEO swaps ends under `-LINE` reversal | `test_reversed_line_solenoid_ks_sign_matches_converter_assumption` — confirmed exactly |
+| CHARGE=-1 gives sign-reversed solenoid coupling (not "ignored") | `tests/sad/test_reference_particle.py` (twiss_sad and track_sad) and `dev/sad_charge/*.sad` (standalone, hand-written scripts, independently confirming the same sign flip) |
 
 ---
 
@@ -183,6 +257,6 @@ executable and inspecting output, to confirm assumptions used in the converter:
 
 | Flag | Changes q0 | Changes ks | Changes k0/k1 | Changes element order |
 |---|---|---|---|---|
-| `reverse_element_order` | No | Yes (negate) | No | Yes (mirror) |
-| `reverse_charge_sign` | Yes | No | No | No |
-| `reverse_survey_horizontal` | No | Yes (negate) | Partial (see table) | No |
+| `reverse_element_order` | No | Yes (negate, composes with charge-dependent base) | No | Yes (mirror) |
+| `reverse_charge_sign` | Yes | Yes (negate, since ks depends on q0) | No | No |
+| `reverse_survey_horizontal` | No | Yes (negate, composes with charge-dependent base) | Partial (see table) | No |
