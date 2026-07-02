@@ -68,7 +68,7 @@ The converter modules in `sad2xs/converter/` are responsible for turning parsed 
 
 Key responsibilities:
 
-- `_001_parser.py`: parse SAD file content into structured sections.
+- `_001_parser.py`: parse SAD file content into structured sections. Parse errors cite the source line number; SAD function definitions (`:=`) are rejected explicitly rather than silently misparsed — see `docs/design-decisions.md`.
 - `_002_element_exclusion.py`: remove or skip elements that should not be converted directly.
 - `_003_expression_converter.py`: translate SAD-style expressions into Python-compatible expressions.
 - `_004_element_converter.py`: convert supported SAD element definitions into Xsuite elements.

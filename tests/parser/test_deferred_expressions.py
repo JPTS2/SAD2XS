@@ -91,6 +91,36 @@ def test_deferred_expressions_are_parsed_separately_from_globals(write_lattice):
     assert "kbase" not in parsed["globals"], (
         "Ordinary deferred expressions should not be stored as globals.")
 
+def test_scientific_notation_deferred_expression_parses_as_float(write_lattice):
+    """
+    Scientific-notation deferred expressions should classify as numeric floats
+    at parse time, not fall through to the symbolic-expression string branch.
+
+    A prior narrower numeric fast-path (accepting only digits, '.', and '-')
+    stored values like '1.0e9' as strings. They still resolved correctly one
+    stage later via parse_expression()'s float() call, but the parser's own
+    classification was wrong — which matters for helpers such as
+    is_effectively_zero() that treat any string as unconditionally non-zero.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        A = 1.0E9;
+        B = -2.5e-3;
+        """,
+        filename = "deferred_expression_scientific_notation.sad")
+
+    parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
+
+    assert isinstance(parsed["expressions"]["a"], float), (
+        "Scientific-notation deferred expressions should parse directly as "
+        "floats, not remain classified as symbolic-expression strings.")
+    assert parsed["expressions"]["a"] == pytest.approx(1.0E9)
+    assert isinstance(parsed["expressions"]["b"], float), (
+        "Negative scientific-notation deferred expressions should also parse "
+        "directly as floats.")
+    assert parsed["expressions"]["b"] == pytest.approx(-2.5E-3)
+
 ################################################################################
 # Deferred Expression Conversion
 ################################################################################

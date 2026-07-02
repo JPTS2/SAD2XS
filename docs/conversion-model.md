@@ -51,7 +51,8 @@ Important parser expectations for the next release include:
 
 - comments should not affect semicolon-based section splitting;
 - globals and expressions should be available to later element conversion;
-- SAD functions should be resolved in a controlled and testable way;
+- SAD user-defined function definitions (`f[x_] := expr`) are explicitly rejected with a clear error rather than silently misparsed — see the parser-hardening decision in `docs/design-decisions.md`;
+- parse errors cite the source line number of the offending statement;
 - line definitions should support supported SAD syntax variants, including comma-separated components;
 - arithmetic in element parameters should not depend on fragile whitespace handling.
 
