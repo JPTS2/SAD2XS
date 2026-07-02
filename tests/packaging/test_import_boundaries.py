@@ -15,6 +15,8 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
+import subprocess
+import sys
 import types
 
 import sad2xs
@@ -92,3 +94,31 @@ def test_import_boundary_sad_helpers_is_a_module():
     """
     assert isinstance(sad2xs.sad_helpers, types.ModuleType), (
         "sad2xs.sad_helpers should be a module, not a class or function.")
+
+
+################################################################################
+# Optional Dependency Decoupling
+################################################################################
+def test_import_boundary_core_import_does_not_require_tfs():
+    """
+    `import sad2xs` must succeed without tfs-pandas installed, since it is
+    only needed by sad2xs.sad_helpers, not the core converter. Run in a
+    subprocess with tfs blocked at the import-system level.
+    """
+    script = (
+        "import sys\n"
+        "class _BlockTFS:\n"
+        "    def find_spec(self, name, path, target=None):\n"
+        "        if name == 'tfs' or name.startswith('tfs.'):\n"
+        "            raise ModuleNotFoundError(name)\n"
+        "        return None\n"
+        "sys.meta_path.insert(0, _BlockTFS())\n"
+        "import sad2xs\n"
+        "assert callable(sad2xs.convert_sad_to_xsuite)\n")
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output = True,
+        text           = True)
+    assert result.returncode == 0, (
+        "`import sad2xs` should succeed even when tfs is unavailable.\n"
+        f"stdout: {result.stdout}\nstderr: {result.stderr}")

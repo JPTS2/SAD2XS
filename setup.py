@@ -36,6 +36,9 @@ setup(
         "numpy>=1.0",
         "pyyaml>=6.0",
         "xsuite>=0.53.2"],
+    extras_require                  = {
+        # Required for sad2xs.sad_helpers in addition to a working SAD executable
+        "sad_helpers": ["tfs-pandas", "tqdm"]},
     license                         = 'Apache 2.0',
     download_url                    = "https://pypi.python.org/pypi/sad2xs",
     project_urls                    = {

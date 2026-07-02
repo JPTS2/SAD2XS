@@ -109,3 +109,18 @@ def test_release_metadata_numpy_is_listed_as_a_dependency():
     assert any("numpy" in req for req in _REQUIRES), (
         "Package install_requires should list 'numpy'. "
         f"Current requires: {_REQUIRES}")
+
+
+def test_release_metadata_tfs_is_an_optional_extra_not_a_hard_dependency():
+    """
+    tfs-pandas is only needed for sad2xs.sad_helpers, not the core converter.
+    It must be declared as an extra, not an unconditional install_requires
+    entry.
+    """
+    tfs_requires = [req for req in _REQUIRES if "tfs" in req]
+    assert tfs_requires, (
+        f"Expected a 'tfs-pandas' entry in package metadata. Current "
+        f"requires: {_REQUIRES}")
+    assert all("extra ==" in req for req in tfs_requires), (
+        "tfs-pandas should only be required under an extra, not "
+        f"unconditionally. Current tfs requires: {tfs_requires}")
