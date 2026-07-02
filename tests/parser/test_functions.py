@@ -16,34 +16,27 @@ Date:       2026-06-21
 # Required Packages
 ################################################################################
 import pytest
-import xtrack as xt
 
 from sad2xs.config import Config
 from sad2xs.converter._001_parser import parse_sad_file
-from sad2xs.converter._003_expression_converter import convert_expressions
-from sad2xs.converter._004_element_converter import convert_drifts
-
-def parse_and_convert_expressions(lattice_path, config = None):
-    """
-    Parse a SAD file and convert its expressions to an environment.
-    """
-    if config is None:
-        config = Config(_verbose = False)
-
-    parsed = parse_sad_file(str(lattice_path), config)
-    environment = xt.Environment()
-    convert_expressions(
-        parsed_lattice_data = parsed,
-        environment         = environment,
-        config              = config)
-    return parsed, environment
 
 ################################################################################
 # SAD Function Definitions
 ################################################################################
-def test_sad_function_definition_is_preserved(write_lattice):
+# SAD user-defined functions ('name[args] := expression') are explicitly
+# rejected rather than silently misparsed — a bare ':=' previously produced a
+# garbage deferred-expression key instead of an error.
+# Since a definition is always rejected before it is ever used, the three
+# original "function call" tests (deferred expression, element expression,
+# nested calls) no longer have a reachable scenario to exercise: every one of
+# them fails at the same definition line, with the same error. They are
+# consolidated into the two tests below rather than duplicated three times
+# over.
+################################################################################
+def test_sad_function_definition_raises_clear_error(write_lattice):
     """
-    SAD FFS function definitions should preserve name, argument, and body.
+    A SAD function definition should raise a clear, explicit error rather than
+    being silently misparsed as a deferred expression.
     """
     lattice_path = write_lattice(
         """\
@@ -52,19 +45,19 @@ def test_sad_function_definition_is_preserved(write_lattice):
         OFFSET = 0.25;
         F[x_] := x + OFFSET;
         """,
-        filename = "function_definition_parsing.sad")
+        filename = "function_definition_rejected.sad")
 
-    parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
+    with pytest.raises(ValueError, match = "not supported") as exc_info:
+        parse_sad_file(str(lattice_path), Config(_verbose = False))
 
-    assert "f[x_]" in parsed["expressions"], (
-        "SAD function definitions should preserve the function signature "
-        "without the delayed-assignment marker.")
-    assert parsed["expressions"]["f[x_]"] == "x + offset", (
-        "SAD function definitions should preserve the function body.")
+    assert "line 4" in str(exc_info.value), (
+        "The rejection error should cite the source line of the function "
+        "definition.")
 
-def test_sad_function_definition_with_module_body_is_preserved(write_lattice):
+def test_sad_function_definition_with_module_body_raises_clear_error(write_lattice):
     """
-    SAD FFS Module function bodies should be preserved as complete expressions.
+    A SAD function definition with a Module[] body should also be rejected
+    clearly, even though the body's internal ';' splits it across sections.
     """
     lattice_path = write_lattice(
         """\
@@ -73,86 +66,7 @@ def test_sad_function_definition_with_module_body_is_preserved(write_lattice):
         OFFSET = 0.25;
         F[x_] := Module[{y}, y = x + OFFSET; y];
         """,
-        filename = "function_definition_module_parsing.sad")
+        filename = "function_definition_module_rejected.sad")
 
-    parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
-
-    assert parsed["expressions"]["f[x_]"] == (
-        "module[{y}, y = x + offset; y]"), (
-        "SAD Module function bodies should preserve brackets, local variables, "
-        "and inner statements.")
-
-################################################################################
-# SAD Function Calls
-################################################################################
-def test_sad_function_call_in_deferred_expression_converts(write_lattice):
-    """
-    SAD function calls in deferred expressions should resolve through globals.
-    """
-    lattice_path = write_lattice(
-        """\
-        FFS;
-        MOMENTUM = 1.0 GEV;
-        L0 = 1.0;
-        OFFSET = 0.25;
-        F[x_] := x + OFFSET;
-        A = F[L0];
-        """,
-        filename = "function_call_deferred_expression.sad")
-
-    _, environment = parse_and_convert_expressions(lattice_path)
-
-    assert environment["a"] == pytest.approx(1.25), (
-        "SAD function calls in deferred expressions should resolve to numeric "
-        "environment values.")
-
-def test_sad_function_call_in_element_expression_converts(write_lattice):
-    """
-    SAD function calls in element parameters should resolve during conversion.
-    """
-    lattice_path = write_lattice(
-        """\
-        FFS;
-        MOMENTUM = 1.0 GEV;
-        L0 = 1.0;
-        OFFSET = 0.25;
-        F[x_] := x + OFFSET;
-        DRIFT D_FUNC = (L = F[L0]);
-        """,
-        filename = "function_call_element_expression.sad")
-
-    config = Config(_verbose = False)
-    parsed = parse_sad_file(str(lattice_path), config)
-
-    environment = xt.Environment()
-    convert_expressions(
-        parsed_lattice_data = parsed,
-        environment         = environment,
-        config              = config)
-    convert_drifts(
-        parsed_elements = parsed["elements"],
-        environment     = environment)
-
-    assert environment["d_func"].length == pytest.approx(1.25), (
-        "SAD function calls in element expressions should resolve to element "
-        "parameter values.")
-
-def test_nested_sad_function_call_in_deferred_expression_converts(write_lattice):
-    """
-    SAD functions should be able to call other SAD functions.
-    """
-    lattice_path = write_lattice(
-        """\
-        FFS;
-        MOMENTUM = 1.0 GEV;
-        L0 = 1.0;
-        F[x_] := x + 0.25;
-        G[x_] := F[x] * 2;
-        A = G[L0];
-        """,
-        filename = "function_call_nested_deferred_expression.sad")
-
-    _, environment = parse_and_convert_expressions(lattice_path)
-
-    assert environment["a"] == pytest.approx(2.5), (
-        "Nested SAD function calls should resolve in deferred expressions.")
+    with pytest.raises(ValueError, match = "not supported"):
+        parse_sad_file(str(lattice_path), Config(_verbose = False))

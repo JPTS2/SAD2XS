@@ -53,7 +53,7 @@ has its own README with per-file coverage tables and known-failure documentation
 | `ci/` | No | Workflow configuration correctness |
 | `observability/` | Mixed | Output suppression, quiet mode, and helper output policy |
 
-Total collected: **1460 tests** (1429 pass, 31 currently failing) as of
+Total collected: **1653 tests** (1627 pass, 26 currently failing) as of
 this branch. See `tests/README.md` for the breakdown by failure group.
 
 ## SAD Syntax Assumption Tests
@@ -108,7 +108,7 @@ intermediate dictionaries.
 
 ## Known Failures
 
-The suite contains **31 currently failing tests**, all linked to open GitHub
+The suite contains **26 currently failing tests**, all linked to open GitHub
 issues.
 
 Tests associated with open issues receive the `known_issue` marker during
@@ -123,9 +123,8 @@ pytest -m "not known_issue"  # blocking regression selection
 pytest -m "known_issue"      # tests documenting open issues
 ```
 
-The 31 failures span `parser/` (issues #22, #32, #47, #48, #49, #51, #53),
-`conversion/elements/` (issues #33, #55, #58), and `conversion/pipeline/`
-(issue #22). The mapping is maintained in
+The 26 failures span `parser/` (issue #32) and `conversion/elements/`
+(issues #33, #55, #58). The mapping is maintained in
 `tests/support/known_issues.py`. These tests must not be modified to pass
 artificially — they are the record of what is broken and what needs to be
 fixed.

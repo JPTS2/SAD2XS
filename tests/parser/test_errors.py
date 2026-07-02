@@ -62,6 +62,28 @@ def test_invalid_deferred_expression_syntax_raises_clear_error(write_lattice):
             config              = Config(_verbose = False))
 
 ################################################################################
+# Error Context
+################################################################################
+def test_parse_error_cites_the_source_line_number(write_lattice):
+    """
+    Parse errors should cite the source line number of the offending
+    statement, not just the cleaned statement text, so users can find the
+    problem in a large lattice file without searching for a fragment.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        L0 = 1.0;
+        DL = 0.5;
+
+        A = B = 1.0;
+        """,
+        filename = "error_cites_source_line.sad")
+
+    with pytest.raises(ValueError, match = r"line 5:"):
+        parse_sad_file(str(lattice_path), Config(_verbose = False))
+
+################################################################################
 # Command Errors
 ################################################################################
 def test_unknown_assignment_with_parentheses_raises_clear_error(write_lattice):

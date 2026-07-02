@@ -12,6 +12,8 @@ Date:       09-12-2025
 import numpy as np
 import xtrack as xt
 
+from ._000_helpers import parse_expression
+
 ################################################################################
 # Conversion Function
 ################################################################################
@@ -95,9 +97,12 @@ def convert_offset_markers(
         ########################################
         offset  = offset_marker_offsets[base_marker]
         if isinstance(offset, str):
-            # I think this is the source of the speed issue
-            # but these can be strings with arithmetic expressions
-            offset = eval(offset)
+            # Resolve through the SAD variable scope in the line's environment
+            # rather than bare eval(), which has no access to SAD variables
+            # and executes arbitrary Python on lattice-file-derived input.
+            offset = parse_expression(offset)
+            if isinstance(offset, str):
+                offset = line.env.eval(offset)
 
         ########################################
         # Case 1: Marker remains in the same element

@@ -240,7 +240,7 @@ def create_aperture_optics_file_information(
         config:     ConfigLike) -> str:
     """
     Write aperture dimensions as live optics variables so that they can be
-    inspected and tuned via the optics file after reload (issue #62).
+    inspected and tuned via the optics file after reload.
 
     Each aperture dimension becomes a named variable of the form
     `<dim>_<aperture_name>` (e.g. a_ap1, b_ap1, min_x_ap1, max_x_ap1).

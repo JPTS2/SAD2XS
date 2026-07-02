@@ -76,7 +76,7 @@ def test_comment_semicolons_do_not_create_sections(write_lattice):
 
     sections = [
         section.strip()
-        for section in load_and_clean_whitespace(str(lattice_path))
+        for _, section in load_and_clean_whitespace(str(lattice_path))
         if section.strip()]
 
     assert len(sections) == 4
@@ -129,7 +129,7 @@ def test_comment_only_file_creates_no_sections(write_lattice):
 
     sections = [
         section.strip()
-        for section in load_and_clean_whitespace(str(lattice_path))
+        for _, section in load_and_clean_whitespace(str(lattice_path))
         if section.strip()]
 
     assert sections == [], (
