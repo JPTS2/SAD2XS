@@ -60,6 +60,33 @@ def is_effectively_zero(val, tol: float = 1E-12) -> bool:
         return False
 
 ################################################################################
+# Provable Equality Check
+################################################################################
+def values_provably_equal(val_1, val_2, tol: float = 1E-9) -> bool:
+    """
+    Return True if two SAD-parsed values are numerically equal within tol,
+    or the exact same deferred expression string.
+    """
+    if isinstance(val_1, (int, float)) and isinstance(val_2, (int, float)):
+        return abs(float(val_1) - float(val_2)) <= tol
+    if isinstance(val_1, str) and isinstance(val_2, str):
+        return val_1.strip() == val_2.strip()
+    return False
+
+def values_provably_opposite(val_1, val_2, tol: float = 1E-9) -> bool:
+    """
+    Return True if two SAD-parsed values are numerically equal and opposite
+    in sign within tol, or one deferred expression is a literal "-" prefix
+    of the other.
+    """
+    if isinstance(val_1, (int, float)) and isinstance(val_2, (int, float)):
+        return abs(float(val_1) + float(val_2)) <= tol
+    if isinstance(val_1, str) and isinstance(val_2, str):
+        v1, v2 = val_1.strip(), val_2.strip()
+        return v1 == f"-{v2}" or v2 == f"-{v1}"
+    return False
+
+################################################################################
 # Element Parameter Helpers
 ################################################################################
 

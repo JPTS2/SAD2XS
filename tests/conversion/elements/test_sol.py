@@ -1399,6 +1399,49 @@ def test_sol_pipeline_preserves_supported_elements_inside_solenoid_region(
         "Converted element inside bound SOL region should preserve normal "
         "multipole content.")
 
+@pytest.mark.parametrize(
+    "middle_element, expected_type",
+    [
+        (
+            "APERT       TEST_APERT  = (AX = 0.02 AY = 0.03 "
+            "DX1 = -0.01 DX2 = 0.01 DY1 = -0.015 DY2 = 0.015);",
+            xt.LimitRectEllipse,
+        ),
+        (
+            "APERT       TEST_APERT  = (DX1 = -0.01 DX2 = 0.02);",
+            xt.LimitRect,
+        ),
+    ],
+    ids = ["limitrectellipse", "limitrect"])
+def test_sol_pipeline_preserves_apertures_inside_solenoid_region(
+        write_lattice,
+        middle_element,
+        expected_type):
+    """
+    Zero-length APERT elements between bound SOL boundaries should pass
+    through unconverted, like other known zero-length elements (Marker,
+    Translation, TimeDelay, Rotation).
+    """
+    lattice_text = _bound_solenoid_lattice(
+        bz             = 0.1,
+        middle_element = middle_element,
+        middle_name    = "TEST_APERT")
+    lattice_path = write_lattice(
+        lattice_text,
+        filename = f"sol_region_preserves_apert_{expected_type.__name__.lower()}.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = "N/A",
+        _verbose         = False,
+        _test_mode       = True)
+
+    assert "test_apert" in line.element_names, (
+        "APERT inside a bound SOL region should remain in the line by its "
+        "own name, not be replaced by a solenoid-region element.")
+    assert isinstance(line["test_apert"], expected_type), (
+        "APERT inside a bound SOL region should pass through unconverted.")
+
 def test_sol_pipeline_rejects_bending_angle_inside_solenoid_region(write_lattice):
     """
     BEND elements with non-zero angle inside a bound SOL region should fail.

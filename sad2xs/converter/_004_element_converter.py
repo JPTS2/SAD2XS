@@ -23,7 +23,15 @@ from ._000_helpers import (
     only_index_nonzero,
     divide_integrated_strength,
     define_strength_variable,
+    values_provably_equal,
+    values_provably_opposite,
 )
+
+################################################################################
+# Aperture Constants
+################################################################################
+# Matches Xsuite's own "unconstrained" LimitRect default.
+UNCONSTRAINED_APERTURE_BOUND = 1.0E10
 
 ################################################################################
 # Convert all
@@ -35,7 +43,7 @@ def convert_elements(
         config:                         ConfigLike) -> None:
     """
     Docstring for convert_elements
-    
+
     :param parsed_lattice_data: Description
     :type parsed_lattice_data: dict
     :param environment: Description
@@ -959,7 +967,11 @@ def convert_cavities(parsed_elements, environment, config):
 ################################################################################
 def convert_apertures(parsed_elements, environment):
     """
-    Convert apertures from the SAD parsed data
+    Convert apertures from the SAD parsed data.
+
+    A combined APERT with rectangular bounds that can't be proven symmetric
+    is split into a LimitRect + LimitEllipse pair wrapped in a sub-line
+    named after the element, mirroring convert_coordinate_transformations.
     """
 
     aperts  = parsed_elements["apert"]
@@ -1054,6 +1066,28 @@ def convert_apertures(parsed_elements, environment):
                 a = 1.0
             if b is None:
                 b = 1.0
+
+            ########################################
+            # Degenerate bounds (DX1 == DX2) leave that axis unconstrained
+            ########################################
+            x_degenerate = values_provably_equal(dx1, dx2)
+            y_degenerate = values_provably_equal(dy1, dy2)
+
+            if x_degenerate:
+                dx1, dx2 = -UNCONSTRAINED_APERTURE_BOUND, UNCONSTRAINED_APERTURE_BOUND
+            if y_degenerate:
+                dy1, dy2 = -UNCONSTRAINED_APERTURE_BOUND, UNCONSTRAINED_APERTURE_BOUND
+
+            if x_degenerate and y_degenerate:
+                aper_type = "LimitEllipse"
+            else:
+                # LimitRectEllipse only supports bounds symmetric about its
+                # own centre; split into LimitRect + LimitEllipse otherwise.
+                symmetric = (
+                    values_provably_opposite(dx1, dx2)
+                    and values_provably_opposite(dy1, dy2))
+
+                aper_type = "LimitRectEllipse" if symmetric else "LimitRectAndEllipse"
 
         elif any(v is not None for v in [dx1, dx2, dy1, dy2]):
             aper_type   = "LimitRect"
@@ -1153,6 +1187,30 @@ def convert_apertures(parsed_elements, environment):
                 shift_x   = offset_x,
                 shift_y   = offset_y,
                 rot_s_rad = rotation)
+        elif aper_type == "LimitRectAndEllipse":
+            rect_name       = f"{ele_name}_rect"
+            ellipse_name    = f"{ele_name}_ellipse"
+            environment.new(
+                name      = rect_name,
+                prototype = xt.LimitRect,
+                min_x     = dx1,
+                max_x     = dx2,
+                min_y     = dy1,
+                max_y     = dy2,
+                shift_x   = offset_x,
+                shift_y   = offset_y,
+                rot_s_rad = rotation)
+            environment.new(
+                name      = ellipse_name,
+                prototype = xt.LimitEllipse,
+                a         = a,
+                b         = b,
+                shift_x   = offset_x,
+                shift_y   = offset_y,
+                rot_s_rad = rotation)
+            environment.new_line(
+                name       = ele_name,
+                components = [rect_name, ellipse_name])
         else:
             raise ValueError(f"Error! Aperture {ele_name} has unsupported definition.")
         continue
