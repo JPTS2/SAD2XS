@@ -16,7 +16,6 @@ KNOWN_ISSUE_TESTS = {
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_thin_kick": 55,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_rotated_kicks": 55,
     "tests/conversion/elements/test_corrector.py::test_corrector_conversion_matches_sad_tracking_for_element_offsets": 55,
-    "tests/conversion/pipeline/test_offset_markers.py::test_pipeline_offset_marker_symbolic_expression_resolves_to_computed_s_position": 22,
 }
 
 
