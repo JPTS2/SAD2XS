@@ -52,7 +52,7 @@ is tested as either accepted or rejected — nothing is left untested either way
 | BEND | ANGLE, K0, K1, DX, DY, ROTATE | SK0, SK1, K2–K4, SK2–SK4, HARM, FREQ, BZ |
 | MULT | ANGLE, K0–K4, SK0–SK4, DX, DY, ROTATE, HARM, FREQ | BZ |
 | CAVI | VOLT, FREQ, HARM, PHI, DX, DY, ROTATE | ANGLE, K0–K4, SK0–SK4, BZ |
-| SOL | BZ, DX, DY | ANGLE, K0–K4, SK0–SK4, HARM, FREQ, ROTATE |
+| SOL | BZ, DX, DY, DISFRIN | ANGLE, K0–K4, SK0–SK4, HARM, FREQ, ROTATE |
 | DRIFT | bare only (L) | ANGLE, K0–K4, SK0–SK4, BZ, HARM, FREQ, DX, DY, ROTATE |
 | APERT | AX, AY, DX, DY, ROTATE, DX1/DX2, DY1/DY2 | ANGLE, K0–K4, SK0–SK4, BZ, HARM, FREQ |
 | MARK | bare, BZ, DX, DY | ANGLE, K0–K4, SK0–SK4, ROTATE, FREQ, HARM |
