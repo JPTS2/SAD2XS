@@ -615,18 +615,18 @@ def convert_multipoles(
                     if knl[0] != 0 and ksl[0] != 0:
                         if isinstance(knl[0], float) or isinstance(ksl[0], float):
                             k0l         = f"sqrt({knl[0]}**2 + {ksl[0]}**2)"
-                            rotation    = f"{rotation} + arctan2({ksl[0]}, {knl[0]})"
+                            rotation    = f"{rotation} + atan2(-({ksl[0]}), {knl[0]})"
                         else:
                             k0l         = np.sqrt(knl[0]**2 + ksl[0]**2)
-                            rotation    = rotation + np.arctan2(ksl[0], knl[0])
+                            rotation    = rotation + np.arctan2(-ksl[0], knl[0])
                     elif knl[0] != 0:
                         k0l         = knl[0]
                     elif ksl[0] != 0:
                         k0l         = ksl[0]
                         if isinstance(rotation, float):
-                            rotation    = rotation + np.pi / 2
+                            rotation    = rotation - np.pi / 2
                         else:
-                            rotation    = f"{rotation} + np.pi / 2"
+                            rotation    = f"{rotation} - np.pi / 2"
                     else:
                         k0l = 0.0
 
@@ -747,18 +747,18 @@ def convert_multipoles(
                 if knl[0] != 0 and ksl[0] != 0:
                     if isinstance(knl[0], float) or isinstance(ksl[0], float):
                         k0l         = f"sqrt({knl[0]}**2 + {ksl[0]}**2)"
-                        rotation    = f"{rotation} + arctan2({ksl[0]}, {knl[0]})"
+                        rotation    = f"{rotation} + atan2(-({ksl[0]}), {knl[0]})"
                     else:
                         k0l         = np.sqrt(knl[0]**2 + ksl[0]**2)
-                        rotation    = rotation + np.arctan2(ksl[0], knl[0])
+                        rotation    = rotation + np.arctan2(-ksl[0], knl[0])
                 elif knl[0] != 0:
                     k0l         = knl[0]
                 elif ksl[0] != 0:
                     k0l         = ksl[0]
                     if isinstance(rotation, float):
-                        rotation    = rotation + np.pi / 2
+                        rotation    = rotation - np.pi / 2
                     else:
-                        rotation    = f"{rotation} + np.pi / 2"
+                        rotation    = f"{rotation} - np.pi / 2"
                 else:
                     k0l = 0
 

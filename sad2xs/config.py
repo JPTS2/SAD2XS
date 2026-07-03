@@ -129,23 +129,25 @@ class Config:
     # Element Modelling Constants
     ########################################
     MODEL_DRIFT:                    str             = 'exact'
-    MODEL_BEND:                     str             = 'mat-kick-mat'
-    MODEL_QUAD:                     str             = 'mat-kick-mat'
-    MODEL_SEXT:                     str             = 'mat-kick-mat'
-    MODEL_OCT:                      str             = 'mat-kick-mat'
+    MODEL_BEND:                     str             = 'bend-kick-bend'
+    MODEL_QUAD:                     str             = 'rot-kick-rot-high-order'
+    MODEL_SEXT:                     str             = 'rot-kick-rot-high-order'
+    MODEL_OCT:                      str             = 'rot-kick-rot-high-order'
+    MODEL_MULT:                     str             = 'rot-kick-rot-high-order'
     MODEL_CAVI:                     str             = 'drift-kick-drift-exact'
 
     INTEGRATOR_BEND:                str             = 'uniform'
-    INTEGRATOR_QUAD:                str             = 'uniform'
-    INTEGRATOR_SEXT:                str             = 'uniform'
-    INTEGRATOR_OCT:                 str             = 'uniform'
+    INTEGRATOR_QUAD:                str             = 'yoshida4'
+    INTEGRATOR_SEXT:                str             = 'yoshida4'
+    INTEGRATOR_OCT:                 str             = 'yoshida4'
+    INTEGRATOR_MULT:                str             = 'yoshida4'
     INTEGRATOR_CAVI:                str             = 'yoshida4'
 
     N_INTEGRATOR_KICKS_BEND:        int             = 20
-    N_INTEGRATOR_KICKS_QUAD:        int             = 20
-    N_INTEGRATOR_KICKS_SEXT:        int             = 20
-    N_INTEGRATOR_KICKS_OCT:         int             = 20
-    N_INTEGRATOR_KICKS_MULT:        int             = 20
+    N_INTEGRATOR_KICKS_QUAD:        int             = 14
+    N_INTEGRATOR_KICKS_SEXT:        int             = 14
+    N_INTEGRATOR_KICKS_OCT:         int             = 14
+    N_INTEGRATOR_KICKS_MULT:        int             = 14
     N_INTEGRATOR_KICKS_SOL:         int             = 20
 
     ABSOLUTE_TIME_CAVI:             bool            = False
