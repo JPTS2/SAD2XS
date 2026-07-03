@@ -140,6 +140,46 @@ left unchanged.
 | `COORD(DX=0.001)` forward | −0.001 | −0.001 | Same — beampipe offset is invariant |
 | `COORD(DX=0.001)` reversed Xsuite | − | −0.001 | Matches SAD reversed ✓ |
 
+### 4. Solenoid GEO reference-transform rotation order
+
+A bound GEO solenoid region is defined by a pair of `SOL` elements (e.g.
+`SOL_IN`, `SOL_OUT`), one of which carries `GEO=1` (the reference-frame-defining
+boundary) while the other carries the compensating `DX`/`DY`/`DZ`/`CHI1`/`CHI2`
+that SAD's `REBUILD` computes to restore the design orbit. Either member of the
+pair can independently be written reversed (`-SOL_IN` or `-SOL_OUT`) in the
+`LINE` statement — this is unrelated to which one carries `GEO=1`.
+
+Each boundary converts to a compound sub-line: `<name>_bound` (the solenoid
+field), `<name>_dxy` (`Translation`), `<name>_dz` (`TimeDelay`), `<name>_rot`
+(`Rotation`). `xt.Rotation`'s effect on `zeta` is proportional to the transverse
+position (`x`/`y`) present when it runs. The inbound boundary's compound always
+runs rotation first (at `x=y=0`, so it never picks up this term). The outbound
+boundary's compound needs a different order depending on whether the pair's
+reversal state matches: when `inbound_reversed == outbound_reversed`, the
+existing `bound/dxy/dz/rot` order is correct; when they differ (exactly one end
+of the pair reversed), the outbound rotation must also run first, otherwise it
+runs after a transverse offset has already accumulated and picks up a spurious
+`zeta` contribution.
+
+**Bug (fixed)**: `solenoid_reference_shift_corrections` in
+`sad2xs/converter/_006_solenoid_converter.py` used the `bound/dxy/dz/rot` order
+for every outbound boundary unconditionally, regardless of the pair's reversal
+state. This gave `x`/`y`/`px`/`py` that matched SAD exactly (translations and
+rotations don't depend on `zeta`, so the bug was invisible there), but a `zeta`
+that diverged from SAD's whenever the pair's reversal state didn't match —
+found via `test_sol.py`'s `test_sol_reference_transform_restores_design_orbit_at_end`
+once its comparison was extended to include `zeta`.
+
+**Fix**: the outbound solenoid lists are now split by
+`inbound_reversed == outbound_reversed`; the matching subset keeps the existing
+order, the differing subset uses rotation-first, same as the inbound boundary.
+
+**Verified**: across a full grid of line orientation (`forward`/`-SOL_IN`
+reversed/`-SOL_OUT` reversed/both reversed) × which boundary carries `GEO=1` ×
+transform (pure rotation, pure translation, combined and deliberately
+asymmetric DX/DY/DPX/DPY values), Xsuite's `zeta` at the region exit now
+matches SAD's own Twiss `zeta` exactly, with `x`/`y` unaffected in every case.
+
 ---
 
 ## `reverse_charge_sign`

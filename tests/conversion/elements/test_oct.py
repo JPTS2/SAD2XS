@@ -25,6 +25,8 @@ import xtrack as xt
 from sad2xs.converter._004_element_converter import convert_octupoles
 from sad2xs.sad_helpers import track_sad
 from tests.support.config import (
+    DELTA_DELTA_ATOL,
+    DELTA_DELTA_RTOL,
     DELTA_PX_ATOL,
     DELTA_PX_RTOL,
     DELTA_PY_ATOL,
@@ -34,7 +36,9 @@ from tests.support.config import (
     DELTA_X_ATOL,
     DELTA_X_RTOL,
     DELTA_Y_ATOL,
-    DELTA_Y_RTOL)
+    DELTA_Y_RTOL,
+    DELTA_ZETA_ATOL,
+    DELTA_ZETA_RTOL)
 from tests.support.diagnostics import (
     diagnostic_report_path,
     write_tracking_failure_report,
@@ -51,10 +55,12 @@ def _oct_tracking_tolerances():
     Return coordinate tolerances used by octupole tracking comparisons.
     """
     return {
-        "x":  (DELTA_X_ATOL, DELTA_X_RTOL),
-        "px": (DELTA_PX_ATOL, DELTA_PX_RTOL),
-        "y":  (DELTA_Y_ATOL, DELTA_Y_RTOL),
-        "py": (DELTA_PY_ATOL, DELTA_PY_RTOL),
+        "x":     (DELTA_X_ATOL, DELTA_X_RTOL),
+        "px":    (DELTA_PX_ATOL, DELTA_PX_RTOL),
+        "y":     (DELTA_Y_ATOL, DELTA_Y_RTOL),
+        "py":    (DELTA_PY_ATOL, DELTA_PY_RTOL),
+        "zeta":  (DELTA_ZETA_ATOL, DELTA_ZETA_RTOL),
+        "delta": (DELTA_DELTA_ATOL, DELTA_DELTA_RTOL),
     }
 
 def _oct_twiss_tolerances():
@@ -67,6 +73,8 @@ def _oct_twiss_tolerances():
         "bety":  (1E-9, 1E-5),
         "alfx":  (1E-9, 1E-5),
         "alfy":  (1E-9, 1E-5),
+        "zeta":  (DELTA_ZETA_ATOL, DELTA_ZETA_RTOL),
+        "delta": (DELTA_DELTA_ATOL, DELTA_DELTA_RTOL),
     }
 
 def _oct_initial_coordinates(
@@ -93,10 +101,12 @@ def _oct_sad_coordinates(sad_particles):
     Pack SAD tracking coordinates for diagnostic reports.
     """
     return {
-        "x":  sad_particles["x"],
-        "px": sad_particles["px"],
-        "y":  sad_particles["y"],
-        "py": sad_particles["py"],
+        "x":     sad_particles["x"],
+        "px":    sad_particles["px"],
+        "y":     sad_particles["y"],
+        "py":    sad_particles["py"],
+        "zeta":  sad_particles["zeta"],
+        "delta": sad_particles["delta"],
     }
 
 def _oct_xsuite_coordinates(xs_particles):
@@ -104,10 +114,12 @@ def _oct_xsuite_coordinates(xs_particles):
     Pack Xsuite tracking coordinates for diagnostic reports.
     """
     return {
-        "x":  xs_particles.x,
-        "px": xs_particles.px,
-        "y":  xs_particles.y,
-        "py": xs_particles.py,
+        "x":     xs_particles.x,
+        "px":    xs_particles.px,
+        "y":     xs_particles.y,
+        "py":    xs_particles.py,
+        "zeta":  xs_particles.zeta,
+        "delta": xs_particles.delta,
     }
 
 def _assert_oct_tracking_matches_sad(
@@ -748,6 +760,7 @@ def test_oct_conversion_matches_sad_twiss(write_lattice, tmp_path, k3l):
             closed                  = False,
             reverse_element_order   = False,
             reverse_survey_horizontal  = False,
+            rfsw                    = True,
             additional_commands     = "")
 
         line = s2x.convert_sad_to_xsuite(
@@ -769,6 +782,8 @@ def test_oct_conversion_matches_sad_twiss(write_lattice, tmp_path, k3l):
             "bety":  tw_sad["bety", "END"],
             "alfx":  tw_sad["alfx", "END"],
             "alfy":  tw_sad["alfy", "END"],
+            "zeta":  tw_sad["zeta", "END"],
+            "delta": tw_sad["delta", "END"],
         }
         xs_values = {
             "s":     tw_xs["s", "end"],
@@ -776,6 +791,8 @@ def test_oct_conversion_matches_sad_twiss(write_lattice, tmp_path, k3l):
             "bety":  tw_xs["bety", "end"],
             "alfx":  tw_xs["alfx", "end"],
             "alfy":  tw_xs["alfy", "end"],
+            "zeta":  tw_xs["zeta", "end"],
+            "delta": tw_xs["delta", "end"],
         }
     finally:
         os.chdir(cwd)
@@ -835,7 +852,7 @@ def test_oct_conversion_matches_sad_tracking_for_transverse_offsets(
             zeta_init              = zeta_init,
             delta_init             = delta_init,
             n_turns                = 1,
-            rfsw                   = False,
+            rfsw                   = True,
             rad                    = False,
             fluc                   = False,
             radcod                 = False,
@@ -938,7 +955,7 @@ def test_oct_conversion_matches_sad_tracking_for_element_offsets(
             zeta_init              = zeta_init,
             delta_init             = delta_init,
             n_turns                = 1,
-            rfsw                   = False,
+            rfsw                   = True,
             rad                    = False,
             fluc                   = False,
             radcod                 = False,
@@ -1043,7 +1060,7 @@ def test_oct_conversion_matches_sad_tracking_for_element_rotation(
             zeta_init              = zeta_init,
             delta_init             = delta_init,
             n_turns                = 1,
-            rfsw                   = False,
+            rfsw                   = True,
             rad                    = False,
             fluc                   = False,
             radcod                 = False,
