@@ -24,6 +24,8 @@ import xtrack as xt
 
 from sad2xs.converter._004_element_converter import convert_drifts
 from tests.support.config import (
+    DELTA_DELTA_ATOL,
+    DELTA_DELTA_RTOL,
     DELTA_PX_ATOL,
     DELTA_PX_RTOL,
     DELTA_PY_ATOL,
@@ -34,6 +36,8 @@ from tests.support.config import (
     DELTA_X_RTOL,
     DELTA_Y_ATOL,
     DELTA_Y_RTOL,
+    DELTA_ZETA_ATOL,
+    DELTA_ZETA_RTOL,
     POSITIVE_TEST_VALUES)
 from tests.support.diagnostics import (
     diagnostic_report_path,
@@ -54,11 +58,13 @@ def _assert_drift_twiss_scan_matches_sad(
     Assert drift Twiss scan equivalence and write a Markdown report on failure.
     """
     tolerances = {
-        "s":  (DELTA_S_ATOL, DELTA_S_RTOL),
-        "x":  (DELTA_X_ATOL, DELTA_X_RTOL),
-        "y":  (DELTA_Y_ATOL, DELTA_Y_RTOL),
-        "px": (DELTA_PX_ATOL, DELTA_PX_RTOL),
-        "py": (DELTA_PY_ATOL, DELTA_PY_RTOL),
+        "s":     (DELTA_S_ATOL, DELTA_S_RTOL),
+        "x":     (DELTA_X_ATOL, DELTA_X_RTOL),
+        "y":     (DELTA_Y_ATOL, DELTA_Y_RTOL),
+        "px":    (DELTA_PX_ATOL, DELTA_PX_RTOL),
+        "py":    (DELTA_PY_ATOL, DELTA_PY_RTOL),
+        "zeta":  (DELTA_ZETA_ATOL, DELTA_ZETA_RTOL),
+        "delta": (DELTA_DELTA_ATOL, DELTA_DELTA_RTOL),
     }
     failed_values = []
 
@@ -277,6 +283,10 @@ def test_drift_conversion_matches_sad_twiss_scan(write_lattice, tmp_path):
         px_xs       = np.zeros_like(POSITIVE_TEST_VALUES)
         py_sad      = np.zeros_like(POSITIVE_TEST_VALUES)
         py_xs       = np.zeros_like(POSITIVE_TEST_VALUES)
+        zeta_sad    = np.zeros_like(POSITIVE_TEST_VALUES)
+        zeta_xs     = np.zeros_like(POSITIVE_TEST_VALUES)
+        delta_sad   = np.zeros_like(POSITIVE_TEST_VALUES)
+        delta_xs    = np.zeros_like(POSITIVE_TEST_VALUES)
         lattice_template = """\
         MOMENTUM    = 1.0 GEV;
         TEST_VAL    = <scan value>;
@@ -311,6 +321,7 @@ def test_drift_conversion_matches_sad_twiss_scan(write_lattice, tmp_path):
                 closed                  = False,
                 reverse_element_order   = False,
                 reverse_survey_horizontal  = False,
+                rfsw                    = True,
                 additional_commands     = "")
 
             line = s2x.convert_sad_to_xsuite(
@@ -336,23 +347,31 @@ def test_drift_conversion_matches_sad_twiss_scan(write_lattice, tmp_path):
             px_xs[iteration]    = tw_xs["px", "end"]
             py_sad[iteration]   = tw_sad["py", "END"]
             py_xs[iteration]    = tw_xs["py", "end"]
+            zeta_sad[iteration]  = tw_sad["zeta", "END"]
+            zeta_xs[iteration]   = tw_xs["zeta", "end"]
+            delta_sad[iteration] = tw_sad["delta", "END"]
+            delta_xs[iteration]  = tw_xs["delta", "end"]
     finally:
         os.chdir(cwd)
 
     _assert_drift_twiss_scan_matches_sad(
         test_values         = POSITIVE_TEST_VALUES,
         sad_values          = {
-            "s":  s_sad,
-            "x":  x_sad,
-            "y":  y_sad,
-            "px": px_sad,
-            "py": py_sad,
+            "s":     s_sad,
+            "x":     x_sad,
+            "y":     y_sad,
+            "px":    px_sad,
+            "py":    py_sad,
+            "zeta":  zeta_sad,
+            "delta": delta_sad,
         },
         xsuite_values       = {
-            "s":  s_xs,
-            "x":  x_xs,
-            "y":  y_xs,
-            "px": px_xs,
-            "py": py_xs,
+            "s":     s_xs,
+            "x":     x_xs,
+            "y":     y_xs,
+            "px":    px_xs,
+            "py":    py_xs,
+            "zeta":  zeta_xs,
+            "delta": delta_xs,
         },
         lattice_template    = lattice_template)

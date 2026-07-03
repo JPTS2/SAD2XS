@@ -24,6 +24,12 @@ Tests that currently fail document known converter bugs. They must not be
 modified to pass artificially. Tests linked to open issues are selected through
 the central `known_issue` mapping; this marker changes CI routing, not outcomes.
 
+SAD-comparison tracking and Twiss checks uniformly use `rfsw=True` and compare
+`zeta`/`delta` alongside the transverse coordinates, matching `test_cavi.py`'s
+original pattern. Files with only a raw `s`/length check via `line.get_table()`
+(`test_apert.py`, `test_beambeam.py`, `test_mark.py`, `test_moni.py`) are the
+exception — they have no twiss/tracking comparison to extend.
+
 Total collected from this folder: see `tests/README.md`.
 
 | File | Functions | Fail | Failure root cause |
@@ -59,6 +65,15 @@ converter-side assumption). `_sol_xsuite_optics_values()` now sums the mode
 components (`betx1+betx2`, `bety1+bety2`, `alfx1+alfx2`, `alfy1+alfy2`) to
 match SAD's convention. See `docs/sad-helpers.md` for the general explanation
 and worked example.
+
+Adding `zeta` to the tracking/twiss comparisons here (see the `Coverage`
+section above) surfaced a genuine converter bug in
+`test_sol_reference_transform_restores_design_orbit_at_end`: several
+parametrisations with a reversed line orientation and a `DPX`/`DPY`/`DX+DY`
+reference-transform combination diverged from SAD on `zeta` only — `x`, `y`,
+`px`, and `py` all matched. Root cause and fix are documented in
+`docs/line-reversals.md` (new "Solenoid GEO reference-transform rotation
+order" section). All 168 instances in this file now pass.
 
 This file also has a solenoid `DISFRIN` (fringe kick) limitation test —
 `test_sol_disfrin_off_diverges_from_xsuite_in_tracking` — which is not a
