@@ -288,12 +288,13 @@ def parse_sad_file(
     ############################################################################
     # Setup
     ############################################################################
-    parsed_sections     = []
+    parsed_sections                 = []
 
-    cleaned_globals     = {}
-    cleaned_elements    = {}
-    cleaned_expressions = {}
-    cleaned_lines       = {}
+    cleaned_globals                 = {}
+    cleaned_elements                = {}
+    cleaned_expressions             = {}
+    cleaned_expression_line_numbers = {}
+    cleaned_lines                   = {}
 
     ############################################################################
     # Load lattice and clean whitespace
@@ -347,7 +348,7 @@ def parse_sad_file(
     ############################################################################
     # Remove SAD simulation commands
     ############################################################################
-    # e.g. on rad, on cod...
+    # e.g. on rad, on cod, ffs use = ring, ffs[calc; go;]...
     for line_no, section in parsed_sections[:]:
         section_command = section.split()[0]
 
@@ -356,6 +357,15 @@ def parse_sad_file(
             continue
 
         if section_command == "off":
+            parsed_sections.remove((line_no, section))
+            continue
+
+        # FFS is SAD's own interactive command interpreter (USE, CALCULATE,
+        # GO, etc.) — sad2xs already knows which line to convert from its own
+        # explicit line_name argument, so any FFS command is simulation-only
+        # and safe to drop. Matches bare 'ffs;', 'ffs use = ring', and the
+        # bracketed 'ffs[...]' command-string form.
+        if section_command == "ffs" or section_command.startswith("ffs["):
             parsed_sections.remove((line_no, section))
             continue
 
@@ -639,6 +649,7 @@ def parse_sad_file(
         # floating-point special values Python's float() would parse them as.
         if NUMERIC_LITERAL_PATTERN.fullmatch(expression):
             cleaned_expressions[variable] = float(expression)
+            cleaned_expression_line_numbers[variable] = line_no
             continue
 
         ########################################
@@ -646,6 +657,7 @@ def parse_sad_file(
         ########################################
         if variable not in cleaned_expressions:
             cleaned_expressions[variable] = expression
+            cleaned_expression_line_numbers[variable] = line_no
             continue
         else:
             ########################################
@@ -660,6 +672,7 @@ def parse_sad_file(
                 variable, previous_expression)
 
             cleaned_expressions[variable] = new_expression
+            cleaned_expression_line_numbers[variable] = line_no
             continue
 
     ############################################################################
@@ -711,9 +724,10 @@ def parse_sad_file(
     # Return the Parsed Data
     ############################################################################
     parsed_lattice_data = {
-        "globals":      cleaned_globals,
-        "lines":        cleaned_lines,
-        "elements":     cleaned_elements,
-        "expressions":  cleaned_expressions}
+        "globals":                     cleaned_globals,
+        "lines":                       cleaned_lines,
+        "elements":                    cleaned_elements,
+        "expressions":                 cleaned_expressions,
+        "expression_line_numbers":     cleaned_expression_line_numbers}
 
     return parsed_lattice_data

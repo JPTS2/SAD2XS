@@ -36,8 +36,9 @@ def convert_expressions(
     ########################################
     # Get the required data
     ########################################
-    parsed_globals      = parsed_lattice_data["globals"]
-    parsed_expressions  = parsed_lattice_data["expressions"]
+    parsed_globals              = parsed_lattice_data["globals"]
+    parsed_expressions          = parsed_lattice_data["expressions"]
+    parsed_expression_line_nos  = parsed_lattice_data["expression_line_numbers"]
 
     ########################################
     # Create global variables
@@ -87,6 +88,14 @@ def convert_expressions(
                 continue
 
     if len(converted_expressions) != len(parsed_expressions):
+        unresolved = [
+            var_name for var_name in parsed_expressions
+            if var_name not in converted_expressions]
+        unresolved_detail = "; ".join(
+            f"line {parsed_expression_line_nos[var_name]}: "
+            f"'{var_name} = {parsed_expressions[var_name]}'"
+            for var_name in unresolved)
         raise ValueError(
             "Not all expressions could be evaluated. "
-            "Please check your SAD lattice for invalid expression syntax.")
+            "Please check your SAD lattice for invalid expression syntax. "
+            f"Unresolved: {unresolved_detail}")
