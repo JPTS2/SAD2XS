@@ -23,7 +23,7 @@ instance count exceeds its function count.
 
 | File | Functions | Fail | Notes |
 |------|-----------|------|-------|
-| `test_preprocessing.py` | 4 | 0 | — |
+| `test_preprocessing.py` | 6 | 0 | — |
 | `test_comments.py` | 10 | 0 | — |
 | `test_globals.py` | 10 | 0 | — |
 | `test_units.py` | 15 | 0 | — |
@@ -31,10 +31,28 @@ instance count exceeds its function count.
 | `test_line_names.py` | 3 | 0 | — |
 | `test_element_parameters.py` | 13 | 0 | — |
 | `test_element_expressions.py` | 8 | 0 | — |
-| `test_deferred_expressions.py` | 15 | 0 | — |
+| `test_deferred_expressions.py` | 17 | 0 | — |
 | `test_functions.py` | 5 | 5 | SAD user-defined function definitions not yet implemented |
 | `test_repeated_definitions.py` | 9 | 0 | — |
 | `test_errors.py` | 13 | 0 | — |
+
+### `test_preprocessing.py` note
+
+FFS commands (SAD's own interactive command interpreter — `USE`, `CALCULATE`,
+`GO`, etc.) were previously misparsed as deferred expressions whenever they
+took an assignment-like form (e.g. `FFS USE = RING;`), which then failed deep
+inside expression conversion with no indication that FFS was the actual
+cause. FFS commands are now recognised and dropped alongside `ON`/`OFF`,
+matching bare `FFS;`, `FFS USE = <name>;`, and the bracketed `FFS[...]`
+command-string form.
+
+### `test_deferred_expressions.py` note
+
+When one or more deferred expressions cannot be resolved, the conversion
+error now names each unresolved variable together with its source line
+number and expression text, instead of a single blanket message — so a bad
+or unsupported expression can be found directly in a large lattice file
+without a debugger.
 
 ### `test_globals.py` note
 
