@@ -99,7 +99,7 @@ Artifact paths should mirror the test area that produced them, for example
 
 ## Test Counts
 
-Total collected: **1665 tests** (1657 pass, 8 fail) as of the test run on
+Total collected: **1668 tests** (1660 pass, 8 fail) as of the test run on
 this branch. The breakdown by failure group is in the Known Failures section
 below. Individual folder READMEs document per-file counts.
 

@@ -338,6 +338,31 @@ def test_unresolved_deferred_expression_dependency_raises_clear_error(write_latt
             environment         = environment,
             config              = Config(_verbose = False))
 
+def test_unresolved_deferred_expression_error_cites_line_and_expression(write_lattice):
+    """
+    The conversion error should name the specific unresolved variable, its
+    source line number, and its expression text — not just a blanket
+    failure — so a bad expression can be found directly without a debugger.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        L0 = 1.0;
+        DL = 0.5;
+
+        A = MISSING + 1.0;
+        """,
+        filename = "deferred_expression_unresolved_cites_line.sad")
+
+    parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
+    environment = xt.Environment()
+
+    with pytest.raises(ValueError, match = r"line 5: 'a = missing \+ 1\.0'"):
+        convert_expressions(
+            parsed_lattice_data = parsed,
+            environment         = environment,
+            config              = Config(_verbose = False))
+
 def test_circular_deferred_expression_dependency_raises_clear_error(write_lattice):
     """
     Circular expression dependencies should not be silently accepted.

@@ -76,6 +76,55 @@ def test_on_and_off_prefix_variable_names_are_not_removed(write_lattice):
     assert parsed["elements"]["drift"]["d2"]["l"] == "offvalue", (
         "Element expressions should preserve OFF-prefixed variable names.")
 
+def test_ffs_commands_are_removed_before_parsing(write_lattice):
+    """
+    SAD FFS commands (bare, USE-form, and bracketed command-string form)
+    should not be treated as deferred expressions. FFS is SAD's own
+    interactive command interpreter — sad2xs already knows which line to
+    convert from its own line_name argument, so any FFS command is
+    simulation-only and safe to drop.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        DRIFT D1 = (L = 1.0);
+        LINE RING = (D1);
+        FFS;
+        FFS USE = RING;
+        FFS["SHOW"];
+        """,
+        filename = "commands_ffs_removed.sad")
+
+    parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
+
+    assert parsed["elements"]["drift"]["d1"]["l"] == pytest.approx(1.0), (
+        "Valid elements after FFS commands should still be parsed.")
+    assert parsed["lines"]["ring"] == ["d1"], (
+        "Valid lines after FFS commands should still be parsed.")
+    assert not any(name.startswith("ffs") for name in parsed["expressions"]), (
+        "FFS commands should not be parsed as deferred expressions.")
+
+def test_ffs_prefix_variable_names_are_not_removed(write_lattice):
+    """
+    SAD-valid names starting with FFS should remain deferred expressions.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        FFSVALUE = 1.0;
+        DRIFT D1 = (L = FFSVALUE);
+        LINE RING = (D1);
+        """,
+        filename = "commands_ffs_prefix_variable.sad")
+
+    parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
+
+    assert parsed["expressions"]["ffsvalue"] == pytest.approx(1.0), (
+        "SAD-valid variable names beginning with FFS should not be removed "
+        "as FFS commands.")
+    assert parsed["elements"]["drift"]["d1"]["l"] == "ffsvalue", (
+        "Element expressions should preserve FFS-prefixed variable names.")
+
 ################################################################################
 # Case Normalization
 ################################################################################
