@@ -53,7 +53,7 @@ has its own README with per-file coverage tables and known-failure documentation
 | `ci/` | No | Workflow configuration correctness |
 | `observability/` | Mixed | Output suppression, quiet mode, and helper output policy |
 
-Total collected: **1657 tests** (1638 pass, 19 currently failing) as of
+Total collected: **1665 tests** (1657 pass, 8 currently failing) as of
 this branch. See `tests/README.md` for the breakdown by failure group.
 
 ## SAD Syntax Assumption Tests
@@ -108,7 +108,7 @@ intermediate dictionaries.
 
 ## Known Failures
 
-The suite contains **19 currently failing tests**, all linked to open GitHub
+The suite contains **8 currently failing tests**, all linked to open GitHub
 issues.
 
 Tests associated with open issues receive the `known_issue` marker during
@@ -123,19 +123,22 @@ pytest -m "not known_issue"  # blocking regression selection
 pytest -m "known_issue"      # tests documenting open issues
 ```
 
-The 19 failures are all in `conversion/elements/` (issues #33, #55). The
-mapping is maintained in `tests/support/known_issues.py`. These tests must
-not be modified to pass artificially — they are the record of what is broken
-and what needs to be fixed.
+The 8 failures are all in `conversion/elements/` (issues #55, #101). The
+mapping is maintained in `tests/support/known_issues.py` as a single
+`KNOWN_ISSUES` list of `(test node prefix, parameter-id fragment, issue
+number)` tuples — an empty fragment (`""`) matches every parametrisation of
+that test, i.e. the whole test is the known issue, not just specific
+parameters. These tests must not be modified to pass artificially — they are
+the record of what is broken and what needs to be fixed.
 
-`tests/conftest.py` fails collection loudly if a `PARTIAL_KNOWN_ISSUES`
-parameter-id fragment matches nothing currently collected — e.g. a fragment
-that stopped matching after a parametrize change. This is checked
+`tests/conftest.py` fails collection loudly if a `KNOWN_ISSUES` entry's
+fragment matches nothing currently collected — e.g. a fragment that stopped
+matching after a parametrize change, or an entry whose test function still
+exists but none of its collected parametrisations match. This is checked
 automatically at collection time for whatever subset of the suite is being
-run; it does not require a full-suite run to catch. This does not cover
-`KNOWN_ISSUE_TESTS` (exact test names) — that would need to catch a renamed
-test function, a scenario not yet observed, so it was left out rather than
-added speculatively.
+run; it does not require a full-suite run to catch. It does not catch a test
+function being renamed or removed entirely — that scenario has not yet been
+observed, so detecting it was left out rather than added speculatively.
 
 ## Accepted Physics Limitations
 
