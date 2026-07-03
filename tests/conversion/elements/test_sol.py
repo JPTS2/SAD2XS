@@ -107,7 +107,7 @@ def _sol_orbit_values(twiss_table, marker):
 
 def _sol_optics_values(twiss_table, marker):
     """
-    Return optics coordinates at a marker from a SAD or Xsuite Twiss table.
+    Return optics coordinates at a marker from a SAD Twiss table.
     """
     return {
         "s":    twiss_table["s", marker],
@@ -115,6 +115,35 @@ def _sol_optics_values(twiss_table, marker):
         "bety": twiss_table["bety", marker],
         "alfx": twiss_table["alfx", marker],
         "alfy": twiss_table["alfy", marker],
+    }
+
+def _sol_xsuite_optics_values(twiss_table, marker):
+    """
+    Return projected optics coordinates at a marker from an Xsuite Twiss table.
+
+    SAD's betx/bety/alfx/alfy are the projected (physical) beam-envelope
+    optics functions. Xsuite's twiss4d/twiss6d report the mode-1/mode-2
+    (Courant-Snyder eigenmode) components separately instead of summing them:
+    betx1/alfx1 (mode-1) and betx2/alfx2 (mode-2 leakage into x) both
+    contribute to the physical horizontal beam size in a coupled region such
+    as a solenoid, and likewise bety1/bety2, alfy1/alfy2 for y. For an
+    uncoupled element the leakage terms are ~0 and this reduces to the plain
+    values; for a solenoid it does not. See docs/sad-helpers.md.
+    """
+    betx1 = twiss_table["betx1", marker]
+    betx2 = twiss_table["betx2", marker]
+    bety1 = twiss_table["bety1", marker]
+    bety2 = twiss_table["bety2", marker]
+    alfx1 = twiss_table["alfx1", marker]
+    alfx2 = twiss_table["alfx2", marker]
+    alfy1 = twiss_table["alfy1", marker]
+    alfy2 = twiss_table["alfy2", marker]
+    return {
+        "s":    twiss_table["s", marker],
+        "betx": betx1 + betx2,
+        "bety": bety1 + bety2,
+        "alfx": alfx1 + alfx2,
+        "alfy": alfy1 + alfy2,
     }
 
 def _sol_initial_coordinates(
@@ -248,6 +277,7 @@ def _assert_sol_twiss_matches_sad(
 def _bound_solenoid_lattice(
         bz,
         sol_out_bz = None,
+        disfrin = True,
         sol_in_parameters = "",
         sol_out_parameters = "",
         middle_element = "DRIFT       SOL_DRIFT   = (L = 1.0);",
@@ -255,18 +285,24 @@ def _bound_solenoid_lattice(
         line_expression = None):
     """
     Build a standard bound-solenoid SAD lattice around one middle element.
+
+    `disfrin` defaults to `True` (`DISFRIN = 1` on both boundaries) since
+    SAD2XS does not model the SAD solenoid fringe kick — that is the fair
+    comparison baseline. Pass `disfrin = False` deliberately to exercise the
+    known, accepted divergence this causes (see `test_sol_disfrin_off_...`).
     """
     if line_expression is None:
         line_expression = f"START SOL_IN {middle_name} SOL_OUT END"
     if sol_out_bz is None:
         sol_out_bz = bz
+    disfrin_parameter = "DISFRIN = 1" if disfrin else ""
 
     return f"""\
     MOMENTUM    = 1.0 GEV;
 
     {middle_element}
-    SOL         SOL_IN      = (BZ = {bz} BOUND = 1 GEO = 1 {sol_in_parameters})
-                SOL_OUT     = (BZ = {sol_out_bz} BOUND = 1 {sol_out_parameters});
+    SOL         SOL_IN      = (BZ = {bz} BOUND = 1 GEO = 1 {disfrin_parameter} {sol_in_parameters})
+                SOL_OUT     = (BZ = {sol_out_bz} BOUND = 1 {disfrin_parameter} {sol_out_parameters});
 
     MARK        START       = ()
                 END         = ();
@@ -421,6 +457,81 @@ def test_sol_converter_creates_all_solenoids(
         environment  = xsuite_environment,
         element_name = "sol_b",
         element_type = xt.UniformSolenoid)
+
+########################################
+# DISFRIN Warning
+########################################
+def test_sol_converter_warns_once_for_lattice_missing_disfrin(
+        xsuite_environment,
+        capsys):
+    """
+    Converting a lattice with solenoids missing DISFRIN=1 should warn exactly
+    once for the whole lattice, not once per non-compliant element.
+    """
+    _set_reference_environment(xsuite_environment)
+
+    convert_solenoids(
+        parsed_elements = {
+            "sol": {
+                "sol_a": {"bz": 0.1},
+                "sol_b": {"bz": -0.1},
+                "sol_c": {"bz": 0.2, "disfrin": "1"},
+            },
+        },
+        environment = xsuite_environment,
+        config      = Config(_verbose = True))
+
+    captured = capsys.readouterr()
+    assert captured.out.count("Warning!") == 1, (
+        "Converting a lattice with solenoids missing DISFRIN=1 should print "
+        f"exactly one warning. Got: {captured.out!r}")
+
+def test_sol_converter_does_not_warn_when_every_solenoid_has_disfrin(
+        xsuite_environment,
+        capsys):
+    """
+    Converting a lattice where every solenoid has DISFRIN=1 should not warn.
+    """
+    _set_reference_environment(xsuite_environment)
+
+    convert_solenoids(
+        parsed_elements = {
+            "sol": {
+                "sol_a": {"bz": 0.1, "disfrin": "1"},
+                "sol_b": {"bz": -0.1, "disfrin": "1"},
+            },
+        },
+        environment = xsuite_environment,
+        config      = Config(_verbose = True))
+
+    captured = capsys.readouterr()
+    assert "DISFRIN" not in captured.out, (
+        "Converting a lattice where every solenoid has DISFRIN=1 should not "
+        f"warn. Got: {captured.out!r}")
+
+def test_sol_converter_respects_quiet_mode_for_disfrin_warning(
+        xsuite_environment,
+        sad2xs_config,
+        capsys):
+    """
+    The DISFRIN warning should still be suppressed by _verbose=False, like
+    every other converter warning.
+    """
+    _set_reference_environment(xsuite_environment)
+
+    convert_solenoids(
+        parsed_elements = {
+            "sol": {
+                "sol_a": {"bz": 0.1},
+            },
+        },
+        environment = xsuite_environment,
+        config      = sad2xs_config)
+
+    captured = capsys.readouterr()
+    assert captured.out == "", (
+        "convert_solenoids with _verbose=False should produce no stdout, "
+        f"including the DISFRIN warning. Got: {captured.out!r}")
 
 ################################################################################
 # Bound Solenoid Reference Elements
@@ -763,7 +874,7 @@ def test_sol_optics_matches_sad_twiss_at_end(
         os.chdir(cwd)
 
     sad_values = _sol_optics_values(tw_sad, "END")
-    xsuite_values = _sol_optics_values(tw_xs, "end")
+    xsuite_values = _sol_xsuite_optics_values(tw_xs, "end")
 
     _assert_sol_twiss_matches_sad(
         test_name      = "test_sol_optics_matches_sad_twiss_at_end",
@@ -774,6 +885,10 @@ def test_sol_optics_matches_sad_twiss_at_end(
         notes          = [
             "This is an active-solenoid optics comparison, separate from "
             "orbit/reference-frame checks.",
+            "Xsuite values are the projected betx1+betx2/bety1+bety2/"
+            "alfx1+alfx2/alfy1+alfy2 sums, matching SAD's projected "
+            "convention in this coupled (solenoid) region — see "
+            "docs/sad-helpers.md.",
         ])
 
 ########################################
@@ -888,6 +1003,100 @@ def test_sol_powered_end_to_end_tracking_matches_sad_for_transverse_offsets(
         test_name     = (
             "test_sol_powered_end_to_end_tracking_matches_sad_for_"
             "transverse_offsets"))
+
+########################################
+# Accepted DISFRIN Limitation
+########################################
+def test_sol_disfrin_off_diverges_from_xsuite_in_tracking(write_lattice, tmp_path):
+    """
+    Without DISFRIN=1, SAD's solenoid fringe kick diverges from Xsuite
+    tracking beyond normal tolerance.
+
+    SAD2XS does not model this nonlinear fringe kick (see
+    docs/design-decisions.md): the converted lattice always behaves as if
+    DISFRIN=1 was set, regardless of the source SAD file. This locks in the
+    accepted, expected divergence at an offset large enough for the
+    (cubic-order) fringe kick to clear normal tracking tolerance, as a
+    regression guard for a documented limitation rather than an open bug.
+    """
+    bz = 2.0
+    x_init     = np.array([0.1])
+    px_init    = np.array([0.0])
+    y_init     = np.array([0.1])
+    py_init    = np.array([0.0])
+    zeta_init  = np.array([0.0])
+    delta_init = np.array([0.0])
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+
+    try:
+        lattice_text = _bound_solenoid_lattice(bz = bz, disfrin = False)
+        lattice_path = write_lattice(
+            lattice_text,
+            filename = "sol_disfrin_off_diverges.sad")
+
+        sad_particles = track_sad(
+            lattice_filepath       = lattice_path.name,
+            line_name              = "TEST_LINE",
+            x_init                 = x_init,
+            px_init                = px_init,
+            y_init                 = y_init,
+            py_init                = py_init,
+            zeta_init              = zeta_init,
+            delta_init             = delta_init,
+            n_turns                = 1,
+            rfsw                   = False,
+            rad                    = False,
+            fluc                   = False,
+            radcod                 = False,
+            radtaper               = False,
+            turn_by_turn_monitor   = False,
+            with_progress          = False,
+            wall_time              = 30)
+
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path = str(lattice_path),
+            output_directory = "N/A",
+            _verbose         = False,
+            _test_mode       = True)
+
+        xs_particles = xt.Particles(
+            p0c   = 1.0E9,
+            mass0 = xt.ELECTRON_MASS_EV,
+            q0    = 1,
+            x     = x_init.copy(),
+            px    = px_init.copy(),
+            y     = y_init.copy(),
+            py    = py_init.copy(),
+            zeta  = zeta_init.copy(),
+            delta = delta_init.copy())
+
+        line.track(xs_particles, num_turns = 1)
+    finally:
+        os.chdir(cwd)
+
+    tolerances          = _sol_tracking_tolerances()
+    xsuite_coordinates  = _sol_xsuite_coordinates(xs_particles)
+    sad_coordinates     = _sol_sad_coordinates(sad_particles)
+
+    matching_coordinates = []
+    for coord, xs_values in xsuite_coordinates.items():
+        atol, rtol = tolerances[coord]
+        if np.all(np.isclose(
+                sad_coordinates[coord],
+                xs_values,
+                rtol = rtol,
+                atol = atol)):
+            matching_coordinates.append(coord)
+
+    assert not matching_coordinates, (
+        "Without DISFRIN=1, SAD is expected to diverge from Xsuite beyond "
+        "normal tracking tolerance on every coordinate (SAD2XS does not "
+        f"model the fringe kick). Unexpectedly still matching: "
+        f"{matching_coordinates}. If this now passes, the accepted "
+        "limitation may have changed and docs/design-decisions.md needs "
+        "review.")
 
 ################################################################################
 # Reference Transform Physics
@@ -1295,8 +1504,8 @@ def test_sol_powered_reference_shift_orbit_matches_sad_at_end(
 
     DRIFT       SHORT_DRIFT = (L = 0.1);
     SOL         SOL_IN      = (
-                    BZ = {bz} BOUND = 1 GEO = 1 {transform_parameters})
-                SOL_OUT     = (BZ = {bz} BOUND = 1);
+                    BZ = {bz} BOUND = 1 GEO = 1 DISFRIN = 1 {transform_parameters})
+                SOL_OUT     = (BZ = {bz} BOUND = 1 DISFRIN = 1);
 
     MARK        START       = ()
                 SOL_START   = ()

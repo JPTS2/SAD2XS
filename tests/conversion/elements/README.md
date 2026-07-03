@@ -41,18 +41,32 @@ Total collected from this folder: see `tests/README.md`.
 | `test_oct.py` | 18 | 0 | — |
 | `test_quad.py` | 18 | 0 | — |
 | `test_sext.py` | 18 | 0 | — |
-| `test_sol.py` | 17 | 2 | Solenoid GEO exit-transform physics (issue #58) |
+| `test_sol.py` | 23 | 0 | — |
 
 ### `test_sol.py` note
 
-The solenoid test functions are heavily parametrised. Most combinations pass
-following the `xt.Rotation` API migration (issue #19). The 2 remaining failing
-instances are `test_sol_optics_matches_sad_twiss_at_end[±0.1]`.
+Issue #58 (`test_sol_optics_matches_sad_twiss_at_end[±0.1]`) is resolved. The
+original diagnosis (SAD's GEO exit transforms computed at runtime during
+`COD`/`CALC`, not statically derivable) turned out not to be the cause for this
+test: the actual mismatch was that SAD's `betx`/`bety`/`alfx`/`alfy` report the
+*projected* (physical) beam-envelope optics functions, while Xsuite's
+`twiss4d`/`twiss6d` report the mode-1/mode-2 (Courant-Snyder eigenmode)
+components separately — real, physically meaningful quantities in their own
+right, just a different convention. A solenoid genuinely couples the two
+modes, so the two conventions disagree there (confirmed via an independent
+analytic re-derivation of the exact solenoid transfer matrix, not just a
+converter-side assumption). `_sol_xsuite_optics_values()` now sums the mode
+components (`betx1+betx2`, `bety1+bety2`, `alfx1+alfx2`, `alfy1+alfy2`) to
+match SAD's convention. See `docs/sad-helpers.md` for the general explanation
+and worked example.
 
-The root cause is that SAD's GEO solenoid exit transforms are computed at
-runtime during `COD`/`CALC` and depend on the interior elements of the solenoid
-pair. The correct exit transforms cannot be derived statically from the SAD file
-— they require running SAD's rebuild. See issue #58.
+This file also has a solenoid `DISFRIN` (fringe kick) limitation test —
+`test_sol_disfrin_off_diverges_from_xsuite_in_tracking` — which is not a
+failing test: it asserts that SAD and Xsuite genuinely diverge when
+`DISFRIN=1` is not set, since SAD2XS does not model the SAD solenoid fringe
+kick. This documents an accepted, permanent limitation (see
+`docs/design-decisions.md`), not an open bug — it is deliberately not in
+`known_issues.py`.
 
 ### `test_corrector.py` note
 

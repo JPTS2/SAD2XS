@@ -92,3 +92,5 @@ Long-term direction: the writer should accept a general Xsuite line or environme
 SAD2XS is not expected to preserve every SAD syntax detail. It is expected to preserve the accelerator model within the limits of supported Xsuite elements and documented conversion rules.
 
 Where SAD and Xsuite have different physics models or naming conventions, the converter should document the choice and test the expected behaviour with synthetic examples.
+
+One concrete case of this: SAD's solenoid fringe kick (a nonlinear hard-edge term, distinct from the solenoid's main linear field) has no Xsuite equivalent and is not modelled — every converted solenoid behaves as if fringe kicks were disabled, regardless of the source file. This is a documented, accepted boundary rather than an open bug — see `docs/design-decisions.md`. The converter warns once per lattice when a solenoid's source parameters don't match that assumption.
