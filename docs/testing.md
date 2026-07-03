@@ -53,7 +53,7 @@ has its own README with per-file coverage tables and known-failure documentation
 | `ci/` | No | Workflow configuration correctness |
 | `observability/` | Mixed | Output suppression, quiet mode, and helper output policy |
 
-Total collected: **1653 tests** (1627 pass, 26 currently failing) as of
+Total collected: **1657 tests** (1638 pass, 19 currently failing) as of
 this branch. See `tests/README.md` for the breakdown by failure group.
 
 ## SAD Syntax Assumption Tests
@@ -108,7 +108,7 @@ intermediate dictionaries.
 
 ## Known Failures
 
-The suite contains **26 currently failing tests**, all linked to open GitHub
+The suite contains **19 currently failing tests**, all linked to open GitHub
 issues.
 
 Tests associated with open issues receive the `known_issue` marker during
@@ -123,11 +123,40 @@ pytest -m "not known_issue"  # blocking regression selection
 pytest -m "known_issue"      # tests documenting open issues
 ```
 
-The 26 failures span `parser/` (issue #32) and `conversion/elements/`
-(issues #33, #55, #58). The mapping is maintained in
-`tests/support/known_issues.py`. These tests must not be modified to pass
-artificially — they are the record of what is broken and what needs to be
-fixed.
+The 19 failures are all in `conversion/elements/` (issues #33, #55). The
+mapping is maintained in `tests/support/known_issues.py`. These tests must
+not be modified to pass artificially — they are the record of what is broken
+and what needs to be fixed.
+
+`tests/conftest.py` fails collection loudly if a `PARTIAL_KNOWN_ISSUES`
+parameter-id fragment matches nothing currently collected — e.g. a fragment
+that stopped matching after a parametrize change. This is checked
+automatically at collection time for whatever subset of the suite is being
+run; it does not require a full-suite run to catch. This does not cover
+`KNOWN_ISSUE_TESTS` (exact test names) — that would need to catch a renamed
+test function, a scenario not yet observed, so it was left out rather than
+added speculatively.
+
+## Accepted Physics Limitations
+
+Not every documented SAD-vs-Xsuite difference is an open bug. Some are
+permanent, deliberate limitations — a physics effect SAD2XS does not and will
+not model, with the divergence it causes locked in by a dedicated test that
+asserts the divergence itself, rather than a bug to fix.
+
+These tests are not added to `tests/support/known_issues.py` and do not carry
+the `known_issue` marker — they are expected to pass, and a passing result
+documents that the limitation still behaves as understood. If one of these
+tests starts failing, or unexpectedly starts passing in the "matches"
+direction, that is a signal the underlying assumption has changed and needs
+re-examination — not a regression to silently fix.
+
+Current example: `test_sol_disfrin_off_diverges_from_xsuite_in_tracking`
+(`tests/conversion/elements/test_sol.py`) asserts that SAD and Xsuite
+genuinely diverge for a solenoid without `DISFRIN=1`, since SAD2XS does not
+model SAD's solenoid fringe kick. See `docs/design-decisions.md` for why, and
+`docs/sad-helpers.md` for a related but distinct beta-function convention
+note relevant to solenoid comparisons.
 
 ## SAD Dependency
 
