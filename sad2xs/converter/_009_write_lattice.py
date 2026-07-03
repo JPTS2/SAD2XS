@@ -9,7 +9,9 @@ Date:       2026-06-27
 ################################################################################
 # Import Packages
 ################################################################################
+import logging
 from datetime import date
+
 import xtrack as xt
 
 from ..types import ConfigLike
@@ -30,6 +32,8 @@ from ..output_writer._012_marker import create_marker_lattice_file_information
 from ..output_writer._013_line import create_line_lattice_file_information
 from ..output_writer._014_model import create_model_lattice_file_information
 from ..output_writer._015_offset_markers import create_offset_marker_lattice_file_information
+
+logger  = logging.getLogger(__name__)
 
 today   = date.today()
 
@@ -280,5 +284,10 @@ env.particle_ref    = {_particle_ref_line}
     ########################################
     # Write to file
     ########################################
-    with open(f"{output_directory}/{output_filename}.py", "w", encoding = "utf-8") as f:
+    output_path = f"{output_directory}/{output_filename}.py"
+    with open(output_path, "w", encoding = "utf-8") as f:
         f.write(lattice_file_string)
+
+    logger.info(
+        f"Lattice file written: {output_path} "
+        f"({len(line.element_names)} elements)")
