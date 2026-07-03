@@ -62,6 +62,8 @@ line.set(
     num_multipole_kicks = {config.N_INTEGRATOR_KICKS_OCT})
 line.set(
     tt_mult,
+    model               = "{config.MODEL_MULT}",
+    integrator          = "{config.INTEGRATOR_MULT}",
     num_multipole_kicks = {config.N_INTEGRATOR_KICKS_MULT})
 line.set(
     tt_sol,
