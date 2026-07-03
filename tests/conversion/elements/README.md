@@ -39,11 +39,11 @@ Total collected from this folder: see `tests/README.md`.
 | `test_bend.py` | 23 | 4 | Element offsets with horizontal shift |
 | `test_cavi.py` | 19 | 0 | — |
 | `test_coord.py` | 10 | 0 | — |
-| `test_corrector.py` | 18 | 14 | Corrector physics incorrect — optics and tracking both wrong for kicks, rotations, offsets |
+| `test_corrector.py` | 18 | 0 | — |
 | `test_drift.py` | 6 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
-| `test_mult.py` | 12 | 1 | Combined multipole orders — cross-order physics wrong |
+| `test_mult.py` | 13 | 4 | `SK1` rotation-convention mismatch; small `K0`/`SK0`-alone residual |
 | `test_oct.py` | 18 | 0 | — |
 | `test_quad.py` | 18 | 0 | — |
 | `test_sext.py` | 18 | 0 | — |
@@ -85,10 +85,41 @@ kick. This documents an accepted, permanent limitation (see
 
 ### `test_corrector.py` note
 
-14 failing instances come from 6 test functions, each parametrised over kick
-sign or offset direction (2–3 parameter values each). Optics and tracking both
-fail for horizontal kicks, rotated kicks, and element offsets, confirming the
-corrector physics is broadly wrong in the converter.
+Previously had 14 failing instances (horizontal kicks, rotated kicks, and
+element offsets, optics and tracking) from a `MODEL_BEND = 'mat-kick-mat'`
+bias — SAD zero-angle correctors convert to a plain `xt.Bend` with
+`angle=0`, so this affected them too. Fixed by retuning `sad2xs/config.py`'s
+Bend/Quadrupole/Sextupole/Octupole/Multipole model/integrator settings to
+match a systematic SAD-cross-validated study (`bend-kick-bend` for
+Bend/Corrector, `rot-kick-rot-high-order`/`yoshida4` for
+Quad/Sext/Oct/Mult). All 18 functions in this file now pass.
+
+### `test_mult.py` note
+
+`test_mult_conversion_matches_sad_twiss_for_single_order` isolates each
+multipole order (`K0`-`K3`, `SK0`-`SK3`) individually, added after the model
+retune above surfaced discrepancies previously hidden inside the
+combined-order test. This found and fixed two separate converter bugs, plus
+one open, deeper question (issue #101):
+
+- **Fixed**: a `MULT` with only `SK0` set is auto-simplified
+  (`SIMPLIFY_MULTIPOLES=True`, the default) into an `xt.Bend` with
+  `rot_s_rad` rotated by 90 degrees — the rotation sign was wrong, giving
+  `y`/`py` negated versus SAD. The true, unsimplified `Multipole` path
+  (`ksl[0]`) was already correct.
+- **Fixed**: a combined `K0`+`SK0` `MULT`, when the values arrive as
+  symbolic/deferred expressions rather than plain floats, crashed with
+  `Unknown function arctan2` — Xsuite's expression evaluator uses `atan2`,
+  not `arctan2`.
+- **Open** (issue #101): `SK1` alone disagrees with SAD by `~1.9e-5`
+  (`betx`/`bety`/`alfx`/`alfy`), confirmed not kick-count sensitive. Traced
+  to SAD's `ROTATE` parameter and Xsuite's `xt.Rotation` element not
+  representing quite the same transformation once combined with a
+  multipole kick — both codes are internally self-consistent (native skew
+  equals their own rotated-normal representation), but the two codes'
+  rotated representations disagree with each other. A small, separate,
+  much lower-priority residual (`~7.8e-6`, also not kick-count sensitive)
+  affects `K0`/`SK0` alone too.
 
 ## Shared Fixtures
 
