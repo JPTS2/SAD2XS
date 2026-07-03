@@ -53,7 +53,7 @@ has its own README with per-file coverage tables and known-failure documentation
 | `ci/` | No | Workflow configuration correctness |
 | `observability/` | Mixed | Output suppression, quiet mode, and helper output policy |
 
-Total collected: **1665 tests** (1657 pass, 8 currently failing) as of
+Total collected: **1668 tests** (1660 pass, 8 currently failing) as of
 this branch. See `tests/README.md` for the breakdown by failure group.
 
 ## SAD Syntax Assumption Tests
