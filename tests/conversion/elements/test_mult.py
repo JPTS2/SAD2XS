@@ -642,6 +642,95 @@ def test_mult_conversion_matches_sad_twiss_for_combined_orders(
         ])
 
 ########################################
+# Single-Order Optics (isolates which order, if any, disagrees with SAD)
+########################################
+@pytest.mark.parametrize(
+    "order_name, mult_definition, parameters",
+    [
+        ("k0",  "K0 = 0.05",  {"k0l": 0.05}),
+        ("sk0", "SK0 = 0.05", {"sk0l": 0.05}),
+        ("k1",  "K1 = 0.1",   {"k1l": 0.1}),
+        ("sk1", "SK1 = -0.03", {"sk1l": -0.03}),
+        ("k2",  "K2 = 0.02",  {"k2l": 0.02}),
+        ("sk2", "SK2 = 0.02", {"sk2l": 0.02}),
+        ("k3",  "K3 = 5.0",   {"k3l": 5.0}),
+        ("sk3", "SK3 = 5.0",  {"sk3l": 5.0}),
+    ])
+def test_mult_conversion_matches_sad_twiss_for_single_order(
+        write_lattice,
+        tmp_path,
+        order_name,
+        mult_definition,
+        parameters):
+    """
+    Converted single-order SAD MULT elements should match SAD optics.
+
+    Isolates each order individually so a single-order discrepancy is not
+    masked or amplified by combining it with other orders. See
+    tests/README.md and docs/design-decisions.md for what this found.
+    """
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+
+    try:
+        lattice_text = f"""\
+        MOMENTUM    = 1.0 GEV;
+
+        MULT        TEST_MULT   = (
+            L       = 0.5
+            {mult_definition}
+        );
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_MULT END);
+        """
+        lattice_path = write_lattice(
+            lattice_text,
+            filename = f"mult_twiss_single_order_{order_name}.sad")
+
+        tw_sad = twiss_sad(
+            lattice_filepath        = lattice_path.name,
+            line_name               = "TEST_LINE",
+            calc6d                  = False,
+            closed                  = False,
+            reverse_element_order   = False,
+            reverse_survey_horizontal  = False,
+            rfsw                    = True,
+            additional_commands     = "")
+
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path    = str(lattice_path),
+            output_directory    = "N/A",
+            _verbose            = False,
+            _test_mode          = True)
+
+        tw_xs = line.twiss4d(
+            _continue_if_lost   = True,
+            start               = xt.START,
+            end                 = xt.END,
+            betx                = 1,
+            bety                = 1)
+
+        sad_values = _mult_twiss_values(tw_sad, "END")
+        xsuite_values = _mult_twiss_values(tw_xs, "end")
+    finally:
+        os.chdir(cwd)
+
+    _assert_mult_twiss_matches_sad(
+        test_name       = (
+            "test_mult_conversion_matches_sad_twiss_for_single_order"),
+        lattice_text    = lattice_text,
+        sad_values      = sad_values,
+        xsuite_values   = xsuite_values,
+        parameters      = parameters,
+        notes           = [
+            "Single-order MULT optics coverage — each order (K0-K3, SK0-SK3) "
+            "in isolation, no combination with any other order.",
+        ])
+
+########################################
 # Tracking With Particle Offsets
 ########################################
 def test_mult_conversion_matches_sad_tracking_for_combined_orders(
