@@ -48,12 +48,14 @@ class ConfigLike(Protocol):
     MODEL_QUAD:                     str
     MODEL_SEXT:                     str
     MODEL_OCT:                      str
+    MODEL_MULT:                     str
     MODEL_CAVI:                     str
 
     INTEGRATOR_BEND:                str
     INTEGRATOR_QUAD:                str
     INTEGRATOR_SEXT:                str
     INTEGRATOR_OCT:                 str
+    INTEGRATOR_MULT:                str
     INTEGRATOR_CAVI:                str
 
     N_INTEGRATOR_KICKS_BEND:        int
