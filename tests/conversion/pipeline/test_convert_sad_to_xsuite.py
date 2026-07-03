@@ -15,6 +15,8 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
+
 import pytest
 import sad2xs as s2x
 import xtrack as xt
@@ -951,7 +953,7 @@ def test_pipeline_generated_optics_file_imports_after_generated_lattice(
 def test_pipeline_verbose_does_not_change_conversion_result(
         write_lattice,
         tmp_path,
-        capsys):
+        caplog):
     """
     Verbose logging should not change the converted line contract.
     """
@@ -977,7 +979,9 @@ def test_pipeline_verbose_does_not_change_conversion_result(
         _verbose                     = False,
         _test_mode                   = True)
 
-    quiet_output = capsys.readouterr()
+    quiet_records = [
+        r for r in caplog.records if r.levelno < logging.WARNING]
+    caplog.clear()
 
     line_verbose = s2x.convert_sad_to_xsuite(
         sad_lattice_path             = str(lattice_path),
@@ -987,12 +991,13 @@ def test_pipeline_verbose_does_not_change_conversion_result(
         _verbose                     = True,
         _test_mode                   = True)
 
-    verbose_output = capsys.readouterr()
+    verbose_records = [
+        r for r in caplog.records if r.levelno < logging.WARNING]
 
-    assert quiet_output.out == "", (
-        "Quiet conversion should not write to stdout.")
-    assert verbose_output.out != "", (
-        "Verbose conversion should write diagnostic progress to stdout.")
+    assert quiet_records == [], (
+        "Quiet conversion should emit no progress/debug log records.")
+    assert verbose_records != [], (
+        "Verbose conversion should emit progress log records.")
     assert line_quiet.element_names == line_verbose.element_names, (
         "Verbose logging should not change converted element names.")
     assert isinstance(line_quiet["test_apert"], xt.Marker), (

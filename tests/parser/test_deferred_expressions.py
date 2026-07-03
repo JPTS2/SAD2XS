@@ -35,8 +35,7 @@ def parse_and_convert_expressions(lattice_path, config = None):
     environment = xt.Environment()
     convert_expressions(
         parsed_lattice_data = parsed,
-        environment         = environment,
-        config              = config)
+        environment         = environment)
     return parsed, environment
 
 ################################################################################
@@ -335,8 +334,7 @@ def test_unresolved_deferred_expression_dependency_raises_clear_error(write_latt
     with pytest.raises(ValueError, match = "Not all expressions"):
         convert_expressions(
             parsed_lattice_data = parsed,
-            environment         = environment,
-            config              = Config(_verbose = False))
+            environment         = environment)
 
 def test_unresolved_deferred_expression_error_cites_line_and_expression(write_lattice):
     """
@@ -360,8 +358,7 @@ def test_unresolved_deferred_expression_error_cites_line_and_expression(write_la
     with pytest.raises(ValueError, match = r"line 5: 'a = missing \+ 1\.0'"):
         convert_expressions(
             parsed_lattice_data = parsed,
-            environment         = environment,
-            config              = Config(_verbose = False))
+            environment         = environment)
 
 def test_circular_deferred_expression_dependency_raises_clear_error(write_lattice):
     """
@@ -381,5 +378,4 @@ def test_circular_deferred_expression_dependency_raises_clear_error(write_lattic
     with pytest.raises(ValueError, match = "Not all expressions"):
         convert_expressions(
             parsed_lattice_data = parsed,
-            environment         = environment,
-            config              = Config(_verbose = False))
+            environment         = environment)

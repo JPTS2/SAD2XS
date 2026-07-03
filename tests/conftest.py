@@ -15,6 +15,7 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
 import sys
 from pathlib import Path
 
@@ -29,6 +30,19 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tests.support.known_issues import KNOWN_ISSUES, known_issue_for
+
+
+@pytest.fixture(autouse = True)
+def _restore_sad2xs_log_level():
+    """
+    Restore the sad2xs logger level after every test. _verbose=True (and
+    set_log_level) change the level process-wide; without this fixture one
+    verbose test would raise the verbosity of every test that follows it.
+    """
+    sad2xs_logger = logging.getLogger("sad2xs")
+    level = sad2xs_logger.level
+    yield
+    sad2xs_logger.setLevel(level)
 
 
 def pytest_itemcollected(item):

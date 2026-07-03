@@ -9,18 +9,21 @@ Date:       09-12-2025
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
+
 import numpy as np
 import xtrack as xt
 
 from ._000_helpers import parse_expression
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # Conversion Function
 ################################################################################
 def convert_offset_markers(
         line,
-        parsed_lattice_data:    dict,
-        verbose:                bool                = False):
+        parsed_lattice_data:    dict):
     """
     Markers in SAD have an offset parameter that is not replicated in Xsuite
     """
@@ -38,8 +41,7 @@ def convert_offset_markers(
     ########################################
     # Get the offsets for each marker
     ########################################
-    if verbose:
-        print("Calculating offset marker positions")
+    logger.debug("Calculating offset marker positions")
 
     # Markers in Xsuite can come from mark, moni or beam-beam elements
     for marker_type in ["mark", "moni", "beambeam"]:
@@ -52,17 +54,13 @@ def convert_offset_markers(
     # Return if there are no offset markers
     ########################################
     if len(offset_marker_offsets) == 0:
-
-        if verbose:
-            print("No offset markers found")
-
+        logger.debug("No offset markers found")
         return line, {}
 
     ########################################
     # Get line table
     ########################################
-    if verbose:
-        print("Getting line table")
+    logger.debug("Getting line table")
 
     line.build_tracker()
     tt      = line.get_table(attr = True)
@@ -148,9 +146,10 @@ def convert_offset_markers(
             # Exclude slicing solenoids
             ########################################
             if isinstance(line[insert_at_ele], xt.UniformSolenoid):
-                if verbose:
-                    print("Slicing Solenoid elements causes issues")
-                    print(f"Marker {base_marker} Ignored at {s_to_insert}")
+                logger.warning(
+                    f"Offset marker {base_marker} not installed at "
+                    f"s = {s_to_insert}: slicing solenoid elements "
+                    "is not supported")
                 continue
 
         # Produce a dictionary of the s locations that markers are inserted at
