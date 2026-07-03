@@ -109,6 +109,14 @@ def test_sol_accepts_dy(sad_accepts):
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START SL1 D0 SL2 END);")
 
+def test_sol_accepts_disfrin(sad_accepts):
+    sad_accepts(
+        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 DISFRIN=1);\n"
+        "DRIFT D0 = (L=1.0);\n"
+        "SOL SL2 = (BZ=0.0 BOUND=1 DISFRIN=1);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START SL1 D0 SL2 END);")
+
 
 ################################################################################
 # Rejected parameters

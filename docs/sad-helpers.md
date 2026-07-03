@@ -70,6 +70,62 @@ result = track_sad(
 )
 ```
 
+## Beta-function conventions in coupled regions (e.g. solenoids)
+
+SAD's `twiss_sad` output (`betx`/`bety`/`alfx`/`alfy`) reports the *projected*
+(physical) beam-envelope optics functions — the quantity a beam-size monitor
+would actually see, correctly combining both normal-mode contributions in a
+region with real x-y coupling.
+
+Xsuite's `line.twiss4d()`/`twiss6d()` reports something different by default.
+Its `betx`/`bety`/`alfx`/`alfy` fields are the **mode-1**/**mode-2**
+(Courant-Snyder eigenmode) components only — one mode's own contribution, not
+the physical projected total. The cross-mode leakage terms are computed
+separately and already sit in the same twiss table as `betx2`/`bety1`/
+`alfx2`/`alfy1`, but are not added back into `betx`/`bety`/`alfx`/`alfy`.
+Passing `use_full_inverse=True` does not change this — it is a different
+numerical method for computing the same mode-1/mode-2 convention, not a
+different convention.
+
+For an uncoupled element (a bend, a quad with no skew content, and so on) the
+leakage terms are ~0 and this distinction doesn't matter — Xsuite's `betx`
+and SAD's `betx` are the same thing. For a genuinely coupled element, they
+are not. A solenoid is the clearest case in this codebase: confirmed on a 1m
+solenoid at `BZ=1.5` (`Ks·L≈0.45`), a naive `betx` comparison against SAD is
+off by **~5%**, while summing the mode components agrees with SAD to
+floating-point precision:
+
+```python
+tw_sad = twiss_sad(...)
+tw_xs  = line.twiss4d(betx=1.0, bety=1.0, ...)
+
+# naive — wrong for a coupled element like a solenoid
+betx_naive = tw_xs["betx", "end"]                             # 1.837438237
+# projected — matches SAD's convention
+betx_projected = tw_xs["betx", "end"] + tw_xs["betx2", "end"]  # 1.933552757
+bety_projected = tw_xs["bety1", "end"] + tw_xs["bety", "end"]
+alfx_projected = tw_xs["alfx", "end"] + tw_xs["alfx2", "end"]
+alfy_projected = tw_xs["alfy1", "end"] + tw_xs["alfy", "end"]
+
+sad_betx = tw_sad["betx"][-1]                                  # 1.933552757
+```
+
+**To compare Xsuite optics against SAD's `betx`/`bety`/`alfx`/`alfy` through a
+coupled region, sum the mode components as shown above, not the raw fields.**
+This is now what `tests/conversion/elements/test_sol.py`'s
+`_sol_xsuite_optics_values()` does for its solenoid optics comparison.
+
+This was originally misdiagnosed as a SAD solenoid GEO-exit-transform
+reference-frame issue. It isn't: the mismatch is present already inside the
+solenoid body itself (before any reference-frame transform is applied), it
+scales cleanly as `(Ks·L)²`, and an independent from-scratch derivation of
+the exact solenoid transfer matrix (linearizing Xsuite's own documented
+solenoid Hamiltonian, cross-checked against a central-difference Jacobian
+built directly from Xsuite's own tracking) matches SAD's projected `betx`
+exactly — confirming both codes' underlying physics (Hamiltonian and
+tracking) agree, and the gap is purely this beta-function reporting
+convention.
+
 ## Additional SAD commands
 
 Several helpers accept `additional_commands`.

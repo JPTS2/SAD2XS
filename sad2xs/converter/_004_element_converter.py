@@ -1230,6 +1230,12 @@ def convert_solenoids(
 
     solenoids   = parsed_elements["sol"]
 
+    ########################################
+    # Track solenoids missing DISFRIN=1
+    ########################################
+    # Reported once for the whole lattice below, not once per element.
+    no_disfrin_solenoids = []
+
     for ele_name, ele_vars in solenoids.items():
 
         ########################################
@@ -1251,6 +1257,9 @@ def convert_solenoids(
         ########################################
         bz  = parse_expression(ele_vars["bz"])
         ks  = bz / brho
+
+        if ele_vars.get("disfrin") != "1":
+            no_disfrin_solenoids.append(ele_name)
 
         if "bound" in ele_vars:
             bound   = True
@@ -1415,6 +1424,14 @@ def convert_solenoids(
                 prototype = xt.UniformSolenoid,
                 ks        = ks)
             continue
+
+    if no_disfrin_solenoids and config._verbose:
+        print(
+            "Warning! This lattice contains "
+            f"{len(no_disfrin_solenoids)} solenoid(s) without DISFRIN=1 set. "
+            "SAD2XS does not model the SAD solenoid fringe kick: the "
+            "converted lattice will behave as if DISFRIN=1 had been set "
+            "for every solenoid, regardless of the source SAD file.")
 
 ################################################################################
 # Convert Markers

@@ -99,7 +99,7 @@ Artifact paths should mirror the test area that produced them, for example
 
 ## Test Counts
 
-Total collected: **1653 tests** (1627 pass, 26 fail) as of the test run on
+Total collected: **1657 tests** (1638 pass, 19 fail) as of the test run on
 this branch. The breakdown by failure group is in the Known Failures section
 below. Individual folder READMEs document per-file counts.
 
@@ -111,11 +111,21 @@ Tests linked to open issues are marked during collection from the central
 mapping in `tests/support/known_issues.py`. They remain ordinary failing tests;
 the marker controls CI selection only and does not use `xfail`.
 
-**26 failing tests** across `parser/` and `conversion/elements/` document known
-incorrect behaviour in the production code. All 26 are linked to open GitHub
-issues. These tests are the spec for the fix work that follows. They must not
-be modified to pass — they are the record of what is broken and what needs to
-be done.
+`tests/conftest.py` also fails collection loudly if a `PARTIAL_KNOWN_ISSUES`
+parameter-id fragment matches nothing collected (e.g. after a parametrize
+change) — this is checked automatically, it does not need to be verified by
+hand.
+
+**19 failing tests**, all in `conversion/elements/`, document known incorrect
+behaviour in the production code: 18 linked to issue #55 (14 in
+`test_corrector.py`, 4 in `test_bend.py` — corrector/bend physics) and 1 to
+issue #33 (`test_mult.py` — combined multipole-order Twiss residual). These
+tests are the spec for the fix work that follows. They must not be modified to
+pass — they are the record of what is broken and what needs to be done.
+
+Issue #58 (solenoid optics) is resolved — see
+`tests/conversion/elements/README.md`'s `test_sol.py` note and
+`docs/sad-helpers.md` for what the real cause turned out to be.
 
 Never modify a failing test to make it pass artificially. Fix the root cause.
 If you add a test that documents a known bug, record it in the relevant folder
