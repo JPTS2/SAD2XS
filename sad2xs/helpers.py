@@ -9,7 +9,11 @@ Date:       2026-06-27
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
+
 import xtrack as xt
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # Reference Particle Species
@@ -25,18 +29,14 @@ def species_from_mass_and_charge(mass0_ev, q0):
 ################################################################################
 # Section Heading Function
 ################################################################################
-def print_section_heading(heading, mode = 'section'):
+def log_section_heading(heading, mode = 'section'):
     """
-    Prints a section heading with a specific format.
+    Logs a section heading at INFO level with a specific format.
     Args:
         heading (str): The title of the section.
         mode (str): The mode of the heading, either 'section', 'subsection' or 'subsubsection'.
     """
-    if mode == 'section':
-        print("\n" + "#" * 80 + "\n" + heading + "\n" + "#" * 80)
-    elif mode == 'subsection':
-        print("\n" + "#" * 60 + "\n" + heading + "\n" + "#" * 60)
-    elif mode == 'subsubsection':
-        print("\n" + "#" * 40 + "\n" + heading + "\n" + "#" * 40)
-    else:
+    widths  = {'section': 80, 'subsection': 60, 'subsubsection': 40}
+    if mode not in widths:
         raise ValueError("Invalid mode. Use 'section', 'subsection' or 'subsubsection'.")
+    logger.info("\n" + f"#### {heading} ".ljust(widths[mode], "#"))

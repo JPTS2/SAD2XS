@@ -6,15 +6,23 @@ Use these tests to protect quiet mode, verbose mode, and the absence of
 uncontrolled output from the converter and SAD helpers. Behavioural converter
 correctness belongs in `tests/conversion/`.
 
+## Output Policy
+
+- Errors are raised, with diagnostics embedded in the exception.
+- Warnings are always emitted (logging WARNING), even in quiet mode.
+- Progress (INFO) and detail (DEBUG) are opt-in via `_verbose=True` or
+  `sad2xs.set_log_level`.
+- A clean conversion at the default level is completely silent.
+- All diagnostics go through the `sad2xs` logger to stderr; stdout is never
+  used by the library.
+
 ## What Belongs Here
 
-- Converter `_verbose=False` producing no stdout or stderr.
-- Converter `_verbose=True` producing output.
-- Documenting the absence of output suppression in `sad_helpers` functions
-  (signature checks that fail if `_verbose` is added without corresponding
-  coverage being written).
-- Baseline output presence tests for helper functions that print
-  unconditionally.
+- Full-pipeline silence at the default level (including the writer, the
+  generated-file reload, and progress bars).
+- Warnings remaining visible at the default level.
+- `_verbose=True` / `set_log_level` enabling the progress narrative.
+- Formatter and level-control contracts of `sad2xs._logging`.
 
 ## What Does Not Belong Here
 
@@ -24,17 +32,21 @@ correctness belongs in `tests/conversion/`.
 
 ## Coverage
 
-### `test_quiet_converter_output.py` — 3 tests, all expected to pass
+### `test_quiet_converter_output.py` — 7 tests, all expected to pass
 
-Tests that `convert_sad_to_xsuite` respects `_verbose`. Uses a minimal
-in-memory SAD lattice written to `tmp_path` — does not call the SAD
-executable. Placed in the **SAD-free** CI job.
+Tests the converter output policy. Uses minimal in-memory SAD lattices
+written to `tmp_path` — does not call the SAD executable. Placed in the
+**SAD-free** CI job.
 
 | Test | What it asserts |
 |------|-----------------|
-| `test_converter_produces_no_stdout_when_verbose_is_false` | `capsys` captures empty stdout with `_verbose=False` |
-| `test_converter_produces_no_stderr_when_verbose_is_false` | `capsys` captures empty stderr with `_verbose=False` |
-| `test_converter_produces_stdout_when_verbose_is_true` | `capsys` captures non-empty stdout with `_verbose=True` |
+| `test_full_conversion_is_silent_by_default` | `capfd` captures nothing for a warning-free full-pipeline conversion (covers tqdm and generated-file reload leaks) |
+| `test_quiet_mode_emits_no_progress_records` | no INFO/DEBUG records at the default level |
+| `test_parser_warnings_visible_at_default_level` | electron-mass assumption warns in quiet mode |
+| `test_verbose_enables_progress_narrative` | `_verbose=True` emits INFO records; stdout stays empty |
+| `test_set_log_level_debug_enables_debug_records` | `set_log_level("debug")` exposes DEBUG records |
+| `test_set_log_level_rejects_unknown_level` | invalid level raises `ValueError` |
+| `test_formatter_prefixes_warnings_but_not_narrative` | `SAD2XS <LEVEL>:` prefix on WARNING/ERROR only |
 
 ### `test_sad_helper_output_controls.py` — 9 tests, all expected to pass
 

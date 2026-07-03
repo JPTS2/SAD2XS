@@ -58,8 +58,7 @@ def test_invalid_deferred_expression_syntax_raises_clear_error(write_lattice):
     with pytest.raises(ValueError, match = "SAD lattice"):
         convert_expressions(
             parsed_lattice_data = parsed,
-            environment         = environment,
-            config              = Config(_verbose = False))
+            environment         = environment)
 
 ################################################################################
 # Error Context

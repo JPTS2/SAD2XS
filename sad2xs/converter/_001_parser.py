@@ -9,6 +9,7 @@ Date:       2026-06-27
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
 import re
 
 import xtrack as xt
@@ -16,7 +17,9 @@ import numpy as np
 
 from ..config import PROTECTED_ELEMENT_NAMES
 from ..types import ConfigLike
-from ..helpers import print_section_heading
+from ..helpers import log_section_heading
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # Element Body Splitting
@@ -299,16 +302,14 @@ def parse_sad_file(
     ############################################################################
     # Load lattice and clean whitespace
     ############################################################################
-    if config._verbose:
-        print_section_heading("Loading and Cleaning SAD File", mode = "subsection")
+    log_section_heading("Loading and Cleaning SAD File", mode = "subsection")
 
     sad_sections = load_and_clean_whitespace(sad_lattice_path)
 
     ############################################################################
     # Clean each different section of the file
     ############################################################################
-    if config._verbose:
-        print_section_heading("Cleaning Element Sections", mode = "subsection")
+    log_section_heading("Cleaning Element Sections", mode = "subsection")
 
     for line_no, section in sad_sections:
         current_section = section
@@ -372,8 +373,7 @@ def parse_sad_file(
     ############################################################################
     # Global Variables
     ############################################################################
-    if config._verbose:
-        print_section_heading("Parsing Global Variables", mode = "subsection")
+    log_section_heading("Parsing Global Variables", mode = "subsection")
 
     for line_no, section in parsed_sections[:]:
         section_command = section.split()[0]
@@ -415,8 +415,7 @@ def parse_sad_file(
     ############################################################################
     # Lines
     ############################################################################
-    if config._verbose:
-        print_section_heading("Parsing Lines", mode = "subsection")
+    log_section_heading("Parsing Lines", mode = "subsection")
 
     for line_no, section in parsed_sections[:]:
         section_command = section.split()[0]
@@ -486,8 +485,7 @@ def parse_sad_file(
     ############################################################################
     # Elements
     ############################################################################
-    if config._verbose:
-        print_section_heading("Parsing Elements", mode = "subsection")
+    log_section_heading("Parsing Elements", mode = "subsection")
 
     for line_no, section in parsed_sections[:]:
         section_command = section.split()[0]
@@ -604,8 +602,7 @@ def parse_sad_file(
     ############################################################################
     # Deferred expressions
     ############################################################################
-    if config._verbose:
-        print_section_heading("Parsing Deferred Expressions", mode = "subsection")
+    log_section_heading("Parsing Deferred Expressions", mode = "subsection")
 
     for line_no, section in parsed_sections[:]:
         section_command = section.split()[0]
@@ -614,9 +611,9 @@ def parse_sad_file(
         # If no equals sign, skip the section
         ########################################
         if "=" not in section:
-            if config._verbose:
-                print("Unknown Section Includes the following information:")
-                print(section)
+            logger.warning(
+                f"line {line_no}: Unknown section skipped during parsing: "
+                f"{section.strip()!r}")
 
             parsed_sections.remove((line_no, section))
             continue
@@ -680,45 +677,45 @@ def parse_sad_file(
     ############################################################################
     if "mass0" not in cleaned_globals and config.ref_particle_mass0 is None:
         cleaned_globals["mass0"] = xt.ELECTRON_MASS_EV
-        if config._verbose:
-            print("Notice! No mass found in SAD file or function input: Using electron mass")
+        logger.warning(
+            "No mass found in SAD file or function input: using electron mass")
     if "mass0" not in cleaned_globals:
         cleaned_globals["mass0"] = config.ref_particle_mass0
-        if config._verbose:
-            print("Notice! No mass found in SAD file: Using user provided value")
+        logger.info("No mass found in SAD file: using user provided value")
     elif "mass0" in cleaned_globals and config.ref_particle_mass0 is not None:
         cleaned_globals["mass0"] = config.ref_particle_mass0
-        if config._verbose:
-            print("Warning! Mass found in SAD file and function input: Using user provided value")
+        logger.warning(
+            "Mass found in both SAD file and function input: "
+            "using user provided value")
 
     if "p0c" not in cleaned_globals and config.ref_particle_p0c is None:
-        raise ValueError("Notice! No momentum found in SAD file or function input")
+        raise ValueError("No momentum found in SAD file or function input")
     if "p0c" not in cleaned_globals:
         cleaned_globals["p0c"] = config.ref_particle_p0c
-        if config._verbose:
-            print("Notice! No momentum found in SAD file: Using user provided value")
+        logger.info("No momentum found in SAD file: using user provided value")
     elif "p0c" in cleaned_globals and config.ref_particle_p0c is not None:
         cleaned_globals["p0c"] = config.ref_particle_p0c
-        if config._verbose:
-            print("Warning! Momentum found in SAD file and function input: Using user provided value")
+        logger.warning(
+            "Momentum found in both SAD file and function input: "
+            "using user provided value")
 
     if "q0" not in cleaned_globals and config.ref_particle_q0 is None:
         cleaned_globals["q0"]   = +1
-        if config._verbose:
-            print("Notice! No charge found in SAD file or function input: Using charge of +e")
+        logger.warning(
+            "No charge found in SAD file or function input: using charge of +e")
     if "q0" not in cleaned_globals:
         cleaned_globals["q0"] = config.ref_particle_q0
-        if config._verbose:
-            print("Notice! No charge found in SAD file: Using user provided value")
+        logger.info("No charge found in SAD file: using user provided value")
     elif "q0" in cleaned_globals and config.ref_particle_q0 is not None:
         cleaned_globals["q0"] = config.ref_particle_q0
-        if config._verbose:
-            print("Warning! Charge found in SAD file and function input: Using user provided value")
+        logger.warning(
+            "Charge found in both SAD file and function input: "
+            "using user provided value")
 
     if "fshift" not in cleaned_globals:
         cleaned_globals["fshift"]   = 0.0
-        if config._verbose:
-            print("Notice! No fshift found in SAD file or function input: Using fshift of 0.0")
+        logger.info(
+            "No fshift found in SAD file or function input: using fshift of 0.0")
 
     ############################################################################
     # Return the Parsed Data

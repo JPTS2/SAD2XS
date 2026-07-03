@@ -9,13 +9,17 @@ Date:       09-12-2025
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
+
 import xtrack as xt
 import numpy as np
 
 from tqdm import tqdm
 
 from ..types import ConfigLike
-from ..helpers import print_section_heading
+from ..helpers import log_section_heading
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # Conversion Function
@@ -44,8 +48,7 @@ def convert_solenoids(
     # Check if there are any solenoids
     ########################################
     if "sol" not in parsed_elements:
-        if config._verbose:
-            print_section_heading("No solenoids in line", mode = "subsection")
+        log_section_heading("No solenoids in line", mode = "subsection")
         return
     solenoids   = parsed_elements["sol"]
 
@@ -217,10 +220,9 @@ def convert_solenoids(
                             ks        = ks)
                     line.element_names[idx] = new_element_name
 
-                    if config._verbose:
-                        print(
-                            f"Converted drift {element} to solenoid " +\
-                            f"{new_element_name} with ks = {ks}")
+                    logger.debug(
+                        f"Converted drift {element} to solenoid "
+                        f"{new_element_name} with ks = {ks}")
                     continue
 
                 # Bend conversion
@@ -259,10 +261,9 @@ def convert_solenoids(
 
                     line.element_names[idx] = new_element_name
 
-                    if config._verbose:
-                        print(
-                            f"Converted Bend {element} to solenoid " +\
-                            f"{new_element_name} with ks = {ks}")
+                    logger.debug(
+                        f"Converted Bend {element} to solenoid "
+                        f"{new_element_name} with ks = {ks}")
                     continue
 
                 # Quadrupole conversion
@@ -300,10 +301,9 @@ def convert_solenoids(
                             y0                  = y0)
                     line.element_names[idx] = new_element_name
 
-                    if config._verbose:
-                        print(
-                            f"Converted Quadrupole {element} to solenoid " +\
-                            f"{new_element_name} with ks = {ks}")
+                    logger.debug(
+                        f"Converted Quadrupole {element} to solenoid "
+                        f"{new_element_name} with ks = {ks}")
                     continue
 
                 # Sextupole conversion
@@ -341,10 +341,9 @@ def convert_solenoids(
                             y0                  = y0)
                     line.element_names[idx] = new_element_name
 
-                    if config._verbose:
-                        print(
-                            f"Converted Sextupole {element} to solenoid " + \
-                            f"{new_element_name} with ks = {ks}")
+                    logger.debug(
+                        f"Converted Sextupole {element} to solenoid "
+                        f"{new_element_name} with ks = {ks}")
                     continue
 
                 # Octupole conversion
@@ -382,10 +381,9 @@ def convert_solenoids(
                             y0                  = y0)
                     line.element_names[idx] = new_element_name
 
-                    if config._verbose:
-                        print(
-                            f"Converted Octupole {element} to solenoid " +\
-                            f"{new_element_name} with ks = {ks}")
+                    logger.debug(
+                        f"Converted Octupole {element} to solenoid "
+                        f"{new_element_name} with ks = {ks}")
                     continue
 
                 # Multipole conversion
@@ -418,8 +416,8 @@ def convert_solenoids(
                         x0                  = x0,
                         y0                  = y0)
 
-                    if config._verbose:
-                        print(f"Converted Multipole {element} to solenoid with ks = {ks}")
+                    logger.debug(
+                        f"Converted Multipole {element} to solenoid with ks = {ks}")
                     continue
 
                 elif isinstance(
@@ -434,8 +432,9 @@ def convert_solenoids(
                         xt.LimitRectEllipse)):
                     # Known elements that don"t need conversion
                     continue
-                elif config._verbose:
-                    print(f"Element {element} in line {line_name} has not been converted")
+                else:
+                    logger.warning(
+                        f"Element {element} in line {line_name} has not been converted")
 
 ###############################################################################
 # Reference shift corrections
@@ -470,8 +469,7 @@ def solenoid_reference_shift_corrections(
     # Check if there are any solenoids
     ########################################
     if "sol" not in parsed_elements:
-        if config._verbose:
-            print_section_heading("No solenoids in line", mode = "subsection")
+        log_section_heading("No solenoids in line", mode = "subsection")
         return
     solenoids   = parsed_elements["sol"]
 
@@ -581,12 +579,12 @@ def solenoid_reference_shift_corrections(
     geometric_solenoids     = sorted(geometric_solenoids)
     non_geometric_solenoids = sorted(non_geometric_solenoids)
 
-    if config._verbose:
-        print_section_heading("Reference Shift Solenoids:", mode = "subsection")
-        print(f"Inbound solenoids with ref transforms: {inbound_solenoids}")
-        print(f"Outbound solenoids with ref transforms: {outbound_solenoids}")
-        print(f"Geometric solenoids with ref transforms: {geometric_solenoids}")
-        print(f"Non-geometric solenoids with ref transforms: {non_geometric_solenoids}")
+    logger.debug(
+        "Reference shift solenoids:\n"
+        f"  inbound:       {inbound_solenoids}\n"
+        f"  outbound:      {outbound_solenoids}\n"
+        f"  geometric:     {geometric_solenoids}\n"
+        f"  non-geometric: {non_geometric_solenoids}")
 
     ############################################################################
     # DXY and CHI for all cases (inbound, geo, reverse_self, reverse_other)
@@ -686,23 +684,24 @@ def solenoid_reference_shift_corrections(
     outbound_nongeo_reverse_forward_solenoids   = list(set(outbound_nongeo_reverse_forward_solenoids))
     outbound_nongeo_reverse_reverse_solenoids   = list(set(outbound_nongeo_reverse_reverse_solenoids))
 
-    if config._verbose:
-        print(f"inbound_geo_forward_forward_solenoids     = {inbound_geo_forward_forward_solenoids}")
-        print(f"inbound_geo_forward_reverse_solenoids     = {inbound_geo_forward_reverse_solenoids}")
-        print(f"inbound_geo_reverse_forward_solenoids     = {inbound_geo_reverse_forward_solenoids}")
-        print(f"inbound_geo_reverse_reverse_solenoids     = {inbound_geo_reverse_reverse_solenoids}")
-        print(f"inbound_nongeo_forward_forward_solenoids  = {inbound_nongeo_forward_forward_solenoids}")
-        print(f"inbound_nongeo_forward_reverse_solenoids  = {inbound_nongeo_forward_reverse_solenoids}")
-        print(f"inbound_nongeo_reverse_forward_solenoids  = {inbound_nongeo_reverse_forward_solenoids}")
-        print(f"inbound_nongeo_reverse_reverse_solenoids  = {inbound_nongeo_reverse_reverse_solenoids}")
-        print(f"outbound_geo_forward_forward_solenoids    = {outbound_geo_forward_forward_solenoids}")
-        print(f"outbound_geo_forward_reverse_solenoids    = {outbound_geo_forward_reverse_solenoids}")
-        print(f"outbound_geo_reverse_forward_solenoids    = {outbound_geo_reverse_forward_solenoids}")
-        print(f"outbound_geo_reverse_reverse_solenoids    = {outbound_geo_reverse_reverse_solenoids}")
-        print(f"outbound_nongeo_forward_forward_solenoids = {outbound_nongeo_forward_forward_solenoids}")
-        print(f"outbound_nongeo_forward_reverse_solenoids = {outbound_nongeo_forward_reverse_solenoids}")
-        print(f"outbound_nongeo_reverse_forward_solenoids = {outbound_nongeo_reverse_forward_solenoids}")
-        print(f"outbound_nongeo_reverse_reverse_solenoids = {outbound_nongeo_reverse_reverse_solenoids}")
+    logger.debug(
+        "Reference shift solenoid classification:\n"
+        f"  inbound_geo_forward_forward_solenoids     = {inbound_geo_forward_forward_solenoids}\n"
+        f"  inbound_geo_forward_reverse_solenoids     = {inbound_geo_forward_reverse_solenoids}\n"
+        f"  inbound_geo_reverse_forward_solenoids     = {inbound_geo_reverse_forward_solenoids}\n"
+        f"  inbound_geo_reverse_reverse_solenoids     = {inbound_geo_reverse_reverse_solenoids}\n"
+        f"  inbound_nongeo_forward_forward_solenoids  = {inbound_nongeo_forward_forward_solenoids}\n"
+        f"  inbound_nongeo_forward_reverse_solenoids  = {inbound_nongeo_forward_reverse_solenoids}\n"
+        f"  inbound_nongeo_reverse_forward_solenoids  = {inbound_nongeo_reverse_forward_solenoids}\n"
+        f"  inbound_nongeo_reverse_reverse_solenoids  = {inbound_nongeo_reverse_reverse_solenoids}\n"
+        f"  outbound_geo_forward_forward_solenoids    = {outbound_geo_forward_forward_solenoids}\n"
+        f"  outbound_geo_forward_reverse_solenoids    = {outbound_geo_forward_reverse_solenoids}\n"
+        f"  outbound_geo_reverse_forward_solenoids    = {outbound_geo_reverse_forward_solenoids}\n"
+        f"  outbound_geo_reverse_reverse_solenoids    = {outbound_geo_reverse_reverse_solenoids}\n"
+        f"  outbound_nongeo_forward_forward_solenoids = {outbound_nongeo_forward_forward_solenoids}\n"
+        f"  outbound_nongeo_forward_reverse_solenoids = {outbound_nongeo_forward_reverse_solenoids}\n"
+        f"  outbound_nongeo_reverse_forward_solenoids = {outbound_nongeo_reverse_forward_solenoids}\n"
+        f"  outbound_nongeo_reverse_reverse_solenoids = {outbound_nongeo_reverse_reverse_solenoids}")
 
     ############################################################################
     # Flip the neccesary reference shifts
@@ -909,7 +908,9 @@ def solenoid_reference_shift_corrections(
     ########################################
     # Reorder inbound geo solenoids
     ########################################
-    for inbound_geo_solenoid in tqdm(inbound_geo_solenoids):
+    show_progress   = logger.isEnabledFor(logging.INFO)
+
+    for inbound_geo_solenoid in tqdm(inbound_geo_solenoids, disable = not show_progress):
 
         sol_start_ele   = f"{inbound_geo_solenoid}_bound"
         sol_end_ele     = f"{inbound_geo_solenoid}_rot"
@@ -936,7 +937,7 @@ def solenoid_reference_shift_corrections(
     ########################################
     # Reorder inbound non-geo solenoids
     ########################################
-    for inbound_nongeo_solenoid in tqdm(inbound_nongeo_solenoids):
+    for inbound_nongeo_solenoid in tqdm(inbound_nongeo_solenoids, disable = not show_progress):
 
         sol_start_ele   = f"{inbound_nongeo_solenoid}_bound"
         sol_end_ele     = f"{inbound_nongeo_solenoid}_rot"
@@ -964,7 +965,7 @@ def solenoid_reference_shift_corrections(
     # Reorder outbound solenoids (inbound_reversed == outbound_reversed):
     # unchanged bound/dxy/dz/rot
     ########################################
-    for outbound_same_reversal_solenoid in tqdm(outbound_same_reversal_solenoids):
+    for outbound_same_reversal_solenoid in tqdm(outbound_same_reversal_solenoids, disable = not show_progress):
 
         sol_start_ele   = f"{outbound_same_reversal_solenoid}_bound"
         sol_end_ele     = f"{outbound_same_reversal_solenoid}_rot"
@@ -992,7 +993,7 @@ def solenoid_reference_shift_corrections(
     # Reorder outbound solenoids (inbound_reversed != outbound_reversed):
     # rotation-first, same as inbound
     ########################################
-    for outbound_differing_reversal_solenoid in tqdm(outbound_differing_reversal_solenoids):
+    for outbound_differing_reversal_solenoid in tqdm(outbound_differing_reversal_solenoids, disable = not show_progress):
 
         sol_start_ele   = f"{outbound_differing_reversal_solenoid}_bound"
         sol_end_ele     = f"{outbound_differing_reversal_solenoid}_rot"

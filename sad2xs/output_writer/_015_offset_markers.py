@@ -98,14 +98,11 @@ try:
     line.insert(marker_insertions, s_tol = {config.MARKER_INSERTION_TOLERANCE:.2E})
 except AssertionError as err:
 """
-        if config._verbose:
-            output_string += """\
+        # The generated file is a standalone script: report the data loss
+        # unconditionally when it is run.
+        output_string += """\
     print("Couldn't insert all the markers. Usually this is because of negative drifts")
     print(err)
-"""
-        else:
-            output_string += """\
-    pass
 """
 
         ########################################

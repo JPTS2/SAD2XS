@@ -117,7 +117,7 @@ import numpy as np
 ################################################################################
 # Create or Get Environment
 ################################################################################
-env = xt.get_environment(verbose = True)
+env = xt.get_environment()
 env.vars.default_to_zero = True
 
 ########################################

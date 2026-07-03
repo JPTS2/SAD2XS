@@ -11,8 +11,7 @@ Date:       09-12-2025
 ################################################################################
 import xtrack as xt
 
-from ..types import ConfigLike
-from ..helpers import print_section_heading
+from ..helpers import log_section_heading
 from ._000_helpers import parse_expression
 
 ################################################################################
@@ -20,17 +19,14 @@ from ._000_helpers import parse_expression
 ################################################################################
 def convert_expressions(
         parsed_lattice_data:    dict,
-        environment:            xt.Environment,
-        config:                 ConfigLike) -> None:
+        environment:            xt.Environment) -> None:
     """
     Docstring for convert_expressions
-    
+
     :param parsed_lattice_data: Description
     :type parsed_lattice_data: dict
     :param environment: Description
     :type environment: xt.Environment
-    :param config: Description
-    :type config: ConfigLike
     """
 
     ########################################
@@ -43,8 +39,7 @@ def convert_expressions(
     ########################################
     # Create global variables
     ########################################
-    if config._verbose:
-        print_section_heading("Converting Global Variable Expressions", mode = "subsection")
+    log_section_heading("Converting Global Variable Expressions", mode = "subsection")
 
     # Variables may depend on other variables, so have to parse them in order
     # Here, just try a few times to parse them
@@ -68,8 +63,7 @@ def convert_expressions(
     ########################################
     # Create expressions
     ########################################
-    if config._verbose:
-        print_section_heading("Converting Deferred Expressions", mode = "subsection")
+    log_section_heading("Converting Deferred Expressions", mode = "subsection")
 
     # Variables may depend on other variables, so have to parse them in order
     # Here, just try a few times to parse them
