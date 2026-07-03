@@ -28,6 +28,8 @@ from sad2xs.config import Config
 from sad2xs.converter._004_element_converter import convert_solenoids
 from sad2xs.sad_helpers import track_sad
 from tests.support.config import (
+    DELTA_DELTA_ATOL,
+    DELTA_DELTA_RTOL,
     DELTA_PX_ATOL,
     DELTA_PX_RTOL,
     DELTA_PY_ATOL,
@@ -35,7 +37,9 @@ from tests.support.config import (
     DELTA_X_ATOL,
     DELTA_X_RTOL,
     DELTA_Y_ATOL,
-    DELTA_Y_RTOL)
+    DELTA_Y_RTOL,
+    DELTA_ZETA_ATOL,
+    DELTA_ZETA_RTOL)
 from tests.support.diagnostics import (
     diagnostic_report_path,
     write_tracking_failure_report,
@@ -71,10 +75,12 @@ def _sol_tracking_tolerances():
     Return coordinate tolerances used by solenoid tracking comparisons.
     """
     return {
-        "x":  (DELTA_X_ATOL, DELTA_X_RTOL),
-        "px": (DELTA_PX_ATOL, DELTA_PX_RTOL),
-        "y":  (DELTA_Y_ATOL, DELTA_Y_RTOL),
-        "py": (DELTA_PY_ATOL, DELTA_PY_RTOL),
+        "x":     (DELTA_X_ATOL, DELTA_X_RTOL),
+        "px":    (DELTA_PX_ATOL, DELTA_PX_RTOL),
+        "y":     (DELTA_Y_ATOL, DELTA_Y_RTOL),
+        "py":    (DELTA_PY_ATOL, DELTA_PY_RTOL),
+        "zeta":  (DELTA_ZETA_ATOL, DELTA_ZETA_RTOL),
+        "delta": (DELTA_DELTA_ATOL, DELTA_DELTA_RTOL),
     }
 
 def _sol_twiss_tolerances():
@@ -91,6 +97,8 @@ def _sol_twiss_tolerances():
         "px":    (DELTA_PX_ATOL, DELTA_PX_RTOL),
         "y":     (DELTA_Y_ATOL, DELTA_Y_RTOL),
         "py":    (DELTA_PY_ATOL, DELTA_PY_RTOL),
+        "zeta":  (DELTA_ZETA_ATOL, DELTA_ZETA_RTOL),
+        "delta": (DELTA_DELTA_ATOL, DELTA_DELTA_RTOL),
     }
 
 def _sol_orbit_values(twiss_table, marker):
@@ -98,11 +106,13 @@ def _sol_orbit_values(twiss_table, marker):
     Return orbit coordinates at a marker from a SAD or Xsuite Twiss table.
     """
     return {
-        "s":  twiss_table["s", marker],
-        "x":  twiss_table["x", marker],
-        "px": twiss_table["px", marker],
-        "y":  twiss_table["y", marker],
-        "py": twiss_table["py", marker],
+        "s":     twiss_table["s", marker],
+        "x":     twiss_table["x", marker],
+        "px":    twiss_table["px", marker],
+        "y":     twiss_table["y", marker],
+        "py":    twiss_table["py", marker],
+        "zeta":  twiss_table["zeta", marker],
+        "delta": twiss_table["delta", marker],
     }
 
 def _sol_optics_values(twiss_table, marker):
@@ -110,11 +120,13 @@ def _sol_optics_values(twiss_table, marker):
     Return optics coordinates at a marker from a SAD Twiss table.
     """
     return {
-        "s":    twiss_table["s", marker],
-        "betx": twiss_table["betx", marker],
-        "bety": twiss_table["bety", marker],
-        "alfx": twiss_table["alfx", marker],
-        "alfy": twiss_table["alfy", marker],
+        "s":     twiss_table["s", marker],
+        "betx":  twiss_table["betx", marker],
+        "bety":  twiss_table["bety", marker],
+        "alfx":  twiss_table["alfx", marker],
+        "alfy":  twiss_table["alfy", marker],
+        "zeta":  twiss_table["zeta", marker],
+        "delta": twiss_table["delta", marker],
     }
 
 def _sol_xsuite_optics_values(twiss_table, marker):
@@ -128,7 +140,9 @@ def _sol_xsuite_optics_values(twiss_table, marker):
     contribute to the physical horizontal beam size in a coupled region such
     as a solenoid, and likewise bety1/bety2, alfy1/alfy2 for y. For an
     uncoupled element the leakage terms are ~0 and this reduces to the plain
-    values; for a solenoid it does not. See docs/sad-helpers.md.
+    values; for a solenoid it does not. See docs/sad-helpers.md. zeta/delta
+    are not mode-split quantities, so they are read directly, unlike the beta
+    functions.
     """
     betx1 = twiss_table["betx1", marker]
     betx2 = twiss_table["betx2", marker]
@@ -139,11 +153,13 @@ def _sol_xsuite_optics_values(twiss_table, marker):
     alfy1 = twiss_table["alfy1", marker]
     alfy2 = twiss_table["alfy2", marker]
     return {
-        "s":    twiss_table["s", marker],
-        "betx": betx1 + betx2,
-        "bety": bety1 + bety2,
-        "alfx": alfx1 + alfx2,
-        "alfy": alfy1 + alfy2,
+        "s":     twiss_table["s", marker],
+        "betx":  betx1 + betx2,
+        "bety":  bety1 + bety2,
+        "alfx":  alfx1 + alfx2,
+        "alfy":  alfy1 + alfy2,
+        "zeta":  twiss_table["zeta", marker],
+        "delta": twiss_table["delta", marker],
     }
 
 def _sol_initial_coordinates(
@@ -170,10 +186,12 @@ def _sol_sad_coordinates(sad_particles):
     Pack SAD tracking coordinates for diagnostic reports.
     """
     return {
-        "x":  sad_particles["x"],
-        "px": sad_particles["px"],
-        "y":  sad_particles["y"],
-        "py": sad_particles["py"],
+        "x":     sad_particles["x"],
+        "px":    sad_particles["px"],
+        "y":     sad_particles["y"],
+        "py":    sad_particles["py"],
+        "zeta":  sad_particles["zeta"],
+        "delta": sad_particles["delta"],
     }
 
 def _sol_xsuite_coordinates(xs_particles):
@@ -181,10 +199,12 @@ def _sol_xsuite_coordinates(xs_particles):
     Pack Xsuite tracking coordinates for diagnostic reports.
     """
     return {
-        "x":  xs_particles.x,
-        "px": xs_particles.px,
-        "y":  xs_particles.y,
-        "py": xs_particles.py,
+        "x":     xs_particles.x,
+        "px":    xs_particles.px,
+        "y":     xs_particles.y,
+        "py":    xs_particles.py,
+        "zeta":  xs_particles.zeta,
+        "delta": xs_particles.delta,
     }
 
 def _assert_sol_tracking_matches_sad(
@@ -363,7 +383,7 @@ def _compare_sol_orbit_twiss(
             closed                  = False,
             reverse_element_order   = False,
             reverse_survey_horizontal  = False,
-            rfsw              = False,
+            rfsw              = True,
             rad               = False,
             radcod        = False,
             radtaper               = False,
@@ -787,7 +807,7 @@ def test_sol_orbit_matches_sad_twiss_at_end(write_lattice, tmp_path, bz):
             closed                  = False,
             reverse_element_order   = False,
             reverse_survey_horizontal  = False,
-            rfsw              = False,
+            rfsw              = True,
             rad               = False,
             radcod        = False,
             radtaper               = False,
@@ -852,7 +872,7 @@ def test_sol_optics_matches_sad_twiss_at_end(
             closed                  = False,
             reverse_element_order   = False,
             reverse_survey_horizontal  = False,
-            rfsw              = False,
+            rfsw              = True,
             rad               = False,
             radcod        = False,
             radtaper               = False,
@@ -928,7 +948,7 @@ def _run_sol_tracking_comparison(
             zeta_init              = zeta_init,
             delta_init             = delta_init,
             n_turns                = 1,
-            rfsw                   = False,
+            rfsw                   = True,
             rad                    = False,
             fluc                   = False,
             radcod                 = False,
@@ -1046,7 +1066,7 @@ def test_sol_disfrin_off_diverges_from_xsuite_in_tracking(write_lattice, tmp_pat
             zeta_init              = zeta_init,
             delta_init             = delta_init,
             n_turns                = 1,
-            rfsw                   = False,
+            rfsw                   = True,
             rad                    = False,
             fluc                   = False,
             radcod                 = False,
@@ -1080,23 +1100,24 @@ def test_sol_disfrin_off_diverges_from_xsuite_in_tracking(write_lattice, tmp_pat
     xsuite_coordinates  = _sol_xsuite_coordinates(xs_particles)
     sad_coordinates     = _sol_sad_coordinates(sad_particles)
 
-    matching_coordinates = []
+    diverging_coordinates = []
     for coord, xs_values in xsuite_coordinates.items():
         atol, rtol = tolerances[coord]
-        if np.all(np.isclose(
+        if not np.all(np.isclose(
                 sad_coordinates[coord],
                 xs_values,
                 rtol = rtol,
                 atol = atol)):
-            matching_coordinates.append(coord)
+            diverging_coordinates.append(coord)
 
-    assert not matching_coordinates, (
+    assert diverging_coordinates, (
         "Without DISFRIN=1, SAD is expected to diverge from Xsuite beyond "
-        "normal tracking tolerance on every coordinate (SAD2XS does not "
-        f"model the fringe kick). Unexpectedly still matching: "
-        f"{matching_coordinates}. If this now passes, the accepted "
-        "limitation may have changed and docs/design-decisions.md needs "
-        "review.")
+        "normal tracking tolerance on at least one coordinate (SAD2XS does "
+        "not model the fringe kick). It is not required to diverge on every "
+        "coordinate: zeta/delta, for example, are conserved by this purely "
+        "transverse kick and are expected to keep matching. If this now "
+        "passes, the accepted limitation may have changed and "
+        "docs/design-decisions.md needs review.")
 
 ################################################################################
 # Reference Transform Physics
@@ -1229,7 +1250,7 @@ def test_sol_reference_transform_orbit_matches_sad_twiss(
             closed                  = False,
             reverse_element_order   = False,
             reverse_survey_horizontal  = False,
-            rfsw              = False,
+            rfsw              = True,
             rad               = False,
             radcod        = False,
             radtaper               = False,
@@ -1329,7 +1350,7 @@ def test_sol_reference_transform_restores_design_orbit_at_end(
             closed                  = False,
             reverse_element_order   = False,
             reverse_survey_horizontal  = False,
-            rfsw              = False,
+            rfsw              = True,
             rad               = False,
             radcod        = False,
             radtaper               = False,

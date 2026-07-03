@@ -868,20 +868,6 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ############################################################################
-    # Move DZ Shifts onto the outbound solenoid (even when bound)
-    ############################################################################
-    for inbound_solenoid, outbound_solenoid in bound_solenoid_pairs:
-
-        # Should always be true, but just in case
-        if not inbound_solenoid.endswith("_bound"):
-            raise ValueError(f"Inbound solenoid {inbound_solenoid} doesn' end with bound?")
-        inbound_solenoid    = inbound_solenoid[:-6]
-
-        if not outbound_solenoid.endswith("_bound"):
-            raise ValueError(f"Outbound solenoid {outbound_solenoid} doesn't end with bound?")
-        outbound_solenoid   = outbound_solenoid[:-6]
-
-    ############################################################################
     # Reorder the solenoid components
     ############################################################################
     inbound_geo_solenoids      = inbound_geo_forward_forward_solenoids + \
@@ -892,19 +878,28 @@ def solenoid_reference_shift_corrections(
         inbound_nongeo_forward_reverse_solenoids + \
         inbound_nongeo_reverse_forward_solenoids + \
         inbound_nongeo_reverse_reverse_solenoids
-    outbound_geo_solenoids      = outbound_geo_forward_forward_solenoids + \
-        outbound_geo_forward_reverse_solenoids + \
-        outbound_geo_reverse_forward_solenoids + \
-        outbound_geo_reverse_reverse_solenoids
-    outbound_nongeo_solenoids   = outbound_nongeo_forward_forward_solenoids + \
-        outbound_nongeo_forward_reverse_solenoids + \
-        outbound_nongeo_reverse_forward_solenoids + \
+    # Outbound solenoids: xt.Rotation's zeta shift is proportional to the
+    # transverse position (x/y) at the moment it runs (see xtrack's
+    # track_yrotation.h/track_xrotation.h). Rotating before the translation
+    # (inbound order, above) always runs at x=y=0, so it never picks up this
+    # term. Rotating after the translation (outbound order) only picks it up
+    # when inbound_reversed != outbound_reversed -- forward_forward and
+    # reverse_reverse pairs (inbound_reversed == outbound_reversed) keep the
+    # existing bound/dxy/dz/rot order; forward_reverse and reverse_forward
+    # pairs need rotation-first instead, same as inbound.
+    outbound_same_reversal_solenoids       = outbound_geo_forward_forward_solenoids + \
+        outbound_geo_reverse_reverse_solenoids + \
+        outbound_nongeo_forward_forward_solenoids + \
         outbound_nongeo_reverse_reverse_solenoids
-    
+    outbound_differing_reversal_solenoids  = outbound_geo_forward_reverse_solenoids + \
+        outbound_geo_reverse_forward_solenoids + \
+        outbound_nongeo_forward_reverse_solenoids + \
+        outbound_nongeo_reverse_forward_solenoids
+
     inbound_geo_solenoids       = list(set(inbound_geo_solenoids))
     inbound_nongeo_solenoids    = list(set(inbound_nongeo_solenoids))
-    outbound_geo_solenoids      = list(set(outbound_geo_solenoids))
-    outbound_nongeo_solenoids   = list(set(outbound_nongeo_solenoids))
+    outbound_same_reversal_solenoids       = list(set(outbound_same_reversal_solenoids))
+    outbound_differing_reversal_solenoids  = list(set(outbound_differing_reversal_solenoids))
 
     ########################################
     # Get the current order of the element names
@@ -966,12 +961,13 @@ def solenoid_reference_shift_corrections(
             element_names       = new_element_names
 
     ########################################
-    # Reorder outbound geo solenoids
+    # Reorder outbound solenoids (inbound_reversed == outbound_reversed):
+    # unchanged bound/dxy/dz/rot
     ########################################
-    for outbound_geo_solenoid in tqdm(outbound_geo_solenoids):
+    for outbound_same_reversal_solenoid in tqdm(outbound_same_reversal_solenoids):
 
-        sol_start_ele   = f"{outbound_geo_solenoid}_bound"
-        sol_end_ele     = f"{outbound_geo_solenoid}_rot"
+        sol_start_ele   = f"{outbound_same_reversal_solenoid}_bound"
+        sol_end_ele     = f"{outbound_same_reversal_solenoid}_rot"
 
         # Get the start and end indices
         start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
@@ -983,22 +979,23 @@ def solenoid_reference_shift_corrections(
             new_element_names   = []
             new_element_names   += element_names[:start_idx]
             bound_elements      = [
-                f"{outbound_geo_solenoid}_bound",
-                f"{outbound_geo_solenoid}_dxy",
-                f"{outbound_geo_solenoid}_dz",
-                f"{outbound_geo_solenoid}_rot"]
+                f"{outbound_same_reversal_solenoid}_bound",
+                f"{outbound_same_reversal_solenoid}_dxy",
+                f"{outbound_same_reversal_solenoid}_dz",
+                f"{outbound_same_reversal_solenoid}_rot"]
             new_element_names   += bound_elements
             new_element_names   += element_names[end_idx + 1:]
 
             element_names       = new_element_names
 
     ########################################
-    # Reorder outbound non-geo solenoids
+    # Reorder outbound solenoids (inbound_reversed != outbound_reversed):
+    # rotation-first, same as inbound
     ########################################
-    for outbound_nongeo_solenoid in tqdm(outbound_nongeo_solenoids):
+    for outbound_differing_reversal_solenoid in tqdm(outbound_differing_reversal_solenoids):
 
-        sol_start_ele   = f"{outbound_nongeo_solenoid}_bound"
-        sol_end_ele     = f"{outbound_nongeo_solenoid}_rot"
+        sol_start_ele   = f"{outbound_differing_reversal_solenoid}_bound"
+        sol_end_ele     = f"{outbound_differing_reversal_solenoid}_rot"
 
         # Get the start and end indices
         start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
@@ -1010,10 +1007,10 @@ def solenoid_reference_shift_corrections(
             new_element_names   = []
             new_element_names   += element_names[:start_idx]
             bound_elements      = [
-                f"{outbound_nongeo_solenoid}_bound",
-                f"{outbound_nongeo_solenoid}_dxy",
-                f"{outbound_nongeo_solenoid}_dz",
-                f"{outbound_nongeo_solenoid}_rot"]
+                f"{outbound_differing_reversal_solenoid}_rot",
+                f"{outbound_differing_reversal_solenoid}_dz",
+                f"{outbound_differing_reversal_solenoid}_dxy",
+                f"{outbound_differing_reversal_solenoid}_bound"]
             new_element_names   += bound_elements
             new_element_names   += element_names[end_idx + 1:]
             element_names       = new_element_names
