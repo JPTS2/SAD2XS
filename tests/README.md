@@ -99,7 +99,7 @@ Artifact paths should mirror the test area that produced them, for example
 
 ## Test Counts
 
-Total collected: **1657 tests** (1638 pass, 19 fail) as of the test run on
+Total collected: **1665 tests** (1657 pass, 8 fail) as of the test run on
 this branch. The breakdown by failure group is in the Known Failures section
 below. Individual folder READMEs document per-file counts.
 
@@ -108,20 +108,23 @@ below. Individual folder READMEs document per-file counts.
 The test suite contains currently failing tests that document known bugs.
 
 Tests linked to open issues are marked during collection from the central
-mapping in `tests/support/known_issues.py`. They remain ordinary failing tests;
-the marker controls CI selection only and does not use `xfail`.
+`KNOWN_ISSUES` list in `tests/support/known_issues.py` — a single list of
+`(test node prefix, parameter-id fragment, issue number)` tuples, where an
+empty fragment matches every parametrisation of that test. They remain
+ordinary failing tests; the marker controls CI selection only and does not
+use `xfail`.
 
-`tests/conftest.py` also fails collection loudly if a `PARTIAL_KNOWN_ISSUES`
-parameter-id fragment matches nothing collected (e.g. after a parametrize
-change) — this is checked automatically, it does not need to be verified by
-hand.
+`tests/conftest.py` also fails collection loudly if a `KNOWN_ISSUES` entry's
+fragment matches nothing collected (e.g. after a parametrize change) — this
+is checked automatically, it does not need to be verified by hand.
 
-**19 failing tests**, all in `conversion/elements/`, document known incorrect
-behaviour in the production code: 18 linked to issue #55 (14 in
-`test_corrector.py`, 4 in `test_bend.py` — corrector/bend physics) and 1 to
-issue #33 (`test_mult.py` — combined multipole-order Twiss residual). These
-tests are the spec for the fix work that follows. They must not be modified to
-pass — they are the record of what is broken and what needs to be done.
+**8 failing tests**, all in `conversion/elements/`, document known incorrect
+behaviour in the production code: 4 in `test_bend.py` (issue #55 — bend
+element-offset physics) and 4 in `test_mult.py` (issue #101 — a `MULT`
+skew-quadrupole rotation-convention mismatch, plus a small, separate
+`K0`/`SK0`-alone residual). These tests are the spec for the fix work that
+follows. They must not be modified to pass — they are the record of what is
+broken and what needs to be done.
 
 Issue #58 (solenoid optics) is resolved — see
 `tests/conversion/elements/README.md`'s `test_sol.py` note and
