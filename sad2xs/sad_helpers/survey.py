@@ -9,14 +9,17 @@ Date:       24-06-2026
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
 import os
-import subprocess
 import uuid
+
 import numpy as np
 import tfs
 import xtrack as xt
 
-from ._helpers import _check_mathematica_output
+from ._helpers import run_sad, _check_mathematica_output
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # SAD Survey Print Function
@@ -126,7 +129,7 @@ def survey_sad(
     cmd_file = f"_sad_survey_{uid}.sad"
     out_file = f"_sad_survey_{uid}.tfs"
 
-    print("Creating SAD Command")
+    logger.debug("Creating SAD command")
     sad_command = f"""OFF ECHO;
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -166,24 +169,12 @@ abort;
 """
 
     try:
-        with open(cmd_file, "w", encoding = "utf-8") as f:
-            f.write(sad_command)
-
-        try:
-            subprocess.run(
-                [sad_path, cmd_file],
-                capture_output  = True,
-                text            = True,
-                timeout         = wall_time,
-                check           = True)
-        except subprocess.TimeoutExpired:
-            print(f"SAD Twiss timed out at {wall_time}s")
-            raise
-        except subprocess.CalledProcessError as e:
-            print(f"SAD exited with non-zero status {e.returncode}")
-            print("stdout:", e.stdout)
-            print("stderr:", e.stderr)
-            raise
+        run_sad(
+            sad_command = sad_command,
+            cmd_file    = cmd_file,
+            task_name   = "survey",
+            wall_time   = wall_time,
+            sad_path    = sad_path)
 
         with open(out_file, encoding="utf-8") as _f:
             _raw = _f.read()
@@ -192,9 +183,8 @@ abort;
         sad_survey = tfs.read(out_file)
 
     finally:
-        for path in [cmd_file, out_file]:
-            if os.path.exists(path):
-                os.remove(path)
+        if os.path.exists(out_file):
+            os.remove(out_file)
 
     ########################################
     # Convert the element types

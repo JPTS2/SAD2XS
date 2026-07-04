@@ -48,25 +48,19 @@ written to `tmp_path` — does not call the SAD executable. Placed in the
 | `test_set_log_level_rejects_unknown_level` | invalid level raises `ValueError` |
 | `test_formatter_prefixes_warnings_but_not_narrative` | `SAD2XS <LEVEL>:` prefix on WARNING/ERROR only |
 
-### `test_sad_helper_output_controls.py` — 9 tests, all expected to pass
+### `test_sad_helper_output_controls.py` — 10 tests, all expected to pass
 
-Two categories. Signature checks (7 tests) confirm that no `sad_helpers`
-function yet accepts a `_verbose` parameter. These tests pass now and will
-**fail** if `_verbose` is added to a helper without corresponding quiet/verbose
-coverage being written first — they act as a forcing function.
-Baseline output tests (2 tests) confirm that the helpers which do run SAD
-produce stdout unconditionally, and will catch a regression where all output
-is silently removed. Uses a minimal transfer-line lattice and requires the SAD
-executable. Placed in the **SAD-required** CI job.
+Two categories. Signature checks (7 tests) guard the single-mechanism
+design: helper verbosity is controlled by `sad2xs.set_log_level`, so a
+`_verbose` parameter appearing on any helper means a second, parallel
+output mechanism was introduced. Behaviour tests (3 tests) confirm helpers
+are silent by default and expose SAD's terminal output at debug level.
+Uses a minimal transfer-line lattice and requires the SAD executable.
+Placed in the **SAD-required** CI job.
 
 | Test | What it asserts |
 |------|-----------------|
-| `test_twiss_sad_has_no_verbose_parameter` | `twiss_sad` signature has no `_verbose` |
-| `test_survey_sad_has_no_verbose_parameter` | `survey_sad` signature has no `_verbose` |
-| `test_emit_sad_has_no_verbose_parameter` | `emit_sad` signature has no `_verbose` |
-| `test_chromaticity_sad_has_no_verbose_parameter` | `chromaticity_sad` signature has no `_verbose` |
-| `test_transfer_matrix_sad_has_no_verbose_parameter` | `transfer_matrix_sad` signature has no `_verbose` |
-| `test_track_sad_has_no_verbose_parameter` | `track_sad` signature has no `_verbose` |
-| `test_rebuild_sad_lattice_has_no_verbose_parameter` | `rebuild_sad_lattice` signature has no `_verbose` |
-| `test_twiss_sad_produces_stdout_output` | `twiss_sad` call produces non-empty stdout |
-| `test_survey_sad_produces_stdout_output` | `survey_sad` call produces non-empty stdout |
+| `test_*_has_no_verbose_parameter` (7 helpers) | no `_verbose` parameter on any helper signature |
+| `test_twiss_sad_is_silent_by_default` | `capfd` captures nothing for a successful call |
+| `test_survey_sad_is_silent_by_default` | `capfd` captures nothing for a successful call |
+| `test_twiss_sad_logs_sad_output_at_debug_level` | debug records include the narrative and SAD's terminal output |

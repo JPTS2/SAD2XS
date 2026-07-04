@@ -16,7 +16,6 @@ Date:       2026-06-24
 # Required Packages
 ################################################################################
 import os
-import subprocess
 
 import pytest
 
@@ -76,10 +75,10 @@ def sad_accepts(tmp_path):
         os.chdir(tmp_path)
         try:
             _run_sad_twiss(lattice_body, tmp_path)
-        except subprocess.CalledProcessError as e:
+        except RuntimeError as e:
+            # run_sad embeds SAD's stdout/stderr in the RuntimeError message
             raise AssertionError(
-                f"SAD unexpectedly rejected lattice.\n"
-                f"stdout: {e.stdout}\nstderr: {e.stderr}") from e
+                f"SAD unexpectedly rejected lattice.\n{e}") from e
         finally:
             os.chdir(cwd)
     return _accepts
@@ -93,7 +92,7 @@ def sad_rejects(tmp_path):
         try:
             _run_sad_twiss(lattice_body, tmp_path)
             raise AssertionError("SAD unexpectedly accepted lattice.")
-        except (subprocess.CalledProcessError, ValueError):
+        except (RuntimeError, ValueError):
             pass
         finally:
             os.chdir(cwd)
