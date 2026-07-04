@@ -121,8 +121,20 @@ def convert_sad_to_xsuite(
         parsed_lattice_data = parsed_lattice_data,
         environment         = env)
 
+    ############################################################################
+    # Convert Elements
+    ############################################################################
+    # Must run before reverse_charge_sign below -- see docs/line-reversals.md.
+    log_section_heading("Converting Elements", mode = 'section')
+
+    convert_elements(
+        parsed_lattice_data         = parsed_lattice_data,
+        environment                 = env,
+        user_multipole_replacements = user_multipole_replacements,
+        config                      = config)
+
     ########################################
-    # Apply reverse_charge_sign before element conversion so brho is correct
+    # Apply reverse_charge_sign after element conversion
     ########################################
     if reverse_charge_sign:
         env['q0'] = -env['q0']
@@ -138,17 +150,6 @@ def convert_sad_to_xsuite(
             p0c     = env['p0c'],
             q0      = env['q0'],
             mass0   = env['mass0'])
-
-    ############################################################################
-    # Convert Elements
-    ############################################################################
-    log_section_heading("Converting Elements", mode = 'section')
-
-    convert_elements(
-        parsed_lattice_data         = parsed_lattice_data,
-        environment                 = env,
-        user_multipole_replacements = user_multipole_replacements,
-        config                      = config)
 
     ############################################################################
     # Convert Lines
