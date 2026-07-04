@@ -719,6 +719,11 @@ def parse_sad_file(
             "Charge found in both SAD file and function input: "
             "using user provided value")
 
+    if cleaned_globals["q0"] == 0:
+        raise ValueError(
+            "Reference particle charge (q0) is 0. A neutral reference "
+            "particle is not physically meaningful for SAD2XS conversion.")
+
     if "fshift" not in cleaned_globals:
         cleaned_globals["fshift"]   = 0.0
         logger.info(
