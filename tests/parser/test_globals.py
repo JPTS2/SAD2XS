@@ -181,6 +181,43 @@ def test_missing_momentum_without_config_fallback_raises(write_lattice):
     with pytest.raises(ValueError, match = "No momentum"):
         parse_sad_file(str(lattice_path), Config(_verbose = False))
 
+def test_zero_charge_raises(write_lattice):
+    """
+    CHARGE = 0 should be rejected: a neutral reference particle is not
+    physically meaningful for SAD2XS conversion.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        CHARGE   = 0;
+
+        DRIFT D1 = (L = 1.0);
+        LINE RING = (D1);
+        """,
+        filename = "globals_zero_charge_error.sad")
+
+    with pytest.raises(ValueError, match = "charge"):
+        parse_sad_file(str(lattice_path), Config(_verbose = False))
+
+def test_zero_charge_from_config_override_raises(write_lattice):
+    """
+    A zero charge supplied via config.ref_particle_q0 should also be
+    rejected, not just a zero CHARGE declared in the SAD file.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+
+        DRIFT D1 = (L = 1.0);
+        LINE RING = (D1);
+        """,
+        filename = "globals_zero_charge_config_error.sad")
+
+    with pytest.raises(ValueError, match = "charge"):
+        parse_sad_file(
+            str(lattice_path),
+            Config(_verbose = False, ref_particle_q0 = 0))
+
 ################################################################################
 # Config Overrides
 ################################################################################

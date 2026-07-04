@@ -1262,6 +1262,8 @@ def convert_solenoids(
     Convert solenoids from the SAD parsed data
     """
 
+    # environment["q0"] must be the imported charge here, not a
+    # reverse_charge_sign-corrected one -- see docs/line-reversals.md.
     p0j     = environment["p0c"] * qe / clight
     brho    = p0j / (qe * environment["q0"])
 
