@@ -9,10 +9,14 @@ Date:       09-12-2025
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
+
 import xtrack as xt
 
 from ..helpers import log_section_heading
 from ._000_helpers import parse_expression
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # Convert Deferred Expressions
@@ -39,7 +43,7 @@ def convert_expressions(
     ########################################
     # Create global variables
     ########################################
-    log_section_heading("Converting Global Variable Expressions", mode = "subsection")
+    log_section_heading("Converting Global Variable Expressions", mode = "section")
 
     # Variables may depend on other variables, so have to parse them in order
     # Here, just try a few times to parse them
@@ -58,12 +62,19 @@ def convert_expressions(
                 continue
 
     if len(converted_globals) != len(parsed_globals):
-        raise ValueError("Not all global variables could be parsed. Check the input data.")
+        unparsed = sorted(
+            var_name for var_name in parsed_globals
+            if var_name not in converted_globals)
+        raise ValueError(
+            "Not all global variables could be parsed. "
+            f"Unparsed: {unparsed}")
+
+    logger.info(f"Converted {len(converted_globals)} global variables")
 
     ########################################
     # Create expressions
     ########################################
-    log_section_heading("Converting Deferred Expressions", mode = "subsection")
+    log_section_heading("Converting Deferred Expressions", mode = "section")
 
     # Variables may depend on other variables, so have to parse them in order
     # Here, just try a few times to parse them
@@ -93,3 +104,5 @@ def convert_expressions(
             "Not all expressions could be evaluated. "
             "Please check your SAD lattice for invalid expression syntax. "
             f"Unresolved: {unresolved_detail}")
+
+    logger.info(f"Converted {len(converted_expressions)} deferred expressions")

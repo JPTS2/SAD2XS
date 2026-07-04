@@ -302,14 +302,14 @@ def parse_sad_file(
     ############################################################################
     # Load lattice and clean whitespace
     ############################################################################
-    log_section_heading("Loading and Cleaning SAD File", mode = "subsection")
+    log_section_heading("Loading and Cleaning SAD File", mode = "section")
 
     sad_sections = load_and_clean_whitespace(sad_lattice_path)
 
     ############################################################################
     # Clean each different section of the file
     ############################################################################
-    log_section_heading("Cleaning Element Sections", mode = "subsection")
+    log_section_heading("Cleaning Element Sections", mode = "section")
 
     for line_no, section in sad_sections:
         current_section = section
@@ -373,7 +373,7 @@ def parse_sad_file(
     ############################################################################
     # Global Variables
     ############################################################################
-    log_section_heading("Parsing Global Variables", mode = "subsection")
+    log_section_heading("Parsing Global Variables", mode = "section")
 
     for line_no, section in parsed_sections[:]:
         section_command = section.split()[0]
@@ -415,7 +415,7 @@ def parse_sad_file(
     ############################################################################
     # Lines
     ############################################################################
-    log_section_heading("Parsing Lines", mode = "subsection")
+    log_section_heading("Parsing Lines", mode = "section")
 
     for line_no, section in parsed_sections[:]:
         section_command = section.split()[0]
@@ -485,7 +485,7 @@ def parse_sad_file(
     ############################################################################
     # Elements
     ############################################################################
-    log_section_heading("Parsing Elements", mode = "subsection")
+    log_section_heading("Parsing Elements", mode = "section")
 
     for line_no, section in parsed_sections[:]:
         section_command = section.split()[0]
@@ -586,6 +586,13 @@ def parse_sad_file(
                             f"does not allow reusing element names across "
                             f"different element types.")
 
+                # Same-type redefinition follows SAD semantics: later wins
+                if (ele_name in section_dict
+                        or ele_name in cleaned_elements.get(section_command, {})):
+                    logger.debug(
+                        f"line {line_no}: Element {ele_name} redefined: "
+                        "using the later definition")
+
                 section_dict[ele_name] = ele_dict
 
             ########################################
@@ -602,7 +609,7 @@ def parse_sad_file(
     ############################################################################
     # Deferred expressions
     ############################################################################
-    log_section_heading("Parsing Deferred Expressions", mode = "subsection")
+    log_section_heading("Parsing Deferred Expressions", mode = "section")
 
     for line_no, section in parsed_sections[:]:
         section_command = section.split()[0]
@@ -726,5 +733,12 @@ def parse_sad_file(
         "elements":                    cleaned_elements,
         "expressions":                 cleaned_expressions,
         "expression_line_numbers":     cleaned_expression_line_numbers}
+
+    n_element_definitions = sum(
+        len(family) for family in cleaned_elements.values())
+    logger.info(
+        f"Parsed {n_element_definitions} element definitions across "
+        f"{len(cleaned_elements)} families, {len(cleaned_lines)} lines, "
+        f"{len(cleaned_expressions)} deferred expressions")
 
     return parsed_lattice_data

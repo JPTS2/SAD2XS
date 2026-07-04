@@ -34,8 +34,10 @@ def _write_fully_specified_lattice(tmp_path):
     """
     Write a SAD lattice that triggers no converter warnings: mass, momentum
     and charge are all defined, and the solenoid pair has DISFRIN=1. The
-    solenoid pair matters: it drives the solenoid conversion and reference
-    shift stages, which historically leaked progress bars in quiet mode.
+    solenoid pair and the offset marker matter: they drive the solenoid
+    correction stages and the generated-file marker installation (including
+    xtrack's replace_all_repeated_elements on reload), which historically
+    leaked progress bars in quiet mode.
     """
     lattice_path = tmp_path / "observ_silent_lattice.sad"
     lattice_path.write_text(textwrap.dedent("""\
@@ -48,9 +50,10 @@ def _write_fully_specified_lattice(tmp_path):
                     SOL_OUT     = (BZ = 0.1 BOUND = 1 DISFRIN = 1);
 
         MARK        START       = ()
+                    M_OFF       = (OFFSET = 0.5)
                     END         = ();
 
-        LINE        RING        = (START SOL_IN OBS_DRIFT SOL_OUT END);
+        LINE        RING        = (START SOL_IN M_OFF OBS_DRIFT SOL_OUT END);
         """))
     return lattice_path
 

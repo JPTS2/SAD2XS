@@ -9,6 +9,7 @@ from _example_helpers import configure_example_runtime, create_comparison_plots
 OUTPUT_DIR = configure_example_runtime()
 
 import sad2xs as s2x
+s2x.set_log_level("info")
 import matplotlib.pyplot as plt
 
 ################################################################################
