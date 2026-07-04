@@ -186,40 +186,49 @@ matches SAD's own Twiss `zeta` exactly, with `x`/`y` unaffected in every case.
 
 ### What it does
 
-Changes `q0` on the Xsuite reference particle from +1 to −1 (or vice versa) —
-and, as of the correction above, **also negates solenoid `ks`**, since `ks` now
-depends on `q0` via `brho`. Tracking and Twiss results are therefore **not**
-identical before and after `reverse_charge_sign=True`; the solenoid coupling
-direction genuinely flips, matching what real SAD does for the equivalent
-charge change.
+Changes `q0` on the Xsuite reference particle from +1 to −1 (or vice versa),
+and nothing else. It does **not** change any element parameter — in
+particular, solenoid `ks` is unaffected. Tracking and Twiss results are
+therefore **identical** before and after `reverse_charge_sign=True`.
 
-**Verified**: `test_pipeline_reverse_charge_sign_negates_solenoid_ks` in
+**Model**: `reverse_charge_sign` means "this lattice's field values were
+designed assuming the opposite species from what's nominally declared" — for
+example, a real-world historical lattice file that doesn't declare
+`CHARGE=-1` even though it represents an electron ring (SuperKEKB HER is the
+motivating example). The field values in the file already encode that
+design assumption, so the field→strength conversion (solenoid `Bz→ks` via
+`brho`) must always use the imported/as-declared charge — never a
+`reverse_charge_sign`-corrected one. Only the final reference particle's
+charge label changes.
+
+**Verified**:
+`test_pipeline_reverse_charge_sign_does_not_change_solenoid_ks` in
 `tests/conversion/pipeline/test_reverse_charge_sign.py`.
 
 ### Interaction with `CHARGE` in the SAD file
 
-Since the parser now reads `CHARGE` directly into `q0`, and `reverse_charge_sign`
-independently negates whatever `q0` results, the two **compound**: a file with
-`CHARGE = -1;` combined with `reverse_charge_sign=True` gives `q0=+1` again (double
-negation), not an error and not a no-op. This is a deliberate design choice — see
-`test_pipeline_charge_in_file_and_reverse_charge_sign_compound` in the same file —
-rather than treating the two inputs as mutually exclusive.
+A genuinely-declared `CHARGE` in the SAD file is a separate, legitimate
+input: since that IS the imported charge, it correctly affects `ks` via
+`brho` (see `tests/conversion/pipeline/test_reverse_element_order.py` for
+this verified against real SAD). `reverse_charge_sign` and a declared
+`CHARGE` are fully **independent** — `reverse_charge_sign` never feeds into
+`ks`, regardless of what the file's own `CHARGE` already is. See
+`test_pipeline_declared_charge_and_reverse_charge_sign_are_independent` in
+the same test file.
 
 ### When to use it
 
-Use `reverse_charge_sign=True` to convert a lattice as the opposite species from
-whatever its `CHARGE` global says (or defaults to) — for example, a real-world
-historical lattice file that, per the note above, doesn't declare `CHARGE=-1` even
-though it represents an electron ring (SuperKEKB HER is the motivating example).
-This is now a genuine physics change (unlike the pre-correction behaviour), so it
-should be used when you know the file's stated species is wrong, not merely to
-relabel the reference particle.
+Use `reverse_charge_sign=True` to relabel the reference particle's species
+when you know a lattice file's stated (or defaulted) `CHARGE` is wrong for
+how it's actually meant to be used, without changing any converted element.
 
 ### What it does NOT do
 
-- It does **not** model "run the opposite species through the same physical
-  magnets while leaving the solenoid untouched" — `ks` changes precisely because
-  the physical magnet's effect on that species genuinely differs.
+- It does **not** model "put a genuinely different charge particle through
+  the same physical magnets" — that scenario is what a real, declared
+  `CHARGE` difference in the file represents (see above), and it correctly
+  does change `ks`. `reverse_charge_sign` is a different, narrower
+  correction: relabelling the reference particle only.
 - It is **not** the same as `reverse_survey_horizontal`.
 
 ---
