@@ -133,10 +133,12 @@ class Config:
     ########################################
     MODEL_DRIFT:                    str             = 'exact'
     MODEL_BEND:                     str             = 'bend-kick-bend'
-    MODEL_QUAD:                     str             = 'rot-kick-rot-high-order'
-    MODEL_SEXT:                     str             = 'rot-kick-rot-high-order'
-    MODEL_OCT:                      str             = 'rot-kick-rot-high-order'
-    MODEL_MULT:                     str             = 'rot-kick-rot-high-order'
+    # mat-kick-mat, not rot-kick-rot-high-order -- see
+    # dev/xsuite_model_integrators/fcc_sol_lattice_check.py.
+    MODEL_QUAD:                     str             = 'mat-kick-mat'
+    MODEL_SEXT:                     str             = 'mat-kick-mat'
+    MODEL_OCT:                      str             = 'mat-kick-mat'
+    MODEL_MULT:                     str             = 'mat-kick-mat'
     MODEL_CAVI:                     str             = 'drift-kick-drift-exact'
 
     INTEGRATOR_BEND:                str             = 'uniform'
