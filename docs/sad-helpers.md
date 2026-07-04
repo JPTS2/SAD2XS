@@ -134,18 +134,21 @@ This argument is inserted into the generated SAD command after the lattice is lo
 
 Use this argument carefully. It is raw SAD command text and is not validated by SAD2XS.
 
-## Timeout handling
+## Output and error handling
 
-Most helpers use `subprocess.run(..., timeout=wall_time, check=True)`.
+Helpers are silent by default. Progress messages and SAD's own terminal output are emitted through the `sad2xs` logger: `sad2xs.set_log_level("debug")` exposes them. There are no per-function verbosity parameters; the tqdm progress bar in `track_sad` remains controlled by `with_progress`.
+
+Most helpers run SAD through a shared runner (`run_sad` in `sad_helpers/_helpers.py`) which uses `subprocess.run(..., timeout=wall_time, check=True)`.
 
 Current behaviour:
 
-- if SAD exceeds `wall_time`, Python raises `subprocess.TimeoutExpired`;
-- if SAD exits with a non-zero status, Python raises `subprocess.CalledProcessError`;
-- stdout and stderr are printed for non-zero exits where available;
-- known temporary command files are removed in the handled timeout and error paths for most helpers.
+- if SAD exceeds `wall_time`, a `RuntimeError` naming the helper and the wall time is raised;
+- if SAD exits with a non-zero status, a `RuntimeError` is raised with SAD's stdout and stderr embedded in the message, so the diagnostic travels with the exception;
+- the original `subprocess` exception is preserved as the `__cause__` of the `RuntimeError`;
+- on success, SAD's terminal output is logged at debug level;
+- the temporary command file is removed on all exit paths.
 
-`track_sad` uses `subprocess.Popen` so that progress can be read while SAD is running. It checks elapsed wall time while reading SAD output, kills the process on timeout, and raises `TimeoutError`. This timeout approach is less robust if SAD stops producing output while still running.
+`track_sad` uses `subprocess.Popen` so that progress can be read while SAD is running. It checks elapsed wall time while reading SAD output, kills the process on timeout, and raises `RuntimeError` with the same conventions (SAD's output embedded on failure). This timeout approach is less robust if SAD stops producing output while still running.
 
 Default wall times are currently short for optics-style helpers and longer for tracking:
 
@@ -176,5 +179,4 @@ The helper layer currently provides these safeguards:
 Known limitations:
 
 - `additional_commands` is raw SAD text and is not sandboxed or validated;
-- subprocess output parsing is tailored to the current generated SAD commands;
-- some error messages still use generic wording from earlier Twiss-only implementations.
+- subprocess output parsing is tailored to the current generated SAD commands.

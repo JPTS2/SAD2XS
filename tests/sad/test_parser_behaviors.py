@@ -362,7 +362,6 @@ def test_sad_rejects_lattice_without_momentum(tmp_path):
     Confirms that the converter's ValueError for missing momentum mirrors SAD's
     own behaviour, and that there is no SAD default momentum to discover.
     """
-    import subprocess
     lattice = tmp_path / "no_momentum.sad"
     lattice.write_text(
         "MARK START = ();\n"
@@ -371,7 +370,7 @@ def test_sad_rejects_lattice_without_momentum(tmp_path):
     cwd = os.getcwd()
     os.chdir(tmp_path)
     try:
-        with pytest.raises((subprocess.CalledProcessError, ValueError)):
+        with pytest.raises((RuntimeError, ValueError)):
             twiss_sad(
                 lattice_filepath    = lattice.name,
                 line_name           = "TEST",
