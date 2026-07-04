@@ -9,7 +9,9 @@ Date:       24-06-2026
 ################################################################################
 # Import Packages
 ################################################################################
+import logging
 from datetime import date
+
 import xtrack as xt
 
 from ..types import ConfigLike
@@ -22,6 +24,8 @@ from ..output_writer._006_oct import create_octupole_optics_file_information
 from ..output_writer._009_cavity import create_cavity_optics_file_information
 from ..output_writer._010_refshift import create_refshift_optics_file_information
 from ..output_writer._011_aperture import create_aperture_optics_file_information
+
+logger  = logging.getLogger(__name__)
 
 today   = date.today()
 
@@ -71,7 +75,7 @@ import xtrack as xt
 ################################################################################
 # Create Environment
 ################################################################################
-env = xt.get_environment(verbose = True)
+env = xt.get_environment()
 
 ################################################################################
 # Update Strengths
@@ -157,5 +161,8 @@ env.vars.update(default_to_zero = True,
     ########################################
     # Write to file
     ########################################
-    with open(f"{output_directory}/{output_filename}.py", "w", encoding = "utf-8") as f:
+    output_path = f"{output_directory}/{output_filename}.py"
+    with open(output_path, "w", encoding = "utf-8") as f:
         f.write(optics_file_string)
+
+    logger.info(f"Optics file written: {output_path}")

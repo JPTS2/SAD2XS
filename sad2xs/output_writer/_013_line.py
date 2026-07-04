@@ -9,12 +9,16 @@ Date:       09-12-2025
 ################################################################################
 # Import Packages
 ################################################################################
+import logging
 import textwrap
+
 import xdeps as xd
 import numpy as np
 
 from ._000_helpers import get_parentname
 from ..types import ConfigLike
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # Lattice File
@@ -36,8 +40,21 @@ def create_line_lattice_file_information(
     ########################################
     # Get allowed elements
     ########################################
-    valid_elements  = line_table.rows[
-        np.isin(line_table.element_type, list(config.ALLOWED_ELEMENTS))]
+    is_allowed      = np.isin(line_table.element_type, list(config.ALLOWED_ELEMENTS))
+    valid_elements  = line_table.rows[is_allowed]
+
+    ########################################
+    # Warn about elements the writer cannot represent
+    ########################################
+    dropped_mask    = ~is_allowed & (line_table.name != "_end_point")
+    dropped_names   = line_table.name[dropped_mask]
+    if len(dropped_names) > 0:
+        dropped_types   = sorted(set(line_table.element_type[dropped_mask]))
+        logger.warning(
+            f"{len(dropped_names)} element(s) omitted from the written "
+            f"lattice: unsupported element type(s) {', '.join(dropped_types)}")
+        logger.debug(
+            f"Omitted elements: {sorted(set(dropped_names))}")
 
     ########################################
     # Get parent names

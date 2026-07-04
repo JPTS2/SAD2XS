@@ -107,8 +107,7 @@ def test_spaced_length_expression_can_be_evaluated_in_xsuite_environment(
     environment = xt.Environment()
     convert_expressions(
         parsed_lattice_data = parsed,
-        environment         = environment,
-        config              = config)
+        environment         = environment)
     convert_drifts(
         parsed_elements = parsed["elements"],
         environment     = environment)
@@ -192,8 +191,7 @@ def test_parenthesised_length_expression_can_be_evaluated_in_xsuite_environment(
     environment = xt.Environment()
     convert_expressions(
         parsed_lattice_data = parsed,
-        environment         = environment,
-        config              = config)
+        environment         = environment)
     convert_drifts(
         parsed_elements = parsed["elements"],
         environment     = environment)
@@ -221,8 +219,7 @@ def test_math_function_length_expression_can_be_evaluated_in_xsuite_environment(
     environment = xt.Environment()
     convert_expressions(
         parsed_lattice_data = parsed,
-        environment         = environment,
-        config              = config)
+        environment         = environment)
     convert_drifts(
         parsed_elements = parsed["elements"],
         environment     = environment)

@@ -5,14 +5,20 @@
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
 import os
 import subprocess
 import uuid
 import re
 import time
 import textwrap
+
 import numpy as np
 from tqdm import tqdm
+
+from ._helpers import _check_mathematica_output
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # Track Particles
@@ -85,7 +91,7 @@ def track_sad(
     ########################################
     # Print
     ########################################
-    print("#" * 40 + "\n" + "Tracking in SAD" + "\n" + "#" * 40)
+    logger.info("Tracking in SAD")
 
     ########################################
     # Assertions
@@ -116,8 +122,8 @@ def track_sad(
     # Warn if monitoring turn-by-turn with many particle turns
     ########################################
     if turn_by_turn_monitor and n_particles * n_turns > 1E8:
-        print(
-            "WARNING: Tracking a large number of particle turns "
+        logger.warning(
+            "Tracking a large number of particle turns "
             "(n_particles * n_turns > 100 million) with "
             "turn_by_turn_monitor=True leads to high memory usage.")
 
@@ -133,7 +139,7 @@ def track_sad(
     ########################################
     # Make the arrays a single string comma separated
     ########################################
-    print("Creating particle arrays")
+    logger.debug("Creating particle arrays")
     x_init_str      = "{" + ", ".join([f"{x}" for x in x_init]) + "}"
     px_init_str     = "{" + ", ".join([f"{px}" for px in px_init]) + "}"
     y_init_str      = "{" + ", ".join([f"{y}" for y in y_init]) + "}"
@@ -150,7 +156,7 @@ def track_sad(
     py_init_str     = textwrap.fill(py_init_str, width = 100)
     zeta_init_str   = textwrap.fill(zeta_init_str, width = 100)
     delta_init_str  = textwrap.fill(delta_init_str, width = 100)
-    print("Particle arrays created")
+    logger.debug("Particle arrays created")
 
     ########################################
     # Progress tracking
@@ -165,7 +171,7 @@ def track_sad(
     cmd_file = f"_sad_track_{uid}.sad"
     out_file = f"_sad_track_{uid}.dat"
 
-    print("Creating SAD Command")
+    logger.debug("Creating SAD command")
     sad_command = f"""OFF ECHO;
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -319,7 +325,7 @@ Put[beam[[2]], "{out_file}"];
 abort;
 """
 
-    print("Writing SAD Command")
+    logger.debug("Writing SAD command")
     try:
         with open(cmd_file, "w", encoding = "utf-8") as f:
             f.write(sad_command)
@@ -328,7 +334,7 @@ abort;
         ########################################
         # Set up progress bar
         ########################################
-        print("Running SAD")
+        logger.debug("Running SAD")
         if with_progress:
             progress_re = re.compile(r"PROGRESS:(\d+)")
             pbar        = tqdm(total = n_turns)
@@ -353,12 +359,15 @@ abort;
             stdout_lines.append(line)
 
             if process.poll() not in (None, 0):
-                raise RuntimeError(f"Subprocess died early with code {process.returncode}")
+                raise RuntimeError(
+                    f"SAD tracking died early with code "
+                    f"{process.returncode}.\n"
+                    f"--- SAD output ---\n{''.join(stdout_lines)}")
 
             if "TRACKING COMPLETE" in line:
                 if with_progress:
                     pbar.close()                                    # type: ignore
-                print("SAD tracking complete, writing output file")
+                logger.debug("SAD tracking complete, writing output file")
                 break
 
             # Check for progress lines
@@ -372,21 +381,28 @@ abort;
             # Timeout handling
             if time.time() - start > wall_time:
                 process.kill()
-                raise TimeoutError("SAD tracking timed out")
+                raise RuntimeError(
+                    f"SAD tracking timed out after {wall_time}s")
 
         ########################################
         # Check the process exits correctly
         ########################################
         process.wait()
         if process.returncode != 0:
-            raise RuntimeError(f"Subprocess exited with error code {process.returncode}")
+            raise RuntimeError(
+                f"SAD tracking exited with non-zero status "
+                f"{process.returncode}.\n"
+                f"--- SAD output ---\n{''.join(stdout_lines)}")
+
+        logger.debug(f"SAD tracking terminal output:\n{''.join(stdout_lines)}")
 
         ########################################
         # Load the data
         ########################################
-        print("Loading output file")
+        logger.debug("Loading output file")
         with open(out_file, "r", encoding = "utf-8") as f:
             raw_output  = f.read()
+        _check_mathematica_output(raw_output)
 
     finally:
         for path in [cmd_file, out_file]:
@@ -396,7 +412,7 @@ abort;
     ########################################
     # Process the data
     ########################################
-    print("Processing outputs")
+    logger.debug("Processing outputs")
 
     # Fix Mathematica"s ".00123" → "0.00123"
     output  = re.sub(r"(?<![\d])\.(\d+)", r"0.\1", raw_output)

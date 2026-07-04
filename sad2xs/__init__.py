@@ -12,6 +12,12 @@ Date:       20-11-2025
 import importlib
 
 ################################################################################
+# Logging (default: warnings and errors only)
+################################################################################
+from ._logging import initialise_logging, set_log_level
+initialise_logging()
+
+################################################################################
 # Main conversion function
 ################################################################################
 from .main import convert_sad_to_xsuite
