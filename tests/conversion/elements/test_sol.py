@@ -15,6 +15,7 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
 import os
 
 import numpy as np
@@ -483,7 +484,7 @@ def test_sol_converter_creates_all_solenoids(
 ########################################
 def test_sol_converter_warns_once_for_lattice_missing_disfrin(
         xsuite_environment,
-        capsys):
+        caplog):
     """
     Converting a lattice with solenoids missing DISFRIN=1 should warn exactly
     once for the whole lattice, not once per non-compliant element.
@@ -495,47 +496,52 @@ def test_sol_converter_warns_once_for_lattice_missing_disfrin(
             "sol": {
                 "sol_a": {"bz": 0.1},
                 "sol_b": {"bz": -0.1},
-                "sol_c": {"bz": 0.2, "disfrin": "1"},
+                "sol_c": {"bz": 0.2, "disfrin": 1.0},
             },
         },
         environment = xsuite_environment,
-        config      = Config(_verbose = True))
+        config      = Config())
 
-    captured = capsys.readouterr()
-    assert captured.out.count("Warning!") == 1, (
-        "Converting a lattice with solenoids missing DISFRIN=1 should print "
-        f"exactly one warning. Got: {captured.out!r}")
+    disfrin_warnings = [
+        r for r in caplog.records
+        if r.levelno == logging.WARNING and "DISFRIN" in r.getMessage()]
+    assert len(disfrin_warnings) == 1, (
+        "Converting a lattice with solenoids missing DISFRIN=1 should warn "
+        f"exactly once. Got: {[r.getMessage() for r in caplog.records]!r}")
 
 def test_sol_converter_does_not_warn_when_every_solenoid_has_disfrin(
         xsuite_environment,
-        capsys):
+        caplog):
     """
     Converting a lattice where every solenoid has DISFRIN=1 should not warn.
+    The parser stores DISFRIN = 1 as the float 1.0, so that is what the
+    converter must recognise.
     """
     _set_reference_environment(xsuite_environment)
 
     convert_solenoids(
         parsed_elements = {
             "sol": {
-                "sol_a": {"bz": 0.1, "disfrin": "1"},
-                "sol_b": {"bz": -0.1, "disfrin": "1"},
+                "sol_a": {"bz": 0.1, "disfrin": 1.0},
+                "sol_b": {"bz": -0.1, "disfrin": 1.0},
             },
         },
         environment = xsuite_environment,
-        config      = Config(_verbose = True))
+        config      = Config())
 
-    captured = capsys.readouterr()
-    assert "DISFRIN" not in captured.out, (
+    disfrin_warnings = [
+        r for r in caplog.records if "DISFRIN" in r.getMessage()]
+    assert disfrin_warnings == [], (
         "Converting a lattice where every solenoid has DISFRIN=1 should not "
-        f"warn. Got: {captured.out!r}")
+        f"warn. Got: {[r.getMessage() for r in disfrin_warnings]!r}")
 
-def test_sol_converter_respects_quiet_mode_for_disfrin_warning(
+def test_sol_converter_disfrin_warning_visible_in_quiet_mode(
         xsuite_environment,
         sad2xs_config,
-        capsys):
+        caplog):
     """
-    The DISFRIN warning should still be suppressed by _verbose=False, like
-    every other converter warning.
+    The DISFRIN warning must remain visible in quiet mode: quiet mode
+    suppresses progress and debug output, never warnings.
     """
     _set_reference_environment(xsuite_environment)
 
@@ -548,10 +554,12 @@ def test_sol_converter_respects_quiet_mode_for_disfrin_warning(
         environment = xsuite_environment,
         config      = sad2xs_config)
 
-    captured = capsys.readouterr()
-    assert captured.out == "", (
-        "convert_solenoids with _verbose=False should produce no stdout, "
-        f"including the DISFRIN warning. Got: {captured.out!r}")
+    disfrin_warnings = [
+        r for r in caplog.records
+        if r.levelno == logging.WARNING and "DISFRIN" in r.getMessage()]
+    assert len(disfrin_warnings) == 1, (
+        "The DISFRIN warning should be emitted even in quiet mode. "
+        f"Got records: {[r.getMessage() for r in caplog.records]!r}")
 
 ################################################################################
 # Bound Solenoid Reference Elements
@@ -1684,7 +1692,7 @@ def test_sol_pipeline_rejects_bending_angle_inside_solenoid_region(write_lattice
         lattice_text,
         filename = "sol_region_rejects_bend_angle.sad")
 
-    with pytest.raises(AssertionError, match = "Bend with non-zero angle"):
+    with pytest.raises(AssertionError, match = "Bend .* with non-zero angle"):
         s2x.convert_sad_to_xsuite(
             sad_lattice_path = str(lattice_path),
             output_directory = "N/A",

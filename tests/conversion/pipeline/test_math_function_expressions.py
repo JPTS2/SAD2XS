@@ -65,8 +65,7 @@ def test_math_function_expression_converts_to_correct_value(
     environment = xt.Environment()
     convert_expressions(
         parsed_lattice_data = parsed,
-        environment         = environment,
-        config              = Config(_verbose = False))
+        environment         = environment)
 
     assert environment["a"] == expected, (
         f"SAD {sad_func}({argument}) must evaluate to {expected} "

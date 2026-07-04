@@ -9,7 +9,11 @@ Date:       09-12-2025
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
+
 import xtrack as xt
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # Component Reversal
@@ -189,9 +193,15 @@ def convert_lines(
         for component in components:
 
             if "-" in component:
-                # Reversed subline
+                # Reversed sublines were replaced by their *_reversed lines in
+                # the passes above; a remaining line reference here means that
+                # replacement logic missed a case.
                 if component[1:] in environment.lines:
-                    raise ValueError("How did you get here? This should be handled above.")
+                    raise ValueError(
+                        f"Reversed subline '{component}' in line '{line}' "
+                        "survived the subline reversal passes. This is a "
+                        "SAD2XS internal error: please report it with the "
+                        "lattice file.")
                 reverse_handled_components.append(
                     create_reversed_component(component, environment))
             else:
@@ -203,6 +213,10 @@ def convert_lines(
         converted_lines.append(line)
 
     if len(converted_lines) < len(parsed_lines):
+        unconverted = sorted(
+            line for line in parsed_lines if line not in converted_lines)
         raise ValueError(
             f"Converted {len(converted_lines)} lines out of {len(parsed_lines)}. "
-            "Not all lines could be converted. Check the input data.")
+            f"Unconverted: {unconverted}")
+
+    logger.info(f"Converted {len(converted_lines)} lines")

@@ -36,7 +36,10 @@ class Config:
     ############################################################################
     # Hidden Flags
     ############################################################################
-    _verbose:                       bool            = True
+    # _verbose=True is shorthand for sad2xs.set_log_level("info"): it enables
+    # the conversion progress narrative for the rest of the session. Warnings
+    # and errors are always shown regardless of this flag.
+    _verbose:                       bool            = False
     _test_mode:                     bool            = False
     _replace_repeated_elements:     bool            = True
     _install_offset_markers:        bool            = True

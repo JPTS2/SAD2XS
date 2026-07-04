@@ -9,6 +9,8 @@ Date:       24-06-2026
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
+
 import xtrack as xt
 import numpy as np
 
@@ -16,7 +18,7 @@ from scipy.constants import c as clight
 from scipy.constants import e as qe
 
 from ..types import ConfigLike
-from ..helpers import print_section_heading
+from ..helpers import log_section_heading
 from ._000_helpers import (
     parse_expression,
     get_element_misalignments,
@@ -26,6 +28,8 @@ from ._000_helpers import (
     values_provably_equal,
     values_provably_opposite,
 )
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # Aperture Constants
@@ -63,18 +67,17 @@ def convert_elements(
     # Drifts
     ########################################
     if "drift" in parsed_elements:
-        if config._verbose:
-            print_section_heading("Converting Drifts", mode = "subsection")
+        log_section_heading("Converting Drifts", mode = "section")
         convert_drifts(
             parsed_elements = parsed_elements,
             environment     = environment)
+        logger.info(f"Converted {len(parsed_elements['drift'])} drift definitions")
 
     ########################################
     # Bends
     ########################################
     if "bend" in parsed_elements:
-        if config._verbose:
-            print_section_heading("Converting Bends", mode = "subsection")
+        log_section_heading("Converting Bends", mode = "section")
         convert_bends(
             parsed_elements = parsed_elements,
             environment     = environment,
@@ -83,122 +86,128 @@ def convert_elements(
             parsed_elements = parsed_elements,
             environment     = environment,
             config          = config)
+        logger.info(
+            f"Converted {len(parsed_elements['bend'])} bend definitions "
+            "(bends and correctors)")
 
     ########################################
     # Quadrupoles
     ########################################
     if "quad" in parsed_elements:
-        if config._verbose:
-            print_section_heading("Converting Quadrupoles", mode = "subsection")
+        log_section_heading("Converting Quadrupoles", mode = "section")
         convert_quadrupoles(
             parsed_elements = parsed_elements,
             environment     = environment)
+        logger.info(f"Converted {len(parsed_elements['quad'])} quadrupole definitions")
 
     ########################################
     # Sextupoles
     ########################################
     if "sext" in parsed_elements:
-        if config._verbose:
-            print_section_heading("Converting Sextupoles", mode = "subsection")
+        log_section_heading("Converting Sextupoles", mode = "section")
         convert_sextupoles(
             parsed_elements = parsed_elements,
             environment     = environment)
+        logger.info(f"Converted {len(parsed_elements['sext'])} sextupole definitions")
 
     ########################################
     # Octupoles
     ########################################
     if "oct" in parsed_elements:
-        if config._verbose:
-            print_section_heading("Converting Octupoles", mode = "subsection")
+        log_section_heading("Converting Octupoles", mode = "section")
         convert_octupoles(
             parsed_elements = parsed_elements,
             environment     = environment,
             config          = config)
+        logger.info(f"Converted {len(parsed_elements['oct'])} octupole definitions")
 
     ########################################
     # Multipoles
     ########################################
     if "mult" in parsed_elements:
-        if config._verbose:
-            print_section_heading("Converting Multipoles", mode = "subsection")
+        log_section_heading("Converting Multipoles", mode = "section")
         convert_multipoles(
             parsed_elements             = parsed_elements,
             environment                 = environment,
             user_multipole_replacements = user_multipole_replacements,
             config                      = config)
+        logger.info(f"Converted {len(parsed_elements['mult'])} multipole definitions")
 
     ########################################
     # Cavities
     ########################################
     if "cavi" in parsed_elements:
-        if config._verbose:
-            print_section_heading("Converting Cavities", mode = "subsection")
+        log_section_heading("Converting Cavities", mode = "section")
         convert_cavities(
             parsed_elements = parsed_elements,
             environment     = environment,
             config          = config)
+        logger.info(f"Converted {len(parsed_elements['cavi'])} cavity definitions")
 
     ########################################
     # Apertures
     ########################################
     if "apert" in parsed_elements:
-        if config._verbose:
-            print_section_heading("Converting Apertures", mode = "subsection")
+        log_section_heading("Converting Apertures", mode = "section")
         convert_apertures(
             parsed_elements = parsed_elements,
             environment     = environment)
+        logger.info(f"Converted {len(parsed_elements['apert'])} aperture definitions")
 
     ########################################
     # Solenoids
     ########################################
     if "sol" in parsed_elements:
-        if config._verbose:
-            print_section_heading("Converting Solenoids", mode = "subsection")
+        log_section_heading("Converting Solenoids", mode = "section")
         convert_solenoids(
             parsed_elements = parsed_elements,
             environment     = environment,
             config          = config)
+        logger.info(f"Converted {len(parsed_elements['sol'])} solenoid definitions")
 
     ########################################
     # Coordinate Transformations
     ########################################
     if "coord" in parsed_elements:
-        if config._verbose:
-            print_section_heading("Converting Coordinate Transformations", mode = "subsection")
+        log_section_heading("Converting Coordinate Transformations", mode = "section")
         convert_coordinate_transformations(
             parsed_elements = parsed_elements,
             environment     = environment,
             config          = config)
+        logger.info(
+            f"Converted {len(parsed_elements['coord'])} coordinate "
+            "transformation definitions")
 
     ########################################
     # Markers
     ########################################
     if "mark" in parsed_elements:
-        if config._verbose:
-            print_section_heading("Converting Markers", mode = "subsection")
+        log_section_heading("Converting Markers", mode = "section")
         convert_markers(
             parsed_elements = parsed_elements,
             environment     = environment)
+        logger.info(f"Converted {len(parsed_elements['mark'])} marker definitions")
 
     ########################################
     # Monitors
     ########################################
     if "moni" in parsed_elements:
-        if config._verbose:
-            print_section_heading("Converting Monitors", mode = "subsection")
+        log_section_heading("Converting Monitors", mode = "section")
         convert_monitors(
             parsed_elements = parsed_elements,
             environment     = environment)
+        logger.info(f"Converted {len(parsed_elements['moni'])} monitor definitions")
 
     ########################################
     # Beam-Beam Interactions
     ########################################
     if "beambeam" in parsed_elements:
-        if config._verbose:
-            print_section_heading("Converting Beam-Beam Interactions", mode = "subsection")
+        log_section_heading("Converting Beam-Beam Interactions", mode = "section")
         convert_beam_beam(
             parsed_elements = parsed_elements,
             environment     = environment)
+        logger.info(
+            f"Converted {len(parsed_elements['beambeam'])} beam-beam definitions")
 
 ################################################################################
 # Convert drift
@@ -465,6 +474,9 @@ def _convert_typed_multipole(ele_name, ele_vars, environment, n, xtype, k_name):
         if isinstance(rotation, float):
             kl, ksl, absorbed = _absorb_rotation_into_field(kl, n, rotation)
             if absorbed:
+                logger.debug(
+                    f"Absorbed rotation {rotation} rad of {ele_name} "
+                    "into its field components")
                 rotation = 0.0
         else:
             ksl = 0.0
@@ -495,6 +507,9 @@ def _convert_typed_multipole(ele_name, ele_vars, environment, n, xtype, k_name):
         if isinstance(rotation, float):
             kl, ksl, absorbed = _absorb_rotation_into_field(kl, n, rotation)
             if absorbed:
+                logger.debug(
+                    f"Absorbed rotation {rotation} rad of {ele_name} "
+                    "into its field components")
                 rotation = 0.0
 
     k  = divide_integrated_strength(kl,  length)
@@ -597,6 +612,10 @@ def convert_multipoles(
                 for replacement in user_multipole_replacements:
                     if ele_name.startswith(replacement):
                         replace_type    = user_multipole_replacements[replacement]
+
+                logger.info(
+                    f"Replaced multipole {ele_name} with {replace_type} "
+                    "(user_multipole_replacements)")
 
                 if "l" not in ele_vars or \
                     (isinstance(length, (float, int)) and abs(length) <= config.KNL_ZERO_TOL):
@@ -727,7 +746,11 @@ def convert_multipoles(
                         rot_s_rad           = rotation)
                     continue
                 else:
-                    raise ValueError("Error: Unknown element replacement")
+                    raise ValueError(
+                        f"Unknown replacement type '{replace_type}' for "
+                        f"multipole {ele_name} in user_multipole_replacements. "
+                        "Supported: 'Bend', 'Quadrupole', 'Sextupole', "
+                        "'Octupole'.")
 
         ########################################
         # Automatic Simplification
@@ -776,6 +799,9 @@ def convert_multipoles(
                     shift_x             = shift_x,
                     shift_y             = shift_y,
                     rot_s_rad           = rotation)
+                logger.debug(
+                    f"Simplified multipole {ele_name} to corrector "
+                    "(SIMPLIFY_MULTIPOLES: only k0/sk0 non-zero)")
                 continue
 
             ########################################
@@ -808,6 +834,9 @@ def convert_multipoles(
                     shift_x             = shift_x,
                     shift_y             = shift_y,
                     rot_s_rad           = rotation)
+                logger.debug(
+                    f"Simplified multipole {ele_name} to Quadrupole "
+                    "(SIMPLIFY_MULTIPOLES: only k1/sk1 non-zero)")
                 continue
 
             ########################################
@@ -840,6 +869,9 @@ def convert_multipoles(
                     shift_x             = shift_x,
                     shift_y             = shift_y,
                     rot_s_rad           = rotation)
+                logger.debug(
+                    f"Simplified multipole {ele_name} to Sextupole "
+                    "(SIMPLIFY_MULTIPOLES: only k2/sk2 non-zero)")
                 continue
 
             ########################################
@@ -872,6 +904,9 @@ def convert_multipoles(
                     shift_x             = shift_x,
                     shift_y             = shift_y,
                     rot_s_rad           = rotation)
+                logger.debug(
+                    f"Simplified multipole {ele_name} to Octupole "
+                    "(SIMPLIFY_MULTIPOLES: only k3/sk3 non-zero)")
                 continue
 
         ########################################
@@ -926,7 +961,9 @@ def convert_cavities(parsed_elements, environment, config):
             elif isinstance(phi_offset, str):
                 phi         = f"{np.pi} + {phi_offset}"
             else:
-                raise ValueError(f"Unsupported type for phi offset: {type(phi_offset)}")
+                raise ValueError(
+                    f"Unsupported type for phi offset of {ele_name}: "
+                    f"{type(phi_offset)}")
 
         if "harm" in ele_vars:
             harm                             = parse_expression(ele_vars["harm"])
@@ -1258,7 +1295,8 @@ def convert_solenoids(
         bz  = parse_expression(ele_vars["bz"])
         ks  = bz / brho
 
-        if ele_vars.get("disfrin") != "1":
+        # The parser stores numeric literals as floats: DISFRIN = 1 -> 1.0
+        if ele_vars.get("disfrin") != 1.0:
             no_disfrin_solenoids.append(ele_name)
 
         if "bound" in ele_vars:
@@ -1294,10 +1332,9 @@ def convert_solenoids(
 
         # Should not have dz in geo sol
         if geo and "dz" in ele_vars:
-            if config._verbose:
-                print(
-                    f"Warning! Solenoid {ele_name} is a geo solenoid "
-                    "but with dz defined: ignoring dz")
+            logger.warning(
+                f"Solenoid {ele_name} is a geo solenoid "
+                "but with dz defined: ignoring dz")
             offset_z = 0.0
 
         ########################################
@@ -1328,21 +1365,24 @@ def convert_solenoids(
         elif isinstance(offset_x, str):
             offset_x    = f"{sol_dx_factor} * {offset_x}"
         else:
-            raise ValueError(f"Unsupported type for offset_x: {type(offset_x)}")
+            raise ValueError(
+                f"Unsupported type for offset_x of {ele_name}: {type(offset_x)}")
 
         if isinstance(offset_y, float):
             offset_y    = sol_dy_factor * offset_y
         elif isinstance(offset_y, str):
             offset_y    = f"{sol_dy_factor} * {offset_y}"
         else:
-            raise ValueError(f"Unsupported type for offset_y: {type(offset_y)}")
+            raise ValueError(
+                f"Unsupported type for offset_y of {ele_name}: {type(offset_y)}")
 
         if isinstance(offset_z, float):
             offset_z    = sol_dz_factor * offset_z
         elif isinstance(offset_z, str):
             offset_z    = f"{sol_dz_factor} * {offset_z}"
         else:
-            raise ValueError(f"Unsupported type for offset_z: {type(offset_z)}")
+            raise ValueError(
+                f"Unsupported type for offset_z of {ele_name}: {type(offset_z)}")
 
         ########################################
         # Angle Transforms
@@ -1356,21 +1396,24 @@ def convert_solenoids(
         elif isinstance(rot_chi1, str):
             rot_chi1    = f"{sol_chi1_factor} * {rot_chi1}"
         else:
-            raise ValueError(f"Unsupported type for rot_chi1: {type(rot_chi1)}")
+            raise ValueError(
+                f"Unsupported type for rot_chi1 of {ele_name}: {type(rot_chi1)}")
 
         if isinstance(rot_chi2, float):
             rot_chi2    = sol_chi2_factor * rot_chi2
         elif isinstance(rot_chi2, str):
             rot_chi2    = f"{sol_chi2_factor} * {rot_chi2}"
         else:
-            raise ValueError(f"Unsupported type for rot_chi2: {type(rot_chi2)}")
+            raise ValueError(
+                f"Unsupported type for rot_chi2 of {ele_name}: {type(rot_chi2)}")
 
         if isinstance(rot_chi3, float):
             rot_chi3    = sol_chi3_factor * rot_chi3
         elif isinstance(rot_chi3, str):
             rot_chi3    = f"{sol_chi3_factor} * {rot_chi3}"
         else:
-            raise ValueError(f"Unsupported type for rot_chi3: {type(rot_chi3)}")
+            raise ValueError(
+                f"Unsupported type for rot_chi3 of {ele_name}: {type(rot_chi3)}")
 
         ########################################
         # Compound Solenoid Element
@@ -1425,9 +1468,9 @@ def convert_solenoids(
                 ks        = ks)
             continue
 
-    if no_disfrin_solenoids and config._verbose:
-        print(
-            "Warning! This lattice contains "
+    if no_disfrin_solenoids:
+        logger.warning(
+            "This lattice contains "
             f"{len(no_disfrin_solenoids)} solenoid(s) without DISFRIN=1 set. "
             "SAD2XS does not model the SAD solenoid fringe kick: the "
             "converted lattice will behave as if DISFRIN=1 had been set "
@@ -1582,14 +1625,16 @@ def convert_coordinate_transformations(
         elif isinstance(offset_x, str):
             offset_x    = f"{coord_dx_factor} * {offset_x}"
         else:
-            raise ValueError(f"Unsupported type for offset_x: {type(offset_x)}")
+            raise ValueError(
+                f"Unsupported type for offset_x of {ele_name}: {type(offset_x)}")
 
         if isinstance(offset_y, float):
             offset_y    = coord_dy_factor * offset_y
         elif isinstance(offset_y, str):
             offset_y    = f"{coord_dy_factor} * {offset_y}"
         else:
-            raise ValueError(f"Unsupported type for offset_y: {type(offset_y)}")
+            raise ValueError(
+                f"Unsupported type for offset_y of {ele_name}: {type(offset_y)}")
 
         ########################################
         # Angle Transforms
@@ -1608,21 +1653,24 @@ def convert_coordinate_transformations(
         elif isinstance(rot_chi1, str):
             rot_chi1    = f"{coord_chi1_factor} * {rot_chi1}"
         else:
-            raise ValueError(f"Unsupported type for rot_chi1: {type(rot_chi1)}")
+            raise ValueError(
+                f"Unsupported type for rot_chi1 of {ele_name}: {type(rot_chi1)}")
 
         if isinstance(rot_chi2, float):
             rot_chi2    = coord_chi2_factor * rot_chi2
         elif isinstance(rot_chi2, str):
             rot_chi2    = f"{coord_chi2_factor} * {rot_chi2}"
         else:
-            raise ValueError(f"Unsupported type for rot_chi2: {type(rot_chi2)}")
+            raise ValueError(
+                f"Unsupported type for rot_chi2 of {ele_name}: {type(rot_chi2)}")
 
         if isinstance(rot_chi3, float):
             rot_chi3    = coord_chi3_factor * rot_chi3
         elif isinstance(rot_chi3, str):
             rot_chi3    = f"{coord_chi3_factor} * {rot_chi3}"
         else:
-            raise ValueError(f"Unsupported type for rot_chi3: {type(rot_chi3)}")
+            raise ValueError(
+                f"Unsupported type for rot_chi3 of {ele_name}: {type(rot_chi3)}")
 
         ########################################
         # Compound Coordinate Transformation Element
@@ -1632,10 +1680,9 @@ def convert_coordinate_transformations(
             environment.new(
                 name      = ele_name,
                 prototype = xt.Translation)
-            if config._verbose:
-                print(
-                    f"Warning! Coordinate transformation {ele_name} has no transformations defined, " +\
-                    "installing as Translation")
+            logger.warning(
+                f"Coordinate transformation {ele_name} has no transformations "
+                "defined, installing as Translation")
             continue
         elif n_transforms == 1:
             if offset_x != 0:
