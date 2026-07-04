@@ -40,13 +40,21 @@ written to `tmp_path` — does not call the SAD executable. Placed in the
 
 | Test | What it asserts |
 |------|-----------------|
-| `test_full_conversion_is_silent_by_default` | `capfd` captures nothing for a warning-free full-pipeline conversion (covers tqdm and generated-file reload leaks) |
+| `test_full_conversion_is_silent_by_default` | `capfd` captures nothing for a warning-free full-pipeline conversion (solenoid pair and offset marker in the lattice cover the tqdm and generated-file reload leaks) |
 | `test_quiet_mode_emits_no_progress_records` | no INFO/DEBUG records at the default level |
 | `test_parser_warnings_visible_at_default_level` | electron-mass assumption warns in quiet mode |
 | `test_verbose_enables_progress_narrative` | `_verbose=True` emits INFO records; stdout stays empty |
 | `test_set_log_level_debug_enables_debug_records` | `set_log_level("debug")` exposes DEBUG records |
 | `test_set_log_level_rejects_unknown_level` | invalid level raises `ValueError` |
 | `test_formatter_prefixes_warnings_but_not_narrative` | `SAD2XS <LEVEL>:` prefix on WARNING/ERROR only |
+
+### `test_no_print_statements.py` — 1 test, expected to pass
+
+AST source scan of every `sad2xs/**/*.py` file asserting zero `print()`
+call nodes: runtime silence tests only cover the code paths their lattices
+exercise, so this closes the gap for all other paths. Generated-file string
+templates pass naturally (string literals are not call nodes). Placed in
+the **SAD-free** CI job.
 
 ### `test_sad_helper_output_controls.py` — 10 tests, all expected to pass
 

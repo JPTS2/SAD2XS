@@ -15,7 +15,11 @@ import xtrack as xt
 
 from .config import Config
 from ._logging import set_log_level
-from .helpers import log_section_heading, species_from_mass_and_charge
+from .helpers import (
+    log_section_heading,
+    species_from_mass_and_charge,
+    suppressed_xtrack_progress,
+)
 
 from .converter._001_parser import parse_sad_file
 from .converter._002_element_exclusion import exclude_elements
@@ -128,7 +132,7 @@ def convert_sad_to_xsuite(
     ########################################
     species = species_from_mass_and_charge(env['mass0'], env['q0'])
     if species is not None:
-        env.particle_ref = xt.Particles(species, p0c=env['p0c'])
+        env.particle_ref = xt.Particles(species, p0c = env['p0c'])
     else:
         env.particle_ref = xt.Particles(
             p0c     = env['p0c'],
@@ -158,24 +162,27 @@ def convert_sad_to_xsuite(
     ########################################
     # Select the line
     ########################################
-    log_section_heading("Selecting Line", mode = 'subsection')
+    log_section_heading("Selecting Line", mode = 'section')
 
     if line_name is not None:
-        line = env.lines[line_name.lower()]
-        logger.info(f"Selected line: {line_name}")
+        line            = env.lines[line_name.lower()]
+        selected_line   = line_name
     else:
         line_lengths    = {line: env.lines[line].get_length() for line in env.lines}
-        
+
         # If several are the same length, check also number of elements (thin elements)
         if max(line_lengths.values()) != 0:
             longest_line    = max(line_lengths, key = lambda line: line_lengths[line])
         else:
             line_lengths    = {line: len(env.lines[line].element_names) for line in env.lines}
             longest_line    = max(line_lengths, key = lambda line: line_lengths[line])
-        
-        line            = env.lines[longest_line]
 
-        logger.info(f"Selected line: {longest_line}")
+        line            = env.lines[longest_line]
+        selected_line   = longest_line
+
+    logger.info(
+        f"Selected line: {selected_line} "
+        f"({len(line.element_names)} elements, {line.get_length():.3f} m)")
 
     ############################################################################
     # Solenoid Corrections
@@ -185,7 +192,7 @@ def convert_sad_to_xsuite(
     ########################################
     # Convert elements between solenoids
     ########################################
-    log_section_heading("Converting Elements between Solenoids", mode = 'subsection')
+    log_section_heading("Converting Elements between Solenoids", mode = 'section')
     convert_solenoids(
         parsed_lattice_data = parsed_lattice_data,
         environment         = env,
@@ -194,7 +201,7 @@ def convert_sad_to_xsuite(
     ########################################
     # Correct solenoid reference shifts
     ########################################
-    log_section_heading("Correcting Solenoid Reference Shifts", mode = 'subsection')
+    log_section_heading("Correcting Solenoid Reference Shifts", mode = 'section')
     solenoid_reference_shift_corrections(
         line                    = line,
         parsed_lattice_data     = parsed_lattice_data,
@@ -210,7 +217,7 @@ def convert_sad_to_xsuite(
     ########################################
     # Set integrators
     ########################################
-    log_section_heading("Configuring Integrators", mode = 'subsection')
+    log_section_heading("Configuring Integrators", mode = 'section')
 
 
     tt          = line.get_table()
@@ -263,7 +270,7 @@ def convert_sad_to_xsuite(
     ########################################
     # Set bend edges
     ########################################
-    log_section_heading("Configuring Bend Model", mode = 'subsection')
+    log_section_heading("Configuring Bend Model", mode = 'section')
 
     line.configure_bend_model(edge = config.EDGE_MODEL_BEND)
 
@@ -273,6 +280,7 @@ def convert_sad_to_xsuite(
     if reverse_element_order:
         log_section_heading("Reversing Element order of Line", mode = 'section')
         line = reverse_line_element_order(line)
+        logger.info(f"Reversed element order ({len(line.element_names)} elements)")
 
     if reverse_survey_horizontal:
         log_section_heading("Reversing Bend Directions of Line", mode = 'section')
@@ -297,6 +305,7 @@ def convert_sad_to_xsuite(
     ############################################################################
     # Output files
     ############################################################################
+    log_section_heading("Generating Output Files", mode = 'banner')
 
     ########################################
     # Filename
@@ -343,16 +352,18 @@ def convert_sad_to_xsuite(
 
     ########################################
     # Cleanly load from the generated files
+    # (xtrack progress bars suppressed in quiet mode)
     ########################################
     env     = xt.Environment()
-    env.call(f"{output_directory}/{output_filename}.py")
-    env.call(f"{output_directory}/{output_filename}_import_optics.py")
+    with suppressed_xtrack_progress(active = not logger.isEnabledFor(logging.INFO)):
+        env.call(f"{output_directory}/{output_filename}.py")
+        env.call(f"{output_directory}/{output_filename}_import_optics.py")
     line    = env.lines["line"]
 
     ############################################################################
     # Complete message
     ############################################################################
-    log_section_heading("Conversion Complete", mode = 'section')
+    log_section_heading("Conversion Complete", mode = 'banner')
 
     ############################################################################
     # Return the line

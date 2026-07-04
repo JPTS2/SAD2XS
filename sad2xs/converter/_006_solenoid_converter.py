@@ -14,10 +14,7 @@ import logging
 import xtrack as xt
 import numpy as np
 
-from tqdm import tqdm
-
 from ..types import ConfigLike
-from ..helpers import log_section_heading
 
 logger  = logging.getLogger(__name__)
 
@@ -48,9 +45,10 @@ def convert_solenoids(
     # Check if there are any solenoids
     ########################################
     if "sol" not in parsed_elements:
-        log_section_heading("No solenoids in line", mode = "subsection")
+        logger.info("No solenoids in lattice: skipping solenoid corrections")
         return
     solenoids   = parsed_elements["sol"]
+    n_converted = 0
 
     ########################################
     # Get bound and geo solenoids
@@ -120,7 +118,10 @@ def convert_solenoids(
                 bound_solenoid_pair_indicies.append(
                     (bound_solenoid_indicies[i], bound_solenoid_indicies[i + 1]))
             else:
-                raise ValueError("Unmatched solenoid found in the line.")
+                raise ValueError(
+                    f"Unmatched boundary solenoid {bound_sols_in_line[i]} in "
+                    f"line {line_name}: BOUND solenoids must come in "
+                    "entrance/exit pairs.")
 
         ########################################
         # Get the elements between bound solenoids
@@ -220,6 +221,7 @@ def convert_solenoids(
                             ks        = ks)
                     line.element_names[idx] = new_element_name
 
+                    n_converted += 1
                     logger.debug(
                         f"Converted drift {element} to solenoid "
                         f"{new_element_name} with ks = {ks}")
@@ -228,7 +230,8 @@ def convert_solenoids(
                 # Bend conversion
                 elif isinstance(environment.element_dict[element], xt.Bend):        # type: ignore
 
-                    assert line[element].h == 0, "Bend with non-zero angle found between solenoids."
+                    assert line[element].h == 0, \
+                        f"Bend {element} with non-zero angle found between solenoids."
 
                     length      = line[element].length
                     k0          = line[element].k0
@@ -261,6 +264,7 @@ def convert_solenoids(
 
                     line.element_names[idx] = new_element_name
 
+                    n_converted += 1
                     logger.debug(
                         f"Converted Bend {element} to solenoid "
                         f"{new_element_name} with ks = {ks}")
@@ -301,6 +305,7 @@ def convert_solenoids(
                             y0                  = y0)
                     line.element_names[idx] = new_element_name
 
+                    n_converted += 1
                     logger.debug(
                         f"Converted Quadrupole {element} to solenoid "
                         f"{new_element_name} with ks = {ks}")
@@ -341,6 +346,7 @@ def convert_solenoids(
                             y0                  = y0)
                     line.element_names[idx] = new_element_name
 
+                    n_converted += 1
                     logger.debug(
                         f"Converted Sextupole {element} to solenoid "
                         f"{new_element_name} with ks = {ks}")
@@ -381,6 +387,7 @@ def convert_solenoids(
                             y0                  = y0)
                     line.element_names[idx] = new_element_name
 
+                    n_converted += 1
                     logger.debug(
                         f"Converted Octupole {element} to solenoid "
                         f"{new_element_name} with ks = {ks}")
@@ -416,6 +423,7 @@ def convert_solenoids(
                         x0                  = x0,
                         y0                  = y0)
 
+                    n_converted += 1
                     logger.debug(
                         f"Converted Multipole {element} to solenoid with ks = {ks}")
                     continue
@@ -435,6 +443,8 @@ def convert_solenoids(
                 else:
                     logger.warning(
                         f"Element {element} in line {line_name} has not been converted")
+
+    logger.info(f"Converted {n_converted} elements inside solenoid regions")
 
 ###############################################################################
 # Reference shift corrections
@@ -469,7 +479,8 @@ def solenoid_reference_shift_corrections(
     # Check if there are any solenoids
     ########################################
     if "sol" not in parsed_elements:
-        log_section_heading("No solenoids in line", mode = "subsection")
+        logger.debug(
+            "No solenoids in lattice: skipping reference shift corrections")
         return
     solenoids   = parsed_elements["sol"]
 
@@ -536,7 +547,9 @@ def solenoid_reference_shift_corrections(
             bound_solenoid_pairs.append(
                 (bound_sols_in_line[i], bound_sols_in_line[i + 1]))
         else:
-            raise ValueError("Unmatched solenoid found in the line.")
+            raise ValueError(
+                f"Unmatched boundary solenoid {bound_sols_in_line[i]}: "
+                "BOUND solenoids must come in entrance/exit pairs.")
 
     ############################################################################
     # Get the inbound and outbound boundary solenoids
@@ -908,9 +921,7 @@ def solenoid_reference_shift_corrections(
     ########################################
     # Reorder inbound geo solenoids
     ########################################
-    show_progress   = logger.isEnabledFor(logging.INFO)
-
-    for inbound_geo_solenoid in tqdm(inbound_geo_solenoids, disable = not show_progress):
+    for inbound_geo_solenoid in inbound_geo_solenoids:
 
         sol_start_ele   = f"{inbound_geo_solenoid}_bound"
         sol_end_ele     = f"{inbound_geo_solenoid}_rot"
@@ -937,7 +948,7 @@ def solenoid_reference_shift_corrections(
     ########################################
     # Reorder inbound non-geo solenoids
     ########################################
-    for inbound_nongeo_solenoid in tqdm(inbound_nongeo_solenoids, disable = not show_progress):
+    for inbound_nongeo_solenoid in inbound_nongeo_solenoids:
 
         sol_start_ele   = f"{inbound_nongeo_solenoid}_bound"
         sol_end_ele     = f"{inbound_nongeo_solenoid}_rot"
@@ -965,7 +976,7 @@ def solenoid_reference_shift_corrections(
     # Reorder outbound solenoids (inbound_reversed == outbound_reversed):
     # unchanged bound/dxy/dz/rot
     ########################################
-    for outbound_same_reversal_solenoid in tqdm(outbound_same_reversal_solenoids, disable = not show_progress):
+    for outbound_same_reversal_solenoid in outbound_same_reversal_solenoids:
 
         sol_start_ele   = f"{outbound_same_reversal_solenoid}_bound"
         sol_end_ele     = f"{outbound_same_reversal_solenoid}_rot"
@@ -993,7 +1004,7 @@ def solenoid_reference_shift_corrections(
     # Reorder outbound solenoids (inbound_reversed != outbound_reversed):
     # rotation-first, same as inbound
     ########################################
-    for outbound_differing_reversal_solenoid in tqdm(outbound_differing_reversal_solenoids, disable = not show_progress):
+    for outbound_differing_reversal_solenoid in outbound_differing_reversal_solenoids:
 
         sol_start_ele   = f"{outbound_differing_reversal_solenoid}_bound"
         sol_end_ele     = f"{outbound_differing_reversal_solenoid}_rot"
@@ -1020,3 +1031,7 @@ def solenoid_reference_shift_corrections(
     # Update the line
     ########################################
     line.element_names = element_names
+
+    logger.info(
+        f"Corrected reference shifts for {len(bound_solenoid_pairs)} "
+        "solenoid pairs")

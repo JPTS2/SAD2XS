@@ -11,8 +11,6 @@ Date:       09-12-2025
 ################################################################################
 import logging
 
-from ..helpers import log_section_heading
-
 logger  = logging.getLogger(__name__)
 
 ################################################################################
@@ -35,7 +33,6 @@ def exclude_elements(
     ########################################
     # Check if there are excluded elements
     ########################################
-    log_section_heading("Checking for Excluded Elements", mode = "subsection")
     if excluded_elements is None or len(excluded_elements) == 0:
         logger.debug("No excluded elements found. Skipping exclusion.")
         return parsed_lattice_data
@@ -57,11 +54,13 @@ def exclude_elements(
     ########################################
     # Delete the excluded elements from the elements dictionary
     ########################################
+    n_excluded  = 0
     for _, elems_dict in parsed_elements.items():
         # iterate over a snapshot of the keys
         for element in list(elems_dict.keys()):
             if element in excluded_elements:
                 del elems_dict[element]
+                n_excluded += 1
                 logger.info(f"Element {element} excluded from conversion")
 
     ########################################
@@ -69,5 +68,7 @@ def exclude_elements(
     ########################################
     for line, components in parsed_lines.items():
         parsed_lines[line] = [comp for comp in components if comp not in excluded_elements]
+
+    logger.info(f"Excluded {n_excluded} element definitions")
 
     return parsed_lattice_data

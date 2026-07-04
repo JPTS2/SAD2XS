@@ -176,4 +176,9 @@ def convert_offset_markers(
     ############################################################################
     # Return line
     ############################################################################
+    n_locations = sum(len(s_values) for s_values in offset_marker_locations.values())
+    logger.info(
+        f"Converted {len(offset_marker_locations)} offset markers "
+        f"({n_locations} insertion points)")
+
     return line, offset_marker_locations

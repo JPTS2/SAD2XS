@@ -1692,7 +1692,7 @@ def test_sol_pipeline_rejects_bending_angle_inside_solenoid_region(write_lattice
         lattice_text,
         filename = "sol_region_rejects_bend_angle.sad")
 
-    with pytest.raises(AssertionError, match = "Bend with non-zero angle"):
+    with pytest.raises(AssertionError, match = "Bend .* with non-zero angle"):
         s2x.convert_sad_to_xsuite(
             sad_lattice_path = str(lattice_path),
             output_directory = "N/A",
