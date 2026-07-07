@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-24
+Date:       2026-07-06
 ================================================================================
 """
 ################################################################################
@@ -20,7 +20,7 @@ import os
 import numpy as np
 import pytest
 
-from sad2xs.sad_helpers import track_sad, twiss_sad
+from sad2xs.sad_helpers import track_sad, transfer_matrix_sad, twiss_sad
 
 ################################################################################
 # Accepted parameters
@@ -120,6 +120,18 @@ def test_mult_accepts_harm(sad_accepts):
 def test_mult_accepts_freq(sad_accepts):
     sad_accepts(
         "MULT M1 = (L=1.0 FREQ=400E6);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START M1 END);")
+
+def test_mult_accepts_fringe(sad_accepts):
+    sad_accepts(
+        "MULT M1 = (L=1.0 FRINGE=1);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START M1 END);")
+
+def test_mult_accepts_disfrin(sad_accepts):
+    sad_accepts(
+        "MULT M1 = (L=1.0 DISFRIN=1);\n"
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START M1 END);")
 
@@ -372,3 +384,103 @@ def test_mult_k3_gives_cubic_kick(tmp_path):
     assert r_k3["px"][0] != pytest.approx(r_ref["px"][0]), (
         "K3 on a MULT element should deflect an off-axis particle "
         "(kick proportional to K3*x^3).")
+
+################################################################################
+# K0/SK0 dipole fringe (transfer-matrix ground truth)
+################################################################################
+K0_FRINGE_TEST_VALUE  = 0.05
+L_FRINGE_TEST_VALUE   = 0.5
+DIPOLE_FRINGE_M43     = -K0_FRINGE_TEST_VALUE**2 / L_FRINGE_TEST_VALUE
+
+def _mult_transfer_matrix(tmp_path, params: str, name: str) -> np.ndarray:
+    """
+    4x4 SAD transfer matrix of a single-MULT transfer line whose MULT has
+    the given parameter string.
+    """
+    lat = tmp_path / name
+    lat.write_text(
+        "MOMENTUM = 1.0 GEV;\n"
+        f"MULT M = ({params});\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START M END);\n")
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        return transfer_matrix_sad(
+            lattice_filepath = lat.name,
+            line_name        = "TEST")
+    finally:
+        os.chdir(cwd)
+
+def test_mult_k0_has_dipole_fringe_by_default(tmp_path):
+    """
+    A K0-only MULT carries m43 = -K0^2/L in its default linear map.
+    """
+    tm = _mult_transfer_matrix(
+        tmp_path,
+        f"L={L_FRINGE_TEST_VALUE} K0={K0_FRINGE_TEST_VALUE}",
+        "mult_k0_fringe_default.sad")
+    assert tm[3, 2] == pytest.approx(DIPOLE_FRINGE_M43, abs = 1e-12), (
+        "A MULT with only K0 should carry the dipole fringe term "
+        "m43 = -K0^2/L exactly in its default linear map.")
+    assert tm[1, 0] == pytest.approx(0.0, abs = 1e-12), (
+        "A MULT with only K0 should have no horizontal focusing term m21.")
+
+def test_mult_fringe_1_removes_k0_dipole_fringe(tmp_path):
+    """
+    FRINGE=1 on a K0-only MULT removes the dipole fringe block.
+    """
+    tm = _mult_transfer_matrix(
+        tmp_path,
+        f"L={L_FRINGE_TEST_VALUE} K0={K0_FRINGE_TEST_VALUE} FRINGE=1",
+        "mult_k0_fringe_1.sad")
+    assert tm[3, 2] == pytest.approx(0.0, abs = 1e-15), (
+        "FRINGE=1 on a K0-only MULT should remove the dipole fringe "
+        "focusing term m43 exactly.")
+    assert tm[3, 3] == pytest.approx(1.0, abs = 1e-12), (
+        "FRINGE=1 on a K0-only MULT should restore m44 to exactly 1 "
+        "(the whole fringe block vanishes, not just the focusing term).")
+
+@pytest.mark.parametrize("fringe_value", [0, 2, 3, -1])
+def test_mult_other_fringe_values_keep_k0_dipole_fringe(tmp_path, fringe_value):
+    """
+    Tested FRINGE values other than 1 keep the K0 dipole fringe term.
+    """
+    tm = _mult_transfer_matrix(
+        tmp_path,
+        f"L={L_FRINGE_TEST_VALUE} K0={K0_FRINGE_TEST_VALUE} FRINGE={fringe_value}",
+        f"mult_k0_fringe_{fringe_value}.sad")
+    assert tm[3, 2] == pytest.approx(DIPOLE_FRINGE_M43, abs = 1e-12), (
+        f"FRINGE={fringe_value} on a K0-only MULT should keep the dipole "
+        "fringe term m43 = -K0^2/L, identical to an unset FRINGE.")
+
+def test_mult_disfrin_does_not_control_k0_dipole_fringe(tmp_path):
+    """
+    DISFRIN=1 leaves the K0 dipole fringe term untouched.
+    """
+    tm = _mult_transfer_matrix(
+        tmp_path,
+        f"L={L_FRINGE_TEST_VALUE} K0={K0_FRINGE_TEST_VALUE} DISFRIN=1",
+        "mult_k0_disfrin_1.sad")
+    assert tm[3, 2] == pytest.approx(DIPOLE_FRINGE_M43, abs = 1e-12), (
+        "DISFRIN=1 on a K0-only MULT should leave the dipole fringe term "
+        "m43 = -K0^2/L in place — DISFRIN does not control it.")
+
+def test_mult_sk0_dipole_fringe_mirrors_in_horizontal_plane(tmp_path):
+    """
+    SK0 mirrors the K0 dipole-fringe behaviour into m21.
+    """
+    tm_default = _mult_transfer_matrix(
+        tmp_path,
+        f"L={L_FRINGE_TEST_VALUE} SK0={K0_FRINGE_TEST_VALUE}",
+        "mult_sk0_fringe_default.sad")
+    assert tm_default[1, 0] == pytest.approx(DIPOLE_FRINGE_M43, abs = 1e-12), (
+        "A MULT with only SK0 should carry the mirrored dipole fringe term "
+        "m21 = -SK0^2/L exactly in its default linear map.")
+    tm_fringe_1 = _mult_transfer_matrix(
+        tmp_path,
+        f"L={L_FRINGE_TEST_VALUE} SK0={K0_FRINGE_TEST_VALUE} FRINGE=1",
+        "mult_sk0_fringe_1.sad")
+    assert tm_fringe_1[1, 0] == pytest.approx(0.0, abs = 1e-15), (
+        "FRINGE=1 on an SK0-only MULT should remove the mirrored dipole "
+        "fringe term m21 exactly.")
