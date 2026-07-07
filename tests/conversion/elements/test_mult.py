@@ -455,7 +455,7 @@ def test_mult_converter_warns_when_dipole_multipole_simplifies_to_bend(
     Auto-simplified K0/SK0 MULT elements should warn about the fringe model.
     """
     caplog.set_level(
-        logging.WARNING,
+        logging.DEBUG,
         logger = "sad2xs.converter._004_element_converter")
 
     convert_multipoles(
@@ -484,6 +484,13 @@ def test_mult_converter_warns_when_dipole_multipole_simplifies_to_bend(
     assert len(warnings) == 1, (
         "Dipole-only MULT simplification should emit one warning per "
         "conversion, not one warning per element.")
+    debug_details = [
+        record.getMessage() for record in caplog.records
+        if record.levelno == logging.DEBUG
+        and "Dipole-only MULT elements" in record.getMessage()]
+    assert debug_details == [
+        "Dipole-only MULT elements converted to Bend/corrector elements: mx, my"
+    ], "Debug logging should name the MULT elements behind the summary warning."
 
 def test_mult_converter_keeps_combined_orders_as_multipole(
         parsed_elements,
