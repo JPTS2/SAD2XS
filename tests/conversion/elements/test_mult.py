@@ -9,12 +9,13 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-06
 ================================================================================
 """
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
 import os
 
 import numpy as np
@@ -24,7 +25,7 @@ import xtrack as xt
 
 from sad2xs.config import Config
 from sad2xs.converter._004_element_converter import convert_multipoles
-from sad2xs.sad_helpers import track_sad
+from sad2xs.sad_helpers import track_sad, transfer_matrix_sad
 from tests.support.config import (
     DELTA_DELTA_ATOL,
     DELTA_DELTA_RTOL,
@@ -40,6 +41,9 @@ from tests.support.config import (
     DELTA_Y_RTOL,
     DELTA_ZETA_ATOL,
     DELTA_ZETA_RTOL)
+from tests.support.coupled_optics import (
+    edwards_teng_optics_at,
+    linear_transfer_matrix_4d)
 from tests.support.diagnostics import (
     diagnostic_report_path,
     write_tracking_failure_report,
@@ -115,6 +119,16 @@ def _mult_twiss_values(twiss, element_name):
         "alfx":  twiss["alfx", element_name],
         "alfy":  twiss["alfy", element_name],
     }
+
+def _mult_xsuite_twiss_values(twiss, element_name):
+    """
+    Pack Xsuite optics in SAD's coupled beta/alpha convention.
+    """
+    edwards_teng = edwards_teng_optics_at(twiss, element_name)
+    values = _mult_twiss_values(twiss, element_name)
+    for key in ["betx", "bety", "alfx", "alfy"]:
+        values[key] = edwards_teng[key]
+    return values
 
 def _mult_initial_coordinates(
         x_init,
@@ -433,6 +447,51 @@ def test_mult_converter_simplifies_single_order_multipoles(
         "Simplified MULT strength should equal integrated strength divided by "
         "length.")
 
+def test_mult_converter_warns_when_dipole_multipole_simplifies_to_bend(
+        xsuite_environment,
+        assert_environment_element,
+        caplog):
+    """
+    Auto-simplified K0/SK0 MULT elements should warn about the fringe model.
+    """
+    caplog.set_level(
+        logging.DEBUG,
+        logger = "sad2xs.converter._004_element_converter")
+
+    convert_multipoles(
+        parsed_elements = {
+            "mult": {
+                "mx": {"l": 0.5, "k0": 0.05},
+                "my": {"l": 0.5, "sk0": 0.05},
+            },
+        },
+        environment                 = xsuite_environment,
+        user_multipole_replacements = None,
+        config                      = _mult_config(simplify = True))
+
+    assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "mx",
+        element_type    = xt.Bend)
+    assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "my",
+        element_type    = xt.Bend)
+
+    warnings = [
+        record for record in caplog.records
+        if "MULT dipole fringe convention" in record.getMessage()]
+    assert len(warnings) == 1, (
+        "Dipole-only MULT simplification should emit one warning per "
+        "conversion, not one warning per element.")
+    debug_details = [
+        record.getMessage() for record in caplog.records
+        if record.levelno == logging.DEBUG
+        and "Dipole-only MULT elements" in record.getMessage()]
+    assert debug_details == [
+        "Dipole-only MULT elements converted to Bend/corrector elements: mx, my"
+    ], "Debug logging should name the MULT elements behind the summary warning."
+
 def test_mult_converter_keeps_combined_orders_as_multipole(
         parsed_elements,
         xsuite_environment,
@@ -625,7 +684,7 @@ def test_mult_conversion_matches_sad_twiss_for_combined_orders(
             bety                = 1)
 
         sad_values = _mult_twiss_values(tw_sad, "END")
-        xsuite_values = _mult_twiss_values(tw_xs, "end")
+        xsuite_values = _mult_xsuite_twiss_values(tw_xs, "end")
     finally:
         os.chdir(cwd)
 
@@ -639,6 +698,8 @@ def test_mult_conversion_matches_sad_twiss_for_combined_orders(
         notes           = [
             "Combined-order MULT optics coverage checks normal and skew "
             "components in a true Xsuite Multipole.",
+            "Xsuite beta/alpha values use SAD's Edwards-Teng convention; "
+            "see docs/sad-helpers.md.",
         ])
 
 ########################################
@@ -647,8 +708,6 @@ def test_mult_conversion_matches_sad_twiss_for_combined_orders(
 @pytest.mark.parametrize(
     "order_name, mult_definition, parameters",
     [
-        ("k0",  "K0 = 0.05",  {"k0l": 0.05}),
-        ("sk0", "SK0 = 0.05", {"sk0l": 0.05}),
         ("k1",  "K1 = 0.1",   {"k1l": 0.1}),
         ("sk1", "SK1 = -0.03", {"sk1l": -0.03}),
         ("k2",  "K2 = 0.02",  {"k2l": 0.02}),
@@ -714,7 +773,7 @@ def test_mult_conversion_matches_sad_twiss_for_single_order(
             bety                = 1)
 
         sad_values = _mult_twiss_values(tw_sad, "END")
-        xsuite_values = _mult_twiss_values(tw_xs, "end")
+        xsuite_values = _mult_xsuite_twiss_values(tw_xs, "end")
     finally:
         os.chdir(cwd)
 
@@ -726,9 +785,96 @@ def test_mult_conversion_matches_sad_twiss_for_single_order(
         xsuite_values   = xsuite_values,
         parameters      = parameters,
         notes           = [
-            "Single-order MULT optics coverage — each order (K0-K3, SK0-SK3) "
+            "Single-order MULT optics coverage — each order (K1-K3, SK1-SK3) "
             "in isolation, no combination with any other order.",
+            "Xsuite beta/alpha values use SAD's Edwards-Teng convention; "
+            "see docs/sad-helpers.md.",
         ])
+
+########################################
+# K0/SK0 Dipole-Fringe Difference (accepted limitation, locked in exactly)
+########################################
+@pytest.mark.parametrize(
+    "order_name, mult_parameter, row, column",
+    [
+        ("k0",  "K0",  3, 2),
+        ("sk0", "SK0", 1, 0),
+    ])
+def test_mult_k0_dipole_fringe_difference_is_theta_fourth_order(
+        write_lattice,
+        tmp_path,
+        order_name,
+        mult_parameter,
+        row,
+        column):
+    """
+    The K0/SK0 dipole-fringe map difference between SAD and Xsuite is real,
+    exactly characterised, and fourth-order in the kick angle.
+    """
+    length          = 0.5
+    theta_values    = [0.025, 0.05, 0.1]
+    differences     = {}
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        for theta in theta_values:
+            lattice_path = write_lattice(
+                f"""\
+                MOMENTUM    = 1.0 GEV;
+
+                MULT        TEST_MULT   = (
+                    L       = {length}
+                    {mult_parameter}      = {theta}
+                );
+
+                MARK        START       = ()
+                            END         = ();
+
+                LINE        TEST_LINE   = (START TEST_MULT END);
+                """,
+                filename = f"mult_fringe_scaling_{order_name}_{theta}.sad")
+
+            tm_sad = transfer_matrix_sad(
+                lattice_filepath    = lattice_path.name,
+                line_name           = "TEST_LINE")
+            line = s2x.convert_sad_to_xsuite(
+                sad_lattice_path    = str(lattice_path),
+                output_directory    = "N/A",
+                _verbose            = False,
+                _test_mode          = True)
+            tm_xsuite = linear_transfer_matrix_4d(line)
+
+            sad_term    = tm_sad[row, column]
+            xsuite_term = tm_xsuite[row, column]
+
+            assert sad_term == pytest.approx(
+                -theta**2 / length, abs = 1e-12), (
+                f"SAD's {mult_parameter} dipole fringe term should be "
+                "exactly -theta^2/L at every kick angle.")
+
+            differences[theta] = xsuite_term - sad_term
+    finally:
+        os.chdir(cwd)
+
+    for theta in theta_values:
+        assert differences[theta] != 0.0, (
+            "The SAD-vs-Xsuite dipole fringe terms should NOT be equal — "
+            "the accepted limitation is a real map difference. If they now "
+            "agree, a fringe model changed in one of the codes and this "
+            "limitation (and its documentation) must be re-derived.")
+        assert differences[theta] == pytest.approx(-theta**4, rel = 0.01), (
+            "The dipole fringe difference should equal -theta^4 at leading "
+            f"order (measured -1.0005..-1.008 x theta^4 over {theta_values}).")
+
+    assert differences[0.05] / differences[0.025] == pytest.approx(
+        16.0, rel = 0.01), (
+        "Doubling theta should multiply the fringe difference by 2^4 = 16 "
+        "— the difference scales as theta^4.")
+    assert differences[0.1] / differences[0.05] == pytest.approx(
+        16.0, rel = 0.01), (
+        "Doubling theta should multiply the fringe difference by 2^4 = 16 "
+        "— the difference scales as theta^4.")
 
 ########################################
 # Tracking With Particle Offsets

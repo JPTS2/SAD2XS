@@ -35,7 +35,7 @@ filename defaults, line name selection, suppressed-element handling,
 Covers offset marker installation: dict format, s-position values, multiple
 markers, marker names, and symbolic s-position expressions (`l0` as a named
 variable), which are resolved through the line's `xt.Environment` rather than
-bare `eval()` (issue #22). All 7 pass.
+bare `eval()`. All 7 pass.
 
 ### `test_reverse_charge_sign.py` note
 

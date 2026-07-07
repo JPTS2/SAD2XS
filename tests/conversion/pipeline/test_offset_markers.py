@@ -303,8 +303,8 @@ def test_pipeline_offset_marker_symbolic_expression_resolves_to_computed_s_posit
     """
     A SAD MARK with OFFSET supplied through a SAD expression should resolve in
     the conversion expression context and be reinserted at the computed
-    s-position. This protects issue #22: offset expressions must not be resolved
-    through bare Python eval() without SAD variables in scope.
+    s-position. Offset expressions must not be resolved through bare Python
+    eval() without SAD variables in scope.
     """
     lattice_path = write_lattice(
         """\
@@ -337,7 +337,7 @@ def test_pipeline_offset_marker_symbolic_expression_resolves_to_computed_s_posit
         "A SAD MARK with symbolic OFFSET = L0 should be reinserted in the "
         "converted line after expression resolution. If this raises NameError, "
         "offset marker conversion is still using bare eval() without the SAD "
-        "expression context. See issue #22.")
+        "expression context.")
     assert tt["s", "m1"] == pytest.approx(3.0), (
         "With L0 = 1.5, M1 should be reinserted at s = s(D2) + L(D2) * 0.5 "
         f"= 2.0 + 1.0 = 3.0. Got: {tt['s', 'm1']:.6f}.")
