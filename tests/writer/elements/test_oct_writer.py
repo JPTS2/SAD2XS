@@ -567,7 +567,6 @@ def test_oct_writer_preserves_knl_combined_multipole_component(tmp_path):
     This test is expected to FAIL. The octupole writer reads and writes only
     k3, k3s, shift_x, shift_y, and rot_s_rad. It does not read or write knl
     or ksl, so combined multipole components are silently dropped on reload.
-    See issue #17.
     """
     original_line = _build_oct_line(k3 = 50.0, knl = [0.0, 0.0, 0.0, 0.0, 6.0E-5])
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
@@ -578,7 +577,7 @@ def test_oct_writer_preserves_knl_combined_multipole_component(tmp_path):
     assert reloaded_knl.tolist() == pytest.approx(original_knl.tolist()), (
         "Writer roundtrip should preserve octupole knl combined multipole "
         "components. The octupole writer does not write knl, so this "
-        "component is silently lost on reload. See issue #17. "
+        "component is silently lost on reload. "
         f"Original knl: {original_knl.tolist()}, "
         f"reloaded knl: {reloaded_knl.tolist()}.")
 
@@ -593,7 +592,6 @@ def test_oct_writer_preserves_ksl_combined_multipole_component(tmp_path):
 
     This test is expected to FAIL. The octupole writer does not write ksl.
     Combined skew multipole components are silently dropped on reload.
-    See issue #17.
     """
     original_line = _build_oct_line(k3 = 50.0, ksl = [0.0, 0.0, 0.0, 0.0, -3.0E-5])
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
@@ -604,7 +602,7 @@ def test_oct_writer_preserves_ksl_combined_multipole_component(tmp_path):
     assert reloaded_ksl.tolist() == pytest.approx(original_ksl.tolist()), (
         "Writer roundtrip should preserve octupole ksl combined multipole "
         "components. The octupole writer does not write ksl, so this "
-        "component is silently lost on reload. See issue #17. "
+        "component is silently lost on reload. "
         f"Original ksl: {original_ksl.tolist()}, "
         f"reloaded ksl: {reloaded_ksl.tolist()}.")
 
@@ -615,7 +613,7 @@ def test_oct_writer_preserves_knl_and_ksl_components_simultaneously(tmp_path):
     preserve both through a write and reload cycle.
 
     This test is expected to FAIL. Neither knl nor ksl is written by the
-    octupole writer. Both are silently lost on reload. See issue #17.
+    octupole writer. Both are silently lost on reload.
     """
     original_line = _build_oct_line(
         k3  = 50.0,
@@ -629,10 +627,10 @@ def test_oct_writer_preserves_knl_and_ksl_components_simultaneously(tmp_path):
     reloaded_ksl = np.asarray(reloaded_line["o1"].ksl)
 
     assert reloaded_knl.tolist() == pytest.approx(original_knl.tolist()), (
-        "Writer roundtrip should preserve octupole knl. See issue #17. "
+        "Writer roundtrip should preserve octupole knl. "
         f"Original: {original_knl.tolist()}, reloaded: {reloaded_knl.tolist()}.")
     assert reloaded_ksl.tolist() == pytest.approx(original_ksl.tolist()), (
-        "Writer roundtrip should preserve octupole ksl. See issue #17. "
+        "Writer roundtrip should preserve octupole ksl. "
         f"Original: {original_ksl.tolist()}, reloaded: {reloaded_ksl.tolist()}.")
 
 

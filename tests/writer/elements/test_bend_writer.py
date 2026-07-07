@@ -44,8 +44,7 @@ def _write_and_load(line, tmp_path):
     the clone inherits it. Skew bends (arbitrary rot_s_rad) carry the rotation
     on the clone as a literal string.
 
-    k1 for combined function magnets is NOT written by the bend writer. See
-    issue #63 for the planned fix.
+    k1 for combined function magnets is NOT written by the bend writer.
     """
     output_dir = tmp_path / "writer_output"
     output_dir.mkdir()
@@ -586,7 +585,7 @@ def test_bend_writer_preserves_angle_at_full_double_precision(tmp_path):
 
 
 ################################################################################
-# k1 Combined Function (Expected to FAIL — issue #63)
+# k1 Combined Function (Expected to FAIL)
 ################################################################################
 def test_bend_writer_k1_is_preserved_for_combined_function_magnet(tmp_path):
     """
@@ -595,7 +594,7 @@ def test_bend_writer_k1_is_preserved_for_combined_function_magnet(tmp_path):
 
     This test is expected to FAIL. The bend writer only writes the dipole
     component (angle via k0). The quadrupole gradient k1 is not accessed or
-    written, so it reloads as 0.0. See issue #63.
+    written, so it reloads as 0.0.
     """
     original_line = _build_hbend_line(angle = 0.1, length = 0.5)
     original_line["b1"].k1 = 0.5
@@ -605,7 +604,7 @@ def test_bend_writer_k1_is_preserved_for_combined_function_magnet(tmp_path):
     assert reloaded_line["b1"].k1 == pytest.approx(0.5), (
         "Writer roundtrip should preserve combined function Bend k1. "
         "The bend writer does not write k1, so it reloads as 0.0. "
-        f"Original: 0.5, reloaded: {reloaded_line['b1'].k1}. See issue #63.")
+        f"Original: 0.5, reloaded: {reloaded_line['b1'].k1}.")
 
 
 ################################################################################

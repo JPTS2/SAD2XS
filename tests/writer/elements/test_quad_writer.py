@@ -570,8 +570,8 @@ def test_quad_writer_preserves_knl_combined_multipole_component(tmp_path):
     This test is expected to FAIL. The quadrupole writer reads and writes only
     k1, k1s, shift_x, shift_y, and rot_s_rad. It does not read or write knl
     or ksl, so combined multipole components are silently dropped on reload.
-    This is the writer-side failure reported in issue #17 and the root cause
-    of the ATF quadrupole writer failure.
+    This is the writer-side combined-multipole component loss and the root
+    cause of the ATF quadrupole writer failure.
     """
     original_line = _build_quad_line(k1 = 0.2, knl = [0.0, 0.0, 5.0E-4])
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
@@ -582,7 +582,7 @@ def test_quad_writer_preserves_knl_combined_multipole_component(tmp_path):
     assert reloaded_knl.tolist() == pytest.approx(original_knl.tolist()), (
         "Writer roundtrip should preserve quadrupole knl combined multipole "
         "components. The quadrupole writer does not write knl, so this "
-        "component is silently lost on reload. See issue #17. "
+        "component is silently lost on reload. "
         f"Original knl: {original_knl.tolist()}, "
         f"reloaded knl: {reloaded_knl.tolist()}.")
 
@@ -597,7 +597,7 @@ def test_quad_writer_preserves_ksl_combined_multipole_component(tmp_path):
 
     This test is expected to FAIL. The quadrupole writer does not write ksl.
     Combined skew multipole components are silently dropped on reload.
-    See issue #17.
+    This documents the same combined-multipole component loss for skew terms.
     """
     original_line = _build_quad_line(k1 = 0.2, ksl = [0.0, 0.0, -3.0E-4])
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
@@ -608,7 +608,7 @@ def test_quad_writer_preserves_ksl_combined_multipole_component(tmp_path):
     assert reloaded_ksl.tolist() == pytest.approx(original_ksl.tolist()), (
         "Writer roundtrip should preserve quadrupole ksl combined multipole "
         "components. The quadrupole writer does not write ksl, so this "
-        "component is silently lost on reload. See issue #17. "
+        "component is silently lost on reload. "
         f"Original ksl: {original_ksl.tolist()}, "
         f"reloaded ksl: {reloaded_ksl.tolist()}.")
 
@@ -619,7 +619,7 @@ def test_quad_writer_preserves_knl_and_ksl_components_simultaneously(tmp_path):
     preserve both through a write and reload cycle.
 
     This test is expected to FAIL. Neither knl nor ksl is written by the
-    quadrupole writer. Both are silently lost on reload. See issue #17.
+    quadrupole writer. Both are silently lost on reload.
     """
     original_line = _build_quad_line(
         k1  = 0.2,
@@ -633,10 +633,10 @@ def test_quad_writer_preserves_knl_and_ksl_components_simultaneously(tmp_path):
     reloaded_ksl = np.asarray(reloaded_line["q1"].ksl)
 
     assert reloaded_knl.tolist() == pytest.approx(original_knl.tolist()), (
-        "Writer roundtrip should preserve quadrupole knl. See issue #17. "
+        "Writer roundtrip should preserve quadrupole knl. "
         f"Original: {original_knl.tolist()}, reloaded: {reloaded_knl.tolist()}.")
     assert reloaded_ksl.tolist() == pytest.approx(original_ksl.tolist()), (
-        "Writer roundtrip should preserve quadrupole ksl. See issue #17. "
+        "Writer roundtrip should preserve quadrupole ksl. "
         f"Original: {original_ksl.tolist()}, reloaded: {reloaded_ksl.tolist()}.")
 
 

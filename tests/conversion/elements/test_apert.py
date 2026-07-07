@@ -563,7 +563,7 @@ def test_aper_converter_preserves_rectangle_rotation(
     SAD APERT ROTATE should map to Xsuite aperture rotation with the SAD->Xsuite
     sign convention rot_s_rad = -ROTATE (the same negation as magnets). A
     non-symmetric angle (pi/6) is used so the sign is unambiguous; the sign was
-    validated against real SAD aperture tracking (see issue #33).
+    validated against real SAD aperture tracking.
     """
     convert_apertures(
         parsed_elements = parsed_elements(
@@ -1229,7 +1229,7 @@ def test_aper_rotated_limitrect_grid_loss_matches_sad_boundary(
     SAD APERT ROTATE = R corresponds to a coordinate rotation by -R: this was
     confirmed against real SAD aperture tracking, where at ROTATE = 30 deg the
     survival of 11 probes matched the analytic model evaluated at -R exactly
-    (e.g. (0.012, 0.012) survives while (-0.012, 0.012) is lost). See issue #33.
+    (e.g. (0.012, 0.012) survives while (-0.012, 0.012) is lost).
     """
     min_x = -0.01
     max_x = 0.01
