@@ -472,6 +472,9 @@ def test_sol_converter_warns_once_for_lattice_missing_disfrin(
     Converting a lattice with solenoids missing DISFRIN=1 should warn exactly
     once for the whole lattice, not once per non-compliant element.
     """
+    caplog.set_level(
+        logging.DEBUG,
+        logger = "sad2xs.converter._004_element_converter")
     _set_reference_environment(xsuite_environment)
 
     convert_solenoids(
@@ -491,6 +494,13 @@ def test_sol_converter_warns_once_for_lattice_missing_disfrin(
     assert len(disfrin_warnings) == 1, (
         "Converting a lattice with solenoids missing DISFRIN=1 should warn "
         f"exactly once. Got: {[r.getMessage() for r in caplog.records]!r}")
+    debug_details = [
+        record.getMessage() for record in caplog.records
+        if record.levelno == logging.DEBUG
+        and "Solenoids without DISFRIN=1" in record.getMessage()]
+    assert debug_details == [
+        "Solenoids without DISFRIN=1: sol_a, sol_b"
+    ], "Debug logging should name the solenoids behind the summary warning."
 
 def test_sol_converter_does_not_warn_when_every_solenoid_has_disfrin(
         xsuite_environment,

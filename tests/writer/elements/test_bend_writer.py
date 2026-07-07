@@ -585,16 +585,15 @@ def test_bend_writer_preserves_angle_at_full_double_precision(tmp_path):
 
 
 ################################################################################
-# k1 Combined Function (Expected to FAIL)
+# k1 Combined Function
 ################################################################################
 def test_bend_writer_k1_is_preserved_for_combined_function_magnet(tmp_path):
     """
     A combined function bend (angle != 0 AND k1 != 0) should preserve k1
     through a write and reload cycle.
 
-    This test is expected to FAIL. The bend writer only writes the dipole
-    component (angle via k0). The quadrupole gradient k1 is not accessed or
-    written, so it reloads as 0.0.
+    This is a regression test for preserving the combined-function quadrupole
+    gradient independently from the dipole angle.
     """
     original_line = _build_hbend_line(angle = 0.1, length = 0.5)
     original_line["b1"].k1 = 0.5
