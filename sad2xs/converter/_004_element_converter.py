@@ -564,7 +564,7 @@ def convert_multipoles(
     """
 
     mults   = parsed_elements["mult"]
-    warned_mult_dipole_simplification = False
+    dipole_simplified_mults = []
 
     for ele_name, ele_vars in mults.items():
 
@@ -768,14 +768,7 @@ def convert_multipoles(
                     idx     = 0,
                     tol     = config.KNL_ZERO_TOL):
 
-                if not warned_mult_dipole_simplification:
-                    logger.warning(
-                        "SAD MULT elements with only K0/SK0 are converted to "
-                        "Xsuite Bend/corrector elements. Xsuite's bend fringe "
-                        "model does not exactly reproduce SAD's MULT dipole "
-                        "fringe convention; residual optics differences scale "
-                        "as O(theta^4).")
-                    warned_mult_dipole_simplification = True
+                dipole_simplified_mults.append(ele_name)
 
                 if knl[0] != 0 and ksl[0] != 0:
                     if isinstance(knl[0], float) or isinstance(ksl[0], float):
@@ -934,6 +927,16 @@ def convert_multipoles(
             shift_y     = shift_y,
             rot_s_rad   = rotation)
         continue
+
+    if dipole_simplified_mults:
+        logger.warning(
+            "SAD MULT elements with only K0/SK0 were converted to Xsuite "
+            "Bend/corrector elements. Xsuite's bend fringe model does not "
+            "exactly reproduce SAD's MULT dipole fringe convention; residual "
+            "optics differences scale as O(theta^4).")
+        logger.debug(
+            "Dipole-only MULT elements converted to Bend/corrector elements: "
+            + ", ".join(dipole_simplified_mults))
 
 ################################################################################
 # Convert Cavities
@@ -1487,6 +1490,9 @@ def convert_solenoids(
             "SAD2XS does not model the SAD solenoid fringe kick: the "
             "converted lattice will behave as if DISFRIN=1 had been set "
             "for every solenoid, regardless of the source SAD file.")
+        logger.debug(
+            "Solenoids without DISFRIN=1: "
+            + ", ".join(no_disfrin_solenoids))
 
 ################################################################################
 # Convert Markers
