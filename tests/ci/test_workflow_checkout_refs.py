@@ -132,8 +132,9 @@ def test_ci_template_discover_job_does_not_override_checkout_ref():
     """
     The discover job must not set an explicit ref on the checkout step. Without
     an override, actions/checkout uses the commit that triggered the workflow —
-    the correct behaviour per issue #20. An explicit ref (e.g. 'main') would
-    cause CI to test a different commit than the one that triggered the run.
+    the required behaviour for PR and branch validation. An explicit ref
+    (e.g. 'main') would cause CI to test a different commit than the one that
+    triggered the run.
     """
     data  = _load(TEMPLATE_PATH)
     steps = data["jobs"]["discover"]["steps"]

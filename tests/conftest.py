@@ -46,10 +46,10 @@ def _restore_sad2xs_log_level():
 
 
 def pytest_itemcollected(item):
-    """Mark issue-linked tests before pytest evaluates marker selections."""
-    issue = known_issue_for(item.nodeid)
-    if issue is not None:
-        item.add_marker(pytest.mark.known_issue(issue))
+    """Mark known-failure tests before pytest evaluates marker selections."""
+    tracker_id = known_issue_for(item.nodeid)
+    if tracker_id is not None:
+        item.add_marker(pytest.mark.known_issue(tracker_id))
 
 
 def pytest_collection_modifyitems(session, config, items):
@@ -66,14 +66,14 @@ def pytest_collection_modifyitems(session, config, items):
     collected_nodeids = [item.nodeid for item in items]
     stale_entries = []
 
-    for node_prefix, parameter_fragment, issue in KNOWN_ISSUES:
+    for node_prefix, parameter_fragment, tracker_id in KNOWN_ISSUES:
         matching_prefix = [
             nodeid for nodeid in collected_nodeids
             if nodeid.startswith(node_prefix)]
         if matching_prefix and not any(
                 parameter_fragment in nodeid for nodeid in matching_prefix):
             stale_entries.append(
-                f"KNOWN_ISSUES entry for issue #{issue} "
+                f"KNOWN_ISSUES entry for tracker id {tracker_id} "
                 f"({node_prefix!r}, {parameter_fragment!r}) matched the test "
                 "function but none of its collected parametrisations.")
 

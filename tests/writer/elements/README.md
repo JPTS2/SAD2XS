@@ -8,7 +8,7 @@ Each file tests the roundtrip contract for that element type: build an
 `sad2xs.write_lattice` and `sad2xs.write_optics`, reload in a clean Xsuite
 environment, and assert that all supported fields are preserved.
 
-Issue-linked failures receive the centrally managed `known_issue` marker. They
+Known-failure tests receive the centrally managed `known_issue` marker. They
 remain ordinary failures and are routed to the non-blocking CI job.
 
 ## Coverage
@@ -23,5 +23,5 @@ remain ordinary failures and are routed to the non-blocking CI job.
 - `test_sol_writer.py` — `xt.UniformSolenoid`: ks literal number (not optics variable), x0/y0 axis offsets, knl/ksl, shift_x/y, rot_s_rad
 - `test_cavi_writer.py` — `xt.Cavity`: voltage/frequency/phase as optics expressions, fshift global shift mechanism; harmonic mode writes `harm_{name}` instead of `freq_{name}`
 - `test_refshift_writer.py` — `xt.Translation` (shift_x/shift_y), `xt.TimeDelay` (shift_zeta), `xt.Rotation` (rot_y_rad/chi1, rot_x_rad/chi2, rot_s_rad/chi3); all as optics expressions; zero default_to_zero behaviour; all five types in one line
-- `test_aper_writer.py` — `xt.LimitEllipse` (a/b), `xt.LimitRect` (min/max x/y), `xt.LimitRectEllipse` (max_x/max_y/a/b), offsets, asymmetric bounds, mixed types; aperture dimensions are written as live optics variables (`<dim>_<name>`, e.g. `a_ap1`, `min_x_ap1`) so they are accessible and tunable after reload (issue #62 fixed). Dimension variables are bootstrapped to safe placeholders in the lattice file because `xt.LimitEllipse` rejects `a/b = 0` at construction; the optics file (loaded last) sets the real values. Note: tracking-grid tests are not needed here; field-value equality is sufficient because the writer serialises Python values to Python code with no interpretation step — physical correctness is Xsuite's contract, not SAD2XS's.
+- `test_aper_writer.py` — `xt.LimitEllipse` (a/b), `xt.LimitRect` (min/max x/y), `xt.LimitRectEllipse` (max_x/max_y/a/b), offsets, asymmetric bounds, mixed types; aperture dimensions are written as live optics variables (`<dim>_<name>`, e.g. `a_ap1`, `min_x_ap1`) so they are accessible and tunable after reload. Dimension variables are bootstrapped to safe placeholders in the lattice file because `xt.LimitEllipse` rejects `a/b = 0` at construction; the optics file (loaded last) sets the real values. Note: tracking-grid tests are not needed here; field-value equality is sufficient because the writer serialises Python values to Python code with no interpretation step — physical correctness is Xsuite's contract, not SAD2XS's.
 - `test_marker_writer.py` — `xt.Marker`: type/name/order, multiple markers, start/end convention; offset marker insertion via `offset_marker_locations` (marker created, correct s-position after reload with `_install_offset_markers=True`, multiple offset markers independently)
