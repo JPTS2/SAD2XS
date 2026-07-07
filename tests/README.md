@@ -99,17 +99,17 @@ Artifact paths should mirror the test area that produced them, for example
 
 ## Test Counts
 
-Total collected: **1668 tests** (1660 pass, 8 fail) as of the test run on
-this branch. The breakdown by failure group is in the Known Failures section
-below. Individual folder READMEs document per-file counts.
+Total collected: **1687 tests** (1683 pass, 4 fail expected) on this branch.
+The breakdown by failure group is in the Known Failures section below.
+Individual folder READMEs document per-file counts.
 
 ## Known Failures
 
 The test suite contains currently failing tests that document known bugs.
 
-Tests linked to open issues are marked during collection from the central
+Tests linked to known failures are marked during collection from the central
 `KNOWN_ISSUES` list in `tests/support/known_issues.py` — a single list of
-`(test node prefix, parameter-id fragment, issue number)` tuples, where an
+`(test node prefix, parameter-id fragment, tracker id)` tuples, where an
 empty fragment matches every parametrisation of that test. They remain
 ordinary failing tests; the marker controls CI selection only and does not
 use `xfail`.
@@ -118,17 +118,25 @@ use `xfail`.
 fragment matches nothing collected (e.g. after a parametrize change) — this
 is checked automatically, it does not need to be verified by hand.
 
-**8 failing tests**, all in `conversion/elements/`, document known incorrect
-behaviour in the production code: 4 in `test_bend.py` (issue #55 — bend
-element-offset physics) and 4 in `test_mult.py` (issue #101 — a `MULT`
-skew-quadrupole rotation-convention mismatch, plus a small, separate
-`K0`/`SK0`-alone residual). These tests are the spec for the fix work that
-follows. They must not be modified to pass — they are the record of what is
-broken and what needs to be done.
+**4 failing tests**, all in `conversion/elements/test_bend.py`, document the
+bend element-offset reference-orbit convention difference. These tests are the
+record of what differs. They must not be modified to pass.
 
-Issue #58 (solenoid optics) is resolved — see
+The `SK1`/combined-order `MULT` discrepancy is resolved: it was not a physics
+bug but a twiss-parametrisation mismatch — SAD reports coupled optics in the
+Edwards-Teng convention, Xsuite's plain twiss reports Mais-Ripken mode
+projections. The comparison convention is proven and locked in by
+`tests/conversion/test_coupled_twiss_convention.py`, and coupled comparisons
+now use `tests/support/coupled_optics.py`. The former solenoid optics failure
+was an instance of the same convention gap — see
 `tests/conversion/elements/README.md`'s `test_sol.py` note and
-`docs/sad-helpers.md` for what the real cause turned out to be.
+`docs/sad-helpers.md` for the full convention map.
+
+The remaining `K0`/`SK0` `MULT` dipole-fringe discrepancy is no longer a known
+failing test: SAD's `MULT` dipole-fringe convention is documented by passing SAD
+ground-truth tests and a passing `theta^4` residual characterization. The
+converter also warns when dipole-only `MULT` elements are auto-simplified to
+Xsuite Bend/corrector elements.
 
 Never modify a failing test to make it pass artificially. Fix the root cause.
 If you add a test that documents a known bug, record it in the relevant folder

@@ -36,7 +36,7 @@ filename; SAD's shell wrapper requires a relative path in the working directory.
 
 ## Coverage
 
-300 tests across 16 files. All require the SAD binary.
+310 tests across 16 files. All require the SAD binary.
 
 ### Parameter matrix (accept/reject)
 
@@ -50,7 +50,7 @@ is tested as either accepted or rejected — nothing is left untested either way
 | SEXT | K2, DX, DY, ROTATE | ANGLE, K0, SK0, K1, SK1, SK2, K3–K4, SK3–SK4, HARM, FREQ, BZ |
 | OCT | K3, DX, DY, ROTATE | ANGLE, K0, SK0, K1–K2, SK1–SK2, SK3, K4, SK4, HARM, FREQ, BZ |
 | BEND | ANGLE, K0, K1, DX, DY, ROTATE | SK0, SK1, K2–K4, SK2–SK4, HARM, FREQ, BZ |
-| MULT | ANGLE, K0–K4, SK0–SK4, DX, DY, ROTATE, HARM, FREQ | BZ |
+| MULT | ANGLE, K0–K4, SK0–SK4, DX, DY, ROTATE, HARM, FREQ, FRINGE, DISFRIN | BZ |
 | CAVI | VOLT, FREQ, HARM, PHI, DX, DY, ROTATE | ANGLE, K0–K4, SK0–SK4, BZ |
 | SOL | BZ, DX, DY, DISFRIN | ANGLE, K0–K4, SK0–SK4, HARM, FREQ, ROTATE |
 | DRIFT | bare only (L) | ANGLE, K0–K4, SK0–SK4, BZ, HARM, FREQ, DX, DY, ROTATE |
@@ -74,6 +74,14 @@ happened to work:
   though for BEND's K0 specifically, a small residual was found that scales as K0²
   (confirmed by checking the scaling, not assumed); tracking shows the direct kick.
   This is why BEND's K0 test asserts a scaling ratio rather than exact invariance.
+- **MULT's K0/SK0 dipole fringe (transfer-matrix ground truth)**: a K0-only MULT's
+  default linear map carries the fringe term m43 = −K0²/L *exactly*; SK0 mirrors it
+  as m21. The element-level `FRINGE` switch controls the term: `FRINGE=1` removes the
+  fringe block exactly (m43 → 0, m44 → 1), while explicit `FRINGE=0/2/3/-1` behave
+  identically to an unset `FRINGE` and keep it. `DISFRIN` does *not* control this
+  term (unlike SOL, where DISFRIN is the fringe switch). Verified against
+  SAD 1.4.4.2k64 via `transfer_matrix_sad`, see the dipole-fringe section of
+  `test_mult.py`.
 - **CAVI's VOLT**: no orbit perturbation in CALC4D Twiss (a real SAD/COD limitation,
   not a bug); a real energy deviation (delta != 0) in tracking.
 - **SOL's BZ**: nonzero Twiss coupling (R1/R4) that *persists* past the exit fringe —

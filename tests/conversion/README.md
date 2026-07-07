@@ -34,6 +34,14 @@ line, and how converted lines compare with SAD optics or tracking.
   particles, line selection, generated-file import, write/reload behaviour,
   line reversal, reverse charge, and user options.
 
+Top-level files cover cross-cutting behaviour: `test_converter_helpers.py`
+(converter helper functions), `test_xsuite_api_compatibility.py` (Xsuite APIs
+the converter relies on), and `test_coupled_twiss_convention.py` (the
+coupled-twiss comparison convention against SAD — proves SAD reports
+Edwards-Teng optics and `R / sqrt(1 + det R)` coupling matrices, validates
+`tests/support/coupled_optics.py`, and anchors each case with SAD-vs-Xsuite
+transfer-matrix equality; see `docs/sad-helpers.md`).
+
 ## Element Test Shape
 
 Element files should prefer this order when practical:
