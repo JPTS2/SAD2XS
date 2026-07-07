@@ -425,9 +425,9 @@ def test_xsuite_transform_element_contracts(
     for field, expected_value in expected_fields.items():
         assert hasattr(element, field), (
             f"Xsuite {element_name} should expose field '{field}' used by SAD2XS. "
-            "If this fails because Xsuite moved to a newer transform API, see "
-            "issue #19.")
+            "If this fails because Xsuite moved to a newer transform API, update "
+            "the converter compatibility layer and local docs together.")
         assert getattr(element, field) == pytest.approx(expected_value), (
             f"Xsuite {element_name}.{field} should preserve SAD2XS values. "
-            "If this fails because Xsuite moved to a newer transform API, see "
-            "issue #19.")
+            "If this fails because Xsuite moved to a newer transform API, update "
+            "the converter compatibility layer and local docs together.")
