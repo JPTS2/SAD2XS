@@ -206,3 +206,5 @@ create_comparison_plots(
 ################################################################################
 if SHOW_PLOTS:
     plt.show()
+else:
+    plt.close("all")
