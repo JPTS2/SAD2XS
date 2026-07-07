@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       24-06-2026
+Date:       2026-07-07
 """
 
 ################################################################################
@@ -564,6 +564,7 @@ def convert_multipoles(
     """
 
     mults   = parsed_elements["mult"]
+    warned_mult_dipole_simplification = False
 
     for ele_name, ele_vars in mults.items():
 
@@ -766,6 +767,15 @@ def convert_multipoles(
                     ksl     = ksl,
                     idx     = 0,
                     tol     = config.KNL_ZERO_TOL):
+
+                if not warned_mult_dipole_simplification:
+                    logger.warning(
+                        "SAD MULT elements with only K0/SK0 are converted to "
+                        "Xsuite Bend/corrector elements. Xsuite's bend fringe "
+                        "model does not exactly reproduce SAD's MULT dipole "
+                        "fringe convention; residual optics differences scale "
+                        "as O(theta^4).")
+                    warned_mult_dipole_simplification = True
 
                 if knl[0] != 0 and ksl[0] != 0:
                     if isinstance(knl[0], float) or isinstance(ksl[0], float):
