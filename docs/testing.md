@@ -53,8 +53,8 @@ has its own README with per-file coverage tables and known-failure documentation
 | `ci/` | No | Workflow configuration correctness |
 | `observability/` | Mixed | Output suppression, quiet mode, and helper output policy |
 
-Total collected: **1668 tests** (1660 pass, 8 currently failing) as of
-this branch. See `tests/README.md` for the breakdown by failure group.
+Total collected: **1687 tests** (1683 pass, 4 currently failing expected)
+on this branch. See `tests/README.md` for the breakdown by failure group.
 
 ## SAD Syntax Assumption Tests
 
@@ -93,7 +93,7 @@ For converter bugs, use a failing-test-first workflow:
 
 ```text
 1. Add a minimal public test that fails on the current code.
-2. Confirm that the failure represents the issue.
+2. Confirm that the failure represents the bug.
 3. Implement the fix.
 4. Confirm that the new test passes.
 5. Keep the test as the regression guard.
@@ -108,10 +108,10 @@ intermediate dictionaries.
 
 ## Known Failures
 
-The suite contains **8 currently failing tests**, all linked to open GitHub
-issues.
+The suite contains **4 currently failing tests**, all linked to known-failure
+entries.
 
-Tests associated with open issues receive the `known_issue` marker during
+Tests associated with known failures receive the `known_issue` marker during
 collection from `tests/support/known_issues.py`. They are not `xfail` tests:
 they execute and report ordinary failures. CI runs unmarked tests as the
 blocking regression gate and marked tests in a visible non-blocking job.
@@ -120,16 +120,17 @@ Local selections use:
 
 ```bash
 pytest -m "not known_issue"  # blocking regression selection
-pytest -m "known_issue"      # tests documenting open issues
+pytest -m "known_issue"      # tests documenting known failures
 ```
 
-The 8 failures are all in `conversion/elements/` (issues #55, #101). The
-mapping is maintained in `tests/support/known_issues.py` as a single
-`KNOWN_ISSUES` list of `(test node prefix, parameter-id fragment, issue
-number)` tuples — an empty fragment (`""`) matches every parametrisation of
-that test, i.e. the whole test is the known issue, not just specific
-parameters. These tests must not be modified to pass artificially — they are
-the record of what is broken and what needs to be fixed.
+The 4 failures are all in `conversion/elements/test_bend.py` and document the
+bend element-offset reference-orbit convention difference. The mapping is
+maintained in `tests/support/known_issues.py` as a single `KNOWN_ISSUES` list of
+`(test node prefix, parameter-id fragment, tracker id)` tuples — an empty
+fragment (`""`) matches every parametrisation of that test, i.e. the whole test
+is the known failure, not just specific parameters. These tests must not be
+modified to pass artificially — they are the record of what is broken and what
+needs to be fixed.
 
 `tests/conftest.py` fails collection loudly if a `KNOWN_ISSUES` entry's
 fragment matches nothing currently collected — e.g. a fragment that stopped
@@ -154,12 +155,19 @@ tests starts failing, or unexpectedly starts passing in the "matches"
 direction, that is a signal the underlying assumption has changed and needs
 re-examination — not a regression to silently fix.
 
-Current example: `test_sol_disfrin_off_diverges_from_xsuite_in_tracking`
-(`tests/conversion/elements/test_sol.py`) asserts that SAD and Xsuite
-genuinely diverge for a solenoid without `DISFRIN=1`, since SAD2XS does not
-model SAD's solenoid fringe kick. See `docs/design-decisions.md` for why, and
-`docs/sad-helpers.md` for a related but distinct beta-function convention
-note relevant to solenoid comparisons.
+Current examples:
+
+- `test_sol_disfrin_off_diverges_from_xsuite_in_tracking`
+  (`tests/conversion/elements/test_sol.py`) asserts that SAD and Xsuite
+  genuinely diverge for a solenoid without `DISFRIN=1`, since SAD2XS does not
+  model SAD's solenoid fringe kick.
+- `test_mult_k0_dipole_fringe_difference_is_theta_fourth_order`
+  (`tests/conversion/elements/test_mult.py`) asserts the accepted
+  `theta^4` residual left when SAD dipole-only `MULT` elements are simplified
+  to Xsuite Bend/corrector elements.
+
+See `docs/design-decisions.md` and `docs/sad-helpers.md` for the corresponding
+physics and convention notes.
 
 ## SAD Dependency
 

@@ -4,14 +4,10 @@ KNOWN_ISSUES = (
     # (test node prefix, parameter-id fragment, issue number)
     # An empty fragment ("") matches every parametrisation of the test,
     # i.e. the whole test is the known issue, not just specific parameters.
-    ("tests/conversion/elements/test_mult.py::test_mult_conversion_matches_sad_twiss_for_combined_orders", "", 101),
-    ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_twiss_for_element_offsets", "[0.001-0.0]", 55),
-    ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_twiss_for_element_offsets", "[0.001--0.001]", 55),
-    ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_tracking_for_element_offsets", "[0.001-0.0]", 55),
-    ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_tracking_for_element_offsets", "[0.001--0.001]", 55),
-    ("tests/conversion/elements/test_mult.py::test_mult_conversion_matches_sad_twiss_for_single_order", "[k0-", 101),
-    ("tests/conversion/elements/test_mult.py::test_mult_conversion_matches_sad_twiss_for_single_order", "[sk0-", 101),
-    ("tests/conversion/elements/test_mult.py::test_mult_conversion_matches_sad_twiss_for_single_order", "[sk1-", 101),
+    ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_twiss_for_element_offsets", "[0.001-0.0]", 103),
+    ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_twiss_for_element_offsets", "[0.001--0.001]", 103),
+    ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_tracking_for_element_offsets", "[0.001-0.0]", 103),
+    ("tests/conversion/elements/test_bend.py::test_bend_conversion_matches_sad_tracking_for_element_offsets", "[0.001--0.001]", 103),
 )
 
 

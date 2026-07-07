@@ -21,8 +21,9 @@ files these are equal; for heavily parametrised files (sol, corrector, bend)
 the fail instance count exceeds the failing function count.
 
 Tests that currently fail document known converter bugs. They must not be
-modified to pass artificially. Tests linked to open issues are selected through
-the central `known_issue` mapping; this marker changes CI routing, not outcomes.
+modified to pass artificially. Tests linked to known-failure entries are
+selected through the central `known_issue` mapping; this marker changes CI
+routing, not outcomes.
 
 SAD-comparison tracking and Twiss checks uniformly use `rfsw=True` and compare
 `zeta`/`delta` alongside the transverse coordinates, matching `test_cavi.py`'s
@@ -43,7 +44,7 @@ Total collected from this folder: see `tests/README.md`.
 | `test_drift.py` | 6 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
-| `test_mult.py` | 13 | 4 | `SK1` rotation-convention mismatch; small `K0`/`SK0`-alone residual |
+| `test_mult.py` | 15 | 0 | — |
 | `test_oct.py` | 18 | 0 | — |
 | `test_quad.py` | 18 | 0 | — |
 | `test_sext.py` | 18 | 0 | — |
@@ -51,20 +52,24 @@ Total collected from this folder: see `tests/README.md`.
 
 ### `test_sol.py` note
 
-Issue #58 (`test_sol_optics_matches_sad_twiss_at_end[±0.1]`) is resolved. The
+The former solenoid optics known failure is resolved. The
 original diagnosis (SAD's GEO exit transforms computed at runtime during
 `COD`/`CALC`, not statically derivable) turned out not to be the cause for this
-test: the actual mismatch was that SAD's `betx`/`bety`/`alfx`/`alfy` report the
-*projected* (physical) beam-envelope optics functions, while Xsuite's
-`twiss4d`/`twiss6d` report the mode-1/mode-2 (Courant-Snyder eigenmode)
+test: the actual mismatch was that SAD reports coupled `betx`/`bety`/`alfx`/
+`alfy` in the Edwards-Teng (decoupled normal-mode) convention, while Xsuite's
+`twiss4d`/`twiss6d` report the mode-1/mode-2 (Mais-Ripken eigenmode)
 components separately — real, physically meaningful quantities in their own
 right, just a different convention. A solenoid genuinely couples the two
 modes, so the two conventions disagree there (confirmed via an independent
 analytic re-derivation of the exact solenoid transfer matrix, not just a
-converter-side assumption). `_sol_xsuite_optics_values()` now sums the mode
-components (`betx1+betx2`, `bety1+bety2`, `alfx1+alfx2`, `alfy1+alfy2`) to
-match SAD's convention. See `docs/sad-helpers.md` for the general explanation
-and worked example.
+converter-side assumption). `_sol_xsuite_optics_values()` now computes
+Edwards-Teng values via `tests/support/coupled_optics.py`; for rotational
+(solenoid) coupling these coincide numerically with the previously used
+projected sums (`betx1+betx2`, ...), but Edwards-Teng is the convention that
+also holds for skew-quad coupling, where the projected sums do not match
+SAD. The full convention map is locked in by
+`tests/conversion/test_coupled_twiss_convention.py`; see
+`docs/sad-helpers.md` for the general explanation and worked example.
 
 Adding `zeta` to the tracking/twiss comparisons here (see the `Coverage`
 section above) surfaced a genuine converter bug in
@@ -96,11 +101,10 @@ Quad/Sext/Oct/Mult). All 18 functions in this file now pass.
 
 ### `test_mult.py` note
 
-`test_mult_conversion_matches_sad_twiss_for_single_order` isolates each
-multipole order (`K0`-`K3`, `SK0`-`SK3`) individually, added after the model
-retune above surfaced discrepancies previously hidden inside the
-combined-order test. This found and fixed two separate converter bugs, plus
-one open, deeper question (issue #101):
+`test_mult_conversion_matches_sad_twiss_for_single_order` isolates powered
+multipole orders (`K1`-`K3`, `SK1`-`SK3`) after the model retune above
+surfaced discrepancies previously hidden inside the combined-order test. This
+found and fixed two separate converter bugs, plus a twiss-convention mismatch:
 
 - **Fixed**: a `MULT` with only `SK0` set is auto-simplified
   (`SIMPLIFY_MULTIPOLES=True`, the default) into an `xt.Bend` with
@@ -111,15 +115,24 @@ one open, deeper question (issue #101):
   symbolic/deferred expressions rather than plain floats, crashed with
   `Unknown function arctan2` — Xsuite's expression evaluator uses `atan2`,
   not `arctan2`.
-- **Open** (issue #101): `SK1` alone disagrees with SAD by `~1.9e-5`
-  (`betx`/`bety`/`alfx`/`alfy`), confirmed not kick-count sensitive. Traced
-  to SAD's `ROTATE` parameter and Xsuite's `xt.Rotation` element not
-  representing quite the same transformation once combined with a
-  multipole kick — both codes are internally self-consistent (native skew
-  equals their own rotated-normal representation), but the two codes'
-  rotated representations disagree with each other. A small, separate,
-  much lower-priority residual (`~7.8e-6`, also not kick-count sensitive)
-  affects `K0`/`SK0` alone too.
+- **Resolved**: `SK1` alone appeared to
+  disagree with SAD by `~1.9e-5` on `betx`/`bety`/`alfx`/`alfy`. The 4×4
+  transfer matrices agree to `~5e-11` and the residual was bit-identical
+  across six different skew representations, so it was never a physics or
+  rotation-convention bug: SAD reports coupled twiss in the Edwards-Teng
+  convention, and comparing Edwards-Teng values (via
+  `tests/support/coupled_optics.py`) agrees with SAD to `~1e-9`. The twiss
+  comparisons in this file now use that convention; the earlier
+  `ROTATE`/`xt.Rotation` hypothesis is dead (all rotated representations
+  gave identical results).
+- **Accepted limitation**: `K0`/`SK0` dipole-only `MULT` elements have a SAD
+  fringe convention that Xsuite Bend/corrector elements do not reproduce
+  exactly. SAD's default `MULT` dipole fringe contributes exactly
+  `m43 = -K0²/L` (`m21` for `SK0`); Xsuite's bend edge models either add
+  `theta^4`-order terms or give zero. SAD-side ground truth is pinned in
+  `tests/sad/test_mult.py`, the converter warning is covered here, and
+  `test_mult_k0_dipole_fringe_difference_is_theta_fourth_order` locks in the
+  expected `theta^4` residual as a passing accepted-limitation test.
 
 ## Shared Fixtures
 

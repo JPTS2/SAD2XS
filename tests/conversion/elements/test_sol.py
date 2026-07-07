@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-06
 ================================================================================
 """
 ################################################################################
@@ -41,6 +41,7 @@ from tests.support.config import (
     DELTA_Y_RTOL,
     DELTA_ZETA_ATOL,
     DELTA_ZETA_RTOL)
+from tests.support.coupled_optics import edwards_teng_optics_at
 from tests.support.diagnostics import (
     diagnostic_report_path,
     write_tracking_failure_report,
@@ -132,33 +133,15 @@ def _sol_optics_values(twiss_table, marker):
 
 def _sol_xsuite_optics_values(twiss_table, marker):
     """
-    Return projected optics coordinates at a marker from an Xsuite Twiss table.
-
-    SAD's betx/bety/alfx/alfy are the projected (physical) beam-envelope
-    optics functions. Xsuite's twiss4d/twiss6d report the mode-1/mode-2
-    (Courant-Snyder eigenmode) components separately instead of summing them:
-    betx1/alfx1 (mode-1) and betx2/alfx2 (mode-2 leakage into x) both
-    contribute to the physical horizontal beam size in a coupled region such
-    as a solenoid, and likewise bety1/bety2, alfy1/alfy2 for y. For an
-    uncoupled element the leakage terms are ~0 and this reduces to the plain
-    values; for a solenoid it does not. See docs/sad-helpers.md. zeta/delta
-    are not mode-split quantities, so they are read directly, unlike the beta
-    functions.
+    Return Xsuite optics in SAD's coupled beta/alpha convention.
     """
-    betx1 = twiss_table["betx1", marker]
-    betx2 = twiss_table["betx2", marker]
-    bety1 = twiss_table["bety1", marker]
-    bety2 = twiss_table["bety2", marker]
-    alfx1 = twiss_table["alfx1", marker]
-    alfx2 = twiss_table["alfx2", marker]
-    alfy1 = twiss_table["alfy1", marker]
-    alfy2 = twiss_table["alfy2", marker]
+    edwards_teng = edwards_teng_optics_at(twiss_table, marker)
     return {
         "s":     twiss_table["s", marker],
-        "betx":  betx1 + betx2,
-        "bety":  bety1 + bety2,
-        "alfx":  alfx1 + alfx2,
-        "alfy":  alfy1 + alfy2,
+        "betx":  edwards_teng["betx"],
+        "bety":  edwards_teng["bety"],
+        "alfx":  edwards_teng["alfx"],
+        "alfy":  edwards_teng["alfy"],
         "zeta":  twiss_table["zeta", marker],
         "delta": twiss_table["delta", marker],
     }
@@ -489,6 +472,9 @@ def test_sol_converter_warns_once_for_lattice_missing_disfrin(
     Converting a lattice with solenoids missing DISFRIN=1 should warn exactly
     once for the whole lattice, not once per non-compliant element.
     """
+    caplog.set_level(
+        logging.DEBUG,
+        logger = "sad2xs.converter._004_element_converter")
     _set_reference_environment(xsuite_environment)
 
     convert_solenoids(
@@ -508,6 +494,13 @@ def test_sol_converter_warns_once_for_lattice_missing_disfrin(
     assert len(disfrin_warnings) == 1, (
         "Converting a lattice with solenoids missing DISFRIN=1 should warn "
         f"exactly once. Got: {[r.getMessage() for r in caplog.records]!r}")
+    debug_details = [
+        record.getMessage() for record in caplog.records
+        if record.levelno == logging.DEBUG
+        and "Solenoids without DISFRIN=1" in record.getMessage()]
+    assert debug_details == [
+        "Solenoids without DISFRIN=1: sol_a, sol_b"
+    ], "Debug logging should name the solenoids behind the summary warning."
 
 def test_sol_converter_does_not_warn_when_every_solenoid_has_disfrin(
         xsuite_environment,
@@ -913,10 +906,8 @@ def test_sol_optics_matches_sad_twiss_at_end(
         notes          = [
             "This is an active-solenoid optics comparison, separate from "
             "orbit/reference-frame checks.",
-            "Xsuite values are the projected betx1+betx2/bety1+bety2/"
-            "alfx1+alfx2/alfy1+alfy2 sums, matching SAD's projected "
-            "convention in this coupled (solenoid) region — see "
-            "docs/sad-helpers.md.",
+            "Xsuite beta/alpha values use SAD's Edwards-Teng convention; "
+            "see docs/sad-helpers.md.",
         ])
 
 ########################################

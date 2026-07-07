@@ -273,8 +273,7 @@ def test_sol_writer_preserves_knl_component(tmp_path):
     """
     A solenoid with a combined multipole knl component should preserve it
     through a write and reload cycle. Unlike quad/sext/oct writers which drop
-    knl, the solenoid writer writes knl as a literal array. See issue #17 for
-    the contrast.
+    knl, the solenoid writer writes knl as a literal array.
     """
     original_line = _build_sol_line(ks = 0.1, knl = [0.0, 5.0E-3])
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
