@@ -23,6 +23,7 @@ from pathlib import Path
 
 import pytest
 import xtrack as xt
+import matplotlib.pyplot as plt
 
 import sad2xs as s2x
 from sad2xs.config import Config
@@ -154,6 +155,7 @@ def test_public_example_script_runs_headlessly(script_path, tmp_path):
                 "OUTPUT_DIR": str(tmp_path / script_path.stem),
             })
     finally:
+        plt.close("all")
         os.chdir(original_cwd)
         sys.path[:] = original_sys_path
 
