@@ -564,9 +564,8 @@ def test_oct_writer_preserves_knl_combined_multipole_component(tmp_path):
     An octupole with a combined decapole component (knl[4] != 0) should
     preserve that component through a write and reload cycle.
 
-    This test is expected to FAIL. The octupole writer reads and writes only
-    k3, k3s, shift_x, shift_y, and rot_s_rad. It does not read or write knl
-    or ksl, so combined multipole components are silently dropped on reload.
+    This is a regression test for preserving combined multipole components
+    carried by octupole elements.
     """
     original_line = _build_oct_line(k3 = 50.0, knl = [0.0, 0.0, 0.0, 0.0, 6.0E-5])
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
@@ -590,8 +589,8 @@ def test_oct_writer_preserves_ksl_combined_multipole_component(tmp_path):
     An octupole with a combined skew decapole component (ksl[4] != 0) should
     preserve that component through a write and reload cycle.
 
-    This test is expected to FAIL. The octupole writer does not write ksl.
-    Combined skew multipole components are silently dropped on reload.
+    This is the skew-component counterpart to the combined multipole knl
+    preservation test.
     """
     original_line = _build_oct_line(k3 = 50.0, ksl = [0.0, 0.0, 0.0, 0.0, -3.0E-5])
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
@@ -612,8 +611,8 @@ def test_oct_writer_preserves_knl_and_ksl_components_simultaneously(tmp_path):
     An octupole carrying both knl and ksl combined multipole components should
     preserve both through a write and reload cycle.
 
-    This test is expected to FAIL. Neither knl nor ksl is written by the
-    octupole writer. Both are silently lost on reload.
+    knl and ksl components should be preserved independently when both are
+    present on the same element.
     """
     original_line = _build_oct_line(
         k3  = 50.0,

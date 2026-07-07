@@ -283,17 +283,15 @@ def test_aper_writer_limitellipse_preserves_all_fields_simultaneously(tmp_path):
 
 
 ########################################
-# Optics Variables (Expected to FAIL)
+# Optics Variables
 ########################################
 def test_aper_writer_limitellipse_a_is_accessible_as_optics_variable(tmp_path):
     """
     After writing and reloading, the LimitEllipse semi-axis a should be
     accessible as named optics variable a_ap1 in the Xsuite environment.
 
-    This test is expected to FAIL. The aperture writer currently bakes a as a
-    bare literal number in the lattice file rather than writing it as a deferred
-    optics expression. Aperture dimensions are therefore fixed after write and
-    cannot be tuned via the optics file.
+    Aperture dimensions should be written as live optics variables, not fixed
+    literal values in the lattice file.
     """
     original_line = _build_limitellipse_line(a = 0.025, b = 0.018)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
@@ -310,8 +308,8 @@ def test_aper_writer_limitellipse_b_is_accessible_as_optics_variable(tmp_path):
     After writing and reloading, the LimitEllipse semi-axis b should be
     accessible as named optics variable b_ap1 in the Xsuite environment.
 
-    This test is expected to FAIL for the same literal-value aperture writer
-    limitation.
+    Aperture dimensions should be written as live optics variables, not fixed
+    literal values in the lattice file.
     """
     original_line = _build_limitellipse_line(a = 0.025, b = 0.018)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
@@ -328,8 +326,7 @@ def test_aper_writer_limitellipse_a_is_tunable_via_optics_variable(tmp_path):
     The a_ap1 optics variable should remain live after reload: modifying it
     should immediately update the LimitEllipse semi-axis a in the line.
 
-    This test is expected to FAIL for the same literal-value aperture writer
-    limitation.
+    Aperture dimensions should remain live after reload.
     """
     original_line = _build_limitellipse_line(a = 0.025, b = 0.018)
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
@@ -533,15 +530,15 @@ def test_aper_writer_limitrect_preserves_all_fields_simultaneously(tmp_path):
 
 
 ########################################
-# Optics Variables (Expected to FAIL)
+# Optics Variables
 ########################################
 def test_aper_writer_limitrect_min_x_is_accessible_as_optics_variable(tmp_path):
     """
     After writing and reloading, the LimitRect boundary min_x should be
     accessible as named optics variable min_x_ap1 in the Xsuite environment.
 
-    This test is expected to FAIL. The aperture writer bakes all boundary values
-    as bare literal numbers rather than deferred optics expressions.
+    Aperture boundaries should be written as live optics variables, not fixed
+    literal values in the lattice file.
     """
     original_line = _build_limitrect_line(min_x = -0.025, max_x = 0.025)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
@@ -558,8 +555,8 @@ def test_aper_writer_limitrect_max_x_is_accessible_as_optics_variable(tmp_path):
     After writing and reloading, the LimitRect boundary max_x should be
     accessible as named optics variable max_x_ap1 in the Xsuite environment.
 
-    This test is expected to FAIL for the same literal-value aperture writer
-    limitation.
+    Aperture boundaries should be written as live optics variables, not fixed
+    literal values in the lattice file.
     """
     original_line = _build_limitrect_line(min_x = -0.025, max_x = 0.025)
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
@@ -576,8 +573,7 @@ def test_aper_writer_limitrect_min_x_is_tunable_via_optics_variable(tmp_path):
     The min_x_ap1 optics variable should remain live after reload: modifying it
     should immediately update the LimitRect min_x in the line.
 
-    This test is expected to FAIL for the same literal-value aperture writer
-    limitation.
+    Aperture boundaries should remain live after reload.
     """
     original_line = _build_limitrect_line(min_x = -0.025, max_x = 0.025)
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
