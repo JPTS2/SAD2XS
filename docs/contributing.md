@@ -21,7 +21,7 @@ fix/26-verbose-logging-only
 feature/30-comma-separated-lines
 ```
 
-Use the issue number when one exists. Keep names descriptive enough that the branch purpose is clear in GitHub and local tooling.
+Use the tracker ID when one exists. Keep names descriptive enough that the branch purpose is clear in GitHub and local tooling.
 
 Before starting work, make sure the working tree is clean and the issue branch is based on the active release branch.
 

@@ -70,61 +70,72 @@ result = track_sad(
 )
 ```
 
-## Beta-function conventions in coupled regions (e.g. solenoids)
+## Twiss conventions in coupled regions (skew quads, solenoids, ...)
 
-SAD's `twiss_sad` output (`betx`/`bety`/`alfx`/`alfy`) reports the *projected*
-(physical) beam-envelope optics functions — the quantity a beam-size monitor
-would actually see, correctly combining both normal-mode contributions in a
-region with real x-y coupling.
+SAD's `twiss_sad` output (`betx`/`bety`/`alfx`/`alfy`) reports coupled optics
+in the **Edwards-Teng** (decoupled normal-mode) parametrisation — the same
+convention MAD-X uses — propagated from the line start. Its `R1`–`R4`
+columns are the Edwards-Teng decoupling matrix, normalised as
+`R / sqrt(1 + det R)`.
 
 Xsuite's `line.twiss4d()`/`twiss6d()` reports something different by default.
 Its `betx`/`bety`/`alfx`/`alfy` fields are the **mode-1**/**mode-2**
-(Courant-Snyder eigenmode) components only — one mode's own contribution, not
-the physical projected total. The cross-mode leakage terms are computed
-separately and already sit in the same twiss table as `betx2`/`bety1`/
-`alfx2`/`alfy1`, but are not added back into `betx`/`bety`/`alfx`/`alfy`.
-Passing `use_full_inverse=True` does not change this — it is a different
-numerical method for computing the same mode-1/mode-2 convention, not a
-different convention.
-
-For an uncoupled element (a bend, a quad with no skew content, and so on) the
-leakage terms are ~0 and this distinction doesn't matter — Xsuite's `betx`
-and SAD's `betx` are the same thing. For a genuinely coupled element, they
-are not. A solenoid is the clearest case in this codebase: confirmed on a 1m
-solenoid at `BZ=1.5` (`Ks·L≈0.45`), a naive `betx` comparison against SAD is
-off by **~5%**, while summing the mode components agrees with SAD to
-floating-point precision:
+(Mais-Ripken eigenmode) components only, with the cross-mode leakage terms
+in separate `betx2`/`bety1`/`alfx2`/`alfy1` columns. Xsuite can compute
+Edwards-Teng parameters natively (`coupling_edw_teng=True`), but only for
+periodic lines. For repository tests, `tests/support/coupled_optics.py` wraps
+Xtrack's open-line Edwards-Teng propagation so converted transfer lines can be
+compared against SAD through coupled regions:
 
 ```python
+from tests.support.coupled_optics import edwards_teng_optics_at
+
 tw_sad = twiss_sad(...)
 tw_xs  = line.twiss4d(betx=1.0, bety=1.0, ...)
 
-# naive — wrong for a coupled element like a solenoid
-betx_naive = tw_xs["betx", "end"]                             # 1.837438237
-# projected — matches SAD's convention
-betx_projected = tw_xs["betx", "end"] + tw_xs["betx2", "end"]  # 1.933552757
-bety_projected = tw_xs["bety1", "end"] + tw_xs["bety", "end"]
-alfx_projected = tw_xs["alfx", "end"] + tw_xs["alfx2", "end"]
-alfy_projected = tw_xs["alfy1", "end"] + tw_xs["alfy", "end"]
+# naive — wrong for any coupled element
+betx_naive = tw_xs["betx", "end"]
 
-sad_betx = tw_sad["betx"][-1]                                  # 1.933552757
+# Edwards-Teng — matches SAD's convention for coupled beta/alpha
+et = edwards_teng_optics_at(tw_xs, "end")
+betx_et = et["betx"]
 ```
 
-**To compare Xsuite optics against SAD's `betx`/`bety`/`alfx`/`alfy` through a
-coupled region, sum the mode components as shown above, not the raw fields.**
-This is now what `tests/conversion/elements/test_sol.py`'s
-`_sol_xsuite_optics_values()` does for its solenoid optics comparison.
+The convention map, established empirically (each case anchored by SAD and
+Xsuite 4×4 transfer-matrix equality at the 1e-10 level, so the twiss
+residuals below are purely parametrisation):
 
-This was originally misdiagnosed as a SAD solenoid GEO-exit-transform
-reference-frame issue. It isn't: the mismatch is present already inside the
-solenoid body itself (before any reference-frame transform is applied), it
-scales cleanly as `(Ks·L)²`, and an independent from-scratch derivation of
-the exact solenoid transfer matrix (linearizing Xsuite's own documented
-solenoid Hamiltonian, cross-checked against a central-difference Jacobian
-built directly from Xsuite's own tracking) matches SAD's projected `betx`
-exactly — confirming both codes' underlying physics (Hamiltonian and
-tracking) agree, and the gap is purely this beta-function reporting
-convention.
+| case | Edwards-Teng | Mais-Ripken projected sums (`betx1+betx2`, ...) | plain mode values |
+|------|--------------|--------------------------------------------------|-------------------|
+| skew-quad line | matches SAD (≤1e-9) | off by ~3e-5 (beta), ~2e-4 (alfa) | off by ~2e-5 |
+| solenoid line (`BZ=1.5`) | matches SAD (≤5e-10) | identical to Edwards-Teng (≤2e-15) | off by ~5% |
+| uncoupled line | matches SAD (≤1e-9) | identical to Edwards-Teng | identical to Edwards-Teng |
+
+Two traps this map removes:
+
+- **The projected sums are not SAD's convention**, even though they match
+  it exactly for solenoids. Rotational (solenoid) coupling is a special
+  case in which the Mais-Ripken projected sums numerically coincide with
+  the Edwards-Teng values; for skew-quad coupling they disagree with SAD
+  by more than the plain values do. An earlier version of this section
+  recommended the projected sums based on the solenoid evidence alone.
+- **SAD's `R1`–`R4` are not the raw decoupling matrix**: they carry the
+  `1/sqrt(1 + det R)` normalisation (verified to ~1e-9 on both skew-quad
+  and solenoid cases via `coupled_optics.normalized_r_matrix()`).
+
+These facts are locked in, agreement and disagreement both asserted, by
+`tests/conversion/test_coupled_twiss_convention.py`.
+
+The solenoid mismatch was originally misdiagnosed as a SAD solenoid
+GEO-exit-transform reference-frame issue. It isn't: the mismatch is present
+already inside the solenoid body itself (before any reference-frame
+transform is applied), it scales cleanly as `(Ks·L)²`, and an independent
+from-scratch derivation of the exact solenoid transfer matrix (linearizing
+Xsuite's own documented solenoid Hamiltonian, cross-checked against a
+central-difference Jacobian built directly from Xsuite's own tracking)
+matches SAD's reported `betx` exactly — confirming both codes' underlying
+physics (Hamiltonian and tracking) agree, and the gap is purely this
+reporting convention.
 
 ## Additional SAD commands
 

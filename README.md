@@ -66,7 +66,7 @@ The converter is available as a package on PyPI at https://pypi.org/project/sad2
 [![PyPI version](https://img.shields.io/pypi/v/sad2xs)](https://pypi.org/project/sad2xs/)
 
 ## Support
-For any issues with the converter, please in the first instance raise an issue directly on GitHub.
+For converter problems, please use the public GitHub tracker in the first instance.
 
 For any further discussion, please contact john.salvesen@cern.ch with queries.
 
