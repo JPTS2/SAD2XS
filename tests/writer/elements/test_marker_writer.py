@@ -81,10 +81,7 @@ def _build_marker_line(*names):
 
     line = xt.Line(elements = elements, element_names = all_names)
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -206,10 +203,7 @@ def _build_drift_and_marker_line():
         elements      = [xt.Marker(), xt.Drift(length = 1.0), xt.Marker()],
         element_names = ["start", "d1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 

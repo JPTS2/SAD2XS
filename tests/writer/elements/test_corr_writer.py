@@ -115,10 +115,7 @@ def _build_hcorr_line(
         elements      = [xt.Marker(), xt.Bend(**corr_kwargs), xt.Marker()],
         element_names = ["start", "c1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -138,10 +135,7 @@ def _build_vcorr_line(
             rot_s_rad = np.pi / 2), xt.Marker()],
         element_names = ["start", "vc1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -162,10 +156,7 @@ def _build_scorr_line(
             rot_s_rad = rot_s_rad), xt.Marker()],
         element_names = ["start", "sc1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -504,10 +495,7 @@ def test_corr_writer_preserves_multiple_corrs_independently(tmp_path):
         ],
         element_names = ["start", "ca", "cb", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
@@ -540,10 +528,7 @@ def test_corr_writer_corrs_with_same_length_share_base_element(tmp_path):
         ],
         element_names = ["start", "ca", "cb", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 
