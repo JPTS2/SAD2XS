@@ -64,32 +64,37 @@ def write_lattice(
         config  = Config()
 
     ########################################
-    # If it's not a SAD2XS lattice, may not have right variables
+    # Resolve globals without mutating the input line
     ########################################
-    try:
-        line["p0c"]
-    except KeyError:
-        line["p0c"]     = line.particle_ref.p0c.item()          # type: ignore
+    writer_globals = {}
+    for variable_name in ("p0c", "mass0", "q0"):
+        try:
+            value = line[variable_name]
+        except KeyError:
+            if line.particle_ref is None:
+                raise ValueError(
+                    f"Cannot write lattice without line variable "
+                    f"'{variable_name}' or line.particle_ref.") from None
+            value = getattr(line.particle_ref, variable_name)
+
+        if hasattr(value, "item"):
+            value = value.item()
+        writer_globals[variable_name] = value
 
     try:
-        line["mass0"]
+        fshift = line["fshift"]
     except KeyError:
-        line["mass0"]   = line.particle_ref.mass0.item()        # type: ignore
-
-    try:
-        line["q0"]
-    except KeyError:
-        line["q0"]      = line.particle_ref.q0.item()           # type: ignore
-
-    try:
-        line["fshift"]
-    except KeyError:
-        line["fshift"]  = 0.0
+        fshift = 0.0
+    if hasattr(fshift, "item"):
+        fshift = fshift.item()
+    writer_globals["fshift"] = fshift
 
     ########################################
     # Determine species string for reference particle
     ########################################
-    species             = species_from_mass_and_charge(line["mass0"], line["q0"])
+    species             = species_from_mass_and_charge(
+        writer_globals["mass0"],
+        writer_globals["q0"])
     if species is not None:
         _particle_ref_line = f'xt.Particles("{species}", p0c=env["p0c"])'
     else:
@@ -127,10 +132,10 @@ env.vars.default_to_zero = True
 ########################################
 # Key Global Variables
 ########################################
-env["mass0"]    = {line["mass0"]}
-env["p0c"]      = {line["p0c"]}
-env["q0"]       = {line["q0"]}
-env["fshift"]   = {line["fshift"]}
+env["mass0"]    = {writer_globals["mass0"]}
+env["p0c"]      = {writer_globals["p0c"]}
+env["q0"]       = {writer_globals["q0"]}
+env["fshift"]   = {writer_globals["fshift"]}
 
 ########################################
 # Reference Particle

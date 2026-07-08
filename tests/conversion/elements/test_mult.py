@@ -492,6 +492,43 @@ def test_mult_converter_warns_when_dipole_multipole_simplifies_to_bend(
         "Dipole-only MULT elements converted to Bend/corrector elements: mx, my"
     ], "Debug logging should name the MULT elements behind the summary warning."
 
+@pytest.mark.parametrize(
+    "element_variables, expected_k0, expected_rotation",
+    [
+        ({"l": 0.5, "k0": 0.1, "rotate": +np.pi / 2}, -0.2, np.pi / 2),
+        ({"l": 0.5, "k0": 0.1, "rotate": -np.pi / 2}, +0.2, np.pi / 2),
+        ({"l": 0.5, "k0": 0.1, "rotate": +np.pi},     -0.2, 0.0),
+        ({"l": 0.5, "sk0": 0.1},                       -0.2, np.pi / 2),
+    ])
+def test_mult_converter_canonicalizes_auto_simplified_dipole_rotations(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element,
+        element_variables,
+        expected_k0,
+        expected_rotation):
+    """
+    Auto-simplified dipole-only MULT elements should use canonical Bend fields.
+    """
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type        = "mult",
+            element_name        = "test_mult",
+            element_variables   = element_variables),
+        environment                 = xsuite_environment,
+        user_multipole_replacements = None,
+        config                      = _mult_config(simplify = True))
+
+    bend = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_mult",
+        element_type    = xt.Bend)
+
+    assert bend.k0 == pytest.approx(expected_k0), (
+        "Auto-simplified MULT dipole k0 should include the canonical field sign.")
+    assert bend.rot_s_rad == pytest.approx(expected_rotation), (
+        "Auto-simplified MULT dipole should use canonical Xsuite rotation.")
+
 def test_mult_converter_keeps_combined_orders_as_multipole(
         parsed_elements,
         xsuite_environment,
@@ -557,6 +594,43 @@ def test_mult_converter_applies_user_replacements(
 
     assert getattr(element, attr_name) == pytest.approx(expected_value), (
         f"{replacement} replacement should divide integrated strength by length.")
+
+@pytest.mark.parametrize(
+    "element_variables, expected_k0, expected_rotation",
+    [
+        ({"l": 0.5, "k0": 0.1, "rotate": +np.pi / 2}, -0.2, np.pi / 2),
+        ({"l": 0.5, "k0": 0.1, "rotate": -np.pi / 2}, +0.2, np.pi / 2),
+        ({"l": 0.5, "k0": 0.1, "rotate": +np.pi},     -0.2, 0.0),
+        ({"l": 0.5, "sk0": 0.1},                       -0.2, np.pi / 2),
+    ])
+def test_mult_converter_canonicalizes_bend_user_replacement_rotations(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element,
+        element_variables,
+        expected_k0,
+        expected_rotation):
+    """
+    User Bend replacement of dipole-only MULT should use canonical Bend fields.
+    """
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type        = "mult",
+            element_name        = "test_mult",
+            element_variables   = element_variables),
+        environment                 = xsuite_environment,
+        user_multipole_replacements = {"test": "Bend"},
+        config                      = _mult_config(simplify = False))
+
+    bend = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_mult",
+        element_type    = xt.Bend)
+
+    assert bend.k0 == pytest.approx(expected_k0), (
+        "Bend replacement k0 should include the canonical field sign.")
+    assert bend.rot_s_rad == pytest.approx(expected_rotation), (
+        "Bend replacement should use canonical Xsuite rotation.")
 
 @pytest.mark.parametrize(
     "element_variables",

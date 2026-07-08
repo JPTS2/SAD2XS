@@ -97,18 +97,24 @@ env.new(name = '{sbend_name}', prototype = xt.Bend, length = {sbend_length})"""
 
     for hbend, hbend_length in zip(hbend_names, hbend_lengths):
         for replica_name in hbends[hbend_length]:
-            replica_variable    = bend_name_dict[replica_name]
+            source_name         = replica_name
+            replica_variable    = bend_name_dict[source_name]
+            bend                = line[source_name]
+            angle               = bend.angle
+            edge_entry_angle    = bend.edge_entry_angle
+            edge_exit_angle     = bend.edge_exit_angle
 
             # Remove the minus sign if no non minus version exists
             if replica_name.startswith("-"):
-                root_name   = replica_name[1:]
-                if root_name not in hbends[hbend_length]:
-                    replica_name        = root_name
+                root_name    = replica_name[1:]
+                source_names = hbends[hbend_length]
+                if root_name not in source_names:
+                    replica_name = root_name
 
             # If simple try to make it more compact
-            if check_is_simple_bend_corr(line, replica_name):
+            if check_is_simple_bend_corr(line, source_name):
                 bend_generation = f"""
-env.new(name = '{replica_name}', prototype = '{hbend}', angle = {line[replica_name].angle:.24f}, k0 = 'k0_{replica_variable}')"""
+env.new(name = '{replica_name}', prototype = '{hbend}', angle = {angle:.24f}, k0 = 'k0_{replica_variable}')"""
 
             # Otherwise do the full version
             else:
@@ -116,34 +122,34 @@ env.new(name = '{replica_name}', prototype = '{hbend}', angle = {line[replica_na
 env.new(
     name                    = '{replica_name}',
     prototype               = '{hbend}',
-    angle                   = {line[replica_name].angle:.24f},
+    angle                   = {angle:.24f},
     k0                      = 'k0_{replica_variable}'"""
-                if line[replica_name].k1 != 0:
+                if bend.k1 != 0:
                     bend_generation += f""",
     k1                      = 'k1_{replica_variable}'"""
             # Append edge entry angles
-                if line[replica_name].edge_entry_angle != 0:
+                if bend.edge_entry_angle != 0:
                     bend_generation += f""",
-    edge_entry_angle        = {line[replica_name].edge_entry_angle}"""
-                if line[replica_name].edge_exit_angle != 0:
+    edge_entry_angle        = {edge_entry_angle}"""
+                if bend.edge_exit_angle != 0:
                     bend_generation += f""",
-    edge_exit_angle         = {line[replica_name].edge_exit_angle}"""
-                if line[replica_name].edge_entry_angle_fdown != 0:
+    edge_exit_angle         = {edge_exit_angle}"""
+                if bend.edge_entry_angle_fdown != 0:
                     bend_generation += f""",
-    edge_entry_angle_fdown  = {line[replica_name].edge_entry_angle_fdown}"""
-                if line[replica_name].edge_exit_angle_fdown != 0:
+    edge_entry_angle_fdown  = {bend.edge_entry_angle_fdown}"""
+                if bend.edge_exit_angle_fdown != 0:
                     bend_generation += f""",
-    edge_exit_angle_fdown   = {line[replica_name].edge_exit_angle_fdown}"""
+    edge_exit_angle_fdown   = {bend.edge_exit_angle_fdown}"""
                 # Append shifts if they exist
-                if line[replica_name].shift_x != 0:
+                if bend.shift_x != 0:
                     bend_generation += f""",
-    shift_x                 = '{line[replica_name].shift_x}'"""
-                if line[replica_name].shift_y != 0:
+    shift_x                 = '{bend.shift_x}'"""
+                if bend.shift_y != 0:
                     bend_generation += f""",
-    shift_y                 = '{line[replica_name].shift_y}'"""
+    shift_y                 = '{bend.shift_y}'"""
                 # Combined multipole components
-                knl_str = get_knl_string(np.asarray(line[replica_name].knl))
-                ksl_str = get_knl_string(np.asarray(line[replica_name].ksl))
+                knl_str = get_knl_string(np.asarray(bend.knl))
+                ksl_str = get_knl_string(np.asarray(bend.ksl))
                 if knl_str != "[]":
                     bend_generation += f""",
     knl                     = {knl_str}"""
@@ -159,18 +165,24 @@ env.new(
 
     for vbend, vbend_length in zip(vbend_names, vbend_lengths):
         for replica_name in vbends[vbend_length]:
-            replica_variable    = bend_name_dict[replica_name]
+            source_name         = replica_name
+            replica_variable    = bend_name_dict[source_name]
+            bend                = line[source_name]
+            angle               = bend.angle
+            edge_entry_angle    = bend.edge_entry_angle
+            edge_exit_angle     = bend.edge_exit_angle
 
             # Remove the minus sign if no non minus version exists
             if replica_name.startswith("-"):
-                root_name   = replica_name[1:]
-                if root_name not in vbends[vbend_length]:
-                    replica_name        = root_name
+                root_name    = replica_name[1:]
+                source_names = vbends[vbend_length]
+                if root_name not in source_names:
+                    replica_name = root_name
 
             # If simple try to make it more compact
-            if check_is_simple_bend_corr(line, replica_name):
+            if check_is_simple_bend_corr(line, source_name):
                 bend_generation = f"""
-env.new(name = '{replica_name}', prototype = '{vbend}', angle = {line[replica_name].angle:.24f}, k0 = 'k0_{replica_variable}')"""
+env.new(name = '{replica_name}', prototype = '{vbend}', angle = {angle:.24f}, k0 = 'k0_{replica_variable}')"""
 
             # Otherwise do the full version
             else:
@@ -178,34 +190,34 @@ env.new(name = '{replica_name}', prototype = '{vbend}', angle = {line[replica_na
 env.new(
     name                    = '{replica_name}',
     prototype               = '{vbend}',
-    angle                   = {line[replica_name].angle:.24f},
+    angle                   = {angle:.24f},
     k0                      = 'k0_{replica_variable}'"""
-                if line[replica_name].k1 != 0:
+                if bend.k1 != 0:
                     bend_generation += f""",
     k1                      = 'k1_{replica_variable}'"""
             # Append edge entry angles
-                if line[replica_name].edge_entry_angle != 0:
+                if bend.edge_entry_angle != 0:
                     bend_generation += f""",
-    edge_entry_angle        = {line[replica_name].edge_entry_angle}"""
-                if line[replica_name].edge_exit_angle != 0:
+    edge_entry_angle        = {edge_entry_angle}"""
+                if bend.edge_exit_angle != 0:
                     bend_generation += f""",
-    edge_exit_angle         = {line[replica_name].edge_exit_angle}"""
-                if line[replica_name].edge_entry_angle_fdown != 0:
+    edge_exit_angle         = {edge_exit_angle}"""
+                if bend.edge_entry_angle_fdown != 0:
                     bend_generation += f""",
-    edge_entry_angle_fdown  = {line[replica_name].edge_entry_angle_fdown}"""
-                if line[replica_name].edge_exit_angle_fdown != 0:
+    edge_entry_angle_fdown  = {bend.edge_entry_angle_fdown}"""
+                if bend.edge_exit_angle_fdown != 0:
                     bend_generation += f""",
-    edge_exit_angle_fdown   = {line[replica_name].edge_exit_angle_fdown}"""
+    edge_exit_angle_fdown   = {bend.edge_exit_angle_fdown}"""
                 # Append shifts if they exist
-                if line[replica_name].shift_x != 0:
+                if bend.shift_x != 0:
                     bend_generation += f""",
-    shift_x                 = '{line[replica_name].shift_x}'"""
-                if line[replica_name].shift_y != 0:
+    shift_x                 = '{bend.shift_x}'"""
+                if bend.shift_y != 0:
                     bend_generation += f""",
-    shift_y                 = '{line[replica_name].shift_y}'"""
+    shift_y                 = '{bend.shift_y}'"""
                 # Combined multipole components
-                knl_str = get_knl_string(np.asarray(line[replica_name].knl))
-                ksl_str = get_knl_string(np.asarray(line[replica_name].ksl))
+                knl_str = get_knl_string(np.asarray(bend.knl))
+                ksl_str = get_knl_string(np.asarray(bend.ksl))
                 if knl_str != "[]":
                     bend_generation += f""",
     knl                     = {knl_str}"""
@@ -220,18 +232,25 @@ env.new(
 
     for sbend, sbend_length in zip(sbend_names, sbend_lengths):
         for replica_name in sbends[sbend_length]:
-            replica_variable    = bend_name_dict[replica_name]
+            source_name         = replica_name
+            replica_variable    = bend_name_dict[source_name]
+            bend                = line[source_name]
+            angle               = bend.angle
+            edge_entry_angle    = bend.edge_entry_angle
+            edge_exit_angle     = bend.edge_exit_angle
+            rot_s_rad           = bend.rot_s_rad
 
             # Remove the minus sign if no non minus version exists
             if replica_name.startswith("-"):
-                root_name   = replica_name[1:]
-                if root_name not in sbends[sbend_length]:
-                    replica_name        = root_name
+                root_name    = replica_name[1:]
+                source_names = sbends[sbend_length]
+                if root_name not in source_names:
+                    replica_name = root_name
 
             # If simple try to make it more compact
-            if check_is_simple_bend_corr(line, replica_name):
+            if check_is_simple_bend_corr(line, source_name):
                 bend_generation = f"""
-env.new(name = '{replica_name}', prototype = '{sbend}', angle = {line[replica_name].angle:.24f}, k0 = 'k0_{replica_variable}', rot_s_rad = '{line[replica_name].rot_s_rad}')"""
+env.new(name = '{replica_name}', prototype = '{sbend}', angle = {angle:.24f}, k0 = 'k0_{replica_variable}', rot_s_rad = '{rot_s_rad}')"""
 
             # Otherwise do the full version
             else:
@@ -239,37 +258,37 @@ env.new(name = '{replica_name}', prototype = '{sbend}', angle = {line[replica_na
 env.new(
     name                    = '{replica_name}',
     prototype               = '{sbend}',
-    angle                   = {line[replica_name].angle:.24f},
+    angle                   = {angle:.24f},
     k0                      = 'k0_{replica_variable}'"""
-                if line[replica_name].k1 != 0:
+                if bend.k1 != 0:
                     bend_generation += f""",
     k1                      = 'k1_{replica_variable}'"""
             # Append edge entry angles
-                if line[replica_name].edge_entry_angle != 0:
+                if bend.edge_entry_angle != 0:
                     bend_generation += f""",
-    edge_entry_angle        = {line[replica_name].edge_entry_angle}"""
-                if line[replica_name].edge_exit_angle != 0:
+    edge_entry_angle        = {edge_entry_angle}"""
+                if bend.edge_exit_angle != 0:
                     bend_generation += f""",
-    edge_exit_angle         = {line[replica_name].edge_exit_angle}"""
-                if line[replica_name].edge_entry_angle_fdown != 0:
+    edge_exit_angle         = {edge_exit_angle}"""
+                if bend.edge_entry_angle_fdown != 0:
                     bend_generation += f""",
-    edge_entry_angle_fdown  = {line[replica_name].edge_entry_angle_fdown}"""
-                if line[replica_name].edge_exit_angle_fdown != 0:
+    edge_entry_angle_fdown  = {bend.edge_entry_angle_fdown}"""
+                if bend.edge_exit_angle_fdown != 0:
                     bend_generation += f""",
-    edge_exit_angle_fdown   = {line[replica_name].edge_exit_angle_fdown}"""
+    edge_exit_angle_fdown   = {bend.edge_exit_angle_fdown}"""
                 # Append shifts if they exist
-                if line[replica_name].shift_x != 0:
+                if bend.shift_x != 0:
                     bend_generation += f""",
-    shift_x                 = '{line[replica_name].shift_x}'"""
-                if line[replica_name].shift_y != 0:
+    shift_x                 = '{bend.shift_x}'"""
+                if bend.shift_y != 0:
                     bend_generation += f""",
-    shift_y                 = '{line[replica_name].shift_y}'"""
+    shift_y                 = '{bend.shift_y}'"""
             # In the case of a skew bend, we need to add a rotation
                 bend_generation += f""",
-    rot_s_rad               = '{line[replica_name].rot_s_rad}'"""
+    rot_s_rad               = '{rot_s_rad}'"""
                 # Combined multipole components
-                knl_str = get_knl_string(np.asarray(line[replica_name].knl))
-                ksl_str = get_knl_string(np.asarray(line[replica_name].ksl))
+                knl_str = get_knl_string(np.asarray(bend.knl))
+                ksl_str = get_knl_string(np.asarray(bend.ksl))
                 if knl_str != "[]":
                     bend_generation += f""",
     knl                     = {knl_str}"""
@@ -336,21 +355,20 @@ def create_bend_optics_file_information(
         k1 = None
 
         try:
-            if line[bend_variable].k0_from_h is True:
-                k0  = line[bend_variable].angle / line[bend_variable].length
-            else:
-                k0  = line[bend_variable].k0
-            k1  = line[bend_variable].k1
+            bend = line[bend_variable]
         except KeyError:
             try:
-                if line[f"-{bend_variable}"].k0_from_h is True:
-                    k0  = line[f"-{bend_variable}"].angle / line[f"-{bend_variable}"].length
-                else:
-                    k0  = line[f"-{bend_variable}"].k0
-                k1  = line[f"-{bend_variable}"].k1
+                bend = line[f"-{bend_variable}"]
             except KeyError as exc:
                 raise KeyError(
-                    f"Could not find bend variable {bend_variable} or -{bend_variable} in line.") from exc
+                    f"Could not find bend variable {bend_variable} or "
+                    f"-{bend_variable} in line.") from exc
+
+        if bend.k0_from_h is True:
+            k0 = bend.angle / bend.length
+        else:
+            k0 = bend.k0
+        k1 = bend.k1
 
         if k0 == 0:
             k0 = None
