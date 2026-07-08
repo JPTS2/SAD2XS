@@ -186,7 +186,7 @@ def _tune_split_coupled_ring():
     columns are not finite.
     """
     env = xt.Environment()
-    env.particle_ref = xt.Particles(p0c = 1.0E9, mass0 = xt.ELECTRON_MASS_EV)
+    env.particle_ref = xt.Particles("electron", p0c = 1.0E9)
     env.new("qf", xt.Quadrupole, k1 = 0.52, length = 0.3)
     env.new("qd", xt.Quadrupole, k1 = -0.5, length = 0.3)
     env.new("dd", xt.Drift, length = 1.0)
@@ -241,7 +241,7 @@ def test_edwards_teng_propagation_reduces_to_plain_twiss_when_uncoupled():
     plain twiss optics and the decoupling matrix must stay exactly zero.
     """
     env = xt.Environment()
-    env.particle_ref = xt.Particles(p0c = 1.0E9, mass0 = xt.ELECTRON_MASS_EV)
+    env.particle_ref = xt.Particles("electron", p0c = 1.0E9)
     env.new("qf", xt.Quadrupole, k1 = 0.52, length = 0.3)
     env.new("qd", xt.Quadrupole, k1 = -0.5, length = 0.3)
     env.new("dd", xt.Drift, length = 1.0)

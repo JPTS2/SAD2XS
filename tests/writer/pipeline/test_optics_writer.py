@@ -16,6 +16,7 @@ Date:       2026-06-21
 # Required Packages
 ################################################################################
 import numpy as np
+import pytest
 import xtrack as xt
 
 import sad2xs as s2x
@@ -33,10 +34,25 @@ def _build_quad_line(k1 = 0.2):
         elements      = [xt.Marker(), xt.Quadrupole(length = 0.5, k1 = k1), xt.Marker()],
         element_names = ["start", "q1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
+
+    return line
+
+
+def _build_external_line_without_writer_globals():
+    """
+    Build a generic Xsuite line that has a particle reference but no SAD2XS
+    writer globals in the line environment.
+    """
+    line = xt.Line(
+        elements      = [
+            xt.Marker(),
+            xt.Drift(length = 1.5),
+            xt.Quadrupole(length = 0.75, k1 = 0.2),
+            xt.Marker()],
+        element_names = ["start", "d1", "q1", "end"])
+
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -51,10 +67,7 @@ def _build_optics_line(element, name):
         elements      = [xt.Marker(), element, xt.Marker()],
         element_names = ["start", name, "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -145,6 +158,32 @@ def test_optics_writer_output_is_executable_python(tmp_path):
     assert env["k1_q1"] is not None, (
         "After calling the optics file, 'k1_q1' should be accessible in "
         "the Xsuite environment.")
+
+
+def test_optics_writer_does_not_mutate_input_line(tmp_path):
+    """
+    write_optics should write optics variables without adding writer globals
+    to the caller's input line.
+    """
+    line = _build_external_line_without_writer_globals()
+
+    for variable_name in ("p0c", "mass0", "q0", "fshift"):
+        with pytest.raises(KeyError):
+            line[variable_name]
+
+    output_dir = tmp_path / "writer_output"
+    output_dir.mkdir()
+
+    s2x.write_optics(
+        line              = line,
+        output_filename   = "external_line_import_optics",
+        output_directory  = str(output_dir),
+        output_header     = "Optics writer non-mutation test",
+        config            = Config(_verbose = False))
+
+    for variable_name in ("p0c", "mass0", "q0", "fshift"):
+        with pytest.raises(KeyError):
+            line[variable_name]
 
 
 ################################################################################

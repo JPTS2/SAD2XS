@@ -88,10 +88,7 @@ def _build_limitellipse_line(
             shift_y = shift_y), xt.Marker()],
         element_names = ["start", "ap1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -117,10 +114,7 @@ def _build_limitrect_line(
             shift_y = shift_y), xt.Marker()],
         element_names = ["start", "ap1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -357,10 +351,7 @@ def test_aper_writer_preserves_multiple_limitellipses_independently(tmp_path):
         ],
         element_names = ["start", "apa", "apb", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
@@ -604,10 +595,7 @@ def test_aper_writer_preserves_multiple_limitrects_independently(tmp_path):
         ],
         element_names = ["start", "apa", "apb", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
@@ -645,10 +633,7 @@ def _build_limitrectellipse_line(
             shift_y = shift_y), xt.Marker()],
         element_names = ["start", "ap1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -759,10 +744,7 @@ def test_aper_writer_preserves_limitellipse_and_limitrect_in_one_line(tmp_path):
         ],
         element_names = ["start", "apell", "aprect", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 

@@ -15,6 +15,7 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
+import pytest
 import xtrack as xt
 
 import sad2xs as s2x
@@ -33,10 +34,25 @@ def _build_minimal_line():
         elements      = [xt.Marker(), xt.Marker()],
         element_names = ["start", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
+
+    return line
+
+
+def _build_external_line_without_writer_globals():
+    """
+    Build a generic Xsuite line that has a particle reference but no SAD2XS
+    writer globals in the line environment.
+    """
+    line = xt.Line(
+        elements      = [
+            xt.Marker(),
+            xt.Drift(length = 1.5),
+            xt.Quadrupole(length = 0.75, k1 = 0.2),
+            xt.Marker()],
+        element_names = ["start", "d1", "q1", "end"])
+
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -70,10 +86,7 @@ def _build_line_with_length():
         elements      = [xt.Marker(), xt.Drift(length = 2.0), xt.Marker()],
         element_names = ["start", "d1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -136,6 +149,46 @@ def test_lattice_writer_output_is_executable_python(tmp_path):
     assert "line" in env.lines, (
         "Calling the lattice file should register a line named 'line' in "
         "the Xsuite environment.")
+
+
+def test_lattice_writer_does_not_mutate_input_line(tmp_path):
+    """
+    write_lattice should derive missing writer globals from particle_ref
+    without adding those variables to the caller's input line.
+    """
+    line = _build_external_line_without_writer_globals()
+
+    for variable_name in ("p0c", "mass0", "q0", "fshift"):
+        with pytest.raises(KeyError):
+            line[variable_name]
+
+    _write_lattice_only(line, tmp_path, "external_line")
+
+    for variable_name in ("p0c", "mass0", "q0", "fshift"):
+        with pytest.raises(KeyError):
+            line[variable_name]
+
+
+def test_lattice_writer_output_uses_particle_ref_without_mutating_line(tmp_path):
+    """
+    A line without writer globals should still produce a lattice file with
+    globals derived from particle_ref.
+    """
+    line = _build_external_line_without_writer_globals()
+    p0c   = float(line.particle_ref.p0c[0])
+    mass0 = float(line.particle_ref.mass0)
+    q0    = float(line.particle_ref.q0)
+    _, output_path = _write_lattice_only(line, tmp_path, "external_line")
+
+    content = output_path.read_text(encoding = "utf-8")
+
+    assert f'env["p0c"]      = {p0c}' in content
+    assert f'env["mass0"]    = {mass0}' in content
+    assert f'env["q0"]       = {q0}' in content
+    assert 'env["fshift"]   = 0.0' in content
+    for variable_name in ("p0c", "mass0", "q0", "fshift"):
+        with pytest.raises(KeyError):
+            line[variable_name]
 
 
 ################################################################################

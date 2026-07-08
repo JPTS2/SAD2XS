@@ -97,10 +97,7 @@ def _build_quad_line(
         elements      = [xt.Marker(), xt.Quadrupole(**quad_kwargs), xt.Marker()],
         element_names = ["start", "q1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -155,10 +152,7 @@ def test_quad_writer_preserves_element_order(tmp_path):
         ],
         element_names = ["start", "qf", "mid", "qd", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
@@ -658,10 +652,7 @@ def test_quad_writer_preserves_multiple_quads_independently(tmp_path):
         ],
         element_names = ["start", "qf", "qd", "qz", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 
@@ -697,10 +688,7 @@ def test_quad_writer_preserves_mixed_normal_and_skew_quads(tmp_path):
         ],
         element_names = ["start", "qnorm", "qskew", "qcombined", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 

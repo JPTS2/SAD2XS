@@ -114,10 +114,7 @@ def _build_hbend_line(
         elements      = [xt.Marker(), xt.Bend(**bend_kwargs), xt.Marker()],
         element_names = ["start", "b1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -137,10 +134,7 @@ def _build_vbend_line(
             rot_s_rad  = np.pi / 2), xt.Marker()],
         element_names = ["start", "vb1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -151,8 +145,8 @@ def _build_sbend_line(
         rot_s_rad = np.pi / 4):
     """
     Build a minimal single skew-bend Xsuite line.
-    Skew bends have a rot_s_rad that is not 0, ±π/2, or π; the writer places
-    the rotation on the clone as a literal string expression.
+    Skew bends have a rot_s_rad that is not 0 or +π/2; the writer places the
+    rotation on the clone as a literal string expression.
     """
     line = xt.Line(
         elements      = [xt.Marker(), xt.Bend(
@@ -161,10 +155,7 @@ def _build_sbend_line(
             rot_s_rad = rot_s_rad), xt.Marker()],
         element_names = ["start", "sb1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -450,8 +441,8 @@ def test_bend_writer_vertical_bend_preserves_rotation(tmp_path):
 ################################################################################
 def test_bend_writer_skew_bend_reloads_as_xsuite_bend(tmp_path):
     """
-    A skew Bend (rot_s_rad not in {0, ±π/2, π}) should reload as an xt.Bend.
-    The writer places the rotation on the clone as a literal string expression.
+    A skew Bend (rot_s_rad not in {0, +π/2}) should reload as an xt.Bend. The
+    writer places the rotation on the clone as a literal string expression.
     """
     original_line = _build_sbend_line()
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
@@ -490,6 +481,26 @@ def test_bend_writer_skew_bend_preserves_angle(tmp_path):
         f"Original: 0.08, reloaded: {reloaded_line['sb1'].angle}.")
 
 
+@pytest.mark.parametrize("rot_s_rad", [np.pi, -np.pi / 2])
+def test_bend_writer_preserves_explicit_special_rotations(tmp_path, rot_s_rad):
+    """
+    External Xsuite bends with pi or -pi/2 rotations should be written as that
+    representation, not rewritten into SAD2XS conversion canonical form.
+    """
+    original_line = _build_sbend_line(
+        angle     = 0.08,
+        length    = 0.6,
+        rot_s_rad = rot_s_rad)
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert reloaded_line["sb1"].angle == pytest.approx(0.08), (
+        "Writer roundtrip should preserve explicit-rotation Bend angle. "
+        f"Original: 0.08, reloaded: {reloaded_line['sb1'].angle}.")
+    assert reloaded_line["sb1"].rot_s_rad == pytest.approx(rot_s_rad), (
+        "Writer roundtrip should preserve explicit Bend rot_s_rad. "
+        f"Original: {rot_s_rad}, reloaded: {reloaded_line['sb1'].rot_s_rad}.")
+
+
 ################################################################################
 # Multiple Bends
 ################################################################################
@@ -508,10 +519,7 @@ def test_bend_writer_preserves_multiple_bends_independently(tmp_path):
         ],
         element_names = ["start", "ba", "bb", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
@@ -544,10 +552,7 @@ def test_bend_writer_bends_with_same_length_share_base_element(tmp_path):
         ],
         element_names = ["start", "ba", "bb", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 

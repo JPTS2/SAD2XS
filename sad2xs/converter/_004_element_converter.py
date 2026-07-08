@@ -240,6 +240,29 @@ def convert_drifts(parsed_elements, environment):
 ################################################################################
 # Convert Bends
 ################################################################################
+def _canonicalize_dipole_rotation(rotation):
+    """
+    Return the SAD-origin canonical dipole rotation and field sign.
+
+    Xsuite Bend has one dipole field direction plus an element rotation. For
+    SAD-origin dipoles, equivalent pi and -pi/2 rotations are represented by
+    a field sign flip; vertical dipoles use +pi/2.
+    """
+    if not isinstance(rotation, (int, float, np.number)):
+        return rotation, +1
+
+    if np.isclose(rotation, 0.0):
+        return 0.0, +1
+    if np.isclose(abs(rotation), np.pi):
+        return 0.0, -1
+    if np.isclose(rotation, np.pi / 2):
+        return np.pi / 2, +1
+    if np.isclose(rotation, -np.pi / 2):
+        return np.pi / 2, -1
+
+    return rotation, +1
+
+
 def convert_bends(parsed_elements, environment, config):
     """
     Convert bends from the SAD parsed data
@@ -258,6 +281,9 @@ def convert_bends(parsed_elements, environment, config):
                 k0l = parse_expression(ele_vars["angle"])
                 k1l = parse_expression(ele_vars.get("k1", 0.0))
                 shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
+                rotation, field_sign = _canonicalize_dipole_rotation(rotation)
+                if field_sign == -1:
+                    k0l = -k0l if isinstance(k0l, (int, float, np.number)) else f"-({k0l})"
                 environment.new(
                     name      = ele_name,
                     prototype = xt.Multipole,
@@ -292,6 +318,9 @@ def convert_bends(parsed_elements, environment, config):
             # Thin/zero-length bend → Multipole; hxl required for reference orbit
             # bending and dispersion generation (without it px and dpx are wrong)
             if isinstance(length, float) and np.isclose(length, 0.0):
+                rotation, field_sign = _canonicalize_dipole_rotation(rotation)
+                if field_sign == -1:
+                    k0l = -k0l if isinstance(k0l, (int, float, np.number)) else f"-({k0l})"
                 environment.new(
                     name      = ele_name,
                     prototype = xt.Multipole,
@@ -316,6 +345,18 @@ def convert_bends(parsed_elements, environment, config):
 
             edge_entry_angle    = f"{e1} * {k0l} + {ae1}"
             edge_exit_angle     = f"{e2} * {k0l} + {ae2}"
+            rotation, field_sign = _canonicalize_dipole_rotation(rotation)
+            if field_sign == -1:
+                if isinstance(angle, (int, float, np.number)):
+                    angle = -angle
+                else:
+                    angle = f"-({angle})"
+                if isinstance(k0, (int, float, np.number)):
+                    k0 = -k0
+                else:
+                    k0 = f"-({k0})"
+                edge_entry_angle    = f"-({edge_entry_angle})"
+                edge_exit_angle     = f"-({edge_exit_angle})"
 
             ########################################
             # Create variables
@@ -379,6 +420,9 @@ def convert_correctors(parsed_elements, environment, config):
             if length == 0:
                 k0l = parse_expression(ele_vars.get("k0", 0.0))
                 k1l = parse_expression(ele_vars.get("k1", 0.0))
+                rotation, field_sign = _canonicalize_dipole_rotation(rotation)
+                if field_sign == -1:
+                    k0l = -k0l if isinstance(k0l, (int, float, np.number)) else f"-({k0l})"
                 environment.new(
                     name      = ele_name,
                     prototype = xt.Multipole,
@@ -396,6 +440,9 @@ def convert_correctors(parsed_elements, environment, config):
             if "k1" in ele_vars:
                 k1l = parse_expression(ele_vars["k1"])
             k1  = divide_integrated_strength(k1l, length)
+            rotation, field_sign = _canonicalize_dipole_rotation(rotation)
+            if field_sign == -1:
+                k0 = -k0 if isinstance(k0, (int, float, np.number)) else f"-({k0})"
 
             ########################################
             # Create variables
@@ -650,6 +697,10 @@ def convert_multipoles(
                     else:
                         k0l = 0.0
 
+                    rotation, field_sign = _canonicalize_dipole_rotation(rotation)
+                    if field_sign == -1:
+                        k0l = -k0l if isinstance(k0l, (int, float, np.number)) else f"-({k0l})"
+
                     k0  = divide_integrated_strength(k0l, length)
                     k0  = define_strength_variable(environment, ele_name, "k0", k0)
 
@@ -787,6 +838,10 @@ def convert_multipoles(
                         rotation    = f"{rotation} - np.pi / 2"
                 else:
                     k0l = 0
+
+                rotation, field_sign = _canonicalize_dipole_rotation(rotation)
+                if field_sign == -1:
+                    k0l = -k0l if isinstance(k0l, (int, float, np.number)) else f"-({k0l})"
 
                 k0  = divide_integrated_strength(k0l, length)
                 k0  = define_strength_variable(environment, ele_name, "k0", k0)

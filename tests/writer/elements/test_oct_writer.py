@@ -97,10 +97,7 @@ def _build_oct_line(
         elements      = [xt.Marker(), xt.Octupole(**oct_kwargs), xt.Marker()],
         element_names = ["start", "o1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -155,10 +152,7 @@ def test_oct_writer_preserves_element_order(tmp_path):
         ],
         element_names = ["start", "of", "mid", "od", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
@@ -655,10 +649,7 @@ def test_oct_writer_preserves_multiple_octs_independently(tmp_path):
         ],
         element_names = ["start", "of", "od", "oz", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 
@@ -694,10 +685,7 @@ def test_oct_writer_preserves_mixed_normal_and_skew_octs(tmp_path):
         ],
         element_names = ["start", "onorm", "oskew", "ocombined", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 

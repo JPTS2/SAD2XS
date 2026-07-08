@@ -115,10 +115,7 @@ def _build_hcorr_line(
         elements      = [xt.Marker(), xt.Bend(**corr_kwargs), xt.Marker()],
         element_names = ["start", "c1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -138,10 +135,7 @@ def _build_vcorr_line(
             rot_s_rad = np.pi / 2), xt.Marker()],
         element_names = ["start", "vc1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -152,8 +146,8 @@ def _build_scorr_line(
         rot_s_rad = np.pi / 4):
     """
     Build a minimal single skew-corrector Xsuite line.
-    Skew correctors have a rot_s_rad not in {0, ±π/2, π}; the writer places
-    the rotation on the clone as a literal string expression.
+    Skew correctors have a rot_s_rad not in {0, +π/2}; the writer places the
+    rotation on the clone as a literal string expression.
     """
     line = xt.Line(
         elements      = [xt.Marker(), xt.Bend(
@@ -162,10 +156,7 @@ def _build_scorr_line(
             rot_s_rad = rot_s_rad), xt.Marker()],
         element_names = ["start", "sc1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -445,9 +436,8 @@ def test_corr_writer_vertical_corr_preserves_rotation(tmp_path):
 ################################################################################
 def test_corr_writer_skew_corr_reloads_as_xsuite_bend(tmp_path):
     """
-    A skew corrector (rot_s_rad not in {0, ±π/2, π}) should reload as an
-    xt.Bend. The writer places the rotation on the clone as a literal string
-    expression.
+    A skew corrector (rot_s_rad not in {0, +π/2}) should reload as an xt.Bend.
+    The writer places the rotation on the clone as a literal string expression.
     """
     original_line = _build_scorr_line()
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
@@ -486,6 +476,26 @@ def test_corr_writer_skew_corr_preserves_rotation(tmp_path):
         f"Original: {rot}, reloaded: {reloaded_line['sc1'].rot_s_rad}.")
 
 
+@pytest.mark.parametrize("rot_s_rad", [np.pi, -np.pi / 2])
+def test_corr_writer_preserves_explicit_special_rotations(tmp_path, rot_s_rad):
+    """
+    External Xsuite correctors with pi or -pi/2 rotations should be written as
+    that representation, not rewritten into SAD2XS conversion canonical form.
+    """
+    original_line = _build_scorr_line(
+        k0        = 1.5E-4,
+        length    = 0.3,
+        rot_s_rad = rot_s_rad)
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert reloaded_line["sc1"].k0 == pytest.approx(1.5E-4), (
+        "Writer roundtrip should preserve explicit-rotation corrector k0. "
+        f"Original: 1.5E-4, reloaded: {reloaded_line['sc1'].k0}.")
+    assert reloaded_line["sc1"].rot_s_rad == pytest.approx(rot_s_rad), (
+        "Writer roundtrip should preserve explicit corrector rot_s_rad. "
+        f"Original: {rot_s_rad}, reloaded: {reloaded_line['sc1'].rot_s_rad}.")
+
+
 ################################################################################
 # Multiple Correctors
 ################################################################################
@@ -504,10 +514,7 @@ def test_corr_writer_preserves_multiple_corrs_independently(tmp_path):
         ],
         element_names = ["start", "ca", "cb", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
@@ -540,10 +547,7 @@ def test_corr_writer_corrs_with_same_length_share_base_element(tmp_path):
         ],
         element_names = ["start", "ca", "cb", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 
