@@ -89,10 +89,7 @@ def _build_cavi_line(
             length    = length), xt.Marker()],
         element_names = ["start", "c1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -147,10 +144,7 @@ def test_cavi_writer_preserves_element_order(tmp_path):
         ],
         element_names = ["start", "c1", "mid", "c2", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
@@ -436,10 +430,7 @@ def test_cavi_writer_preserves_multiple_cavities_independently(tmp_path):
         ],
         element_names = ["start", "c1", "mid", "c2", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 
@@ -481,10 +472,7 @@ def _build_harmonic_cavi_line(harmonic = 400, voltage = 6.0E6, phase = np.pi):
             phase    = phase), xt.Marker()],
         element_names = ["start", "c1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 

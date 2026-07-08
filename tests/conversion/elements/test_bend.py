@@ -1175,9 +1175,8 @@ def test_bend_conversion_matches_sad_tracking_for_angles(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),
@@ -1263,9 +1262,8 @@ def test_bend_conversion_matches_sad_tracking_for_thin_bend(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),
@@ -1360,9 +1358,8 @@ def test_bend_conversion_matches_sad_tracking_for_k1_components(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),
@@ -1472,9 +1469,8 @@ def test_bend_conversion_matches_sad_tracking_for_edge_terms(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),
@@ -1578,9 +1574,8 @@ def test_bend_conversion_matches_sad_tracking_for_rotated_bends(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),
@@ -1681,9 +1676,8 @@ def test_bend_conversion_matches_sad_tracking_for_element_offsets(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),

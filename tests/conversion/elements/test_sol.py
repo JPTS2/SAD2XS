@@ -963,9 +963,8 @@ def _run_sol_tracking_comparison(
             _test_mode       = True)
 
         xs_particles = xt.Particles(
-            p0c   = 1.0E9,
-            mass0 = xt.ELECTRON_MASS_EV,
-            q0    = 1,
+            "positron",
+            p0c     = 1.0E9,
             x     = x_init.copy(),
             px    = px_init.copy(),
             y     = y_init.copy(),
@@ -1081,9 +1080,8 @@ def test_sol_disfrin_off_diverges_from_xsuite_in_tracking(write_lattice, tmp_pat
             _test_mode       = True)
 
         xs_particles = xt.Particles(
-            p0c   = 1.0E9,
-            mass0 = xt.ELECTRON_MASS_EV,
-            q0    = 1,
+            "positron",
+            p0c     = 1.0E9,
             x     = x_init.copy(),
             px    = px_init.copy(),
             y     = y_init.copy(),

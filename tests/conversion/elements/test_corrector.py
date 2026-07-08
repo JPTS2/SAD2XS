@@ -962,9 +962,8 @@ def test_corrector_conversion_matches_sad_tracking_for_horizontal_kicks(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),
@@ -1051,9 +1050,8 @@ def test_corrector_conversion_matches_sad_tracking_for_thin_kick(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),
@@ -1153,9 +1151,8 @@ def test_corrector_conversion_matches_sad_tracking_for_rotated_kicks(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),
@@ -1261,9 +1258,8 @@ def test_corrector_conversion_matches_sad_tracking_for_element_offsets(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),

@@ -84,10 +84,7 @@ def test_xsuite_reference_particle_fields_used_by_sad2xs_exist():
     environment["q0"] = -1.0
     environment["mass0"] = xt.ELECTRON_MASS_EV
 
-    environment.particle_ref = xt.Particles(
-        p0c   = environment["p0c"],
-        q0    = environment["q0"],
-        mass0 = environment["mass0"])
+    environment.particle_ref = xt.Particles("electron", p0c = environment["p0c"])
 
     assert environment.particle_ref.p0c[0] == pytest.approx(1.0E9), (
         "Xsuite reference particles should expose p0c for converted lines.")
@@ -132,10 +129,7 @@ def test_xsuite_trivial_twiss4d_call_shape_used_by_sad2xs():
     line = xt.Line(
         elements      = [xt.Drift(length = 1.0)],
         element_names = ["test_drift"])
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = 1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("positron", p0c = 1.0E9)
 
     twiss_table = line.twiss4d(
         _continue_if_lost = True,

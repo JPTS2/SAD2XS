@@ -97,10 +97,7 @@ def _build_sext_line(
         elements      = [xt.Marker(), xt.Sextupole(**sext_kwargs), xt.Marker()],
         element_names = ["start", "s1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -155,10 +152,7 @@ def test_sext_writer_preserves_element_order(tmp_path):
         ],
         element_names = ["start", "sf", "mid", "sd", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
@@ -655,10 +649,7 @@ def test_sext_writer_preserves_multiple_sexts_independently(tmp_path):
         ],
         element_names = ["start", "sf", "sd", "sz", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 
@@ -694,10 +685,7 @@ def test_sext_writer_preserves_mixed_normal_and_skew_sexts(tmp_path):
         ],
         element_names = ["start", "snorm", "sskew", "scombined", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 

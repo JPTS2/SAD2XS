@@ -100,10 +100,7 @@ def _build_sol_line(
         elements      = [xt.Marker(), xt.UniformSolenoid(**sol_kwargs), xt.Marker()],
         element_names = ["start", "sol1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -158,10 +155,7 @@ def test_sol_writer_preserves_element_order(tmp_path):
         ],
         element_names = ["start", "sola", "mid", "solb", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
@@ -540,10 +534,7 @@ def test_sol_writer_preserves_multiple_solenoids_independently(tmp_path):
         ],
         element_names = ["start", "sola", "solb", "solz", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 

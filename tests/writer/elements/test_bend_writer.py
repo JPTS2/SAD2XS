@@ -114,10 +114,7 @@ def _build_hbend_line(
         elements      = [xt.Marker(), xt.Bend(**bend_kwargs), xt.Marker()],
         element_names = ["start", "b1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -137,10 +134,7 @@ def _build_vbend_line(
             rot_s_rad  = np.pi / 2), xt.Marker()],
         element_names = ["start", "vb1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -161,10 +155,7 @@ def _build_sbend_line(
             rot_s_rad = rot_s_rad), xt.Marker()],
         element_names = ["start", "sb1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -508,10 +499,7 @@ def test_bend_writer_preserves_multiple_bends_independently(tmp_path):
         ],
         element_names = ["start", "ba", "bb", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
@@ -544,10 +532,7 @@ def test_bend_writer_bends_with_same_length_share_base_element(tmp_path):
         ],
         element_names = ["start", "ba", "bb", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 
