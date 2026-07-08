@@ -529,6 +529,64 @@ def test_mult_converter_canonicalizes_auto_simplified_dipole_rotations(
     assert bend.rot_s_rad == pytest.approx(expected_rotation), (
         "Auto-simplified MULT dipole should use canonical Xsuite rotation.")
 
+@pytest.mark.parametrize(
+    "user_multipole_replacements, simplify",
+    [
+        (None,               True),
+        ({"test": "Bend"},   False),
+    ])
+@pytest.mark.parametrize(
+    "element_variables, extra_env_vars, expected_k0, expected_rotation",
+    [
+        ({"l": 0.5, "k0": "k0_var", "sk0": "sk0_var"},
+         {"k0_var": 0.1, "sk0_var": 0.05},
+         np.sqrt(0.1**2 + 0.05**2) / 0.5,
+         np.arctan2(-0.05, 0.1)),
+        ({"l": 0.5, "sk0": "sk0_var", "rotate": "rot_var"},
+         {"sk0_var": 0.05, "rot_var": 0.2},
+         0.05 / 0.5,
+         -0.2 - np.pi / 2),
+    ])
+def test_mult_converter_combines_deferred_k0_sk0(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element,
+        element_variables,
+        extra_env_vars,
+        expected_k0,
+        expected_rotation,
+        user_multipole_replacements,
+        simplify):
+    """
+    Combined-order and SK0-only dipole-only MULT elements with deferred K0,
+    SK0, and/or ROTATE should combine without crashing and resolve to the
+    same fields as the equivalent numeric case, for both auto-simplification
+    and user Bend replacement.
+    """
+    for var_name, value in extra_env_vars.items():
+        xsuite_environment[var_name] = value
+
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type        = "mult",
+            element_name        = "test_mult",
+            element_variables   = element_variables),
+        environment                 = xsuite_environment,
+        user_multipole_replacements = user_multipole_replacements,
+        config                      = _mult_config(simplify = simplify))
+
+    bend = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_mult",
+        element_type    = xt.Bend)
+
+    assert bend.k0 == pytest.approx(expected_k0), (
+        "Deferred K0/SK0/ROTATE should resolve to the numeric-equivalent "
+        "magnitude.")
+    assert bend.rot_s_rad == pytest.approx(expected_rotation), (
+        "Deferred K0/SK0/ROTATE should resolve to the numeric-equivalent "
+        "rotation.")
+
 def test_mult_converter_keeps_combined_orders_as_multipole(
         parsed_elements,
         xsuite_environment,
