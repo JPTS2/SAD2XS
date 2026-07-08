@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-07
+Date:       2026-07-08
 """
 
 ################################################################################
@@ -25,6 +25,7 @@ from ._000_helpers import (
     only_index_nonzero,
     divide_integrated_strength,
     define_strength_variable,
+    combine_k0_sk0,
     values_provably_equal,
     values_provably_opposite,
 )
@@ -679,25 +680,8 @@ def convert_multipoles(
                 ########################################
                 if replace_type == "Bend":
 
-                    if knl[0] != 0 and ksl[0] != 0:
-                        if isinstance(knl[0], float) or isinstance(ksl[0], float):
-                            k0l         = f"sqrt({knl[0]}**2 + {ksl[0]}**2)"
-                            rotation    = f"{rotation} + atan2(-({ksl[0]}), {knl[0]})"
-                        else:
-                            k0l         = np.sqrt(knl[0]**2 + ksl[0]**2)
-                            rotation    = rotation + np.arctan2(-ksl[0], knl[0])
-                    elif knl[0] != 0:
-                        k0l         = knl[0]
-                    elif ksl[0] != 0:
-                        k0l         = ksl[0]
-                        if isinstance(rotation, float):
-                            rotation    = rotation - np.pi / 2
-                        else:
-                            rotation    = f"{rotation} - np.pi / 2"
-                    else:
-                        k0l = 0.0
-
-                    rotation, field_sign = _canonicalize_dipole_rotation(rotation)
+                    k0l, rotation           = combine_k0_sk0(knl[0], ksl[0], rotation)
+                    rotation, field_sign    = _canonicalize_dipole_rotation(rotation)
                     if field_sign == -1:
                         k0l = -k0l if isinstance(k0l, (int, float, np.number)) else f"-({k0l})"
 
@@ -821,25 +805,8 @@ def convert_multipoles(
 
                 dipole_simplified_mults.append(ele_name)
 
-                if knl[0] != 0 and ksl[0] != 0:
-                    if isinstance(knl[0], float) or isinstance(ksl[0], float):
-                        k0l         = f"sqrt({knl[0]}**2 + {ksl[0]}**2)"
-                        rotation    = f"{rotation} + atan2(-({ksl[0]}), {knl[0]})"
-                    else:
-                        k0l         = np.sqrt(knl[0]**2 + ksl[0]**2)
-                        rotation    = rotation + np.arctan2(-ksl[0], knl[0])
-                elif knl[0] != 0:
-                    k0l         = knl[0]
-                elif ksl[0] != 0:
-                    k0l         = ksl[0]
-                    if isinstance(rotation, float):
-                        rotation    = rotation - np.pi / 2
-                    else:
-                        rotation    = f"{rotation} - np.pi / 2"
-                else:
-                    k0l = 0
-
-                rotation, field_sign = _canonicalize_dipole_rotation(rotation)
+                k0l, rotation           = combine_k0_sk0(knl[0], ksl[0], rotation)
+                rotation, field_sign    = _canonicalize_dipole_rotation(rotation)
                 if field_sign == -1:
                     k0l = -k0l if isinstance(k0l, (int, float, np.number)) else f"-({k0l})"
 

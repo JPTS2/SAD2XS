@@ -15,10 +15,12 @@ Date:       2026-06-29
 ################################################################################
 # Required Packages
 ################################################################################
+import numpy as np
 import pytest
 import xtrack as xt
 
 from sad2xs.converter._000_helpers import (
+    combine_k0_sk0,
     divide_integrated_strength,
     define_strength_variable,
     get_element_integrated_strength,
@@ -229,6 +231,62 @@ def test_define_strength_variable_string_expression_registers_and_returns_key():
         "Returned key should follow the '{k_name}_{ele_name}' convention.")
     assert env["k1_qf"] == pytest.approx(0.25), (
         "The stored string expression should resolve to the correct value.")
+
+################################################################################
+# combine_k0_sk0
+################################################################################
+@pytest.mark.parametrize(
+    "knl0, ksl0, rotation, expected_k0l, expected_rotation",
+    [
+        # Both numeric: computed directly, not deferred.
+        (0.1, 0.05, 0.0,
+         np.sqrt(0.1**2 + 0.05**2), np.arctan2(-0.05, 0.1)),
+        # One or both of K0/SK0 deferred: string expression, still resolves.
+        ("k0v", 0.05, 0.0,
+         np.sqrt(0.1**2 + 0.05**2), np.arctan2(-0.05, 0.1)),
+        (0.1, "sk0v", 0.0,
+         np.sqrt(0.1**2 + 0.05**2), np.arctan2(-0.05, 0.1)),
+        ("k0v", "sk0v", 0.0,
+         np.sqrt(0.1**2 + 0.05**2), np.arctan2(-0.05, 0.1)),
+        # Numeric K0/SK0 but deferred rotation: still forces string expression.
+        (0.1, 0.05, "rotv",
+         np.sqrt(0.1**2 + 0.05**2), 0.2 + np.arctan2(-0.05, 0.1)),
+        # Only K0 nonzero: passed through unchanged, no rotation shift.
+        (0.1, 0.0, 0.0,
+         0.1, 0.0),
+        # Only SK0 nonzero: passed through, rotation shifted by -pi/2.
+        (0.0, 0.1, 0.0,
+         0.1, -np.pi / 2),
+        (0.0, 0.1, "rotv",
+         0.1, 0.2 - np.pi / 2),
+        # Neither nonzero.
+        (0.0, 0.0, 0.0,
+         0.0, 0.0),
+    ])
+def test_combine_k0_sk0(knl0, ksl0, rotation, expected_k0l, expected_rotation):
+    """
+    combine_k0_sk0 should resolve to the same magnitude/rotation whether K0,
+    SK0, or rotation itself is numeric or a deferred SAD expression. String
+    results are evaluated through a real Xsuite environment (not just
+    compared as text) so a name the environment can't resolve (e.g. a stray
+    `np.pi` instead of its numeric value) is actually caught.
+    """
+    env         = xt.Environment()
+    env["k0v"]  = 0.1
+    env["sk0v"] = 0.05
+    env["rotv"] = 0.2
+
+    k0l, rotation_out = combine_k0_sk0(knl0, ksl0, rotation)
+
+    resolved_k0l      = env.eval(k0l)         if isinstance(k0l,         str) else k0l
+    resolved_rotation = env.eval(rotation_out) if isinstance(rotation_out, str) else rotation_out
+
+    assert resolved_k0l == pytest.approx(expected_k0l), (
+        "combine_k0_sk0 should resolve to the numeric-equivalent magnitude, "
+        "whether inputs are numeric or deferred expressions.")
+    assert resolved_rotation == pytest.approx(expected_rotation), (
+        "combine_k0_sk0 should resolve to the numeric-equivalent rotation, "
+        "whether inputs are numeric or deferred expressions.")
 
 ################################################################################
 # get_element_misalignments
