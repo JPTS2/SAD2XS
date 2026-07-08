@@ -672,9 +672,8 @@ def test_cavi_conversion_matches_sad_tracking_for_longitudinal_offsets(
             _test_mode       = True)
 
         xs_particles = xt.Particles(
-            p0c   = 1.0E9,
-            mass0 = xt.ELECTRON_MASS_EV,
-            q0    = 1,
+            "positron",
+            p0c     = 1.0E9,
             x     = x_init.copy(),
             px    = px_init.copy(),
             y     = y_init.copy(),

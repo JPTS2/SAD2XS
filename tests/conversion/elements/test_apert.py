@@ -173,9 +173,8 @@ def _assert_apertures_grid_matches(
     """
     line = xt.Line(elements = apertures, element_names = aperture_names)
     particles = xt.Particles(
+        "positron",
         p0c   = 1.0E9,
-        mass0 = xt.ELECTRON_MASS_EV,
-        q0    = 1,
         x     = x_grid.copy(),
         px    = np.zeros_like(x_grid),
         y     = y_grid.copy(),

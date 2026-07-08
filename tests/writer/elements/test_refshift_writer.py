@@ -83,10 +83,7 @@ def _build_translation_line(shift_x = 0.0, shift_y = 0.0):
         elements      = [xt.Marker(), xt.Translation(shift_x = shift_x, shift_y = shift_y), xt.Marker()],
         element_names = ["start", "rs1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -99,10 +96,7 @@ def _build_timedelay_line(shift_zeta = 0.0):
         elements      = [xt.Marker(), xt.TimeDelay(shift_zeta = shift_zeta), xt.Marker()],
         element_names = ["start", "rs1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -115,10 +109,7 @@ def _build_rotation_chi1_line(rot_y_rad = 0.0):
         elements      = [xt.Marker(), xt.Rotation(rot_y_rad = rot_y_rad), xt.Marker()],
         element_names = ["start", "rs1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -131,10 +122,7 @@ def _build_rotation_chi2_line(rot_x_rad = 0.0):
         elements      = [xt.Marker(), xt.Rotation(rot_x_rad = rot_x_rad), xt.Marker()],
         element_names = ["start", "rs1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -147,10 +135,7 @@ def _build_rotation_chi3_line(rot_s_rad = 0.0):
         elements      = [xt.Marker(), xt.Rotation(rot_s_rad = rot_s_rad), xt.Marker()],
         element_names = ["start", "rs1", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
@@ -386,10 +371,7 @@ def test_refshift_writer_preserves_multiple_translations_independently(tmp_path)
         ],
         element_names = ["start", "rsa", "rsb", "rsc", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 
@@ -800,10 +782,7 @@ def test_refshift_writer_preserves_all_five_types_in_one_line(tmp_path):
         ],
         element_names = ["start", "rsxy", "rsdz", "rsyr", "rsxr", "rssr", "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 

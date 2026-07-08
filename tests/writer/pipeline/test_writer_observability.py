@@ -35,10 +35,7 @@ def _build_line(elements, element_names):
     """
     line = xt.Line(elements = elements, element_names = element_names)
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 

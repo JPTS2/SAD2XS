@@ -85,16 +85,21 @@ env.new(name = '{scorr_name}', prototype = xt.Bend, length = {scorr_length})"""
 
     for hcorr, hcorr_length in zip(hcorr_names, hcorr_lengths):
         for replica_name in hcorrs[hcorr_length]:
-            replica_variable    = corr_name_dict[replica_name]
+            source_name         = replica_name
+            replica_variable    = corr_name_dict[source_name]
+            corr                = line[source_name]
+            edge_entry_angle    = corr.edge_entry_angle
+            edge_exit_angle     = corr.edge_exit_angle
 
             # Remove the minus sign if no non minus version exists
             if replica_name.startswith("-"):
-                root_name   = replica_name[1:]
-                if root_name not in hcorrs[hcorr_length]:
-                    replica_name        = root_name
+                root_name    = replica_name[1:]
+                source_names = hcorrs[hcorr_length]
+                if root_name not in source_names:
+                    replica_name = root_name
 
             # If simple try to make it more compact
-            if check_is_simple_bend_corr(line, replica_name):
+            if check_is_simple_bend_corr(line, source_name):
                 corr_generation = f"""
 env.new(name = '{replica_name}', prototype = '{hcorr}', k0 = 'k0_{replica_variable}')"""
 
@@ -105,32 +110,32 @@ env.new(
     name                    = '{replica_name}',
     prototype               = '{hcorr}',
     k0                      = 'k0_{replica_variable}'"""
-                if line[replica_name].k1 != 0:
+                if corr.k1 != 0:
                     corr_generation += f""",
     k1                      = 'k1_{replica_variable}'"""
             # Append edge entry angles
-                if line[replica_name].edge_entry_angle != 0:
+                if corr.edge_entry_angle != 0:
                     corr_generation += f""",
-    edge_entry_angle        = {line[replica_name].edge_entry_angle}"""
-                if line[replica_name].edge_exit_angle != 0:
+    edge_entry_angle        = {edge_entry_angle}"""
+                if corr.edge_exit_angle != 0:
                     corr_generation += f""",
-    edge_exit_angle         = {line[replica_name].edge_exit_angle}"""
-                if line[replica_name].edge_entry_angle_fdown != 0:
+    edge_exit_angle         = {edge_exit_angle}"""
+                if corr.edge_entry_angle_fdown != 0:
                     corr_generation += f""",
-    edge_entry_angle_fdown  = {line[replica_name].edge_entry_angle_fdown}"""
-                if line[replica_name].edge_exit_angle_fdown != 0:
+    edge_entry_angle_fdown  = {corr.edge_entry_angle_fdown}"""
+                if corr.edge_exit_angle_fdown != 0:
                     corr_generation += f""",
-    edge_exit_angle_fdown   = {line[replica_name].edge_exit_angle_fdown}"""
+    edge_exit_angle_fdown   = {corr.edge_exit_angle_fdown}"""
                 # Append shifts if they exist
-                if line[replica_name].shift_x != 0:
+                if corr.shift_x != 0:
                     corr_generation += f""",
-    shift_x                 = '{line[replica_name].shift_x}'"""
-                if line[replica_name].shift_y != 0:
+    shift_x                 = '{corr.shift_x}'"""
+                if corr.shift_y != 0:
                     corr_generation += f""",
-    shift_y                 = '{line[replica_name].shift_y}'"""
+    shift_y                 = '{corr.shift_y}'"""
                 # Combined multipole components
-                knl_str = get_knl_string(np.asarray(line[replica_name].knl))
-                ksl_str = get_knl_string(np.asarray(line[replica_name].ksl))
+                knl_str = get_knl_string(np.asarray(corr.knl))
+                ksl_str = get_knl_string(np.asarray(corr.ksl))
                 if knl_str != "[]":
                     corr_generation += f""",
     knl                     = {knl_str}"""
@@ -146,16 +151,21 @@ env.new(
 
     for vcorr, vcorr_length in zip(vcorr_names, vcorr_lengths):
         for replica_name in vcorrs[vcorr_length]:
-            replica_variable    = corr_name_dict[replica_name]
+            source_name         = replica_name
+            replica_variable    = corr_name_dict[source_name]
+            corr                = line[source_name]
+            edge_entry_angle    = corr.edge_entry_angle
+            edge_exit_angle     = corr.edge_exit_angle
 
             # Remove the minus sign if no non minus version exists
             if replica_name.startswith("-"):
-                root_name   = replica_name[1:]
-                if root_name not in vcorrs[vcorr_length]:
-                    replica_name        = root_name
+                root_name    = replica_name[1:]
+                source_names = vcorrs[vcorr_length]
+                if root_name not in source_names:
+                    replica_name = root_name
 
             # If simple try to make it more compact
-            if check_is_simple_bend_corr(line, replica_name):
+            if check_is_simple_bend_corr(line, source_name):
                 corr_generation = f"""
 env.new(name = '{replica_name}', prototype = '{vcorr}', k0 = 'k0_{replica_variable}')"""
 
@@ -166,32 +176,32 @@ env.new(
     name                    = '{replica_name}',
     prototype               = '{vcorr}',
     k0                      = 'k0_{replica_variable}'"""
-                if line[replica_name].k1 != 0:
+                if corr.k1 != 0:
                     corr_generation += f""",
     k1                      = 'k1_{replica_variable}'"""
             # Append edge entry angles
-                if line[replica_name].edge_entry_angle != 0:
+                if corr.edge_entry_angle != 0:
                     corr_generation += f""",
-    edge_entry_angle        = {line[replica_name].edge_entry_angle}"""
-                if line[replica_name].edge_exit_angle != 0:
+    edge_entry_angle        = {edge_entry_angle}"""
+                if corr.edge_exit_angle != 0:
                     corr_generation += f""",
-    edge_exit_angle         = {line[replica_name].edge_exit_angle}"""
-                if line[replica_name].edge_entry_angle_fdown != 0:
+    edge_exit_angle         = {edge_exit_angle}"""
+                if corr.edge_entry_angle_fdown != 0:
                     corr_generation += f""",
-    edge_entry_angle_fdown  = {line[replica_name].edge_entry_angle_fdown}"""
-                if line[replica_name].edge_exit_angle_fdown != 0:
+    edge_entry_angle_fdown  = {corr.edge_entry_angle_fdown}"""
+                if corr.edge_exit_angle_fdown != 0:
                     corr_generation += f""",
-    edge_exit_angle_fdown   = {line[replica_name].edge_exit_angle_fdown}"""
+    edge_exit_angle_fdown   = {corr.edge_exit_angle_fdown}"""
                 # Append shifts if they exist
-                if line[replica_name].shift_x != 0:
+                if corr.shift_x != 0:
                     corr_generation += f""",
-    shift_x                 = '{line[replica_name].shift_x}'"""
-                if line[replica_name].shift_y != 0:
+    shift_x                 = '{corr.shift_x}'"""
+                if corr.shift_y != 0:
                     corr_generation += f""",
-    shift_y                 = '{line[replica_name].shift_y}'"""
+    shift_y                 = '{corr.shift_y}'"""
                 # Combined multipole components
-                knl_str = get_knl_string(np.asarray(line[replica_name].knl))
-                ksl_str = get_knl_string(np.asarray(line[replica_name].ksl))
+                knl_str = get_knl_string(np.asarray(corr.knl))
+                ksl_str = get_knl_string(np.asarray(corr.ksl))
                 if knl_str != "[]":
                     corr_generation += f""",
     knl                     = {knl_str}"""
@@ -206,18 +216,24 @@ env.new(
 
     for scorr, scorr_length in zip(scorr_names, scorr_lengths):
         for replica_name in scorrs[scorr_length]:
-            replica_variable    = corr_name_dict[replica_name]
+            source_name         = replica_name
+            replica_variable    = corr_name_dict[source_name]
+            corr                = line[source_name]
+            edge_entry_angle    = corr.edge_entry_angle
+            edge_exit_angle     = corr.edge_exit_angle
+            rot_s_rad           = corr.rot_s_rad
 
             # Remove the minus sign if no non minus version exists
             if replica_name.startswith("-"):
-                root_name   = replica_name[1:]
-                if root_name not in scorrs[scorr_length]:
-                    replica_name        = root_name
+                root_name    = replica_name[1:]
+                source_names = scorrs[scorr_length]
+                if root_name not in source_names:
+                    replica_name = root_name
 
             # If simple try to make it more compact
-            if check_is_simple_bend_corr(line, replica_name):
+            if check_is_simple_bend_corr(line, source_name):
                 corr_generation = f"""
-env.new(name = '{replica_name}', prototype = '{scorr}', k0 = 'k0_{replica_variable}', rot_s_rad = '{line[replica_name].rot_s_rad}')"""
+env.new(name = '{replica_name}', prototype = '{scorr}', k0 = 'k0_{replica_variable}', rot_s_rad = '{rot_s_rad}')"""
 
             # Otherwise do the full version
             else:
@@ -226,35 +242,35 @@ env.new(
     name                    = '{replica_name}',
     prototype               = '{scorr}',
     k0                      = 'k0_{replica_variable}'"""
-                if line[replica_name].k1 != 0:
+                if corr.k1 != 0:
                     corr_generation += f""",
     k1                      = 'k1_{replica_variable}'"""
             # Append edge entry angles
-                if line[replica_name].edge_entry_angle != 0:
+                if corr.edge_entry_angle != 0:
                     corr_generation += f""",
-    edge_entry_angle        = {line[replica_name].edge_entry_angle}"""
-                if line[replica_name].edge_exit_angle != 0:
+    edge_entry_angle        = {edge_entry_angle}"""
+                if corr.edge_exit_angle != 0:
                     corr_generation += f""",
-    edge_exit_angle         = {line[replica_name].edge_exit_angle}"""
-                if line[replica_name].edge_entry_angle_fdown != 0:
+    edge_exit_angle         = {edge_exit_angle}"""
+                if corr.edge_entry_angle_fdown != 0:
                     corr_generation += f""",
-    edge_entry_angle_fdown  = {line[replica_name].edge_entry_angle_fdown}"""
-                if line[replica_name].edge_exit_angle_fdown != 0:
+    edge_entry_angle_fdown  = {corr.edge_entry_angle_fdown}"""
+                if corr.edge_exit_angle_fdown != 0:
                     corr_generation += f""",
-    edge_exit_angle_fdown   = {line[replica_name].edge_exit_angle_fdown}"""
+    edge_exit_angle_fdown   = {corr.edge_exit_angle_fdown}"""
                 # Append shifts if they exist
-                if line[replica_name].shift_x != 0:
+                if corr.shift_x != 0:
                     corr_generation += f""",
-    shift_x                 = '{line[replica_name].shift_x}'"""
-                if line[replica_name].shift_y != 0:
+    shift_x                 = '{corr.shift_x}'"""
+                if corr.shift_y != 0:
                     corr_generation += f""",
-    shift_y                 = '{line[replica_name].shift_y}'"""
+    shift_y                 = '{corr.shift_y}'"""
             # In the case of a skew corrector, we need to add a rotation
                 corr_generation += f""",
-    rot_s_rad               = '{line[replica_name].rot_s_rad}'"""
+    rot_s_rad               = '{rot_s_rad}'"""
                 # Combined multipole components
-                knl_str = get_knl_string(np.asarray(line[replica_name].knl))
-                ksl_str = get_knl_string(np.asarray(line[replica_name].ksl))
+                knl_str = get_knl_string(np.asarray(corr.knl))
+                ksl_str = get_knl_string(np.asarray(corr.ksl))
                 if knl_str != "[]":
                     corr_generation += f""",
     knl                     = {knl_str}"""
@@ -323,14 +339,17 @@ def create_corrector_optics_file_information(
         k1 = None
 
         try:
-            k0  = line[corr_variable].k0
-            k1  = line[corr_variable].k1
+            corr = line[corr_variable]
         except KeyError:
             try:
-                k0  = line[f"-{corr_variable}"].k0
-                k1  = line[f"-{corr_variable}"].k1
-            except KeyError:
-                raise KeyError(f"Could not find bend variable {corr_variable} or -{corr_variable} in line.")
+                corr = line[f"-{corr_variable}"]
+            except KeyError as exc:
+                raise KeyError(
+                    f"Could not find corrector variable {corr_variable} or "
+                    f"-{corr_variable} in line.") from exc
+
+        k0 = corr.k0
+        k1 = corr.k1
 
         if k0 == 0:
             k0 = None

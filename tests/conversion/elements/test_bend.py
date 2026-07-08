@@ -457,13 +457,26 @@ def test_bend_converter_supports_symbolic_length_and_angle(
 ########################################
 # Offsets and Rotations
 ########################################
-def test_bend_converter_preserves_offsets_and_rotation(
+@pytest.mark.parametrize(
+    "sad_rotation, expected_rotation, expected_sign",
+    [
+        (0.0,        0.0,       +1),
+        (+np.pi,     0.0,       -1),
+        (-np.pi,     0.0,       -1),
+        (+np.pi / 2, np.pi / 2, -1),
+        (-np.pi / 2, np.pi / 2, +1),
+        (0.125,     -0.125,     +1),
+    ])
+def test_bend_converter_canonicalizes_dipole_rotations(
         parsed_elements,
         xsuite_environment,
         sad2xs_config,
-        assert_environment_element):
+        assert_environment_element,
+        sad_rotation,
+        expected_rotation,
+        expected_sign):
     """
-    SAD BEND DX, DY, and ROTATE should map to Xsuite element fields.
+    SAD BEND special rotations should map to canonical Xsuite Bend fields.
     """
     convert_bends(
         parsed_elements = parsed_elements(
@@ -474,7 +487,11 @@ def test_bend_converter_preserves_offsets_and_rotation(
                 "angle":    0.1,
                 "dx":       1.0E-3,
                 "dy":       -2.0E-3,
-                "rotate":   np.pi / 2,
+                "rotate":   sad_rotation,
+                "e1":       0.5,
+                "e2":       0.25,
+                "ae1":      0.01,
+                "ae2":      -0.02,
             }),
         environment     = xsuite_environment,
         config          = sad2xs_config)
@@ -488,8 +505,63 @@ def test_bend_converter_preserves_offsets_and_rotation(
         "Converted bend should preserve SAD DX as Xsuite shift_x.")
     assert bend.shift_y == pytest.approx(-2.0E-3), (
         "Converted bend should preserve SAD DY as Xsuite shift_y.")
-    assert bend.rot_s_rad == pytest.approx(-np.pi / 2), (
-        "Converted bend should apply the SAD-to-Xsuite rotation sign.")
+    assert bend.angle == pytest.approx(expected_sign * 0.1), (
+        "Canonicalized bend angle should include the dipole field sign.")
+    assert bend.k0 == pytest.approx(expected_sign * 0.2), (
+        "Canonicalized bend k0 should include the dipole field sign.")
+    assert bend.edge_entry_angle == pytest.approx(expected_sign * 0.06), (
+        "Canonicalized bend edge_entry_angle should include the dipole field sign.")
+    assert bend.edge_exit_angle == pytest.approx(expected_sign * 0.005), (
+        "Canonicalized bend edge_exit_angle should include the dipole field sign.")
+    assert bend.rot_s_rad == pytest.approx(expected_rotation), (
+        "Converted bend should use the canonical Xsuite dipole rotation.")
+
+@pytest.mark.parametrize(
+    "sad_rotation, expected_rotation, expected_sign",
+    [
+        (0.0,        0.0,       +1),
+        (+np.pi,     0.0,       -1),
+        (-np.pi,     0.0,       -1),
+        (+np.pi / 2, np.pi / 2, -1),
+        (-np.pi / 2, np.pi / 2, +1),
+        (0.125,     -0.125,     +1),
+    ])
+def test_bend_converter_canonicalizes_thin_dipole_rotations(
+        parsed_elements,
+        xsuite_environment,
+        sad2xs_config,
+        assert_environment_element,
+        sad_rotation,
+        expected_rotation,
+        expected_sign):
+    """
+    Thin SAD BEND rotations should canonicalize the dipole kick and hxl.
+    """
+    convert_bends(
+        parsed_elements = parsed_elements(
+            element_type        = "bend",
+            element_name        = "test_bend",
+            element_variables   = {
+                "angle":    0.1,
+                "k1":       0.5,
+                "rotate":   sad_rotation,
+            }),
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
+
+    ele = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "test_bend",
+        element_type    = xt.Multipole)
+
+    assert ele.knl[0] == pytest.approx(expected_sign * 0.1), (
+        "Thin BEND knl[0] should include the canonical dipole field sign.")
+    assert ele.hxl == pytest.approx(expected_sign * 0.1), (
+        "Thin BEND hxl should include the canonical dipole field sign.")
+    assert ele.knl[1] == pytest.approx(0.5), (
+        "Thin BEND K1 should not be flipped by dipole canonicalization.")
+    assert ele.rot_s_rad == pytest.approx(expected_rotation), (
+        "Thin BEND should use the canonical Xsuite dipole rotation.")
 
 def test_bend_converter_without_length_creates_thin_multipole(
         parsed_elements,
@@ -612,9 +684,10 @@ def test_bend_pipeline_preserves_names_order_lengths_angles_and_strengths(
         assert line[bend_name].k1 == pytest.approx(expected_k1), (
             f"Converted bend '{bend_name}' should preserve integrated K1/length.")
 
-def test_bend_pipeline_preserves_edges_offsets_and_rotation(write_lattice):
+def test_bend_pipeline_canonicalizes_edges_offsets_and_rotation(write_lattice):
     """
-    Full conversion should preserve BEND edge terms, offsets, and rotation.
+    Full conversion should preserve offsets and canonicalize BEND edge terms
+    and rotation.
     """
     lattice_path = write_lattice(
         """\
@@ -637,7 +710,7 @@ def test_bend_pipeline_preserves_edges_offsets_and_rotation(write_lattice):
 
         LINE        TEST_LINE   = (START BOFF END);
         """,
-        filename = "bend_pipeline_preserves_edges_offsets_rotation.sad")
+        filename = "bend_pipeline_canonicalizes_edges_offsets_rotation.sad")
 
     line = s2x.convert_sad_to_xsuite(
         sad_lattice_path    = str(lattice_path),
@@ -649,16 +722,20 @@ def test_bend_pipeline_preserves_edges_offsets_and_rotation(write_lattice):
         "Converted line should preserve offset bend order.")
     assert isinstance(line["boff"], xt.Bend), (
         "Converted offset bend should be an Xsuite Bend.")
-    assert line["boff"].edge_entry_angle == pytest.approx(0.06), (
-        "Converted bend should preserve E1*ANGLE + AE1.")
-    assert line["boff"].edge_exit_angle == pytest.approx(0.005), (
-        "Converted bend should preserve E2*ANGLE + AE2.")
+    assert line["boff"].angle == pytest.approx(-0.1), (
+        "Converted bend angle should include the canonical dipole field sign.")
+    assert line["boff"].k0 == pytest.approx(-0.2), (
+        "Converted bend k0 should include the canonical dipole field sign.")
+    assert line["boff"].edge_entry_angle == pytest.approx(-0.06), (
+        "Converted bend edge_entry_angle should include the canonical dipole field sign.")
+    assert line["boff"].edge_exit_angle == pytest.approx(-0.005), (
+        "Converted bend edge_exit_angle should include the canonical dipole field sign.")
     assert line["boff"].shift_x == pytest.approx(1.0E-3), (
         "Converted bend should preserve SAD DX as Xsuite shift_x.")
     assert line["boff"].shift_y == pytest.approx(-2.0E-3), (
         "Converted bend should preserve SAD DY as Xsuite shift_y.")
-    assert line["boff"].rot_s_rad == pytest.approx(-np.pi / 2), (
-        "Converted bend should apply the SAD-to-Xsuite rotation sign.")
+    assert line["boff"].rot_s_rad == pytest.approx(np.pi / 2), (
+        "Converted bend should use the canonical Xsuite vertical dipole rotation.")
 
 ################################################################################
 # Physics Equivalence
@@ -1175,9 +1252,8 @@ def test_bend_conversion_matches_sad_tracking_for_angles(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),
@@ -1263,9 +1339,8 @@ def test_bend_conversion_matches_sad_tracking_for_thin_bend(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),
@@ -1360,9 +1435,8 @@ def test_bend_conversion_matches_sad_tracking_for_k1_components(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),
@@ -1472,9 +1546,8 @@ def test_bend_conversion_matches_sad_tracking_for_edge_terms(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),
@@ -1578,9 +1651,8 @@ def test_bend_conversion_matches_sad_tracking_for_rotated_bends(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),
@@ -1681,9 +1753,8 @@ def test_bend_conversion_matches_sad_tracking_for_element_offsets(
             _test_mode          = True)
 
         xs_particles = xt.Particles(
+            "positron",
             p0c     = 1.0E9,
-            mass0   = xt.ELECTRON_MASS_EV,
-            q0      = 1,
             x       = x_init.copy(),
             px      = px_init.copy(),
             y       = y_init.copy(),

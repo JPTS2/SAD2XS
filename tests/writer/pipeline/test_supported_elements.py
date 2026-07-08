@@ -33,10 +33,7 @@ def _build_single_element_line(element, name):
         elements      = [xt.Marker(), element, xt.Marker()],
         element_names = ["start", name, "end"])
 
-    line.particle_ref = xt.Particles(
-        p0c   = 1.0E9,
-        q0    = -1.0,
-        mass0 = xt.ELECTRON_MASS_EV)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
     return line
 
