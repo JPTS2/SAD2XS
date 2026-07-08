@@ -147,7 +147,9 @@ def extract_bend_information(line, line_table):
     ########################################
     # Bend Base Element information
     ########################################
-    # Get the base elements to replicate: pure horizontal, vertical and skew
+    # Get the base elements to replicate: pure horizontal, vertical and skew.
+    # The writer classifies the line as-is; it does not repair or canonicalize
+    # bend orientation during serialization.
     hbends	= {}
     vbends  = {}
     sbends  = {}
@@ -161,26 +163,16 @@ def extract_bend_information(line, line_table):
         ########################################
         # Categorise H and V based on the rotation
         ########################################
-        # Mapping from rotation → (target‑dict, need_flip)
+        # Mapping from rotation → target dictionary
         angle_map = {
-            0:               (hbends, False),
-            np.pi:           (hbends, True),
-            -np.pi / 2:      (vbends, True),
-            np.pi / 2:       (vbends, False)}
+            0:               hbends,
+            np.pi / 2:       vbends}
 
         # Try to match one of the valid angles
         angle_matched   = False
-        for angle, (bend_dict, flip) in angle_map.items():
+        for angle, bend_dict in angle_map.items():
             if np.isclose(rot_s_rad, angle):
                 angle_matched   = True
-
-                # Handle horizontal and vertical bends rotated by 180 degrees
-                if flip:
-                    line[bend].angle            *= -1
-                    line[bend].k0               *= -1
-                    line[bend].edge_entry_angle *= -1
-                    line[bend].edge_exit_angle  *= -1
-                    line[bend].rot_s_rad        *= -1
 
                 # insert without duplicates
                 lst = bend_dict.setdefault(length, [])
@@ -218,7 +210,7 @@ def extract_corrector_information(line, line_table):
         parentname      = get_parentname(corr)
         variablename    = get_variablename(corr)
 
-        # Ensure the element is a corr not a corrector
+        # Ensure the element is a corrector, not a bend.
         if line[parentname].h == 0:
             if parentname not in unique_corr_names:
                 unique_corr_names.append(parentname)
@@ -233,7 +225,9 @@ def extract_corrector_information(line, line_table):
     ########################################
     # corr Base Element information
     ########################################
-    # Get the base elements to replicate: pure horizontal, vertical and skew
+    # Get the base elements to replicate: pure horizontal, vertical and skew.
+    # The writer classifies the line as-is; it does not repair or canonicalize
+    # corrector orientation during serialization.
     hcorrs	= {}
     vcorrs  = {}
     scorrs  = {}
@@ -247,27 +241,16 @@ def extract_corrector_information(line, line_table):
         ########################################
         # Categorise H and V based on the rotation
         ########################################
-        # Mapping from rotation → (target‑dict, need_flip)
+        # Mapping from rotation → target dictionary
         angle_map = {
-            0:               (hcorrs, False),
-            np.pi:           (hcorrs, True),
-            -np.pi / 2:      (vcorrs, True),
-            np.pi / 2:       (vcorrs, False)}
+            0:               hcorrs,
+            np.pi / 2:       vcorrs}
 
         # Try to match one of the valid angles
         angle_matched   = False
-        for angle, (corr_dict, flip) in angle_map.items():
+        for angle, corr_dict in angle_map.items():
             if np.isclose(rot_s_rad, angle):
                 angle_matched   = True
-
-                # Handle horizontal and vertical corrs rotated by 180 degrees
-                if flip:
-                    assert line[corr].h == 0
-                    line[corr].k0               *= -1
-
-                    line[corr].edge_entry_angle *= -1
-                    line[corr].edge_exit_angle  *= -1
-                    line[corr].rot_s_rad        *= -1
 
                 # insert without duplicates
                 lst = corr_dict.setdefault(length, [])

@@ -145,8 +145,8 @@ def _build_sbend_line(
         rot_s_rad = np.pi / 4):
     """
     Build a minimal single skew-bend Xsuite line.
-    Skew bends have a rot_s_rad that is not 0, ±π/2, or π; the writer places
-    the rotation on the clone as a literal string expression.
+    Skew bends have a rot_s_rad that is not 0 or +π/2; the writer places the
+    rotation on the clone as a literal string expression.
     """
     line = xt.Line(
         elements      = [xt.Marker(), xt.Bend(
@@ -441,8 +441,8 @@ def test_bend_writer_vertical_bend_preserves_rotation(tmp_path):
 ################################################################################
 def test_bend_writer_skew_bend_reloads_as_xsuite_bend(tmp_path):
     """
-    A skew Bend (rot_s_rad not in {0, ±π/2, π}) should reload as an xt.Bend.
-    The writer places the rotation on the clone as a literal string expression.
+    A skew Bend (rot_s_rad not in {0, +π/2}) should reload as an xt.Bend. The
+    writer places the rotation on the clone as a literal string expression.
     """
     original_line = _build_sbend_line()
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
@@ -479,6 +479,26 @@ def test_bend_writer_skew_bend_preserves_angle(tmp_path):
     assert reloaded_line["sb1"].angle == pytest.approx(0.08), (
         "Writer roundtrip should preserve skew Bend angle. "
         f"Original: 0.08, reloaded: {reloaded_line['sb1'].angle}.")
+
+
+@pytest.mark.parametrize("rot_s_rad", [np.pi, -np.pi / 2])
+def test_bend_writer_preserves_explicit_special_rotations(tmp_path, rot_s_rad):
+    """
+    External Xsuite bends with pi or -pi/2 rotations should be written as that
+    representation, not rewritten into SAD2XS conversion canonical form.
+    """
+    original_line = _build_sbend_line(
+        angle     = 0.08,
+        length    = 0.6,
+        rot_s_rad = rot_s_rad)
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert reloaded_line["sb1"].angle == pytest.approx(0.08), (
+        "Writer roundtrip should preserve explicit-rotation Bend angle. "
+        f"Original: 0.08, reloaded: {reloaded_line['sb1'].angle}.")
+    assert reloaded_line["sb1"].rot_s_rad == pytest.approx(rot_s_rad), (
+        "Writer roundtrip should preserve explicit Bend rot_s_rad. "
+        f"Original: {rot_s_rad}, reloaded: {reloaded_line['sb1'].rot_s_rad}.")
 
 
 ################################################################################
