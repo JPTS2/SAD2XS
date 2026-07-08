@@ -44,7 +44,7 @@ Total collected from this folder: see `tests/README.md`.
 | `test_drift.py` | 6 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
-| `test_mult.py` | 15 | 0 | — |
+| `test_mult.py` | 18 | 0 | — |
 | `test_oct.py` | 18 | 0 | — |
 | `test_quad.py` | 18 | 0 | — |
 | `test_sext.py` | 18 | 0 | — |
@@ -133,6 +133,26 @@ found and fixed two separate converter bugs, plus a twiss-convention mismatch:
   `tests/sad/test_mult.py`, the converter warning is covered here, and
   `test_mult_k0_dipole_fringe_difference_is_theta_fourth_order` locks in the
   expected `theta^4` residual as a passing accepted-limitation test.
+
+Separately: the combined `K0`+`SK0` `MULT` path (auto-simplification and user
+`Bend` replacement) selected its numeric-vs-deferred-expression branch by
+checking whether either value was a `float`, when it needed to check for
+`str` instead. A `MULT` with both `K0` and `SK0` given as deferred SAD
+expressions crashed with `TypeError` on `str ** int`; a `MULT` with numeric
+`K0`/`SK0` but a deferred `ROTATE` crashed with `TypeError` on `str + float`.
+While consolidating the fix, a second, pre-existing bug in the same branch
+was also found: the only-`SK0` path built its deferred rotation as
+`f"{rotation} - np.pi / 2"`, embedding the literal unresolved text `np.pi`
+rather than its numeric value — Xsuite's expression evaluator has no `np` or
+`pi` binding, so a `MULT` with only `SK0` set and a deferred `ROTATE` crashed
+with `KeyError: 'np.pi'`. Fixed the same way as the existing correct
+precedent at `_004_element_converter.py`'s cavity phi-offset handling
+(`f"{np.pi} + {phi_offset}"`, embedding the resolved float). Both fixes live
+in one extracted `combine_k0_sk0()` in `_000_helpers.py`, shared between both
+call sites, with direct unit coverage (evaluated through a real Xsuite
+environment, not just string comparison) in
+`tests/conversion/test_converter_helpers.py` and integration coverage here
+(`test_mult_converter_combines_deferred_k0_sk0`).
 
 ## Shared Fixtures
 

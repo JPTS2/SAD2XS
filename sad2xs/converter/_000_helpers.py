@@ -9,12 +9,13 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-29
+Date:       2026-07-08
 ================================================================================
 """
 ################################################################################
 # Required Packages
 ################################################################################
+import numpy as np
 import xtrack as xt
 
 from ..helpers import species_from_mass_and_charge
@@ -150,6 +151,39 @@ def define_strength_variable(environment, ele_name: str, k_name: str, k_value):
         environment[var_name] = k_value
         return var_name
     return k_value
+
+################################################################################
+# Combine K0/SK0 Dipole Orders
+################################################################################
+def combine_k0_sk0(knl0, ksl0, rotation):
+    """
+    Combine SAD MULT integrated K0/SK0 into a single (k0l, rotation) pair.
+
+    knl0, ksl0, and rotation may each independently be a float or a string
+    expression (deferred variable). A string expression is built whenever any
+    of the three is deferred, since a mixed numeric/deferred computation
+    cannot be evaluated directly; otherwise the combination is computed
+    numerically.
+    """
+    if knl0 != 0 and ksl0 != 0:
+        if isinstance(knl0, str) or isinstance(ksl0, str) or isinstance(rotation, str):
+            k0l      = f"sqrt({knl0}**2 + {ksl0}**2)"
+            rotation = f"{rotation} + atan2(-({ksl0}), {knl0})"
+        else:
+            k0l      = np.sqrt(knl0**2 + ksl0**2)
+            rotation = rotation + np.arctan2(-ksl0, knl0)
+    elif knl0 != 0:
+        k0l = knl0
+    elif ksl0 != 0:
+        k0l = ksl0
+        if isinstance(rotation, str):
+            rotation = f"{rotation} - {np.pi / 2}"
+        else:
+            rotation = rotation - np.pi / 2
+    else:
+        k0l = 0.0
+
+    return k0l, rotation
 
 ################################################################################
 # Compute Element Misalignments
