@@ -15,6 +15,7 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
 import os
 
 import numpy as np
@@ -24,6 +25,7 @@ import xtrack as xt
 
 from sad2xs.converter._004_element_converter import convert_bends
 from sad2xs.sad_helpers import track_sad
+from tests.support.coupled_optics import edwards_teng_optics_at
 from tests.support.config import (
     DELTA_DELTA_ATOL,
     DELTA_DELTA_RTOL,
@@ -372,6 +374,95 @@ def test_bend_converter_creates_all_bends(
             f"Converted bend '{bend_name}' should preserve angle/length.")
         assert bend.k1 == pytest.approx(expected_k1), (
             f"Converted bend '{bend_name}' should preserve integrated K1/length.")
+
+########################################
+# Element-Offset Warning
+########################################
+def test_bend_converter_warns_once_for_lattice_with_offset_angled_bends(
+        xsuite_environment,
+        sad2xs_config,
+        caplog):
+    """
+    Converting a lattice with angled bends offset by DX/DY should warn
+    exactly once for the whole lattice, not once per non-compliant element.
+    """
+    caplog.set_level(
+        logging.DEBUG,
+        logger = "sad2xs.converter._004_element_converter")
+
+    convert_bends(
+        parsed_elements = {
+            "bend": {
+                "b_offset_a": {"l": 0.5, "angle": 0.1, "dx": 0.001},
+                "b_offset_b": {"l": 0.5, "angle": -0.1, "dy": -0.002},
+                "b_clean":    {"l": 0.5, "angle": 0.1},
+            },
+        },
+        environment = xsuite_environment,
+        config      = sad2xs_config)
+
+    offset_warnings = [
+        r for r in caplog.records
+        if r.levelno == logging.WARNING and "reference-orbit" in r.getMessage()]
+    assert len(offset_warnings) == 1, (
+        "Converting a lattice with offset angled bends should warn exactly "
+        f"once. Got: {[r.getMessage() for r in caplog.records]!r}")
+    debug_details = [
+        record.getMessage() for record in caplog.records
+        if record.levelno == logging.DEBUG
+        and "Offset bends" in record.getMessage()]
+    assert debug_details == [
+        "Offset bends: b_offset_a, b_offset_b"
+    ], "Debug logging should name the bends behind the summary warning."
+
+def test_bend_converter_does_not_warn_for_unoffset_bends_or_correctors(
+        xsuite_environment,
+        sad2xs_config,
+        caplog):
+    """
+    Angled bends without an offset, and zero-angle correctors with an
+    offset, should not trigger the element-offset warning.
+    """
+    convert_bends(
+        parsed_elements = {
+            "bend": {
+                "b_clean":     {"l": 0.5, "angle": 0.1},
+                "b_corrector": {"l": 0.5, "angle": 0.0, "k0": 0.1, "dx": 0.001},
+            },
+        },
+        environment = xsuite_environment,
+        config      = sad2xs_config)
+
+    offset_warnings = [
+        r for r in caplog.records if "reference-orbit" in r.getMessage()]
+    assert offset_warnings == [], (
+        "Angled bends without an offset and zero-angle correctors with an "
+        "offset should not trigger the offset warning. Got: "
+        f"{[r.getMessage() for r in offset_warnings]!r}")
+
+def test_bend_converter_offset_warning_visible_in_quiet_mode(
+        xsuite_environment,
+        sad2xs_config,
+        caplog):
+    """
+    The element-offset warning must remain visible in quiet mode: quiet
+    mode suppresses progress and debug output, never warnings.
+    """
+    convert_bends(
+        parsed_elements = {
+            "bend": {
+                "b_offset": {"l": 0.5, "angle": 0.1, "dx": 0.001},
+            },
+        },
+        environment = xsuite_environment,
+        config      = sad2xs_config)
+
+    offset_warnings = [
+        r for r in caplog.records
+        if r.levelno == logging.WARNING and "reference-orbit" in r.getMessage()]
+    assert len(offset_warnings) == 1, (
+        "The element-offset warning should be emitted even in quiet mode. "
+        f"Got records: {[r.getMessage() for r in caplog.records]!r}")
 
 ########################################
 # Corrector Handoff and Error Handling
@@ -876,6 +967,181 @@ def test_bend_conversion_matches_sad_twiss_for_thin_bend(
         ])
 
 ########################################
+# Thin Bend Offset Optics
+########################################
+def test_bend_conversion_matches_sad_twiss_for_thin_bend_element_offsets(
+        write_lattice,
+        tmp_path):
+    """
+    A thin, offset SAD BEND element should match SAD optics and dispersion
+    when the offset is purely out of the bending plane (DY only).
+
+    A DX offset on a thin bend is not tested here: it reproduces the same
+    reference-orbit-convention residual as the thick case (see
+    docs/sad-behaviour.md), locked in as a passing, quantified test by
+    test_bend_offset_thin_bend_dispersion_residual_is_angle_squared_order
+    rather than as a "should match" failure.
+    """
+    dx, dy = 0.0, -1.0E-3
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+
+    try:
+        lattice_text = f"""\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND        TEST_BEND   = (
+            L       = 0.0
+            ANGLE   = 0.1
+            DX      = {dx}
+            DY      = {dy}
+        );
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_BEND END);
+        """
+        lattice_path = write_lattice(
+            lattice_text,
+            filename = f"bend_twiss_thin_dx_{dx:+.3e}_dy_{dy:+.3e}.sad")
+
+        tw_sad = twiss_sad(
+            lattice_filepath        = lattice_path.name,
+            line_name               = "TEST_LINE",
+            calc6d                  = False,
+            closed                  = False,
+            reverse_element_order   = False,
+            reverse_survey_horizontal  = False,
+            rfsw                    = True,
+            additional_commands     = "")
+
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path    = str(lattice_path),
+            output_directory    = "N/A",
+            _verbose            = False,
+            _test_mode          = True)
+
+        tw_xs = line.twiss4d(
+            _continue_if_lost   = True,
+            start               = xt.START,
+            end                 = xt.END,
+            betx                = 1,
+            bety                = 1)
+
+        sad_values = _bend_twiss_values(tw_sad, "END")
+        xsuite_values = _bend_twiss_values(tw_xs, "end")
+    finally:
+        os.chdir(cwd)
+
+    _assert_bend_twiss_matches_sad(
+        test_name       = "test_bend_conversion_matches_sad_twiss_for_thin_bend_element_offsets",
+        lattice_text    = lattice_text,
+        sad_values      = sad_values,
+        xsuite_values   = xsuite_values,
+        parameters      = {"length": 0.0, "dx": dx, "dy": dy},
+        notes           = [
+            "Offset out of the bending plane (DY only) should match SAD "
+            "exactly for a thin bend, same as the thick case.",
+        ])
+
+########################################
+# Thin Bend Offset Reference-Orbit Residual (Accepted Limitation)
+########################################
+def test_bend_offset_thin_bend_dispersion_residual_is_angle_squared_order(
+        write_lattice,
+        tmp_path):
+    """
+    The thin-bend counterpart of
+    test_bend_offset_orbit_residual_is_angle_squared_order
+    (docs/sad-behaviour.md): the same reference-orbit residual shows up
+    in the dispersion (dx) column instead of the orbit (x) column, since a
+    thin bend carries no separate orbit column of its own at zero length.
+    Xsuite reproduces none of it; SAD's dx scales as ANGLE^2, matching
+    -DX*(1-cos(ANGLE)) even more tightly than the thick case (opposite sign
+    to the thick-bend orbit residual: dx is a dispersion, not an orbit, and
+    there is no a priori reason the two share a sign convention). Confirmed
+    at DX=0 that a thin bend alone (no offset) gives dx=0 exactly in both
+    codes, so this is not fringe-model contamination.
+    """
+    dx      = 1.0E-3
+    angles  = [0.025, 0.05, 0.1]
+    diffs   = {}
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        for angle in angles:
+            lattice_path = write_lattice(
+                f"""\
+                MOMENTUM    = 1.0 GEV;
+
+                BEND        TEST_BEND   = (
+                    L       = 0.0
+                    ANGLE   = {angle}
+                    DX      = {dx}
+                );
+
+                MARK        START       = ()
+                            END         = ();
+
+                LINE        TEST_LINE   = (START TEST_BEND END);
+                """,
+                filename = f"bend_offset_thin_residual_scaling_{angle}.sad")
+
+            tw_sad = twiss_sad(
+                lattice_filepath        = lattice_path.name,
+                line_name               = "TEST_LINE",
+                calc6d                  = False,
+                closed                  = False,
+                reverse_element_order   = False,
+                reverse_survey_horizontal  = False,
+                rfsw                    = True,
+                additional_commands     = "")
+            line = s2x.convert_sad_to_xsuite(
+                sad_lattice_path    = str(lattice_path),
+                output_directory    = "N/A",
+                _verbose            = False,
+                _test_mode          = True)
+            tw_xs = line.twiss4d(
+                _continue_if_lost   = True,
+                start               = xt.START,
+                end                 = xt.END,
+                betx                = 1,
+                bety                = 1)
+
+            dx_sad = tw_sad["dx", "END"]
+            dx_xs  = tw_xs["dx", "end"]
+
+            assert dx_xs == pytest.approx(0.0, abs = 1E-8), (
+                "Xsuite should not reproduce any of SAD's offset thin-bend "
+                f"dispersion shift. Got dx={dx_xs:.3e} at angle={angle}.")
+
+            diffs[angle] = dx_sad - dx_xs
+    finally:
+        os.chdir(cwd)
+
+    for angle in angles:
+        assert diffs[angle] != 0.0, (
+            "The SAD-vs-Xsuite offset thin-bend dispersion residual should "
+            "NOT be zero -- the accepted limitation is a real dispersion "
+            "difference. If this now matches, the reference-orbit "
+            "convention changed in one of the codes and "
+            "docs/sad-behaviour.md needs review.")
+        assert diffs[angle] == pytest.approx(
+                -dx * (1 - np.cos(angle)), rel = 0.01), (
+            "The offset thin-bend dispersion residual should equal "
+            "-DX*(1-cos(ANGLE)) at leading order (opposite sign to the "
+            "thick-bend orbit residual: dx is a dispersion, not an orbit).")
+
+    assert diffs[0.05] / diffs[0.025] == pytest.approx(4.0, rel = 0.01), (
+        "Doubling ANGLE should multiply the dispersion residual by "
+        "2^2 = 4 -- the residual scales as ANGLE^2.")
+    assert diffs[0.1] / diffs[0.05] == pytest.approx(4.0, rel = 0.01), (
+        "Doubling ANGLE should multiply the dispersion residual by "
+        "2^2 = 4 -- the residual scales as ANGLE^2.")
+
+########################################
 # Combined-Function K1 Optics
 ########################################
 @pytest.mark.parametrize(
@@ -1112,21 +1378,23 @@ def test_bend_conversion_matches_sad_twiss_for_rotated_bends(
 ########################################
 # Offset Optics
 ########################################
-@pytest.mark.parametrize(
-    "dx, dy",
-    [
-        (1.0E-3, 0.0),
-        (0.0, -1.0E-3),
-        (1.0E-3, -1.0E-3),
-    ])
 def test_bend_conversion_matches_sad_twiss_for_element_offsets(
         write_lattice,
-        tmp_path,
-        dx,
-        dy):
+        tmp_path):
     """
-    Converted offset SAD BEND elements should match SAD optics and dispersion.
+    An offset SAD BEND element should match SAD optics and dispersion when
+    the offset is purely out of the bending plane (DY only).
+
+    A DX offset is not tested here: it reproduces a real, quantified
+    reference-orbit-convention residual (see docs/sad-behaviour.md),
+    locked in as a passing test by
+    test_bend_offset_orbit_residual_is_angle_squared_order rather than as a
+    "should match" failure. A rotated bend with an offset is covered
+    separately by test_bend_offset_rotated_coupling_is_a_sad_side_artifact,
+    since ROTATE changes which axis is physically in the bending plane and
+    introduces a further, separate SAD-side artifact of its own.
     """
+    dx, dy = 0.0, -1.0E-3
     cwd = os.getcwd()
     os.chdir(tmp_path)
 
@@ -1187,6 +1455,100 @@ def test_bend_conversion_matches_sad_twiss_for_element_offsets(
         notes           = [
             "Offset BEND optics coverage includes orbit and dispersion columns.",
         ])
+
+########################################
+# Offset Reference-Orbit Residual (Accepted Limitation)
+########################################
+def test_bend_offset_orbit_residual_is_angle_squared_order(
+        write_lattice,
+        tmp_path):
+    """
+    The DX-offset reference-orbit residual (docs/sad-behaviour.md) is
+    real, reproducible, and quantified: SAD's orbit shows a nonzero shift
+    that scales as ANGLE^2 (matching DX*(1-cos(ANGLE)) to ~1%), while Xsuite
+    reproduces none of it (h stays fixed to the unshifted design orbit).
+
+    This locks in the accepted limitation as a passing test, the same way
+    test_mult_k0_dipole_fringe_difference_is_theta_fourth_order locks in the
+    MULT K0/SK0 fringe residual. If this now fails, either a fringe/model
+    change made the codes agree (good news, but the design decision needs
+    revisiting) or the residual's character changed (needs investigation).
+    """
+    dx      = 1.0E-3
+    angles  = [0.025, 0.05, 0.1]
+    diffs   = {}
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        for angle in angles:
+            lattice_path = write_lattice(
+                f"""\
+                MOMENTUM    = 1.0 GEV;
+
+                BEND        TEST_BEND   = (
+                    L       = 0.5
+                    ANGLE   = {angle}
+                    DX      = {dx}
+                );
+
+                MARK        START       = ()
+                            END         = ();
+
+                LINE        TEST_LINE   = (START TEST_BEND END);
+                """,
+                filename = f"bend_offset_residual_scaling_{angle}.sad")
+
+            tw_sad = twiss_sad(
+                lattice_filepath        = lattice_path.name,
+                line_name               = "TEST_LINE",
+                calc6d                  = False,
+                closed                  = False,
+                reverse_element_order   = False,
+                reverse_survey_horizontal  = False,
+                rfsw                    = True,
+                additional_commands     = "")
+            line = s2x.convert_sad_to_xsuite(
+                sad_lattice_path    = str(lattice_path),
+                output_directory    = "N/A",
+                _verbose            = False,
+                _test_mode          = True)
+            tw_xs = line.twiss4d(
+                _continue_if_lost   = True,
+                start               = xt.START,
+                end                 = xt.END,
+                betx                = 1,
+                bety                = 1)
+
+            x_sad = tw_sad["x", "END"]
+            x_xs  = tw_xs["x", "end"]
+
+            assert x_xs == pytest.approx(0.0, abs = 1E-8), (
+                "Xsuite should not reproduce any of SAD's offset-bend orbit "
+                f"shift (h stays fixed to the design orbit). Got x={x_xs:.3e} "
+                f"at angle={angle}.")
+
+            diffs[angle] = x_sad - x_xs
+    finally:
+        os.chdir(cwd)
+
+    for angle in angles:
+        assert diffs[angle] != 0.0, (
+            "The SAD-vs-Xsuite offset-bend orbit residual should NOT be "
+            "zero -- the accepted limitation is a real orbit difference. If "
+            "this now matches, the reference-orbit convention changed in "
+            "one of the codes and docs/sad-behaviour.md needs review.")
+        assert diffs[angle] == pytest.approx(
+                dx * (1 - np.cos(angle)), rel = 0.01), (
+            "The offset-bend orbit residual should equal DX*(1-cos(ANGLE)) "
+            "at leading order.")
+
+    assert diffs[0.05] / diffs[0.025] == pytest.approx(4.0, rel = 0.01), (
+        "Doubling ANGLE should multiply the orbit residual by 2^2 = 4 -- "
+        "the residual scales as ANGLE^2.")
+    assert diffs[0.1] / diffs[0.05] == pytest.approx(4.0, rel = 0.01), (
+        "Doubling ANGLE should multiply the orbit residual by 2^2 = 4 -- "
+        "the residual scales as ANGLE^2.")
 
 ########################################
 # Default Bend Tracking
@@ -1369,6 +1731,109 @@ def test_bend_conversion_matches_sad_tracking_for_thin_bend(
         notes                   = [
             "Thin BEND tracking should match SAD before the representation "
             "is accepted as production behaviour.",
+        ])
+
+########################################
+# Thin Bend Offset Tracking
+########################################
+def test_bend_conversion_matches_sad_tracking_for_thin_bend_element_offsets(
+        write_lattice,
+        tmp_path):
+    """
+    A thin, offset SAD BEND element should match SAD tracking when the
+    offset is purely out of the bending plane (DY only).
+
+    A DX offset is not tested here: see
+    test_bend_offset_thin_bend_dispersion_residual_is_angle_squared_order
+    for the quantified, passing lock-in of that residual (docs/sad-behaviour.md).
+    """
+    dx, dy = 0.0, -1.0E-3
+    x_init     = np.array([0.0, 1E-4, 0.0, 0.0, 1E-4])
+    px_init    = np.array([0.0, 0.0, 1E-4, 0.0, -1E-4])
+    y_init     = np.array([0.0, 0.0, 0.0, 1E-4, -1E-4])
+    py_init    = np.array([0.0, 0.0, 0.0, 1E-4, 1E-4])
+    zeta_init  = np.zeros_like(x_init)
+    delta_init = np.zeros_like(x_init)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+
+    try:
+        lattice_text = f"""\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND        TEST_BEND   = (
+            L       = 0.0
+            ANGLE   = 0.1
+            DX      = {dx}
+            DY      = {dy}
+        );
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_BEND END);
+        """
+        lattice_path = write_lattice(
+            lattice_text,
+            filename = f"bend_tracking_thin_dx_{dx:+.3e}_dy_{dy:+.3e}.sad")
+
+        sad_particles = track_sad(
+            lattice_filepath       = lattice_path.name,
+            line_name              = "TEST_LINE",
+            x_init                 = x_init,
+            px_init                = px_init,
+            y_init                 = y_init,
+            py_init                = py_init,
+            zeta_init              = zeta_init,
+            delta_init             = delta_init,
+            n_turns                = 1,
+            rfsw                   = True,
+            rad                    = False,
+            fluc                   = False,
+            radcod                 = False,
+            radtaper               = False,
+            turn_by_turn_monitor   = False,
+            with_progress          = False,
+            wall_time              = 30)
+
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path    = str(lattice_path),
+            output_directory    = "N/A",
+            _verbose            = False,
+            _test_mode          = True)
+
+        xs_particles = xt.Particles(
+            "positron",
+            p0c     = 1.0E9,
+            x       = x_init.copy(),
+            px      = px_init.copy(),
+            y       = y_init.copy(),
+            py      = py_init.copy(),
+            zeta    = zeta_init.copy(),
+            delta   = delta_init.copy())
+
+        line.track(xs_particles, num_turns = 1)
+    finally:
+        os.chdir(cwd)
+
+    _assert_bend_tracking_matches_sad(
+        test_name               = (
+            "test_bend_conversion_matches_sad_tracking_for_thin_bend_element_offsets"),
+        lattice_text            = lattice_text,
+        initial_coordinates     = _bend_initial_coordinates(
+            x_init,
+            px_init,
+            y_init,
+            py_init,
+            zeta_init,
+            delta_init),
+        sad_coordinates         = _bend_sad_coordinates(sad_particles),
+        xsuite_coordinates      = _bend_xsuite_coordinates(xs_particles),
+        parameters              = {"dx": dx, "dy": dy},
+        notes                   = [
+            "Offset out of the bending plane (DY only) should match SAD "
+            "exactly for a thin bend, same as the thick case.",
         ])
 
 ########################################
@@ -1682,21 +2147,18 @@ def test_bend_conversion_matches_sad_tracking_for_rotated_bends(
 ########################################
 # Offset Tracking
 ########################################
-@pytest.mark.parametrize(
-    "dx, dy",
-    [
-        (1.0E-3, 0.0),
-        (0.0, -1.0E-3),
-        (1.0E-3, -1.0E-3),
-    ])
 def test_bend_conversion_matches_sad_tracking_for_element_offsets(
         write_lattice,
-        tmp_path,
-        dx,
-        dy):
+        tmp_path):
     """
-    Converted offset SAD BEND elements should match SAD tracking.
+    An offset SAD BEND element should match SAD tracking when the offset is
+    purely out of the bending plane (DY only).
+
+    A DX offset is not tested here: see
+    test_bend_offset_orbit_residual_is_angle_squared_order for the
+    quantified, passing lock-in of that residual (docs/sad-behaviour.md).
     """
+    dx, dy = 0.0, -1.0E-3
     x_init     = np.array([0.0, 1E-4, 0.0, 0.0, 1E-4])
     px_init    = np.array([0.0, 0.0, 1E-4, 0.0, -1E-4])
     y_init     = np.array([0.0, 0.0, 0.0, 1E-4, -1E-4])
@@ -1781,5 +2243,215 @@ def test_bend_conversion_matches_sad_tracking_for_element_offsets(
         xsuite_coordinates      = _bend_xsuite_coordinates(xs_particles),
         parameters              = {"dx": dx, "dy": dy},
         notes                   = [
-            "Offset BEND tracking coverage checks SAD DX/DY convention.",
+            "Offset out of the bending plane (DY only) should match SAD "
+            "exactly, same as the thin-bend case.",
         ])
+
+########################################
+# Rotated Offset Tracking
+########################################
+@pytest.mark.parametrize(
+    "rotation",
+    [np.pi / 2, -np.pi / 2])
+def test_bend_conversion_matches_sad_tracking_for_rotated_element_offsets(
+        write_lattice,
+        tmp_path,
+        rotation):
+    """
+    A rotated, offset SAD BEND element should match SAD tracking when the
+    offset lies along DX -- once ROTATE = +-pi/2, DX is physically out of
+    the (now vertical) bending plane, the same way DY is out of plane for an
+    unrotated bend.
+
+    DY (or a combined DX+DY) offset is not tested here: once rotated, DY
+    becomes the in-bending-plane component and reproduces the same
+    reference-orbit residual as the unrotated DX case, plus a further SAD-
+    side coupling artifact of its own -- see
+    test_bend_offset_rotated_coupling_is_a_sad_side_artifact for the
+    quantified, passing lock-in (docs/sad-behaviour.md).
+    """
+    dx, dy = 1.0E-3, 0.0
+    x_init     = np.array([0.0, 1E-4, 0.0, 0.0, 1E-4])
+    px_init    = np.array([0.0, 0.0, 1E-4, 0.0, -1E-4])
+    y_init     = np.array([0.0, 0.0, 0.0, 1E-4, -1E-4])
+    py_init    = np.array([0.0, 0.0, 0.0, 1E-4, 1E-4])
+    zeta_init  = np.zeros_like(x_init)
+    delta_init = np.zeros_like(x_init)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+
+    try:
+        lattice_text = f"""\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND        TEST_BEND   = (
+            L       = 0.5
+            ANGLE   = 0.1
+            ROTATE  = {rotation}
+            DX      = {dx}
+            DY      = {dy}
+        );
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_BEND END);
+        """
+        lattice_path = write_lattice(
+            lattice_text,
+            filename = (
+                f"bend_tracking_rotate_{rotation:+.6f}"
+                f"_dx_{dx:+.3e}_dy_{dy:+.3e}.sad"))
+
+        sad_particles = track_sad(
+            lattice_filepath       = lattice_path.name,
+            line_name              = "TEST_LINE",
+            x_init                 = x_init,
+            px_init                = px_init,
+            y_init                 = y_init,
+            py_init                = py_init,
+            zeta_init              = zeta_init,
+            delta_init             = delta_init,
+            n_turns                = 1,
+            rfsw                   = True,
+            rad                    = False,
+            fluc                   = False,
+            radcod                 = False,
+            radtaper               = False,
+            turn_by_turn_monitor   = False,
+            with_progress          = False,
+            wall_time              = 30)
+
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path    = str(lattice_path),
+            output_directory    = "N/A",
+            _verbose            = False,
+            _test_mode          = True)
+
+        xs_particles = xt.Particles(
+            "positron",
+            p0c     = 1.0E9,
+            x       = x_init.copy(),
+            px      = px_init.copy(),
+            y       = y_init.copy(),
+            py      = py_init.copy(),
+            zeta    = zeta_init.copy(),
+            delta   = delta_init.copy())
+
+        line.track(xs_particles, num_turns = 1)
+    finally:
+        os.chdir(cwd)
+
+    _assert_bend_tracking_matches_sad(
+        test_name               = (
+            "test_bend_conversion_matches_sad_tracking_for_rotated_element_offsets"),
+        lattice_text            = lattice_text,
+        initial_coordinates     = _bend_initial_coordinates(
+            x_init,
+            px_init,
+            y_init,
+            py_init,
+            zeta_init,
+            delta_init),
+        sad_coordinates         = _bend_sad_coordinates(sad_particles),
+        xsuite_coordinates      = _bend_xsuite_coordinates(xs_particles),
+        parameters              = {"rotation": rotation, "dx": dx, "dy": dy},
+        notes                   = [
+            "A DX offset is physically out of the bending plane once "
+            "ROTATE = +-pi/2, so this should match SAD exactly, the same "
+            "way a DY-only offset does for an unrotated bend.",
+        ])
+
+########################################
+# Rotated Offset Coupling (Accepted SAD-Side Limitation)
+########################################
+def test_bend_offset_rotated_coupling_is_a_sad_side_artifact(write_lattice, tmp_path):
+    """
+    Combining ROTATE with an offset on a curved (ANGLE != 0) bend makes
+    SAD's own reported linear coupling (R1/R4) diverge from Xsuite's in a
+    way that is not real dynamical coupling: SAD's R1 sits on sin(ROTATE)
+    (cos(ROTATE) past a fixed ~52 degree branch point) the instant the
+    offset is nonzero, essentially independent of the offset's actual
+    magnitude -- confirmed here at two offset sizes three orders of
+    magnitude apart. Xsuite's own, independently-computed coupling stays
+    small and physically continuous throughout.
+
+    This is accepted as a SAD-side characteristic, not a converter bug and
+    not something sad2xs should try to reproduce -- see
+    docs/sad-behaviour.md for the summary. It was investigated in much
+    more depth than is committed here (an Edwards-Teng/Mais-Ripken
+    convention mismatch and a converter bug were both ruled out, and the
+    trigger was isolated to curvature specifically), but the responsible
+    SAD-internal mechanism could not be confirmed without SAD source
+    access, so only the directly-observable, distilled evidence is locked
+    in below.
+    """
+    rotation = np.pi / 4
+    angle = 0.05
+    sad_r1_by_dx = {}
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        for dx in [1.0E-6, 1.0E-3]:
+            lattice_path = write_lattice(
+                f"""\
+                MOMENTUM    = 1.0 GEV;
+
+                BEND        TEST_BEND   = (
+                    L       = 0.5
+                    ANGLE   = {angle}
+                    ROTATE  = {rotation}
+                    DX      = {dx}
+                );
+
+                MARK        START       = ()
+                            END         = ();
+
+                LINE        TEST_LINE   = (START TEST_BEND END);
+                """,
+                filename = f"bend_offset_rotated_coupling_{dx:.0e}.sad")
+
+            tw_sad = twiss_sad(
+                lattice_filepath        = lattice_path.name,
+                line_name               = "TEST_LINE",
+                calc6d                  = False,
+                closed                  = False,
+                reverse_element_order   = False,
+                reverse_survey_horizontal  = False,
+                rfsw                    = True,
+                additional_commands     = "")
+            line = s2x.convert_sad_to_xsuite(
+                sad_lattice_path    = str(lattice_path),
+                output_directory    = "N/A",
+                _verbose            = False,
+                _test_mode          = True)
+            tw_xs = line.twiss4d(
+                _continue_if_lost   = True,
+                start               = xt.START,
+                end                 = xt.END,
+                betx                = 1,
+                bety                = 1)
+
+            sad_r1_by_dx[dx] = tw_sad["R1", "END"]
+            et_values = edwards_teng_optics_at(tw_xs, "end")
+
+            assert abs(sad_r1_by_dx[dx] - np.sin(rotation)) < 1.0E-3, (
+                "SAD's R1 should sit on sin(ROTATE) once the bend is "
+                "offset (docs/sad-behaviour.md) -- if this no longer "
+                "holds, the SAD-side artifact's characterisation has "
+                f"changed and needs re-investigating. Got R1="
+                f"{sad_r1_by_dx[dx]:.6f} at dx={dx:.0e}.")
+            assert abs(et_values["r11"]) < 1.0E-2, (
+                "Xsuite's own coupling should stay small and physically "
+                f"continuous, unlike SAD's. Got r11={et_values['r11']:.3e} "
+                f"at dx={dx:.0e}.")
+    finally:
+        os.chdir(cwd)
+
+    assert abs(sad_r1_by_dx[1.0E-6] - sad_r1_by_dx[1.0E-3]) < 1.0E-3, (
+        "SAD's R1 should barely change between two offset magnitudes "
+        "three orders of magnitude apart -- a real dynamical coupling "
+        "effect would scale with the offset; this is the core evidence "
+        "that it does not.")

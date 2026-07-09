@@ -37,7 +37,7 @@ Total collected from this folder: see `tests/README.md`.
 |------|-----------|------|--------------------|
 | `test_apert.py` | 20 | 0 | — |
 | `test_beambeam.py` | 5 | 0 | — |
-| `test_bend.py` | 23 | 4 | Element offsets with horizontal shift |
+| `test_bend.py` | 32 | 0 | — |
 | `test_cavi.py` | 19 | 0 | — |
 | `test_coord.py` | 10 | 0 | — |
 | `test_corrector.py` | 18 | 0 | — |
@@ -69,7 +69,8 @@ projected sums (`betx1+betx2`, ...), but Edwards-Teng is the convention that
 also holds for skew-quad coupling, where the projected sums do not match
 SAD. The full convention map is locked in by
 `tests/conversion/test_coupled_twiss_convention.py`; see
-`docs/sad-helpers.md` for the general explanation and worked example.
+`docs/sad-behaviour.md` for the general explanation and `docs/sad-helpers.md`
+for the worked usage example.
 
 Adding `zeta` to the tracking/twiss comparisons here (see the `Coverage`
 section above) surfaced a genuine converter bug in
@@ -84,8 +85,9 @@ This file also has a solenoid `DISFRIN` (fringe kick) limitation test —
 `test_sol_disfrin_off_diverges_from_xsuite_in_tracking` — which is not a
 failing test: it asserts that SAD and Xsuite genuinely diverge when
 `DISFRIN=1` is not set, since SAD2XS does not model the SAD solenoid fringe
-kick. This documents an accepted, permanent limitation (see
-`docs/design-decisions.md`), not an open bug — it is deliberately not in
+kick (see `docs/sad-behaviour.md` for what the fringe kick is). This
+documents an accepted, permanent limitation (see `docs/design-decisions.md`
+for the converter decision), not an open bug — it is deliberately not in
 `known_issues.py`.
 
 ### `test_corrector.py` note
@@ -134,6 +136,9 @@ found and fixed two separate converter bugs, plus a twiss-convention mismatch:
   `test_mult_k0_dipole_fringe_difference_is_theta_fourth_order` locks in the
   expected `theta^4` residual as a passing accepted-limitation test.
 
+See `docs/sad-behaviour.md` for both the `K0`/`SK0` fringe formula and the
+Edwards-Teng/Mais-Ripken twiss convention in full.
+
 Separately: the combined `K0`+`SK0` `MULT` path (auto-simplification and user
 `Bend` replacement) selected its numeric-vs-deferred-expression branch by
 checking whether either value was a `float`, when it needed to check for
@@ -153,6 +158,35 @@ call sites, with direct unit coverage (evaluated through a real Xsuite
 environment, not just string comparison) in
 `tests/conversion/test_converter_helpers.py` and integration coverage here
 (`test_mult_converter_combines_deferred_k0_sk0`).
+
+### `test_bend.py` note
+
+The bend element-offset reference-orbit-convention limitation (`ANGLE != 0`
+combined with a nonzero `DX`/`DY`) is resolved as a known-failing-test
+pattern, the same way the solenoid `DISFRIN` and `MULT` `K0`/`SK0` fringe
+limitations were: `..._for_element_offsets` and
+`..._for_thin_bend_element_offsets` now cover only the parametrisations
+that genuinely match SAD (offsets out of the bending plane); the
+parametrisations that diverge are instead covered by three dedicated,
+passing tests that lock in the expected, quantified residual:
+
+- `test_bend_offset_orbit_residual_is_angle_squared_order` (thick bend)
+- `test_bend_offset_thin_bend_dispersion_residual_is_angle_squared_order`
+  (thin bend, `L=0`)
+- `test_bend_offset_rotated_coupling_is_a_sad_side_artifact` (`ROTATE != 0`
+  combined with an offset — a further, separate SAD-side coupling artifact
+  on top of the same residual)
+
+See `docs/sad-behaviour.md` for the full empirical characterisation (the
+`ANGLE^2` orbit/dispersion residual, and the `ROTATE`-combined `R1`/`R4`
+discontinuity) and `docs/design-decisions.md` for the resulting converter
+decision.
+
+The converter warns once per lattice when it finds an `ANGLE != 0` bend with
+a nonzero `DX`/`DY` (`test_bend_converter_warns_once_for_lattice_with_offset_angled_bends`
+and its two companion tests), covering both the thick and thin
+representations. Correctors (`ANGLE == 0`) and MULT-derived dipoles never
+carry a nonzero curvature and are confirmed unaffected.
 
 ## Shared Fixtures
 

@@ -165,9 +165,15 @@ Current examples:
   (`tests/conversion/elements/test_mult.py`) asserts the accepted
   `theta^4` residual left when SAD dipole-only `MULT` elements are simplified
   to Xsuite Bend/corrector elements.
+- `test_bend_offset_orbit_residual_is_angle_squared_order` and
+  `test_bend_offset_thin_bend_dispersion_residual_is_angle_squared_order`
+  (`tests/conversion/elements/test_bend.py`) assert the accepted `ANGLE^2`
+  reference-orbit residual for an offset curved bend; a third,
+  `test_bend_offset_rotated_coupling_is_a_sad_side_artifact`, asserts a
+  further, separate SAD-side coupling artifact found combined with `ROTATE`.
 
-See `docs/design-decisions.md` and `docs/sad-helpers.md` for the corresponding
-physics and convention notes.
+See `docs/sad-behaviour.md` for the corresponding SAD physics and convention
+notes, and `docs/design-decisions.md` for the resulting converter decisions.
 
 ## SAD Dependency
 

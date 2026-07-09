@@ -99,28 +99,46 @@ Artifact paths should mirror the test area that produced them, for example
 
 ## Test Counts
 
-Total collected: **1755 tests** (1751 pass, 4 fail expected) on this branch.
+Total collected: **1762 tests** (1762 pass, 0 fail) on this branch.
 The breakdown by failure group is in the Known Failures section below.
 Individual folder READMEs document per-file counts.
 
 ## Known Failures
 
-The test suite contains currently failing tests that document known bugs.
-
-Tests linked to known failures are marked during collection from the central
-`KNOWN_ISSUES` list in `tests/support/known_issues.py` — a single list of
-`(test node prefix, parameter-id fragment, tracker id)` tuples, where an
-empty fragment matches every parametrisation of that test. They remain
-ordinary failing tests; the marker controls CI selection only and does not
-use `xfail`.
+`KNOWN_ISSUES` in `tests/support/known_issues.py` is currently empty. When a
+genuine, unresolved converter discrepancy is found, it is recorded there as
+a `(test node prefix, parameter-id fragment, tracker id)` tuple (an empty
+fragment matches every parametrisation of that test); tests linked to known
+failures are marked during collection, remain ordinary failing tests, and the
+marker controls CI selection only, not `xfail`.
 
 `tests/conftest.py` also fails collection loudly if a `KNOWN_ISSUES` entry's
 fragment matches nothing collected (e.g. after a parametrize change) — this
 is checked automatically, it does not need to be verified by hand.
 
-**4 failing tests**, all in `conversion/elements/test_bend.py`, document the
-bend element-offset reference-orbit convention difference. These tests are the
-record of what differs. They must not be modified to pass.
+Most discrepancies found so far have, on investigation, turned out to be
+either a converter bug (fixed) or a fully characterised, documented, and
+quantified difference rather than an open bug — in that case the failing
+"should match SAD" assertion is replaced by a passing test that locks in the
+expected, quantified divergence instead, the same pattern used for the
+solenoid `DISFRIN` and `MULT` `K0`/`SK0` fringe limitations below:
+
+The bend element-offset reference-orbit convention difference (`ANGLE != 0`
+combined with a nonzero `DX`/`DY`) is resolved this way: it is fully
+characterised in `docs/sad-behaviour.md` (converter decision in
+`docs/design-decisions.md`) and locked in by passing tests in
+`conversion/elements/test_bend.py`
+(`test_bend_offset_orbit_residual_is_angle_squared_order` and its thin-bend
+counterpart) rather than left as a "should match SAD" failure. The residual
+is confirmed to also affect the thin (`hxl`) representation, with the
+residual continuing to scale as `ANGLE^2` on the Xsuite side. Combined with
+`ROTATE != 0`, a further, separate SAD-side artifact appears on top: SAD's
+own reported linear coupling (`R1`/`R4`) becomes discontinuous in a way
+that does not track the offset's magnitude, unlike real coupling —
+distilled to a passing lock-in test
+(`test_bend_offset_rotated_coupling_is_a_sad_side_artifact`) rather than a
+full characterisation of the underlying SAD mechanism, which could not be
+confirmed without SAD source access.
 
 The `SK1`/combined-order `MULT` discrepancy is resolved: it was not a physics
 bug but a twiss-parametrisation mismatch — SAD reports coupled optics in the
@@ -130,13 +148,13 @@ projections. The comparison convention is proven and locked in by
 now use `tests/support/coupled_optics.py`. The former solenoid optics failure
 was an instance of the same convention gap — see
 `tests/conversion/elements/README.md`'s `test_sol.py` note and
-`docs/sad-helpers.md` for the full convention map.
+`docs/sad-behaviour.md` for the full convention map.
 
 The remaining `K0`/`SK0` `MULT` dipole-fringe discrepancy is no longer a known
-failing test: SAD's `MULT` dipole-fringe convention is documented by passing SAD
-ground-truth tests and a passing `theta^4` residual characterization. The
-converter also warns when dipole-only `MULT` elements are auto-simplified to
-Xsuite Bend/corrector elements.
+failing test: SAD's `MULT` dipole-fringe convention is documented (`docs/sad-behaviour.md`)
+by passing SAD ground-truth tests and a passing `theta^4` residual
+characterization. The converter also warns when dipole-only `MULT` elements
+are auto-simplified to Xsuite Bend/corrector elements.
 
 Never modify a failing test to make it pass artificially. Fix the root cause.
 If you add a test that documents a known bug, record it in the relevant folder

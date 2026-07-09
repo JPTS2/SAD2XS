@@ -858,7 +858,7 @@ def test_mult_conversion_matches_sad_twiss_for_single_order(
 
     Isolates each order individually so a single-order discrepancy is not
     masked or amplified by combining it with other orders. See
-    tests/README.md and docs/design-decisions.md for what this found.
+    tests/README.md and docs/sad-behaviour.md for what this found.
     """
     cwd = os.getcwd()
     os.chdir(tmp_path)

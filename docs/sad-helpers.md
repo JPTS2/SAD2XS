@@ -72,20 +72,12 @@ result = track_sad(
 
 ## Twiss conventions in coupled regions (skew quads, solenoids, ...)
 
-SAD's `twiss_sad` output (`betx`/`bety`/`alfx`/`alfy`) reports coupled optics
-in the **Edwards-Teng** (decoupled normal-mode) parametrisation — the same
-convention MAD-X uses — propagated from the line start. Its `R1`–`R4`
-columns are the Edwards-Teng decoupling matrix, normalised as
-`R / sqrt(1 + det R)`.
-
-Xsuite's `line.twiss4d()`/`twiss6d()` reports something different by default.
-Its `betx`/`bety`/`alfx`/`alfy` fields are the **mode-1**/**mode-2**
-(Mais-Ripken eigenmode) components only, with the cross-mode leakage terms
-in separate `betx2`/`bety1`/`alfx2`/`alfy1` columns. Xsuite can compute
-Edwards-Teng parameters natively (`coupling_edw_teng=True`), but only for
-periodic lines. For repository tests, `tests/support/coupled_optics.py` wraps
-Xtrack's open-line Edwards-Teng propagation so converted transfer lines can be
-compared against SAD through coupled regions:
+SAD and Xsuite report coupled optics (`betx`/`bety`/`alfx`/`alfy` through a
+skew quad, solenoid, or other coupled region) in different conventions by
+default — see `docs/sad-behaviour.md` for the full empirically-established
+convention map. Practical takeaway: use `tests/support/coupled_optics.py`'s
+Edwards-Teng helper to compare against SAD through a coupled region, not
+Xsuite's plain `twiss4d()` columns:
 
 ```python
 from tests.support.coupled_optics import edwards_teng_optics_at
@@ -100,42 +92,6 @@ betx_naive = tw_xs["betx", "end"]
 et = edwards_teng_optics_at(tw_xs, "end")
 betx_et = et["betx"]
 ```
-
-The convention map, established empirically (each case anchored by SAD and
-Xsuite 4×4 transfer-matrix equality at the 1e-10 level, so the twiss
-residuals below are purely parametrisation):
-
-| case | Edwards-Teng | Mais-Ripken projected sums (`betx1+betx2`, ...) | plain mode values |
-|------|--------------|--------------------------------------------------|-------------------|
-| skew-quad line | matches SAD (≤1e-9) | off by ~3e-5 (beta), ~2e-4 (alfa) | off by ~2e-5 |
-| solenoid line (`BZ=1.5`) | matches SAD (≤5e-10) | identical to Edwards-Teng (≤2e-15) | off by ~5% |
-| uncoupled line | matches SAD (≤1e-9) | identical to Edwards-Teng | identical to Edwards-Teng |
-
-Two traps this map removes:
-
-- **The projected sums are not SAD's convention**, even though they match
-  it exactly for solenoids. Rotational (solenoid) coupling is a special
-  case in which the Mais-Ripken projected sums numerically coincide with
-  the Edwards-Teng values; for skew-quad coupling they disagree with SAD
-  by more than the plain values do. An earlier version of this section
-  recommended the projected sums based on the solenoid evidence alone.
-- **SAD's `R1`–`R4` are not the raw decoupling matrix**: they carry the
-  `1/sqrt(1 + det R)` normalisation (verified to ~1e-9 on both skew-quad
-  and solenoid cases via `coupled_optics.normalized_r_matrix()`).
-
-These facts are locked in, agreement and disagreement both asserted, by
-`tests/conversion/test_coupled_twiss_convention.py`.
-
-The solenoid mismatch was originally misdiagnosed as a SAD solenoid
-GEO-exit-transform reference-frame issue. It isn't: the mismatch is present
-already inside the solenoid body itself (before any reference-frame
-transform is applied), it scales cleanly as `(Ks·L)²`, and an independent
-from-scratch derivation of the exact solenoid transfer matrix (linearizing
-Xsuite's own documented solenoid Hamiltonian, cross-checked against a
-central-difference Jacobian built directly from Xsuite's own tracking)
-matches SAD's reported `betx` exactly — confirming both codes' underlying
-physics (Hamiltonian and tracking) agree, and the gap is purely this
-reporting convention.
 
 ## Additional SAD commands
 
