@@ -264,12 +264,32 @@ def _canonicalize_dipole_rotation(rotation):
     return rotation, +1
 
 
+def _has_nonzero_offset(shift_x, shift_y, tol) -> bool:
+    """
+    True if either misalignment is symbolic or numerically nonzero.
+
+    A symbolic (deferred) value is treated conservatively as possibly
+    nonzero, since its runtime value is not known at conversion time.
+    """
+    for shift in (shift_x, shift_y):
+        if isinstance(shift, str):
+            return True
+        if abs(shift) > tol:
+            return True
+    return False
+
+
 def convert_bends(parsed_elements, environment, config):
     """
     Convert bends from the SAD parsed data
     """
 
     bends  = parsed_elements["bend"]
+
+    # Bends with ANGLE != 0 and a nonzero DX/DY: SAD2XS cannot reproduce
+    # SAD's reference-orbit convention for a displaced curved element.
+    # Reported once for the whole lattice below, not once per element.
+    offset_bends = []
 
     for ele_name, ele_vars in bends.items():
         if "angle" in ele_vars:
@@ -282,6 +302,8 @@ def convert_bends(parsed_elements, environment, config):
                 k0l = parse_expression(ele_vars["angle"])
                 k1l = parse_expression(ele_vars.get("k1", 0.0))
                 shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
+                if _has_nonzero_offset(shift_x, shift_y, config.TRANSFORM_SHIFT_TOL):
+                    offset_bends.append(ele_name)
                 rotation, field_sign = _canonicalize_dipole_rotation(rotation)
                 if field_sign == -1:
                     k0l = -k0l if isinstance(k0l, (int, float, np.number)) else f"-({k0l})"
@@ -315,6 +337,8 @@ def convert_bends(parsed_elements, environment, config):
             k0l             = parse_expression(ele_vars["angle"])
             k1l             = parse_expression(ele_vars.get("k1", 0.0))
             shift_x, shift_y, rotation  = get_element_misalignments(ele_vars)
+            if _has_nonzero_offset(shift_x, shift_y, config.TRANSFORM_SHIFT_TOL):
+                offset_bends.append(ele_name)
 
             # Thin/zero-length bend → Multipole; hxl required for reference orbit
             # bending and dispersion generation (without it px and dpx are wrong)
@@ -381,6 +405,19 @@ def convert_bends(parsed_elements, environment, config):
                 shift_y             = shift_y,
                 rot_s_rad           = rotation)
             continue
+
+    if offset_bends:
+        logger.warning(
+            "This lattice contains "
+            f"{len(offset_bends)} bend(s) with ANGLE != 0 and a nonzero "
+            "DX/DY. SAD2XS cannot reproduce SAD's reference-orbit "
+            "convention for a displaced curved element: the converted "
+            "lattice keeps the design curvature fixed regardless of the "
+            "shift, while SAD reconstructs the reference orbit through the "
+            "displaced element.")
+        logger.debug(
+            "Offset bends: "
+            + ", ".join(offset_bends))
 
 ################################################################################
 # Convert Correctors
