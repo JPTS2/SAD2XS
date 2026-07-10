@@ -25,6 +25,7 @@ Avoid describing target behaviour as if it already exists.
 - [Architecture](architecture.md): package layout, subsystem responsibilities, and boundaries between parser, converter, writer, and SAD helper code.
 - [Conversion model](conversion-model.md): the SAD-to-Xsuite conversion pipeline and the decision to treat the converted Xsuite model as the canonical representation.
 - [SAD helpers](sad-helpers.md): Python wrappers around external SAD calculations, including entry points, subprocess handling, timeouts, optionality target, and current limitations.
+- [SAD behaviour notes](sad-behaviour.md): empirically-established facts about how SAD itself behaves — physics conventions, quirks, and limitations discovered while building and testing the converter, independent of any SAD2XS decision made in response.
 - [Testing](testing.md): public test policy, regression workflow, CI structure (master and per-folder workflows), known failure groups, and SAD dependency handling.
 - [Contributing](contributing.md): branch naming, pull request expectations, release workflow, and public issue policy.
 - [Design decisions](design-decisions.md): project-level decisions that should guide future development.
@@ -36,6 +37,7 @@ These documents currently cover:
 - converter architecture and responsibility boundaries;
 - the role of Xsuite as the canonical intermediate model;
 - SAD helper functionality and its current subprocess model;
+- empirically-established SAD behaviour, independent of SAD2XS's own decisions;
 - testing policy for public and private validation;
 - contribution and release workflow for the current development cycle;
 - design decisions that affect future converter, writer, and helper changes.

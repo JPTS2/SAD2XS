@@ -1031,7 +1031,8 @@ def test_sol_disfrin_off_diverges_from_xsuite_in_tracking(write_lattice, tmp_pat
     tracking beyond normal tolerance.
 
     SAD2XS does not model this nonlinear fringe kick (see
-    docs/design-decisions.md): the converted lattice always behaves as if
+    docs/sad-behaviour.md for what it is, docs/design-decisions.md for the
+    converter decision): the converted lattice always behaves as if
     DISFRIN=1 was set, regardless of the source SAD file. This locks in the
     accepted, expected divergence at an offset large enough for the
     (cubic-order) fringe kick to clear normal tracking tolerance, as a
@@ -1114,7 +1115,7 @@ def test_sol_disfrin_off_diverges_from_xsuite_in_tracking(write_lattice, tmp_pat
         "coordinate: zeta/delta, for example, are conserved by this purely "
         "transverse kick and are expected to keep matching. If this now "
         "passes, the accepted limitation may have changed and "
-        "docs/design-decisions.md needs review.")
+        "docs/sad-behaviour.md needs review.")
 
 ################################################################################
 # Reference Transform Physics

@@ -8,52 +8,30 @@ narrowest folder that describes the behaviour being protected.
 
 ## Requirements
 
-The SAD2XS converter is validated against SAD, so the test suite is expected to
-run in an environment where the SAD executable and the Python project
-dependencies (`xtrack`, `numpy`, `pyyaml`) are available.
-
-Some tests — notably `parser/`, `writer/`, `packaging/`, `ci/`, and the
-converter quiet-mode tests in `observability/` — do not invoke the SAD
-executable. They still live inside the same environment so that local and CI
-runs are consistent.
+The full suite expects an environment with the SAD executable and the Python
+project dependencies (`xtrack`, `numpy`, `pyyaml`) available, even though not
+every folder invokes SAD (see the Folder Map's Requires SAD column) — this
+keeps local and CI runs consistent.
 
 ## Running Tests
-
-`pytest.ini` at the repository root controls the full suite configuration:
-
-- `testpaths` is an explicit ordered list: `installation → sad_helpers → sad → parser → conversion → writer → examples → packaging → observability → ci`. The order ensures SAD is verified before SAD-dependent tests run. **Any new test directory must be added to this list**, or it will not be collected.
-- `-ra` prints a short summary of all non-passing tests at the end of the run.
-- `--import-mode=importlib` is required because `tests/sad/` and `tests/conversion/elements/` share basenames (e.g. `test_bend.py`). Without this, pytest collection fails.
-
-To run a single folder:
 
 ```
 pytest tests/writer/ -v
 pytest tests/conversion/elements/ -v
 ```
 
+See `docs/testing.md` for `pytest.ini`'s configuration (`testpaths` order,
+`--import-mode=importlib`) and why it matters.
+
 Deprecation warnings are shown by default. Do not suppress them — they often
 signal upstream Xsuite or SAD API changes that require attention.
 
 ## CI
 
-The master workflow runs the full suite in a single job in the order defined
-by `pytest.ini` `testpaths`:
-
-- `run_tests.yml` — master workflow. One job (`run-tests`) with two sequential
-  steps. Step 1 runs `pytest -m "not known_issue" tests/` and is blocking —
-  any failure blocks the PR. Step 2 runs `pytest -m "known_issue" tests/` with
-  `continue-on-error: true` so known-bug failures are visible but never block a
-  merge. The single job ensures `tests/sad/` (SAD syntax assumptions) always
-  runs before `tests/conversion/` (conversion correctness), matching the
-  `testpaths` order.
-
-- Per-folder workflows — one workflow per test folder, all manually triggerable
-  via `workflow_dispatch`. Allow targeted re-runs of one area without waiting
-  for the full suite.
-
-Both CI setups use the Docker image built by `docker-build.yml`, which packages
-the SAD executable and all Python dependencies.
+`run_tests.yml` (one job, two sequential steps: blocking regression, then
+non-blocking known-issue) plus per-folder `workflow_dispatch` workflows for
+targeted re-runs — see `docs/testing.md`'s CI section for the full
+description.
 
 ## Folder Map
 
@@ -76,15 +54,7 @@ the SAD executable and all Python dependencies.
 | `support/` | — | Reusable support modules — not test files |
 | `artifacts/` | — | Generated Markdown diagnostic reports (git-ignored) |
 
-## Naming
-
-Use descriptive test filenames. Element-specific tests may use SAD element
-mnemonics when that is clearer for the converter contract — for example
-`cavi`, `aper`, `moni`, and `sol`.
-
-For large element families, a subfolder is acceptable, but do not add
-per-element subfolders by default unless the test set is large enough to
-justify the extra navigation.
+See `docs/testing.md` for filename conventions.
 
 ## Diagnostic Artifacts
 
@@ -97,47 +67,20 @@ and tolerance summaries.
 Artifact paths should mirror the test area that produced them, for example
 `tests/artifacts/conversion/elements/sol/`.
 
-## Test Counts
-
-Total collected: **1755 tests** (1751 pass, 4 fail expected) on this branch.
-The breakdown by failure group is in the Known Failures section below.
-Individual folder READMEs document per-file counts.
-
 ## Known Failures
 
-The test suite contains currently failing tests that document known bugs.
+`KNOWN_ISSUES` in `tests/support/known_issues.py` is the live source of truth
+for what is currently known-failing (it is empty as often as not) — see
+`docs/testing.md`'s Known Failures section for the marker mechanism and CI
+routing. Never modify a failing test to make it pass artificially; fix the
+root cause. If you add a test that documents a known bug, record it in the
+relevant folder README.
 
-Tests linked to known failures are marked during collection from the central
-`KNOWN_ISSUES` list in `tests/support/known_issues.py` — a single list of
-`(test node prefix, parameter-id fragment, tracker id)` tuples, where an
-empty fragment matches every parametrisation of that test. They remain
-ordinary failing tests; the marker controls CI selection only and does not
-use `xfail`.
-
-`tests/conftest.py` also fails collection loudly if a `KNOWN_ISSUES` entry's
-fragment matches nothing collected (e.g. after a parametrize change) — this
-is checked automatically, it does not need to be verified by hand.
-
-**4 failing tests**, all in `conversion/elements/test_bend.py`, document the
-bend element-offset reference-orbit convention difference. These tests are the
-record of what differs. They must not be modified to pass.
-
-The `SK1`/combined-order `MULT` discrepancy is resolved: it was not a physics
-bug but a twiss-parametrisation mismatch — SAD reports coupled optics in the
-Edwards-Teng convention, Xsuite's plain twiss reports Mais-Ripken mode
-projections. The comparison convention is proven and locked in by
-`tests/conversion/test_coupled_twiss_convention.py`, and coupled comparisons
-now use `tests/support/coupled_optics.py`. The former solenoid optics failure
-was an instance of the same convention gap — see
-`tests/conversion/elements/README.md`'s `test_sol.py` note and
-`docs/sad-helpers.md` for the full convention map.
-
-The remaining `K0`/`SK0` `MULT` dipole-fringe discrepancy is no longer a known
-failing test: SAD's `MULT` dipole-fringe convention is documented by passing SAD
-ground-truth tests and a passing `theta^4` residual characterization. The
-converter also warns when dipole-only `MULT` elements are auto-simplified to
-Xsuite Bend/corrector elements.
-
-Never modify a failing test to make it pass artificially. Fix the root cause.
-If you add a test that documents a known bug, record it in the relevant folder
-README.
+Most discrepancies found so far have, on investigation, turned out to be
+either a converter bug (fixed) or a fully characterised, documented, and
+quantified difference rather than an open bug — see `docs/testing.md`'s
+Accepted Physics Limitations section for that pattern and the current list
+of examples, and `docs/sad-behaviour.md` for the underlying SAD physics and
+convention notes behind each one (solenoid `DISFRIN` fringe kick, `MULT`
+`K0`/`SK0` dipole fringe, bend element-offset reference-orbit convention,
+Edwards-Teng/Mais-Ripken twiss conventions in coupled regions).
