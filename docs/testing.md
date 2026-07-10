@@ -36,25 +36,10 @@ found in private validation should use reduced synthetic inputs.
 
 ## Test Layers
 
-The public test tree is organised into responsibility-based folders. Each folder
-has its own README with per-file coverage tables and known-failure documentation.
-
-| Folder | Requires SAD | Responsibility |
-|--------|-------------|----------------|
-| `parser/` | No | SAD text parsing and parser error handling |
-| `conversion/elements/` | Yes | Individual SAD element conversion |
-| `conversion/pipeline/` | Yes | Public conversion options and pipeline behaviour |
-| `writer/` | No | Generated lattice and optics writer behaviour |
-| `sad/` | Yes | Empirical SAD syntax assumption tests — machine-verified parameter acceptance and rejection per element type |
-| `sad_helpers/` | Yes | Reusable helper APIs that call or prepare external SAD runs |
-| `examples/` | Yes | Public example execution and example lattice checks |
-| `installation/` | Yes | Installer and SAD executable behaviour |
-| `packaging/` | No | Package metadata, import boundaries, and release metadata |
-| `ci/` | No | Workflow configuration correctness |
-| `observability/` | Mixed | Output suppression, quiet mode, and helper output policy |
-
-Total collected: **1687 tests** (1683 pass, 4 currently failing expected)
-on this branch. See `tests/README.md` for the breakdown by failure group.
+The public test tree is organised into responsibility-based folders, each with
+its own README giving per-file coverage tables and known-failure
+documentation. See `tests/README.md`'s Folder Map for the full list of
+folders, what each covers, and whether it requires SAD.
 
 ## SAD Syntax Assumption Tests
 
@@ -108,13 +93,11 @@ intermediate dictionaries.
 
 ## Known Failures
 
-The suite contains **4 currently failing tests**, all linked to known-failure
-entries.
-
-Tests associated with known failures receive the `known_issue` marker during
-collection from `tests/support/known_issues.py`. They are not `xfail` tests:
-they execute and report ordinary failures. CI runs unmarked tests as the
-blocking regression gate and marked tests in a visible non-blocking job.
+Tests documenting an open, unresolved converter bug receive the `known_issue`
+marker during collection from `tests/support/known_issues.py`. They are not
+`xfail` tests: they execute and report ordinary failures. CI runs unmarked
+tests as the blocking regression gate and marked tests in a visible
+non-blocking job.
 
 Local selections use:
 
@@ -123,14 +106,14 @@ pytest -m "not known_issue"  # blocking regression selection
 pytest -m "known_issue"      # tests documenting known failures
 ```
 
-The 4 failures are all in `conversion/elements/test_bend.py` and document the
-bend element-offset reference-orbit convention difference. The mapping is
-maintained in `tests/support/known_issues.py` as a single `KNOWN_ISSUES` list of
+`tests/support/known_issues.py` maintains a single `KNOWN_ISSUES` list of
 `(test node prefix, parameter-id fragment, tracker id)` tuples — an empty
 fragment (`""`) matches every parametrisation of that test, i.e. the whole test
 is the known failure, not just specific parameters. These tests must not be
 modified to pass artificially — they are the record of what is broken and what
-needs to be fixed.
+needs to be fixed. The current contents of that list (it is empty as often as
+not) are the live source of truth for what is currently known-failing; this
+document does not track a count.
 
 `tests/conftest.py` fails collection loudly if a `KNOWN_ISSUES` entry's
 fragment matches nothing currently collected — e.g. a fragment that stopped
@@ -168,9 +151,15 @@ Current examples:
 - `test_bend_offset_orbit_residual_is_angle_squared_order` and
   `test_bend_offset_thin_bend_dispersion_residual_is_angle_squared_order`
   (`tests/conversion/elements/test_bend.py`) assert the accepted `ANGLE^2`
-  reference-orbit residual for an offset curved bend; a third,
-  `test_bend_offset_rotated_coupling_is_a_sad_side_artifact`, asserts a
-  further, separate SAD-side coupling artifact found combined with `ROTATE`.
+  reference-orbit residual for an offset curved bend, with their
+  tracking-mode counterparts
+  `test_bend_offset_orbit_residual_diverges_in_tracking` and
+  `test_bend_offset_thin_bend_dispersion_residual_diverges_in_tracking`
+  asserting the same divergence in actual particle tracking rather than
+  only the closed-orbit twiss value. `test_bend_offset_rotated_coupling_is_a_sad_side_artifact`
+  and `test_bend_conversion_matches_sad_twiss_for_rotated_element_offsets`
+  assert a further, separate SAD-side coupling artifact found combined
+  with `ROTATE`.
 
 See `docs/sad-behaviour.md` for the corresponding SAD physics and convention
 notes, and `docs/design-decisions.md` for the resulting converter decisions.
@@ -180,12 +169,10 @@ notes, and `docs/design-decisions.md` for the resulting converter decisions.
 The test suite requires SAD for conversion and helper tests. Parser, writer,
 packaging, CI, and converter quiet-mode tests do not invoke the SAD executable.
 
-CI uses two blocking regression jobs and one non-blocking known-issues job.
-`sad-free` runs first; `sad-required` follows only when that regression gate
-passes. The known-issues job runs independently and retains full failure output.
-
-Do not rely on filename ordering to ensure that SAD installation tests run
-before other tests. The explicit job dependency in `run_tests.yml` handles this.
+CI runs the whole suite as a single job with two sequential steps (blocking
+regression, then non-blocking known-issue) rather than separate jobs — see
+CI below. `pytest.ini`'s `testpaths` order, not job structure, is what
+guarantees SAD installation tests run before other tests.
 
 ## Temporary Files
 
@@ -206,11 +193,16 @@ summaries. The artifact path mirrors the test area that produced it.
 
 ## CI
 
-Three layers of CI run the test suite automatically:
-
-**`run_tests.yml`** — master workflow. Triggered on pull requests to `main` and
-`release/**`, and on a weekly schedule. Runs `sad-free` followed by
-`sad-required`. Both jobs pull the SAD Docker image and run pytest inside it.
+**`run_tests.yml`** — master workflow. Triggered on pull requests to `main`
+and `release/**`, and on a weekly schedule (catches upstream SAD/Xsuite
+breakage independent of any SAD2XS change). One job (`run-tests`), two
+sequential steps: step 1 runs `pytest -m "not known_issue" tests/` and
+blocks the PR on failure; step 2 runs `pytest -m "known_issue" tests/` with
+`continue-on-error: true`, so known-bug failures stay visible without
+blocking a merge. A single job (rather than separate SAD-free/SAD-required
+jobs) keeps `pytest.ini`'s `testpaths` order intact, so `tests/sad/` always
+runs before `tests/conversion/`. Both steps pull the SAD Docker image and
+run pytest inside it.
 
 **Per-folder workflows** (`test_parser.yml`, `test_conversion.yml`, etc.) —
 one workflow per test folder, all manually triggerable via `workflow_dispatch`.

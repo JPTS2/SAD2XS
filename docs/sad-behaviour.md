@@ -94,15 +94,47 @@ issue's own four-case `x_corr` grid, which reports a different
 have not been reconciled and should not be assumed to describe the same
 number.
 
+The residual is not confined to the orbit/dispersion column. Confirmed
+empirically, per representation:
+
+- **Thick bend**: `zeta`, `dx` (dispersion), `betx`, `bety`, `alfx`, and
+  `alfy` all diverge alongside `x` at every angle tested (`0.025`, `0.05`,
+  `0.1`). `px` also diverges, at `ANGLE^4` (faster than the rest) — it
+  only clears the standard `(1e-9, 1e-5)` comparison tolerance from
+  `ANGLE≈0.05` upward, not at `0.025`. This is confirmed distinct from the
+  unrelated `MULT` `K0`/`SK0` `ANGLE^4` fringe-order mismatch above: a
+  plain `DX=DY=0` bend at the same three angles matches SAD on all 15
+  columns with no divergence anywhere, so `px`'s divergence here is
+  genuinely offset-triggered, not that unrelated confound bleeding
+  through. `s`, `y`, `py`, `delta`, `dpx`, `dpy` all match.
+- **Thin bend**: only `dx` and `zeta` diverge; `x`, `px`, `y`, `py`,
+  `delta`, `betx`, `bety`, `alfx`, `alfy` all match exactly — a
+  zero-length element has no separate betatron distortion of its own.
+- **Combined `DX`+`DY`**: a clean superposition of the pure-`DX` residual
+  on every column, for both thick and thin bends — `DY`'s own
+  contribution is zero to numerical noise. One exception: a genuine but
+  tiny (~1e-9) `dx`-column cross-term appears only when `DX` and `DY` are
+  simultaneously nonzero (thick bend), and only clears tolerance at the
+  largest angle tested (`0.1`).
+- **Tracking** (as opposed to twiss/closed-orbit): the same residual
+  surfaces as a divergence on `x`/`px`/`zeta` for the thick bend and
+  `x`/`y`/`zeta` for the thin bend (the thin-bend `x`/`y` divergence is a
+  small, ~1e-8, rigid shift identical for every particle regardless of its
+  own initial coordinates); `y`/`py`/`delta` (thick) and `px`/`py`/`delta`
+  (thin) still match.
+
+Locked in by `test_bend_offset_orbit_residual_is_angle_squared_order` and
+`test_bend_offset_thin_bend_dispersion_residual_is_angle_squared_order`
+(twiss, extended to the combined-offset case and the columns above) and
+`test_bend_offset_orbit_residual_diverges_in_tracking` /
+`test_bend_offset_thin_bend_dispersion_residual_diverges_in_tracking`
+(tracking) in `tests/conversion/elements/test_bend.py`.
+
 Correctors (`ANGLE == 0`) and `MULT`-derived dipoles (both the
 `user_multipole_replacements` `"Bend"` path and `SIMPLIFY_MULTIPOLES`'s
 dipole-simplification path) never carry a nonzero curvature and are
 confirmed unaffected.
 
-Locked in as passing, quantified tests in
-`tests/conversion/elements/test_bend.py`
-(`test_bend_offset_orbit_residual_is_angle_squared_order` and
-`test_bend_offset_thin_bend_dispersion_residual_is_angle_squared_order`).
 See `docs/design-decisions.md` ("Bend element-offset (DX/DY) reference-
 orbit convention is not modelled") for the resulting converter warning.
 
@@ -138,6 +170,41 @@ Confirmed:
   smooth crossover at any scale tested.
 - **The ~52.3° branch point is a fixed constant**, confirmed insensitive to
   `ANGLE`, `DX` magnitude, and element length.
+- **Not confined to the axis carrying the offset.** Confirmed at
+  `ROTATE = +-pi/2` in addition to the `pi/4` case originally
+  investigated: even when the offset lies entirely on the axis that
+  tracking (and closed-orbit twiss columns) show matching SAD exactly —
+  e.g. `DX` at `ROTATE = +-pi/2`, the case
+  `test_bend_conversion_matches_sad_tracking_for_rotated_element_offsets`
+  asserts is a full tracking match — `betx`/`bety`/`alfx`/`alfy` still
+  diverge by the same order of magnitude. Tracking never computes twiss
+  parameters, so this is invisible there regardless of which axis carries
+  the offset; only a dedicated twiss-side comparison sees it. Quantified
+  at `ROTATE=pi/4`, `ANGLE=0.05`: `betx`/`bety` diverge by ~1.3e-3,
+  `alfx`/`alfy` by ~2.9e-3 — three orders of magnitude past the normal
+  `(1e-9, 1e-5)` twiss tolerance — and, like `R1`, barely change between
+  two offset magnitudes three orders of magnitude apart, the same
+  magnitude-independent signature. Locked in by
+  `test_bend_conversion_matches_sad_twiss_for_rotated_element_offsets` (the
+  general case, all axes) and by the `betx`/`bety`/`alfx`/`alfy`
+  assertions added to
+  `test_bend_offset_rotated_coupling_is_a_sad_side_artifact` (the
+  `pi/4` case specifically).
+
+The committed regression tests lock in a narrower slice than was explored.
+`test_bend_offset_rotated_coupling_is_a_sad_side_artifact` checks `DX` in
+`[1e-6, 1e-3]` at one fixed `ANGLE=0.05`, `ROTATE=pi/4`;
+`test_bend_conversion_matches_sad_twiss_for_rotated_element_offsets` checks
+`ROTATE = +-pi/2` with `(DX,DY)` in
+`{(1e-3,0), (0,-1e-3), (1e-3,-1e-3)}` at one fixed `ANGLE=0.1`. The wider
+claims above — the six-order-of-magnitude `DX` insensitivity (`1e-12` to
+`0.1`), and the `ANGLE`/length independence of both the effect and the
+~52.3° branch point — were established via a standalone empirical scan
+(`dev/sad_offset_bend_coupling/r1_r4_scan.py` plus 58 independent
+native-SAD runs, not part of the committed test suite) and are not
+themselves regression-locked. If the committed tests' narrower slice ever
+starts passing in the "matches" direction, this wider characterisation
+should be re-checked too, not just the committed assertions.
 
 Working hypothesis (not confirmed against SAD source — no further
 diagnosis was possible without it): this ties to the same reference-orbit
@@ -152,11 +219,15 @@ purely numerical detail internal to SAD's own decomposition algorithm
 physical meaning — it is completely insensitive to every physical
 parameter tested, which a real physical crossover would not be.
 
-Locked in by `test_bend_offset_rotated_coupling_is_a_sad_side_artifact`
-(`tests/conversion/elements/test_bend.py`), which asserts the directly-
-observable evidence (SAD's `R1` tracks `sin(ROTATE)` regardless of offset
-magnitude; Xsuite's own coupling stays small and continuous) rather than a
-full mechanistic explanation.
+Locked in by `test_bend_offset_rotated_coupling_is_a_sad_side_artifact`,
+`test_bend_conversion_matches_sad_twiss_for_rotated_element_offsets`, and
+`test_bend_conversion_matches_sad_tracking_for_rotated_element_offsets`
+(`tests/conversion/elements/test_bend.py`), which together assert the
+directly-observable evidence (SAD's `R1` tracks `sin(ROTATE)` regardless of
+offset magnitude; Xsuite's own coupling stays small and continuous;
+`betx`/`bety`/`alfx`/`alfy` diverge on every axis; tracking coordinates
+match or diverge exactly as the unrotated case does, just with axes
+swapped) rather than a full mechanistic explanation.
 
 ## Twiss conventions in coupled regions (skew quads, solenoids, ...)
 
