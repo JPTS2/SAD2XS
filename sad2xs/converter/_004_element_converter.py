@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-08
+Date:       2026-07-10
 """
 
 ################################################################################
@@ -22,6 +22,7 @@ from ..helpers import log_section_heading
 from ._000_helpers import (
     parse_expression,
     get_element_misalignments,
+    is_effectively_zero,
     only_index_nonzero,
     divide_integrated_strength,
     define_strength_variable,
@@ -271,12 +272,9 @@ def _has_nonzero_offset(shift_x, shift_y, tol) -> bool:
     A symbolic (deferred) value is treated conservatively as possibly
     nonzero, since its runtime value is not known at conversion time.
     """
-    for shift in (shift_x, shift_y):
-        if isinstance(shift, str):
-            return True
-        if abs(shift) > tol:
-            return True
-    return False
+    return not (
+        is_effectively_zero(shift_x, tol)
+        and is_effectively_zero(shift_y, tol))
 
 
 def convert_bends(parsed_elements, environment, config):
