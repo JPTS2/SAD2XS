@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-25
+Date:       2026-07-11
 """
 
 ################################################################################
@@ -18,11 +18,7 @@ from dataclasses import dataclass, field
 # conversion. SAD itself accepts these names; SAD2XS rejects them early to
 # prevent silent corruption of the Xsuite environment.
 ################################################################################
-PROTECTED_ELEMENT_NAMES: frozenset[str] = frozenset({
-    "mass0",
-    "p0c",
-    "q0",
-})
+PROTECTED_ELEMENT_NAMES: frozenset[str] = frozenset({"mass0", "p0c", "q0"})
 
 ################################################################################
 # Config Dataclass
@@ -133,8 +129,6 @@ class Config:
     ########################################
     MODEL_DRIFT:                    str             = 'exact'
     MODEL_BEND:                     str             = 'bend-kick-bend'
-    # mat-kick-mat, not rot-kick-rot-high-order -- see
-    # dev/xsuite_model_integrators/fcc_sol_lattice_check.py.
     MODEL_QUAD:                     str             = 'mat-kick-mat'
     MODEL_SEXT:                     str             = 'mat-kick-mat'
     MODEL_OCT:                      str             = 'mat-kick-mat'
@@ -156,6 +150,8 @@ class Config:
     N_INTEGRATOR_KICKS_SOL:         int             = 20
 
     ABSOLUTE_TIME_CAVI:             bool            = False
+
+    N_SLICES_MULT_RF:               int             = 10
 
     EDGE_MODEL_BEND:                str             = 'full'
 

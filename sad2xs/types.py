@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-25
+Date:       2026-07-10
 """
 
 ################################################################################
@@ -28,7 +28,7 @@ class ConfigLike(Protocol):
     ASCII_LOGO:                     str
 
     SAD_ALLOWED_ELEMENTS:           set[str]
-        
+
     ref_particle_mass0:             float | None
     ref_particle_q0:                float | None
     ref_particle_p0c:               float | None
@@ -67,10 +67,12 @@ class ConfigLike(Protocol):
 
     ABSOLUTE_TIME_CAVI:             bool
 
+    N_SLICES_MULT_RF:               int
+
     EDGE_MODEL_BEND:                str
-    
+
     OUTPUT_STRING_SEP:              int
     OUTPUT_STRING_LENGTH:           int
     ALLOWED_ELEMENTS:               set[str]
-    
+
     MARKER_INSERTION_TOLERANCE:     float
