@@ -440,7 +440,7 @@ def convert_solenoids(
                         xt.LimitRect,
                         xt.LimitRectEllipse)):
                     continue
-                # Thin RF doens't need conversion
+                # Thin RF doesn't need conversion
                 elif isinstance(environment.element_dict[element], xt.Cavity) \
                         and line[element].length == 0:
                     continue
