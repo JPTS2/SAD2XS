@@ -15,20 +15,20 @@ should stay focused on pipeline orchestration and public user options.
 
 | File | Functions | Fail | Failure root cause |
 |------|-----------|------|--------------------|
-| `test_convert_sad_to_xsuite.py` | 22 | 0 | — |
-| `test_excluded_elements.py` | 8 | 0 | — |
+| `test_convert_sad_to_xsuite.py` | 23 | 0 | — |
+| `test_excluded_elements.py` | 9 | 0 | — |
 | `test_multipole_replacements.py` | 5 | 0 | — |
 | `test_offset_markers.py` | 7 | 0 | — |
 | `test_reference_particle.py` | 10 | 0 | — |
-| `test_reverse_survey_horizontal.py` | 10 | 0 | — |
-| `test_reverse_charge_sign.py` | 8 | 0 | — |
-| `test_reverse_element_order.py` | 6 | 0 | — |
+| `test_reverse_survey_horizontal.py` | 12 | 0 | — |
+| `test_reverse_charge_sign.py` | 6 | 0 | — |
+| `test_reverse_element_order.py` | 14 | 0 | — |
 
 ### `test_convert_sad_to_xsuite.py` note
 
 Covers the entry-point contract in detail: output file creation, output
 filename defaults, line name selection, suppressed-element handling,
-`_test_mode` behaviour, and line name defaulting. All 22 tests pass.
+`_test_mode` behaviour, and line name defaulting. All 23 tests pass.
 
 ### `test_offset_markers.py` note
 
@@ -42,4 +42,4 @@ bare `eval()`. All 7 pass.
 Covers `reverse_charge_sign=True` and species-aware reference particle setup.
 Tests: default positron species, proton mass → proton species, charge sign
 reversal (positron → electron, proton → antiproton), p0c/mass0 isolation, and
-UserWarning emission when `CHARGE != 1` is found in the SAD file. All 8 pass.
+UserWarning emission when `CHARGE != 1` is found in the SAD file. All 6 pass.

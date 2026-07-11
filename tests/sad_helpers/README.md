@@ -12,7 +12,7 @@ in `tests/conversion/`.
 
 | File | Function(s) | Tests | Lattice fixture |
 |------|-------------|-------|-----------------|
-| `test_twiss_sad.py` | `twiss_sad`, `compute_second_order_dispersions`, `compute_chromatic_functions`, `generate_twiss_print_function` | 20 | Minimal transfer-line (1 m drift, START/END markers); minimal bend (0.1 rad BEND) |
+| `test_twiss_sad.py` | `twiss_sad`, `compute_second_order_dispersions`, `compute_chromatic_functions`, `generate_twiss_print_function` | 21 | Minimal transfer-line (1 m drift, START/END markers); minimal bend (0.1 rad BEND); accelerating MULT (VOLT/FREQ) for TRPT |
 | `test_survey_sad.py` | `survey_sad`, `generate_survey_print_function` | 15 | Same transfer-line and bend lattices |
 | `test_emit_sad.py` | `emit_sad` | 6 | 4-cell FODO ring with RF (45° bends, ρ = 1 m, K1 = ±0.2) |
 | `test_chromaticity_sad.py` | `chromaticity_sad`, `generate_off_momentum_tune_function` | 11 | Same 4-cell FODO ring without RF |

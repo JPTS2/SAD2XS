@@ -31,20 +31,20 @@ exception — they have no twiss/tracking comparison to extend.
 
 | File | Functions | Fail | Failure root cause |
 |------|-----------|------|--------------------|
-| `test_apert.py` | 20 | 0 | — |
+| `test_apert.py` | 24 | 0 | — |
 | `test_beambeam.py` | 5 | 0 | — |
 | `test_bend.py` | 38 | 0 | — |
-| `test_cavi.py` | 19 | 0 | — |
+| `test_cavi.py` | 10 | 0 | — |
 | `test_coord.py` | 10 | 0 | — |
-| `test_corrector.py` | 18 | 0 | — |
-| `test_drift.py` | 6 | 0 | — |
+| `test_corrector.py` | 20 | 0 | — |
+| `test_drift.py` | 7 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
-| `test_mult.py` | 18 | 0 | — |
+| `test_mult.py` | 26 | 0 | — |
 | `test_oct.py` | 18 | 0 | — |
 | `test_quad.py` | 18 | 0 | — |
 | `test_sext.py` | 18 | 0 | — |
-| `test_sol.py` | 23 | 0 | — |
+| `test_sol.py` | 26 | 0 | — |
 
 ### `test_sol.py` note
 
@@ -82,7 +82,7 @@ bias — SAD zero-angle correctors convert to a plain `xt.Bend` with
 Bend/Quadrupole/Sextupole/Octupole/Multipole model/integrator settings to
 match a systematic SAD-cross-validated study (`bend-kick-bend` for
 Bend/Corrector, `rot-kick-rot-high-order`/`yoshida4` for
-Quad/Sext/Oct/Mult). All 18 functions in this file now pass.
+Quad/Sext/Oct/Mult). All 20 functions in this file now pass.
 
 ### `test_mult.py` note
 

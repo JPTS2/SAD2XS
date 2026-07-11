@@ -25,16 +25,16 @@ instance count exceeds its function count.
 |------|-----------|------|-------|
 | `test_preprocessing.py` | 6 | 0 | — |
 | `test_comments.py` | 10 | 0 | — |
-| `test_globals.py` | 10 | 0 | — |
-| `test_units.py` | 15 | 0 | — |
+| `test_globals.py` | 12 | 0 | — |
+| `test_units.py` | 7 | 0 | — |
 | `test_lines.py` | 6 | 0 | — |
 | `test_line_names.py` | 3 | 0 | — |
 | `test_element_parameters.py` | 13 | 0 | — |
 | `test_element_expressions.py` | 8 | 0 | — |
 | `test_deferred_expressions.py` | 17 | 0 | — |
-| `test_functions.py` | 5 | 5 | SAD user-defined function definitions not yet implemented |
+| `test_functions.py` | 2 | 0 | — |
 | `test_repeated_definitions.py` | 9 | 0 | — |
-| `test_errors.py` | 13 | 0 | — |
+| `test_errors.py` | 14 | 0 | — |
 
 ### `test_preprocessing.py` note
 
@@ -65,11 +65,16 @@ defaults to `+1` regardless of what `CHARGE` is set to.
 
 ### `test_functions.py` note
 
-SAD supports user-defined functions with the syntax `f[x_] := expr`. The parser
-does not yet handle this syntax. All five tests fail with parse errors. These
-tests document the full planned behaviour: definition, module body, and use in
-both deferred and element expressions. The implementation is deferred to its own
-branch — see `dev/parser_completeness_plan.md`.
+SAD user-defined functions (`f[x_] := expr`) are explicitly rejected with a
+clear `ValueError` citing the source line, rather than being silently
+misparsed as a deferred expression (a bare `:=` previously produced a
+garbage deferred-expression key with no indication of the real problem).
+Covers a bare definition and one with a `Module[]` body. Three
+"function call" tests (deferred expression, element expression, nested
+calls) are not present here: since a definition is always rejected before
+it is ever used, they had no reachable scenario left to exercise and were
+consolidated into the two tests above rather than duplicated three times
+over.
 
 ## Shared Fixtures
 
