@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-10
 ================================================================================
 """
 ################################################################################
@@ -333,6 +333,54 @@ def test_twiss_sad_reverse_survey_horizontal_flips_x_plane_dispersion(
     assert np.allclose(dpx_reversed, -dpx_forward, atol = 1E-12), (
         "reverse_survey_horizontal=True should negate dpx everywhere. "
         f"dpx_forward: {list(dpx_forward)}; dpx_reversed: {list(dpx_reversed)}.")
+
+
+def test_twiss_sad_trpt_carries_reference_momentum_through_acceleration(
+        tmp_path,
+        monkeypatch):
+    """
+    trpt=True should declare the line a transport line, carrying the
+    nominal/reference momentum along with an accelerating element instead
+    of holding it fixed at the line's initial MOMENTUM. Without it, delta
+    at the end of a strongly-accelerating element is reported relative to
+    the fixed initial momentum and is not close to zero; with it, the
+    reference tracks the acceleration and delta is close to zero. See
+    docs/sad-behaviour.md for the underlying physics.
+    """
+    lattice = tmp_path / "trpt_probe.sad"
+    lattice.write_text(
+        "MOMENTUM = 0.05 GEV;\n"
+        "MULT M1 = (L=1.0 VOLT=1.0e8 PHI=-1.5707963267948966 FREQ=2.856e9);\n"
+        "MARK START = ()\n"
+        "     END   = ();\n"
+        "LINE TEST = (START M1 END);\n")
+    monkeypatch.chdir(tmp_path)
+
+    twiss_no_trpt = twiss_sad(
+        lattice_filepath = lattice.name,
+        line_name        = "TEST",
+        closed           = False,
+        calc6d           = True,
+        rfsw             = True,
+        trpt             = False,
+        wall_time        = 30)
+    twiss_trpt = twiss_sad(
+        lattice_filepath = lattice.name,
+        line_name        = "TEST",
+        closed           = False,
+        calc6d           = True,
+        rfsw             = True,
+        trpt             = True,
+        wall_time        = 30)
+
+    assert abs(twiss_no_trpt.delta[-1]) > 1.0, (
+        "Without trpt, delta at the end of a strongly-accelerating element "
+        "should be large relative to the fixed initial reference momentum. "
+        f"Got delta: {twiss_no_trpt.delta[-1]}.")
+    assert abs(twiss_trpt.delta[-1]) < 1E-6, (
+        "With trpt=True, the reference momentum should track the "
+        "acceleration, leaving a near-zero residual delta. "
+        f"Got delta: {twiss_trpt.delta[-1]}.")
 
 
 ################################################################################
