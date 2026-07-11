@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-10
 """
 
 ################################################################################
@@ -36,6 +36,12 @@ def exclude_elements(
     if excluded_elements is None or len(excluded_elements) == 0:
         logger.debug("No excluded elements found. Skipping exclusion.")
         return parsed_lattice_data
+
+    ########################################
+    # Parsed element/line names are lowercase; accept SAD's own (usually
+    # uppercase) spelling too, rather than silently matching nothing.
+    ########################################
+    excluded_elements   = [elem.lower() for elem in excluded_elements]
 
     ########################################
     # When we exclude elements, need to exclude the reverse also
