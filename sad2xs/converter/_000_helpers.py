@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-08
+Date:       2026-07-10
 ================================================================================
 """
 ################################################################################
@@ -151,6 +151,62 @@ def define_strength_variable(environment, ele_name: str, k_name: str, k_value):
         environment[var_name] = k_value
         return var_name
     return k_value
+
+################################################################################
+# Parse RF Parameters (VOLT / FREQ / PHI / HARM)
+################################################################################
+def parse_rf_parameters(environment, ele_name: str, ele_vars: dict):
+    """
+    Parse SAD VOLT/FREQ/PHI/HARM into Xsuite Cavity-ready values.
+
+    HARM and FREQ are mutually exclusive in SAD; if HARM is present it takes
+    priority and FREQ is discarded (harmonic tracks Xsuite's own revolution-
+    frequency derivation). FREQ and PHI, when non-zero, are registered as
+    deferred environment variables (freq_{name}, phase_{name}) so they can be
+    tuned after conversion. VOLT is always registered as vol_{name} for the
+    same reason, but is returned as a literal value, matching how it is
+    passed directly to xt.Cavity today.
+
+    Returns (voltage, frequency, harmonic, phase) ready to pass to
+    environment.new(prototype=xt.Cavity, ...).
+    """
+    voltage = 0.0
+    freq    = 0.0
+    phi     = np.pi
+
+    if "volt" in ele_vars:
+        voltage = parse_expression(ele_vars["volt"])
+    if "freq" in ele_vars:
+        freq = parse_expression(ele_vars["freq"])
+    if "phi" in ele_vars:
+        phi_offset = parse_expression(ele_vars["phi"])
+        if isinstance(phi_offset, float):
+            phi         = np.pi + phi_offset
+        elif isinstance(phi_offset, str):
+            phi         = f"{np.pi} + {phi_offset}"
+        else:
+            raise ValueError(
+                f"Unsupported type for phi offset of {ele_name}: "
+                f"{type(phi_offset)}")
+
+    if "harm" in ele_vars:
+        harm                             = parse_expression(ele_vars["harm"])
+        environment[f"harm_{ele_name}"] = harm
+        harmonic                         = f"harm_{ele_name}"
+        freq                             = 0
+    else:
+        harmonic = 0
+
+    environment[f"vol_{ele_name}"]      = voltage
+
+    if freq != 0:
+        environment[f"freq_{ele_name}"] = freq
+        freq                            = f"freq_{ele_name} * (1 + fshift)"
+    if phi != 0:
+        environment[f"phase_{ele_name}"] = phi
+        phi                              = f"phase_{ele_name}"
+
+    return voltage, freq, harmonic, phi
 
 ################################################################################
 # Combine K0/SK0 Dipole Orders
