@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-10
 """
 
 ################################################################################
@@ -427,7 +427,8 @@ def convert_solenoids(
                     logger.debug(
                         f"Converted Multipole {element} to solenoid with ks = {ks}")
                     continue
-
+                
+                # Known thin elements that don't need conversion
                 elif isinstance(
                     environment.element_dict[element],      # type: ignore
                     (
@@ -438,8 +439,12 @@ def convert_solenoids(
                         xt.LimitEllipse,
                         xt.LimitRect,
                         xt.LimitRectEllipse)):
-                    # Known elements that don"t need conversion
                     continue
+                # Thin RF doens't need conversion
+                elif isinstance(environment.element_dict[element], xt.Cavity) \
+                        and line[element].length == 0:
+                    continue
+                # Other potentially thick elements to warn on
                 else:
                     logger.warning(
                         f"Element {element} in line {line_name} has not been converted")
