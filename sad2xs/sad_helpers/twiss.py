@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       24-06-2026
+Date:       2026-07-10
 """
 
 ################################################################################
@@ -156,6 +156,7 @@ def twiss_sad(
         reverse_survey_horizontal: bool    = False,
         closed:                 bool    = True,
         calc6d:                 bool    = False,
+        trpt:                   bool    = False,
         rfsw:                   bool    = True,
         rad:                    bool    = False,
         radcod:                 bool    = False,
@@ -166,6 +167,14 @@ def twiss_sad(
         sad_path:               str     = "sad"):
     """
     Generate a SAD command to compute the twiss parameters of a lattice.
+
+    trpt : bool, default False
+        If True, declare the beam line a transport line rather than part of
+        a storage ring (SAD's TRPT flag, antonym RING): the nominal/reference
+        momentum is carried along the line by accelerating elements, rather
+        than held fixed at the line's initial MOMENTUM. Independent of
+        rfsw/rad/radcod -- see docs/sad-behaviour.md for the physics this
+        controls.
     """
 
     ########################################
@@ -173,6 +182,7 @@ def twiss_sad(
     ########################################
     calc_flag       = "CALC6D;" if calc6d else "CALC4D;"
     closed_flag     = "CELL;" if closed else "INS;"
+    trpt_flag       = "TRPT;" if trpt else "RING;"
     rfsw_flag       = "RFSW;" if rfsw else "NORFSW;"
     rad_flag        = "RAD;" if rad else "NORAD;"
     radcod_flag     = "RADCOD;" if radcod else "NORADCOD;"
@@ -196,7 +206,7 @@ FFS;
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Set FFS flags
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-FFS["{rfsw_flag}{rad_flag}{radcod_flag}{radtaper_flag}NOFLUC;"];
+FFS["{trpt_flag}{rfsw_flag}{rad_flag}{radcod_flag}{radtaper_flag}NOFLUC;"];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Load and set line
