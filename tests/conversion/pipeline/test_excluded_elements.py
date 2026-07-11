@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-10
 ================================================================================
 """
 ################################################################################
@@ -92,7 +92,6 @@ def test_pipeline_excluded_elements_empty_list_leaves_elements_unchanged(write_l
 def test_pipeline_excluded_single_element_is_absent_from_line(write_lattice):
     """
     An element named in excluded_elements should not appear in the converted line.
-    Element names are matched post-parse, so names must be lowercase.
     """
     lattice_path = write_lattice(
         """\
@@ -156,6 +155,43 @@ def test_pipeline_excluded_single_element_does_not_affect_other_elements(write_l
     assert "end" in line.element_names, (
         "Marker 'end' should remain in the converted line when only 'd1' is "
         f"excluded. Got: {line.element_names}.")
+
+
+def test_pipeline_excluded_element_matches_regardless_of_case(write_lattice):
+    """
+    excluded_elements should match regardless of case: parsed element/line
+    names are lowercase internally, but users naturally write SAD's own
+    (usually uppercase) element name -- both must work, not just the
+    internal lowercase form.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        DRIFT       D1      = (L = 1.0);
+        MARK        SP1744  = ();
+
+        MARK        START   = ()
+                    END     = ();
+
+        LINE        TEST_LINE = (START D1 SP1744 END);
+        """,
+        filename = "excluded_case_insensitive.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path  = str(lattice_path),
+        output_directory  = "N/A",
+        excluded_elements = ["SP1744"],
+        _verbose          = False,
+        _test_mode        = True)
+
+    assert "sp1744" not in line.element_names, (
+        "excluded_elements should match SAD's own uppercase spelling, not "
+        "just the internal lowercase form. "
+        f"Got: {line.element_names}.")
+    assert "d1" in line.element_names, (
+        "Unrelated element 'd1' should remain in the converted line. "
+        f"Got: {line.element_names}.")
 
 
 ################################################################################

@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-10
+Date:       2026-07-11
 """
 
 ################################################################################
@@ -27,6 +27,7 @@ from ._000_helpers import (
     divide_integrated_strength,
     define_strength_variable,
     combine_k0_sk0,
+    parse_rf_parameters,
     values_provably_equal,
     values_provably_opposite,
 )
@@ -211,6 +212,23 @@ def convert_elements(
         logger.info(
             f"Converted {len(parsed_elements['beambeam'])} beam-beam definitions")
 
+    ########################################
+    # RF Focusing Check
+    ########################################
+    log_section_heading("Checking for Unmodelled RF Focusing", mode = "section")
+    cavity_names = [
+        name for name, ele in environment.elements.items()
+        if isinstance(ele, xt.Cavity)]
+    if cavity_names:
+        logger.warning(
+            "This lattice contains "
+            f"{len(cavity_names)} cavity element(s). SAD2XS's Xsuite Cavity "
+            "elements do not model SAD's transverse RF-focusing kick -- see "
+            "docs/sad-behaviour.md for details.")
+        logger.debug(
+            "Cavity elements: "
+            + ", ".join(cavity_names))
+
 ################################################################################
 # Convert drift
 ################################################################################
@@ -220,6 +238,7 @@ def convert_drifts(parsed_elements, environment):
     """
 
     drifts  = parsed_elements["drift"]
+    negative_length_drifts = []
 
     for ele_name, ele_vars in drifts.items():
 
@@ -231,6 +250,10 @@ def convert_drifts(parsed_elements, environment):
         else:
             raise ValueError(f"Drift {ele_name} missing length.")
 
+        parsed_length = parse_expression(length)
+        if isinstance(parsed_length, (int, float)) and parsed_length < 0:
+            negative_length_drifts.append(ele_name)
+
         ########################################
         # Create Element
         ########################################
@@ -238,6 +261,18 @@ def convert_drifts(parsed_elements, environment):
             name      = ele_name,
             prototype = xt.Drift,
             length    = length)
+
+    if negative_length_drifts:
+        logger.warning(
+            "This lattice contains "
+            f"{len(negative_length_drifts)} drift(s) with negative length. "
+            "SAD2XS converts negative-length drifts as-is: they commonly "
+            "arise from overlapping element geometry or survey rounding in "
+            "the source SAD lattice, and are likely to break Xsuite "
+            "tracking/twiss or downstream offset-marker insertion.")
+        logger.debug(
+            "Negative-length drifts: "
+            + ", ".join(negative_length_drifts))
 
 ################################################################################
 # Convert Bends
@@ -652,15 +687,6 @@ def convert_multipoles(
     for ele_name, ele_vars in mults.items():
 
         ########################################
-        # RF parameters are not supported on MULT
-        ########################################
-        for _rf_key in ("volt", "harm", "freq"):
-            if _rf_key in ele_vars:
-                raise NotImplementedError(
-                    f"MULT element '{ele_name}' contains '{_rf_key}'. "
-                    "RF parameters on MULT elements are not yet supported.")
-
-        ########################################
         # Initialise parameters
         ########################################
         length      = 0.0
@@ -684,6 +710,62 @@ def convert_multipoles(
             ksl.append(0.0)
             if f"sk{ks}" in ele_vars:
                 ksl[ks] = parse_expression(ele_vars[f"sk{ks}"])
+
+        ########################################
+        # RF Parameters (VOLT/HARM/FREQ) -- interleaved Multipole/Cavity slices
+        ########################################
+        if any(_rf_key in ele_vars for _rf_key in ("volt", "harm", "freq")):
+            # RF parameters take priority over both SIMPLIFY_MULTIPOLES and
+            # user_multipole_replacements, the same way they already take
+            # priority over SIMPLIFY_MULTIPOLES below -- an RF-carrying MULT
+            # is never a candidate for single-purpose-element replacement.
+            voltage, freq, harmonic, phi = parse_rf_parameters(
+                environment = environment,
+                ele_name    = ele_name,
+                ele_vars    = ele_vars)
+
+            n_slices = 1 if is_effectively_zero(length, config.KNL_ZERO_TOL) \
+                else config.N_SLICES_MULT_RF
+
+            # NOTE: slices are always uniform (each an equal fraction of the
+            # total), so a reversed line reference to this element is a true
+            # no-op today -- _005_line_converter.py's generated-subline path
+            # already preserves component order, and reused Multipole/Cavity
+            # elements are direction-symmetric. This would need dedicated
+            # reorder logic (there is no existing one to reuse -- bound
+            # solenoids solve reversal differently, via a post-hoc scan of
+            # the flattened line, not a generated-subline reversal) only if
+            # slicing is ever made non-uniform.
+            components = []
+            for i in range(n_slices):
+                mult_name = f"{ele_name}_mult_{i}"
+                cavi_name = f"{ele_name}_cavi_{i}"
+
+                environment.new(
+                    name        = mult_name,
+                    prototype   = xt.Multipole,
+                    _isthick    = True,
+                    length      = divide_integrated_strength(length, n_slices),
+                    knl         = [divide_integrated_strength(k, n_slices) for k in knl],
+                    ksl         = [divide_integrated_strength(k, n_slices) for k in ksl],
+                    order       = config.MAX_KNL_ORDER,
+                    shift_x     = shift_x,
+                    shift_y     = shift_y,
+                    rot_s_rad   = rotation)
+
+                environment.new(
+                    name        = cavi_name,
+                    prototype   = xt.Cavity,
+                    length      = 0.0,
+                    voltage     = divide_integrated_strength(voltage, n_slices),
+                    frequency   = freq,
+                    harmonic    = harmonic,
+                    phase       = phi)
+
+                components += [mult_name, cavi_name]
+
+            environment.new_line(name = ele_name, components = components)
+            continue
 
         ########################################
         # User Defined Multipole Replacements
@@ -1011,49 +1093,17 @@ def convert_cavities(parsed_elements, environment, config):
         # Initialise parameters
         ########################################
         length      = 0.0
-        voltage     = 0.0
-        freq        = 0.0
-        phi         = np.pi
 
         ########################################
         # Read values
         ########################################
         if "l" in ele_vars:
             length      = parse_expression(ele_vars["l"])
-        if "volt" in ele_vars:
-            voltage = parse_expression(ele_vars["volt"])
-        if "freq" in ele_vars:
-            freq = parse_expression(ele_vars["freq"])
-        if "phi" in ele_vars:
-            phi_offset = parse_expression(ele_vars["phi"])
-            if isinstance(phi_offset, float):
-                phi         = np.pi + phi_offset
-            elif isinstance(phi_offset, str):
-                phi         = f"{np.pi} + {phi_offset}"
-            else:
-                raise ValueError(
-                    f"Unsupported type for phi offset of {ele_name}: "
-                    f"{type(phi_offset)}")
 
-        if "harm" in ele_vars:
-            harm                             = parse_expression(ele_vars["harm"])
-            environment[f"harm_{ele_name}"] = harm
-            harmonic                         = f"harm_{ele_name}"
-            freq                             = 0
-        else:
-            harmonic = 0
-
-        ########################################
-        # Create variables
-        ########################################
-        environment[f"vol_{ele_name}"]      = voltage
-
-        if freq != 0:
-            environment[f"freq_{ele_name}"] = freq
-            freq                            = f"freq_{ele_name} * (1 + fshift)"
-        if phi != 0:
-            environment[f"phase_{ele_name}"] = phi
-            phi                              = f"phase_{ele_name}"
+        voltage, freq, harmonic, phi = parse_rf_parameters(
+            environment = environment,
+            ele_name    = ele_name,
+            ele_vars    = ele_vars)
 
         ########################################
         # Create Element

@@ -9,12 +9,13 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-10
 ================================================================================
 """
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
 import os
 
 import numpy as np
@@ -191,6 +192,50 @@ def test_drift_converter_requires_length(parsed_elements, xsuite_environment):
                 element_name        = "test_drift",
                 element_variables   = {}),
             environment     = xsuite_environment)
+
+def test_drift_converter_warns_on_negative_length(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element,
+        caplog):
+    """
+    A negative-length SAD DRIFT should still convert (as-is), but should
+    emit one warning per conversion, not one warning per element.
+    """
+    caplog.set_level(
+        logging.DEBUG,
+        logger = "sad2xs.converter._004_element_converter")
+
+    convert_drifts(
+        parsed_elements = {
+            "drift": {
+                "d1": {"l": -0.5},
+                "d2": {"l": -1.0},
+                "d3": {"l": 1.0},
+            },
+        },
+        environment = xsuite_environment)
+
+    drift = assert_environment_element(
+        environment     = xsuite_environment,
+        element_name    = "d1",
+        element_type    = xt.Drift)
+    assert drift.length == pytest.approx(-0.5), (
+        "Negative-length drifts should be converted as-is, not clamped.")
+
+    warnings = [
+        record for record in caplog.records
+        if "negative length" in record.getMessage()]
+    assert len(warnings) == 1, (
+        "Negative-length drifts should emit exactly one warning per "
+        "conversion, not one warning per element.")
+    debug_details = [
+        record.getMessage() for record in caplog.records
+        if record.levelno == logging.DEBUG
+        and "Negative-length drifts" in record.getMessage()]
+    assert debug_details == ["Negative-length drifts: d1, d2"], (
+        "Debug logging should name the negative-length drifts behind the "
+        "summary warning.")
 
 ########################################
 # Pipeline Behaviour

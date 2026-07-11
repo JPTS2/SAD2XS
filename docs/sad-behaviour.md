@@ -65,6 +65,53 @@ See `docs/design-decisions.md` ("Bend/Quadrupole/Sextupole/Octupole/
 Multipole model and integrator retune") for the converter warning this
 motivated.
 
+## RF focusing in accelerating `MULT`/`CAVI` elements
+
+SAD's accelerating-element tracking (`tmultiacc` in `tmulti.f`) applies an
+explicit transverse RF-focusing kick — quadratic in x/y, proportional to
+`(V*omega/p)^2` — on top of the ordinary multipole kick and the momentum
+update, whenever `RFSW` is on and `VOLT != 0`. This is present **regardless
+of `TRPT`**: the coefficient (`vcorr` in the source) is computed from the
+entry/exit reference energy either way — under the default `RING`/`NOTRPT`
+the exit reference energy simply equals the entry value, giving a nonzero
+`vcorr = v*(w/p0)^2/4` rather than zero. It is the standard
+Rosenzweig-Serafini RF-focusing effect for standing-wave-like accelerating
+structures (Rosenzweig, J. & Serafini, L., "Transverse particle motion in
+radio-frequency linear accelerators", *Phys. Rev. E* **49**, 1599 (1994),
+DOI [10.1103/PhysRevE.49.1599](https://link.aps.org/doi/10.1103/PhysRevE.49.1599)),
+not a SAD peculiarity, and depends only on `VOLT`/`FREQ` (or `HARM`) and the
+reference momentum — it applies to a plain accelerating `CAVI` just as much
+as to a combined K1+VOLT `MULT`.
+
+`vcorr` has no explicit dependence on RF phase (`PHI`), only on the entry
+and exit reference momentum (`p0`, `pe`). It is phase-dependent only
+indirectly, through `pe`, which differs from `p0` whenever the element
+imparts a net energy change. Confirmed empirically (`tests/sad/test_mult.py`):
+the kick is nonzero even exactly at `PHI = 0` (SAD's RF zero-crossing,
+where the net energy gain is exactly zero and `pe = p0`, so `vcorr` reduces
+to the fixed value `v*(w/p0)^2/4`), and grows substantially (over 10x in
+the locked-in test) moving towards the accelerating crest, where `pe`
+diverges further from `p0`. This is not a simple on/off-by-phase effect —
+it is present at every phase, including the zero-crossing.
+
+Xsuite's `xt.Cavity` has no such term: `Cavity_track_local_particle`
+(`xtrack/beam_elements/elements_src/cavity.h`) calls the shared RF-kick
+routine with `order = -1, knl = NULL`, which disables the entire x/y-
+dependent kick block in `track_rf.h`. Confirmed empirically by tracking
+(not just by reading the source): for a 1 m accelerating element at
+`MOMENTUM = 0.05 GeV`, `VOLT = 1e8` (TRPT on, RFSW on), SAD's own tracked
+transfer matrix has a real, sizeable `x -> px` coupling term
+(`M21 = -0.183` for a pure accelerating drift with no quadrupole at all,
+where a plain drift has exactly zero); an Xsuite reconstruction using
+`Multipole` + `Cavity` + `ReferenceEnergyIncrease` slices has *exactly*
+zero `M21` for the same case. Both tracked matrices have
+`det(M) = p_entry/p_exit`, confirming the two are being compared in the
+same canonical, local-momentum-normalized convention (not an artefact of
+mismatched Twiss normalization — Xsuite's own `line.twiss()` applies an
+additional, separately real `p_exit/p_entry` scaling to `betx` on top of
+this raw matrix, which must not be conflated with the RF-focusing question).
+Locked in by `tests/xtrack/test_cavity.py`.
+
 ## Bend element-offset (`DX`/`DY`) reference-orbit convention
 
 A `DX`/`DY` misalignment on a curved element (a `BEND` with `ANGLE != 0`,

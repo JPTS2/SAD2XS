@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-06
+Date:       2026-07-11
 ================================================================================
 """
 ################################################################################
@@ -24,7 +24,7 @@ import sad2xs as s2x
 import xtrack as xt
 
 from sad2xs.config import Config
-from sad2xs.converter._004_element_converter import convert_multipoles
+from sad2xs.converter._004_element_converter import convert_elements, convert_multipoles
 from sad2xs.sad_helpers import track_sad, transfer_matrix_sad
 from tests.support.config import (
     DELTA_DELTA_ATOL,
@@ -756,6 +756,309 @@ def test_mult_pipeline_preserves_combined_multipole(write_lattice):
         "Converted MULT should preserve K2 as integrated knl[2].")
     assert line["test_mult"].ksl[1] == pytest.approx(-0.03), (
         "Converted MULT should preserve SK1 as integrated ksl[1].")
+
+########################################
+# RF Handling
+########################################
+@pytest.mark.parametrize(
+    "element_variables",
+    [
+        {"volt": 1.0E6, "freq": 5.0E8, "phi": 0.0},
+        {"l": 0.0, "volt": 1.0E6, "freq": 5.0E8, "k1": 0.2},
+    ])
+def test_mult_converter_creates_thin_rf_compound(
+        parsed_elements,
+        xsuite_environment,
+        element_variables):
+    """
+    A thin (L=0) MULT carrying VOLT should convert to a single thin
+    Multipole/Cavity pair, regardless of whether Kn is also present.
+    """
+    xsuite_environment["fshift"] = 0.0
+
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "test_mult",
+            element_variables = element_variables),
+        environment                 = xsuite_environment,
+        user_multipole_replacements = None,
+        config                      = _mult_config())
+
+    assert xsuite_environment.lines["test_mult"].element_names == [
+        "test_mult_mult_0", "test_mult_cavi_0"], (
+        "Thin RF MULT should produce exactly one Multipole/Cavity pair.")
+
+    multipole = xsuite_environment["test_mult_mult_0"]
+    cavity    = xsuite_environment["test_mult_cavi_0"]
+    assert isinstance(multipole, xt.Multipole)
+    assert isinstance(cavity, xt.Cavity)
+    assert cavity.voltage == pytest.approx(1.0E6), (
+        "Thin RF MULT should preserve VOLT on the Cavity slice.")
+    assert cavity.frequency == pytest.approx(5.0E8), (
+        "Thin RF MULT should preserve FREQ on the Cavity slice.")
+
+def test_mult_converter_creates_thick_rf_compound_with_interleaved_slices(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
+    """
+    A thick MULT carrying both K1 and VOLT should slice into
+    N_SLICES_MULT_RF interleaved Multipole/Cavity pairs, with per-slice
+    knl/length/voltage summing back to the declared totals.
+    """
+    xsuite_environment["fshift"] = 0.0
+    config = _mult_config()
+
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "test_mult",
+            element_variables = {
+                "l":    2.0,
+                "k1":   0.3,
+                "volt": 9.0E5,
+                "freq": 5.0E8,
+                "phi":  0.0,
+            }),
+        environment                 = xsuite_environment,
+        user_multipole_replacements = None,
+        config                      = config)
+
+    n_slices = config.N_SLICES_MULT_RF
+    expected_names = []
+    for i in range(n_slices):
+        expected_names += [f"test_mult_mult_{i}", f"test_mult_cavi_{i}"]
+    assert xsuite_environment.lines["test_mult"].element_names == expected_names, (
+        "Thick RF MULT should interleave Multipole/Cavity slices in order.")
+
+    total_knl1 = 0.0
+    total_len  = 0.0
+    total_volt = 0.0
+    for i in range(n_slices):
+        multipole = assert_environment_element(
+            environment  = xsuite_environment,
+            element_name = f"test_mult_mult_{i}",
+            element_type = xt.Multipole)
+        cavity = assert_environment_element(
+            environment  = xsuite_environment,
+            element_name = f"test_mult_cavi_{i}",
+            element_type = xt.Cavity)
+        total_knl1 += multipole.knl[1]
+        total_len  += multipole.length
+        total_volt += cavity.voltage
+
+    assert total_knl1 == pytest.approx(0.3), (
+        "Sliced knl[1] should sum back to the declared integrated K1.")
+    assert total_len == pytest.approx(2.0), (
+        "Sliced Multipole lengths should sum back to the declared length.")
+    assert total_volt == pytest.approx(9.0E5), (
+        "Sliced Cavity voltages should sum back to the declared VOLT.")
+
+def test_mult_converter_slices_deferred_rf_expressions(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
+    """
+    A thick RF MULT with L/K1/VOLT given as deferred SAD variable
+    references (not literals) should slice without raising, using
+    divide_integrated_strength's string-expression fallback the same way
+    every other strength division in this file does.
+    """
+    xsuite_environment["fshift"]  = 0.0
+    xsuite_environment["l_var"]   = 2.0
+    xsuite_environment["k1_var"]  = 0.3
+    xsuite_environment["volt_var"] = 9.0E5
+
+    config = _mult_config()
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "test_mult",
+            element_variables = {
+                "l":    "l_var",
+                "k1":   "k1_var",
+                "volt": "volt_var",
+                "freq": 5.0E8,
+            }),
+        environment                 = xsuite_environment,
+        user_multipole_replacements = None,
+        config                      = config)
+
+    n_slices  = config.N_SLICES_MULT_RF
+    multipole = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_mult_mult_0",
+        element_type = xt.Multipole)
+    cavity = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_mult_cavi_0",
+        element_type = xt.Cavity)
+    assert multipole.length == pytest.approx(2.0 / n_slices), (
+        "Deferred L should still divide correctly across slices.")
+    assert multipole.knl[1] == pytest.approx(0.3 / n_slices), (
+        "Deferred K1 should still divide correctly across slices.")
+    assert cavity.voltage == pytest.approx(9.0E5 / n_slices), (
+        "Deferred VOLT should still divide correctly across slices.")
+
+def test_mult_converter_ignores_user_replacements_for_rf_elements(
+        parsed_elements,
+        xsuite_environment):
+    """
+    A MULT matching a user_multipole_replacements entry that also carries
+    RF parameters should ignore the requested replacement and take the RF
+    path instead, the same way SIMPLIFY_MULTIPOLES is already silently
+    superseded by RF parameters -- RF-carrying elements are never a
+    candidate for single-purpose-element replacement.
+    """
+    xsuite_environment["fshift"] = 0.0
+
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "test_mult",
+            element_variables = {"k1": 0.2, "volt": 1.0E5}),
+        environment                 = xsuite_environment,
+        user_multipole_replacements = {"test_mult": "Quadrupole"},
+        config                      = _mult_config())
+
+    assert "test_mult" not in xsuite_environment.element_dict, (
+        "RF-carrying MULT should not be replaced with a Quadrupole.")
+    assert xsuite_environment.lines["test_mult"].element_names == [
+        "test_mult_mult_0", "test_mult_cavi_0"], (
+        "RF-carrying MULT should take the RF slicing path, ignoring "
+        "user_multipole_replacements.")
+
+def test_mult_converter_treats_negligible_length_as_thin_rf(
+        parsed_elements,
+        xsuite_environment):
+    """
+    A length that is negligible but not exactly 0.0 (floating-point
+    residue) should still take the thin (single-slice) RF path, matching
+    this file's tolerance-based zero check used elsewhere
+    (config.KNL_ZERO_TOL), not an exact `== 0.0` comparison.
+    """
+    xsuite_environment["fshift"] = 0.0
+
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "test_mult",
+            element_variables = {
+                "l": 1.0E-14, "k1": 0.2, "volt": 1.0E5, "freq": 5.0E8}),
+        environment                 = xsuite_environment,
+        user_multipole_replacements = None,
+        config                      = _mult_config())
+
+    assert xsuite_environment.lines["test_mult"].element_names == [
+        "test_mult_mult_0", "test_mult_cavi_0"], (
+        "Negligible-but-nonzero length should take the thin RF path, not "
+        "spuriously slice into N near-zero-length fragments.")
+
+def test_mult_converter_uses_harmonic_when_harmonic_is_supplied(
+        parsed_elements,
+        xsuite_environment,
+        assert_environment_element):
+    """
+    SAD MULT HARM should map to Xsuite harmonic with zero frequency on the
+    sliced Cavity elements, mirroring CAVI's mutual-exclusivity rule.
+    """
+    xsuite_environment["fshift"] = 0.0
+
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "test_mult",
+            element_variables = {
+                "volt": 1.0E6,
+                "harm": 400.0,
+                "phi":  0.0,
+            }),
+        environment                 = xsuite_environment,
+        user_multipole_replacements = None,
+        config                      = _mult_config())
+
+    cavity = assert_environment_element(
+        environment  = xsuite_environment,
+        element_name = "test_mult_cavi_0",
+        element_type = xt.Cavity)
+    assert cavity.harmonic == pytest.approx(400.0), (
+        "Harmonic-driven RF MULT should set Xsuite harmonic directly.")
+    assert cavity.frequency == pytest.approx(0.0), (
+        "Harmonic-driven RF MULT should not also set Xsuite frequency.")
+
+def test_mult_rf_triggers_cavity_focusing_warning(caplog):
+    """
+    Any Cavity element ending up in the converted line -- including via
+    RF-MULT slicing -- should trigger the RF-focusing limitation warning
+    exactly once (sad2xs's Xsuite Cavity does not model the transverse
+    RF-focusing kick SAD applies whenever RFSW is on and VOLT != 0).
+    """
+    caplog.set_level(
+        logging.WARNING,
+        logger = "sad2xs.converter._004_element_converter")
+
+    environment = xt.Environment()
+    environment["fshift"] = 0.0
+
+    convert_elements(
+        parsed_lattice_data = {
+            "elements": {
+                "mult": {
+                    "test_mult": {
+                        "l": 1.0, "k1": 0.1, "volt": 1.0E5, "freq": 5.0E8},
+                },
+            },
+        },
+        environment                 = environment,
+        user_multipole_replacements = None,
+        config                      = _mult_config())
+
+    warnings = [
+        record for record in caplog.records
+        if "do not model SAD's transverse RF-focusing kick" in record.getMessage()]
+    assert len(warnings) == 1, (
+        "Any Cavity ending up in the line should trigger exactly one "
+        "RF-focusing limitation warning, regardless of how many Cavity "
+        "slices were created.")
+
+def test_mult_rf_pipeline_removes_notimplementederror_guard(write_lattice):
+    """
+    Full conversion of a combined K1+VOLT SAD MULT should succeed end to
+    end (the former NotImplementedError guard is gone) and produce
+    interleaved Multipole/Cavity elements.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        MULT        TEST_MULT   = (
+            L       = 1.0
+            K1      = 0.3
+            VOLT    = 1.0E6
+            FREQ    = 5.0E8
+        );
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_MULT END);
+        """,
+        filename = "mult_rf_pipeline_removes_guard.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path    = str(lattice_path),
+        output_directory    = "N/A",
+        _verbose            = False,
+        _test_mode          = True)
+
+    mult_names = [n for n in line.element_names if n.startswith("test_mult_mult_")]
+    cavi_names = [n for n in line.element_names if n.startswith("test_mult_cavi_")]
+    assert len(mult_names) == len(cavi_names) == Config().N_SLICES_MULT_RF, (
+        "Pipeline conversion should slice the RF MULT into the configured "
+        "number of interleaved Multipole/Cavity pairs.")
+    assert isinstance(line[mult_names[0]], xt.Multipole)
+    assert isinstance(line[cavi_names[0]], xt.Cavity)
 
 ################################################################################
 # Physics Equivalence

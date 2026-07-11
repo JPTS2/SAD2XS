@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-06
+Date:       2026-07-11
 ================================================================================
 """
 ################################################################################
@@ -727,6 +727,143 @@ def test_sol_pipeline_converts_elements_between_bound_solenoids(write_lattice):
         "The converted solenoid region should preserve the middle element length.")
     assert line["sol_drift_sol_in"].ks == pytest.approx(_sol_expected_ks(bz)), (
         "The converted solenoid region should use the incoming bound SOL field.")
+
+def test_sol_pipeline_thin_cavity_between_bound_solenoids_needs_no_conversion(
+        write_lattice,
+        caplog):
+    """
+    A thin (zero-length) Cavity between bound SOL markers -- e.g. one of
+    RF-MULT's interleaved slices -- has no propagation distance for the
+    continuous solenoid field to act over, so it should not be flagged as
+    unconverted the way a thick, unhandled element would be.
+    """
+    caplog.set_level(
+        logging.WARNING,
+        logger = "sad2xs.converter._006_solenoid_converter")
+
+    lattice_text = _bound_solenoid_lattice(
+        bz              = 0.1,
+        middle_element  = "MULT        M1          = (VOLT = 1.0E5 FREQ = 5.0E8);",
+        middle_name     = "M1")
+    lattice_path = write_lattice(
+        lattice_text,
+        filename = "sol_pipeline_thin_cavity_needs_no_conversion.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = "N/A",
+        _verbose         = False,
+        _test_mode       = True)
+
+    assert "m1_cavi_0" in line.element_names, (
+        "The thin RF-MULT Cavity slice should still be present in the "
+        "converted line.")
+    assert isinstance(line["m1_cavi_0"], xt.Cavity), (
+        "The thin RF-MULT Cavity slice should remain an Xsuite Cavity, "
+        "not be swept into a solenoid-embedding replacement.")
+
+    warnings = [
+        record for record in caplog.records
+        if "has not been converted" in record.getMessage()]
+    assert warnings == [], (
+        "A thin Cavity between bound solenoids needs no solenoid embedding "
+        "and should not trigger the 'has not been converted' warning.")
+
+def test_sol_pipeline_thick_cavity_between_bound_solenoids_still_warns(
+        write_lattice,
+        caplog):
+    """
+    A thick (nonzero-length) Cavity between bound SOL markers genuinely
+    does need solenoid embedding (a real propagation distance through the
+    continuous field), which is not yet implemented -- it should still
+    trigger the existing warning rather than being silently accepted.
+    """
+    caplog.set_level(
+        logging.WARNING,
+        logger = "sad2xs.converter._006_solenoid_converter")
+
+    lattice_text = _bound_solenoid_lattice(
+        bz              = 0.1,
+        middle_element  = "CAVI        C1          = (L = 0.5 VOLT = 1.0E5 FREQ = 5.0E8);",
+        middle_name     = "C1")
+    lattice_path = write_lattice(
+        lattice_text,
+        filename = "sol_pipeline_thick_cavity_still_warns.sad")
+
+    s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = "N/A",
+        _verbose         = False,
+        _test_mode       = True)
+
+    warnings = [
+        record for record in caplog.records
+        if "has not been converted" in record.getMessage()]
+    assert len(warnings) == 1, (
+        "A thick Cavity between bound solenoids is not yet handled and "
+        "should still trigger the 'has not been converted' warning.")
+
+def test_sol_pipeline_thick_rf_mult_multipole_slices_embed_solenoid_field(
+        write_lattice,
+        caplog):
+    """
+    A thick RF-MULT (K1 and VOLT both set) between bound SOL markers slices
+    into interleaved Multipole/Cavity pairs (see test_mult.py). Each
+    Multipole slice is a real xt.Multipole once the compound line is
+    flattened, so it should be picked up by the existing generic
+    Multipole-in-solenoid embedding path exactly as a plain K1 MULT would
+    be -- no RF-specific handling needed there. The interleaved Cavity
+    slices should remain exempt, as already covered above.
+    """
+    caplog.set_level(
+        logging.WARNING,
+        logger = "sad2xs.converter._006_solenoid_converter")
+
+    bz = 0.1
+    k1 = 0.3
+    lattice_text = _bound_solenoid_lattice(
+        bz              = bz,
+        middle_element  = f"MULT        M1          = "
+                           f"(L = 2.0 K1 = {k1} VOLT = 1.0E5 FREQ = 5.0E8);",
+        middle_name     = "M1")
+    lattice_path = write_lattice(
+        lattice_text,
+        filename = "sol_pipeline_thick_rf_mult_embeds_solenoid_field.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = "N/A",
+        _verbose         = False,
+        _test_mode       = True)
+
+    n_slices = Config().N_SLICES_MULT_RF
+
+    for i in range(n_slices):
+        mult_slice = line[f"m1_mult_{i}"]
+        assert isinstance(mult_slice, xt.UniformSolenoid), (
+            f"RF-MULT Multipole slice m1_mult_{i} between bound solenoids "
+            "should be embedded into a UniformSolenoid, same as a plain "
+            f"K1 MULT would be. Got {type(mult_slice)}.")
+        assert mult_slice.ks == pytest.approx(_sol_expected_ks(bz)), (
+            f"m1_mult_{i} should carry the incoming bound SOL field."
+        )
+        assert mult_slice.knl[1] == pytest.approx(k1 / n_slices), (
+            f"m1_mult_{i} should preserve its share of K1 through the "
+            "solenoid embedding.")
+
+        cavi_slice = line[f"m1_cavi_{i}"]
+        assert isinstance(cavi_slice, xt.Cavity), (
+            f"RF-MULT Cavity slice m1_cavi_{i} should remain an Xsuite "
+            f"Cavity, not be swept into solenoid embedding. Got "
+            f"{type(cavi_slice)}.")
+
+    warnings = [
+        record for record in caplog.records
+        if "has not been converted" in record.getMessage()]
+    assert warnings == [], (
+        "A thick RF-MULT between bound solenoids should convert fully via "
+        "the existing Multipole/Cavity embedding paths, with no "
+        "'has not been converted' warning.")
 
 def test_sol_pipeline_requires_geometric_solenoid_in_bound_pair(write_lattice):
     """

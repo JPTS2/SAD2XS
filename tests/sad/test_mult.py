@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-06
+Date:       2026-07-11
 ================================================================================
 """
 ################################################################################
@@ -384,6 +384,87 @@ def test_mult_k3_gives_cubic_kick(tmp_path):
     assert r_k3["px"][0] != pytest.approx(r_ref["px"][0]), (
         "K3 on a MULT element should deflect an off-axis particle "
         "(kick proportional to K3*x^3).")
+
+################################################################################
+# RF focusing kick (VOLT) -- transverse coupling ground truth
+#
+# MULT (and CAVI) elements with VOLT != 0, tracked with RFSW on, apply an
+# explicit transverse x/y focusing kick on top of the ordinary multipole
+# kick (SAD's tmultiacc in tmulti.f) -- see docs/sad-behaviour.md. Unlike
+# the net energy gain (which is exactly zero at PHI=0, SAD's RF
+# zero-crossing), this kick is present at every phase and grows further
+# away from the crossing.
+################################################################################
+RF_FOCUS_MOMENTUM_GEV   = 0.05
+RF_FOCUS_VOLT           = 2.0E7
+RF_FOCUS_FREQ           = 2.856E9
+RF_FOCUS_X_TEST         = 1.0E-3
+
+def _mult_rf_focus_kick(tmp_path, phi: float, x: float, name: str) -> dict:
+    lat = tmp_path / name
+    lat.write_text(
+        f"MOMENTUM = {RF_FOCUS_MOMENTUM_GEV} GEV;\n"
+        f"MULT M1 = (L=1.0 VOLT={RF_FOCUS_VOLT:.0f} FREQ={RF_FOCUS_FREQ:.0f} "
+        f"PHI={phi:.6f});\n"
+        "MARK START = ()\n     END = ();\n"
+        "LINE TEST = (START M1 END);\n")
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        return track_sad(
+            lattice_filepath    = lat.name,
+            line_name           = "TEST",
+            x_init              = np.array([x]),
+            px_init             = np.array([0.0]),
+            y_init              = np.array([0.0]),
+            py_init             = np.array([0.0]),
+            zeta_init           = np.array([0.0]),
+            delta_init          = np.array([0.0]),
+            n_turns             = 1,
+            rfsw                = True,
+            with_progress       = False)
+    finally:
+        os.chdir(cwd)
+
+def test_mult_volt_gives_rf_focusing_kick_at_zero_crossing(tmp_path):
+    """
+    A VOLT-carrying MULT gives a nonzero x -> px kick even at PHI=0, SAD's
+    RF zero-crossing, where the net energy gain is exactly zero. The
+    focusing kick is not tied to net acceleration itself.
+    """
+    r0 = _mult_rf_focus_kick(tmp_path, 0.0, 0.0, "rf_focus_zero_x0.sad")
+    r1 = _mult_rf_focus_kick(
+        tmp_path, 0.0, RF_FOCUS_X_TEST, "rf_focus_zero_x1.sad")
+
+    assert r0["delta"][0] == pytest.approx(0.0, abs=1e-9), (
+        "PHI=0 should give exactly zero net energy gain (SAD's RF "
+        "zero-crossing) -- otherwise this isn't testing the zero-crossing "
+        "case at all.")
+    assert r1["px"][0] != pytest.approx(r0["px"][0]), (
+        "A VOLT-carrying MULT should give a nonzero x -> px kick even at "
+        "the RF zero-crossing (PHI=0).")
+
+def test_mult_rf_focusing_kick_grows_away_from_zero_crossing(tmp_path):
+    """
+    The RF-focusing kick (see test above) is not constant across RF phase:
+    it grows substantially moving away from the zero-crossing towards the
+    accelerating crest, tracking the entry/exit momentum mismatch SAD's
+    vcorr coefficient depends on (tmulti.f) -- not a simple on/off-by-phase
+    effect.
+    """
+    def kick(phi, tag):
+        r0 = _mult_rf_focus_kick(tmp_path, phi, 0.0, f"rf_focus_{tag}_x0.sad")
+        r1 = _mult_rf_focus_kick(
+            tmp_path, phi, RF_FOCUS_X_TEST, f"rf_focus_{tag}_x1.sad")
+        return r1["px"][0] - r0["px"][0]
+
+    kick_crossing = kick(0.0, "crossing")
+    kick_crest    = kick(np.pi / 2, "crest")
+
+    assert abs(kick_crest) > 10 * abs(kick_crossing), (
+        "The RF-focusing kick should grow substantially moving away from "
+        "the zero-crossing (PHI=0) towards the accelerating crest "
+        "(PHI=pi/2), not stay roughly constant across phase.")
 
 ################################################################################
 # K0/SK0 dipole fringe (transfer-matrix ground truth)
