@@ -47,6 +47,7 @@ description.
 | `sad/` | Yes | SAD syntax assumption tests — empirically verifies which parameters each SAD element type accepts or rejects |
 | `sad_helpers/` | Yes | `sad2xs.sad_helpers` — command construction, output parsing, smoke tests |
 | `xtrack/` | No | Xsuite ground-truth tests — empirically verifies `xtrack` library behaviour that sad2xs relies on or documents |
+| `xsuite_helpers/` | No | `sad2xs.xsuite_helpers` — utilities operating purely on an `xt.Line`, independent of SAD |
 | `examples/` | Yes | Public example lattice conversion, write+reload, and script contracts |
 | `installation/` | Yes | macOS installer, SAD executable smoke test |
 | `packaging/` | No | Package metadata format and public API surface |

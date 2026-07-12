@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       20-11-2025
+Date:       2026-07-12
 """
 
 ################################################################################
@@ -27,6 +27,12 @@ from .main import convert_sad_to_xsuite
 ################################################################################
 from .converter._009_write_lattice import write_lattice
 from .converter._010_write_optics import write_optics
+
+################################################################################
+# Xsuite Helpers Functions
+################################################################################
+# No optionaldependencies, so eager import.
+from . import xsuite_helpers
 
 ################################################################################
 # SAD Helpers Functions

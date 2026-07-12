@@ -22,7 +22,7 @@ parser test areas.
 
 ## Coverage
 
-### `test_release_metadata.py` — 7 tests, all expected to pass
+### `test_release_metadata.py` — 8 tests, all expected to pass
 
 Reads installed package metadata via `importlib.metadata` and verifies
 structural correctness. Does not pin specific values — it tests format and
@@ -37,8 +37,9 @@ presence so the checks remain valid across version bumps.
 | `test_release_metadata_license_field_is_a_non_empty_string` | `License` field exists and is non-empty |
 | `test_release_metadata_xsuite_is_listed_as_a_dependency` | A current coherent `xsuite` bundle appears in `install_requires` |
 | `test_release_metadata_numpy_is_listed_as_a_dependency` | `numpy` appears in `install_requires` |
+| `test_release_metadata_tfs_is_an_optional_extra_not_a_hard_dependency` | `tfs-pandas` is listed under `extras_require`, not `install_requires` |
 
-### `test_import_boundaries.py` — 8 tests, all expected to pass
+### `test_import_boundaries.py` — 9 tests, all expected to pass
 
 Imports `sad2xs` and verifies the public API surface. Checks presence and
 type of each public symbol. Does not test that internal submodules are hidden
@@ -55,3 +56,4 @@ which is expected and acceptable behaviour).
 | `test_import_boundary_write_lattice_is_callable` | `sad2xs.write_lattice` is callable |
 | `test_import_boundary_write_optics_is_callable` | `sad2xs.write_optics` is callable |
 | `test_import_boundary_sad_helpers_is_a_module` | `sad2xs.sad_helpers` is a `types.ModuleType` |
+| `test_import_boundary_core_import_does_not_require_tfs` | `import sad2xs` succeeds with `tfs` blocked at the import-system level |
