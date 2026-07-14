@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-12
+Date:       2026-07-14
 ================================================================================
 """
 ################################################################################
@@ -322,15 +322,14 @@ def test_survey_sad_reverse_element_order_matches_sad_native_reversed_line(
 
     name_to_idx_native   = {n: i for i, n in enumerate(sv_native.name)}
     name_to_idx_reversed = {n: i for i, n in enumerate(sv_reversed.name)}
-    common = set(name_to_idx_native) & set(name_to_idx_reversed)
 
-    assert len(common) >= 8, (
+    assert set(name_to_idx_native) == set(name_to_idx_reversed), (
         "Expected the native REV line and reverse_element_order=True to "
-        f"share element names. Native: {list(sv_native.name)}, "
+        f"share exactly the same element names. Native: {list(sv_native.name)}, "
         f"reversed: {list(sv_reversed.name)}.")
 
     for column in ("X", "Y", "Z", "theta", "phi", "psi"):
-        for name in common:
+        for name in name_to_idx_native:
             native_val   = getattr(sv_native, column)[name_to_idx_native[name]]
             reversed_val = getattr(sv_reversed, column)[name_to_idx_reversed[name]]
             assert reversed_val == pytest.approx(native_val, abs = 1E-9), (
