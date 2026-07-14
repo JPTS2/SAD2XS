@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-12
+Date:       2026-07-14
 ================================================================================
 """
 ################################################################################
@@ -3073,6 +3073,55 @@ def test_bend_fringe_import_defaults_off(write_lattice, tmp_path):
         "F1/FRINGE should be ignored by default (_import_sad_bend_fringes "
         "defaults to False) -- edge_entry_fint/hgap should stay at "
         "Xsuite's own defaults, not be populated from F1.")
+
+@pytest.mark.parametrize("fringe, entry_active, exit_active", [(-1, True, False), (-2, False, True)])
+def test_bend_fringe_import_fringe_gates_single_edge(
+        write_lattice, tmp_path, fringe, entry_active, exit_active):
+    """
+    FRINGE=-1/-2 should gate the fringe import to a single edge (entry-only/
+    exit-only respectively) -- the other edge should stay at Xsuite's own
+    defaults, not be populated from F1.
+    """
+    lattice_text = f"""\
+    MOMENTUM    = 1.0 GEV;
+
+    BEND        TEST_BEND   = (
+        L       = 1.2
+        ANGLE   = 0.08
+        F1      = 0.04
+        FRINGE  = {fringe}
+    );
+
+    MARK        START       = ()
+                END         = ();
+
+    LINE        TEST_LINE   = (START TEST_BEND END);
+    """
+    lattice_path = write_lattice(
+        lattice_text, filename = f"bend_fringe_import_fringe_{fringe}.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path            = str(lattice_path),
+        output_directory            = "N/A",
+        _verbose                    = False,
+        _test_mode                  = True,
+        _import_sad_bend_fringes    = True)
+
+    bend = line["test_bend"]
+    if entry_active:
+        assert bend.edge_entry_fint != 0.0, (
+            f"FRINGE={fringe} should activate the entry edge fringe.")
+    else:
+        assert bend.edge_entry_fint == 0.0 and bend.edge_entry_hgap == 0.0, (
+            f"FRINGE={fringe} should leave the entry edge at Xsuite's own "
+            "defaults.")
+    if exit_active:
+        assert bend.edge_exit_fint != 0.0, (
+            f"FRINGE={fringe} should activate the exit edge fringe.")
+    else:
+        assert bend.edge_exit_fint == 0.0 and bend.edge_exit_hgap == 0.0, (
+            f"FRINGE={fringe} should leave the exit edge at Xsuite's own "
+            "defaults.")
 
 @pytest.mark.parametrize("delta", [0.0])
 def test_bend_fringe_import_matches_sad_on_momentum(write_lattice, tmp_path, delta):
