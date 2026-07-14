@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-12
 ================================================================================
 """
 ################################################################################
@@ -162,6 +162,59 @@ def test_pipeline_reverse_element_order_swaps_bend_edge_angles(write_lattice):
         "After reverse_element_order=True, bend exit edge angle should be the "
         "original entry angle (E1*ANGLE = 0.5*0.1 = 0.05). "
         f"Got: {line['b1'].edge_exit_angle}.")
+
+
+################################################################################
+# Bend Fringe Field Adjustment
+################################################################################
+def test_pipeline_reverse_element_order_swaps_bend_fint_hgap(write_lattice):
+    """
+    reverse_element_order=True should swap the entry and exit fringe fields
+    (fint/hgap) of each bend, exactly as it swaps edge_entry_angle/
+    edge_exit_angle. SAD F1/FB1/FB2 map to edge_entry_fint = F1+FB1,
+    edge_exit_fint = F1+FB2 (hgap is a fixed 1/12 at both edges).
+    With F1=0.24, FB1=0.12, FB2=0.0:
+      forward:  entry fint = 0.36, exit fint = 0.24
+      reversed: entry fint = 0.24, exit fint = 0.36
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND        B1      = (L = 1.0 ANGLE = 0.1 FRINGE = 1 F1 = 0.24 FB1 = 0.12 FB2 = 0.0);
+
+        MARK        START   = ()
+                    END     = ();
+
+        LINE        TEST_LINE = (START B1 END);
+        """,
+        filename = "rev_elem_order_bend_fringe.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path         = str(lattice_path),
+        output_directory         = "N/A",
+        reverse_element_order    = True,
+        _import_sad_bend_fringes = True,
+        _verbose                 = False,
+        _test_mode               = True)
+
+    expected_reversed_entry = 0.24
+    expected_reversed_exit  = 0.36
+
+    assert line["b1"].edge_entry_fint == pytest.approx(expected_reversed_entry), (
+        "After reverse_element_order=True, bend entry fint should be the "
+        "original exit value (F1+FB2 = 0.24). "
+        f"Got: {line['b1'].edge_entry_fint}.")
+    assert line["b1"].edge_entry_hgap == pytest.approx(1 / 12), (
+        "Bend entry hgap should stay the fixed 1/12 fringe constant. "
+        f"Got: {line['b1'].edge_entry_hgap}.")
+    assert line["b1"].edge_exit_fint == pytest.approx(expected_reversed_exit), (
+        "After reverse_element_order=True, bend exit fint should be the "
+        "original entry value (F1+FB1 = 0.36). "
+        f"Got: {line['b1'].edge_exit_fint}.")
+    assert line["b1"].edge_exit_hgap == pytest.approx(1 / 12), (
+        "Bend exit hgap should stay the fixed 1/12 fringe constant. "
+        f"Got: {line['b1'].edge_exit_hgap}.")
 
 
 ################################################################################
@@ -497,6 +550,63 @@ def test_pipeline_reverse_element_order_bend_poleface_angles_physics_matches_sad
         f"Xsuite: {p.y[0]}, SAD: {r_sad['y'][0]}.")
     assert p.py[0] == pytest.approx(r_sad["py"][0], abs=1e-9), (
         f"Xsuite reversed bend py should match SAD reversed line py. "
+        f"Xsuite: {p.py[0]}, SAD: {r_sad['py'][0]}.")
+
+
+def test_pipeline_reverse_element_order_corrector_fringe_physics_matches_sad(
+        tmp_path):
+    """
+    A K0-only corrector (ANGLE=0 bend) with asymmetric soft-edge fringe
+    (FB1 != FB2) changes vertical focusing depending on which face the beam
+    enters first, exactly like edge_entry_angle/edge_exit_angle for a bent
+    magnet. Reversing the line swaps entry and exit fringe fields: the
+    Xsuite reversal (edge_entry_fint/hgap <-> edge_exit_fint/hgap) must
+    reproduce SAD tracking through the native reversed line.
+    """
+    lattice_content = (
+        "MOMENTUM = 1.0 GEV;\n"
+        "BEND C1 = (L=0.4 K0=0.03 FRINGE=1 FB1=0.08 FB2=0.01);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST    = (START C1 END);\n"
+        "LINE TESTREV = (-TEST);\n")
+
+    lat_path = tmp_path / "rev_corrector_fringe.sad"
+    lat_path.write_text(lattice_content)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        r_sad = track_sad(
+            lattice_filepath = lat_path.name,
+            line_name        = "TESTREV",
+            x_init           = np.array([0.0]),
+            px_init          = np.array([0.0]),
+            y_init           = np.array([0.003]),
+            py_init          = np.array([0.0]),
+            zeta_init        = np.array([0.0]),
+            delta_init       = np.array([0.0]),
+            n_turns          = 1,
+            rfsw             = False,
+            with_progress    = False)
+    finally:
+        os.chdir(cwd)
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path         = str(lat_path),
+        output_directory         = "N/A",
+        reverse_element_order    = True,
+        _import_sad_bend_fringes = True,
+        _verbose                 = False,
+        _test_mode               = True)
+
+    p = line.build_particles(x=0.0, px=0.0, y=0.003, py=0.0, zeta=0.0, delta=0.0)
+    line.track(p)
+
+    assert p.y[0] == pytest.approx(r_sad["y"][0], rel=1e-3), (
+        f"Xsuite reversed corrector y should match SAD reversed line y. "
+        f"Xsuite: {p.y[0]}, SAD: {r_sad['y'][0]}.")
+    assert p.py[0] == pytest.approx(r_sad["py"][0], rel=1e-3), (
+        f"Xsuite reversed corrector py should match SAD reversed line py. "
         f"Xsuite: {p.py[0]}, SAD: {r_sad['py'][0]}.")
 
 
