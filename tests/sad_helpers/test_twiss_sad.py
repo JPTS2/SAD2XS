@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-12
+Date:       2026-07-14
 ================================================================================
 """
 ################################################################################
@@ -345,15 +345,14 @@ def test_twiss_sad_reverse_element_order_matches_sad_native_reversed_line(
 
     name_to_idx_native   = {n: i for i, n in enumerate(tw_native.name)}
     name_to_idx_reversed = {n: i for i, n in enumerate(tw_reversed.name)}
-    common = set(name_to_idx_native) & set(name_to_idx_reversed)
 
-    assert len(common) >= 8, (
+    assert set(name_to_idx_native) == set(name_to_idx_reversed), (
         "Expected the native REV line and reverse_element_order=True to "
-        f"share element names. Native: {list(tw_native.name)}, "
+        f"share exactly the same element names. Native: {list(tw_native.name)}, "
         f"reversed: {list(tw_reversed.name)}.")
 
     for column in ("betx", "bety", "alfx", "alfy", "mux", "muy", "dx", "dy"):
-        for name in common:
+        for name in name_to_idx_native:
             native_val   = tw_native[column][name_to_idx_native[name]]
             reversed_val = tw_reversed[column][name_to_idx_reversed[name]]
             assert reversed_val == pytest.approx(native_val, abs = 1E-9), (
