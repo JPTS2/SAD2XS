@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-12
+Date:       2026-07-14
 """
 
 ################################################################################
@@ -321,9 +321,7 @@ def check_is_simple_bend_corr(line, replica_name):
             line[replica_name].edge_entry_angle_fdown == 0 and \
             line[replica_name].edge_exit_angle_fdown == 0 and \
             line[replica_name].edge_entry_fint == 0 and \
-            line[replica_name].edge_entry_hgap == 0 and \
             line[replica_name].edge_exit_fint == 0 and \
-            line[replica_name].edge_exit_hgap == 0 and \
             line[replica_name].shift_x == 0 and \
             line[replica_name].shift_y == 0 and \
             line[replica_name].k1 == 0 and \
