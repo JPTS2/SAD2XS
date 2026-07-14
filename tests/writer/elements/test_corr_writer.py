@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-12
 ================================================================================
 """
 ################################################################################
@@ -87,6 +87,10 @@ def _build_hcorr_line(
         edge_exit_angle         = 0.0,
         edge_entry_angle_fdown  = 0.0,
         edge_exit_angle_fdown   = 0.0,
+        edge_entry_fint         = 0.0,
+        edge_entry_hgap         = 0.0,
+        edge_exit_fint          = 0.0,
+        edge_exit_hgap          = 0.0,
         shift_x                 = 0.0,
         shift_y                 = 0.0,
         knl                     = None,
@@ -104,8 +108,15 @@ def _build_hcorr_line(
         edge_exit_angle         = edge_exit_angle,
         edge_entry_angle_fdown  = edge_entry_angle_fdown,
         edge_exit_angle_fdown   = edge_exit_angle_fdown,
+        edge_entry_fint         = edge_entry_fint,
+        edge_entry_hgap         = edge_entry_hgap,
+        edge_exit_fint          = edge_exit_fint,
+        edge_exit_hgap          = edge_exit_hgap,
         shift_x                 = shift_x,
         shift_y                 = shift_y)
+    if edge_entry_fint or edge_entry_hgap or edge_exit_fint or edge_exit_hgap:
+        corr_kwargs["edge_entry_model"] = "full"
+        corr_kwargs["edge_exit_model"]  = "full"
     if knl is not None:
         corr_kwargs["knl"] = knl
     if ksl is not None:
@@ -317,6 +328,77 @@ def test_corr_writer_preserves_edge_exit_angle_fdown(tmp_path):
     assert reloaded_line["c1"].edge_exit_angle_fdown == pytest.approx(0.02), (
         "Writer roundtrip should preserve corrector edge_exit_angle_fdown. "
         f"Original: 0.02, reloaded: {reloaded_line['c1'].edge_exit_angle_fdown}.")
+
+
+################################################################################
+# Horizontal Corrector — Edge Fringe (fint/hgap)
+################################################################################
+def test_corr_writer_preserves_edge_entry_fint(tmp_path):
+    """
+    The edge_entry_fint of a corrector (FB1/FB2/FRINGE soft-edge fringe
+    import) should be preserved through a write and reload cycle.
+    """
+    original_line = _build_hcorr_line(edge_entry_fint = 0.06)
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert reloaded_line["c1"].edge_entry_fint == pytest.approx(0.06), (
+        "Writer roundtrip should preserve corrector edge_entry_fint. "
+        f"Original: 0.06, reloaded: {reloaded_line['c1'].edge_entry_fint}.")
+
+
+def test_corr_writer_preserves_edge_entry_hgap(tmp_path):
+    """
+    The edge_entry_hgap of a corrector should be preserved through a write
+    and reload cycle.
+    """
+    original_line = _build_hcorr_line(edge_entry_hgap = 0.06)
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert reloaded_line["c1"].edge_entry_hgap == pytest.approx(0.06), (
+        "Writer roundtrip should preserve corrector edge_entry_hgap. "
+        f"Original: 0.06, reloaded: {reloaded_line['c1'].edge_entry_hgap}.")
+
+
+def test_corr_writer_preserves_edge_exit_fint(tmp_path):
+    """
+    The edge_exit_fint of a corrector should be preserved through a write
+    and reload cycle.
+    """
+    original_line = _build_hcorr_line(edge_exit_fint = 0.05)
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert reloaded_line["c1"].edge_exit_fint == pytest.approx(0.05), (
+        "Writer roundtrip should preserve corrector edge_exit_fint. "
+        f"Original: 0.05, reloaded: {reloaded_line['c1'].edge_exit_fint}.")
+
+
+def test_corr_writer_preserves_edge_exit_hgap(tmp_path):
+    """
+    The edge_exit_hgap of a corrector should be preserved through a write
+    and reload cycle.
+    """
+    original_line = _build_hcorr_line(edge_exit_hgap = 0.05)
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert reloaded_line["c1"].edge_exit_hgap == pytest.approx(0.05), (
+        "Writer roundtrip should preserve corrector edge_exit_hgap. "
+        f"Original: 0.05, reloaded: {reloaded_line['c1'].edge_exit_hgap}.")
+
+
+def test_corr_writer_treats_fringed_corrector_as_non_simple(tmp_path):
+    """
+    A corrector whose ONLY non-default attribute is edge fint/hgap must
+    still route through the writer's full serialisation form, not the
+    compact one-liner -- the compact form omits every extra attribute,
+    including fint/hgap.
+    """
+    original_line = _build_hcorr_line(edge_entry_fint = 0.06, edge_entry_hgap = 0.06)
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert reloaded_line["c1"].edge_entry_fint == pytest.approx(0.06), (
+        "A corrector with only fint/hgap set (otherwise default) should not "
+        "be misclassified as 'simple' by the writer -- got edge_entry_fint="
+        f"{reloaded_line['c1'].edge_entry_fint} after roundtrip, expected 0.06.")
 
 
 ################################################################################

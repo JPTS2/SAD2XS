@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       24-06-2026
+Date:       2026-07-14
 """
 
 ################################################################################
@@ -129,6 +129,14 @@ def survey_sad(
     cmd_file = f"_sad_survey_{uid}.sad"
     out_file = f"_sad_survey_{uid}.tfs"
 
+    # Native SAD reversal via a live ExtractBeamLine[] -- see docs/sad-behaviour.md.
+    reversal_commands = ""
+    if reverse_element_order:
+        use_line_name = f"REV{uid.upper()}"
+        reversal_commands = (
+            f"LINE {use_line_name} = -ExtractBeamLine[];\n"
+            f"USE {use_line_name};\n")
+
     logger.debug("Creating SAD command")
     sad_command = f"""OFF ECHO;
 
@@ -142,6 +150,7 @@ FFS;
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 GetMAIN["./{lattice_filepath}"];
 USE {line_name};
+{reversal_commands}
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Run any additional altering commands
@@ -231,18 +240,6 @@ abort;
     # Required to allow any kind of plotting
     dummy_line  = xt.Line()
     sv_sad.line = dummy_line
-
-    ########################################
-    # Element Order Reversal
-    ########################################
-    if reverse_element_order:
-        sv_sad.s        = sv_sad.s[-1] - sv_sad.s
-        sv_sad.X        *= +1                       # pylint: disable=no-member
-        sv_sad.Y        *= +1                       # pylint: disable=no-member
-        sv_sad.Z        *= +1                       # pylint: disable=no-member
-        sv_sad.theta    *= +1                       # pylint: disable=no-member
-        sv_sad.phi      *= +1                       # pylint: disable=no-member
-        sv_sad.psi      *= +1                       # pylint: disable=no-member
 
     ########################################
     # Bend Direction Reversal

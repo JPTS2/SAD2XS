@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-13
 """
 
 ################################################################################
@@ -78,6 +78,11 @@ line.set(
 # Set bend edges
 ########################################
 line.configure_bend_model(edge = "{config.EDGE_MODEL_BEND}")
+
+########################################
+# Set quad edges
+########################################
+line.configure_quadrupole_model(edge = "{config.EDGE_MODEL_QUAD}")
 """
 
     ########################################

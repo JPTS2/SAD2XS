@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-11
+Date:       2026-07-14
 """
 
 ################################################################################
@@ -312,6 +312,48 @@ def _has_nonzero_offset(shift_x, shift_y, tol) -> bool:
         and is_effectively_zero(shift_y, tol))
 
 
+def _bend_fringe_edge_kwargs(ele_vars, config) -> dict:
+    """
+    Derive xt.Bend edge fint/hgap from a SAD BEND's FRINGE/F1/FB1/FB2, or
+    {} if fringe import is disabled or FRINGE gates both edges off.
+
+    Closed form and FRINGE gating convention: docs/sad-behaviour.md.
+    F1/FB1/FB2 must be concrete numbers; symbolic fringe lengths are not
+    supported.
+    """
+    if not config._import_sad_bend_fringes:
+        return {}
+
+    fringe = parse_expression(ele_vars.get("fringe", 0.0))
+    if fringe == 0.0:
+        return {}
+    if not isinstance(fringe, float):
+        raise ValueError(
+            f"FRINGE must be a concrete number to import fringe fields, "
+            f"got a deferred expression: {fringe!r}.")
+
+    entry_active = fringe != -2.0
+    exit_active  = fringe != -1.0
+
+    f1  = parse_expression(ele_vars.get("f1", 0.0))
+    fb1 = parse_expression(ele_vars.get("fb1", 0.0))
+    fb2 = parse_expression(ele_vars.get("fb2", 0.0))
+    for name, value in (("F1", f1), ("FB1", fb1), ("FB2", fb2)):
+        if not isinstance(value, float):
+            raise ValueError(
+                f"{name} must be a concrete number to import fringe "
+                f"fields, got a deferred expression: {value!r}.")
+
+    kwargs = {}
+    if entry_active:
+        kwargs["edge_entry_fint"] = f1 + fb1
+        kwargs["edge_entry_hgap"] = 1 / 12
+    if exit_active:
+        kwargs["edge_exit_fint"] = f1 + fb2
+        kwargs["edge_exit_hgap"] = 1 / 12
+    return kwargs
+
+
 def convert_bends(parsed_elements, environment, config):
     """
     Convert bends from the SAD parsed data
@@ -436,7 +478,8 @@ def convert_bends(parsed_elements, environment, config):
                 edge_exit_angle     = edge_exit_angle,
                 shift_x             = shift_x,
                 shift_y             = shift_y,
-                rot_s_rad           = rotation)
+                rot_s_rad           = rotation,
+                **_bend_fringe_edge_kwargs(ele_vars, config))
             continue
 
     if offset_bends:
@@ -534,7 +577,8 @@ def convert_correctors(parsed_elements, environment, config):
                 edge_exit_angle     = 0.0,
                 shift_x             = shift_x,
                 shift_y             = shift_y,
-                rot_s_rad           = rotation)
+                rot_s_rad           = rotation,
+                **_bend_fringe_edge_kwargs(ele_vars, config))
             continue
 
 ################################################################################

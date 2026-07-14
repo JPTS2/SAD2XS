@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-11
+Date:       2026-07-12
 ================================================================================
 """
 ################################################################################
@@ -565,3 +565,52 @@ def test_mult_sk0_dipole_fringe_mirrors_in_horizontal_plane(tmp_path):
     assert tm_fringe_1[1, 0] == pytest.approx(0.0, abs = 1e-15), (
         "FRINGE=1 on an SK0-only MULT should remove the mirrored dipole "
         "fringe term m21 exactly.")
+
+################################################################################
+# K0 dipole fringe with a real nonzero FB1/FB2 -- see the "MULT is out of
+# scope" decision in docs/design-decisions.md
+################################################################################
+def test_mult_k0_fringe_with_nonzero_fb_does_not_match_equivalent_bend(tmp_path):
+    """
+    A K0-only MULT and the equivalent K0-only BEND (same L/K0/FRINGE/
+    FB1/FB2) should give clearly different py(y) -- MULT does not route
+    through the same fringe formula as BEND.
+    """
+    L, K0, FB1, FB2 = 0.4, 0.03, 0.025, 0.018
+    y_vals = np.array([0.002])
+    delta_vals = np.zeros(1)
+
+    def run(elem_type, name):
+        lat = tmp_path / name
+        lat.write_text(
+            "MOMENTUM = 1.0 GEV;\n"
+            f"{elem_type} M = (L={L} K0={K0} FRINGE=1 FB1={FB1} FB2={FB2});\n"
+            "MARK START = ()\n     END   = ();\n"
+            "LINE TEST = (START M END);\n")
+        cwd = os.getcwd()
+        os.chdir(tmp_path)
+        try:
+            return track_sad(
+                lattice_filepath    = lat.name,
+                line_name           = "TEST",
+                x_init              = np.zeros(1),
+                px_init             = np.zeros(1),
+                y_init              = y_vals,
+                py_init             = np.zeros(1),
+                zeta_init           = np.zeros(1),
+                delta_init          = delta_vals,
+                n_turns             = 1,
+                rfsw                = False,
+                with_progress       = False)
+        finally:
+            os.chdir(cwd)
+
+    r_mult = run("MULT", "mult_fb_probe.sad")
+    r_bend = run("BEND", "bend_fb_probe.sad")
+    ratio = r_mult["py"][0] / r_bend["py"][0]
+    assert not (0.9 < ratio < 1.1), (
+        "A K0-only MULT and the equivalent K0-only BEND, both with the "
+        "same FRINGE/FB1/FB2, should NOT give closely matching py(y) -- "
+        f"got ratio={ratio:.4f}. If this now passes (ratio near 1), MULT "
+        "may have started sharing BEND's fringe formula and "
+        "docs/design-decisions.md's MULT exclusion should be revisited.")

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-12
 ================================================================================
 """
 ################################################################################
@@ -1348,3 +1348,202 @@ def test_corrector_conversion_matches_sad_tracking_for_element_offsets(
         sad_coordinates         = _corrector_sad_coordinates(sad_particles),
         xsuite_coordinates      = _corrector_xsuite_coordinates(xs_particles),
         parameters              = {"dx": dx, "dy": dy})
+
+################################################################################
+# FB1/FB2 soft-edge fringe import (_import_sad_bend_fringes) -- same
+# mechanism as test_bend.py's F1/FRINGE section; see docs/sad-behaviour.md
+################################################################################
+def test_corrector_fringe_import_defaults_off(write_lattice, tmp_path):
+    """
+    Without _import_sad_bend_fringes, FB1/FB2/FRINGE on a K0-only
+    corrector should have no effect on the converted xt.Bend --
+    edge_entry_fint/hgap stay at Xsuite's own defaults.
+    """
+    lattice_text = """\
+    MOMENTUM    = 1.0 GEV;
+
+    BEND        TEST_CORR   = (
+        L       = 0.4
+        K0      = 0.03
+        FRINGE  = 1
+        FB1     = 0.025
+        FB2     = 0.018
+    );
+
+    MARK        START       = ()
+                END         = ();
+
+    LINE        TEST_LINE   = (START TEST_CORR END);
+    """
+    lattice_path = write_lattice(lattice_text, filename = "corrector_fringe_import_default_off.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path    = str(lattice_path),
+        output_directory    = "N/A",
+        _verbose            = False,
+        _test_mode          = True)
+
+    corrector = line["test_corr"]
+    assert corrector.edge_entry_fint == 0.0 and corrector.edge_entry_hgap == 0.0, (
+        "FB1/FB2/FRINGE should be ignored by default "
+        "(_import_sad_bend_fringes defaults to False).")
+
+def test_corrector_fringe_import_matches_sad_on_momentum(write_lattice, tmp_path):
+    """
+    With _import_sad_bend_fringes=True, on-momentum (delta=0) tracking
+    through a converted K0-only corrector should match SAD closely.
+    """
+    L, K0, FB1, FB2 = 0.4, 0.03, 0.025, 0.018
+    y0 = 0.002
+    x_init      = np.array([0.0])
+    px_init     = np.array([0.0])
+    y_init      = np.array([y0])
+    py_init     = np.array([0.0])
+    zeta_init   = np.array([0.0])
+    delta_init  = np.array([0.0])
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        lattice_text = f"""\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND        TEST_CORR   = (
+            L       = {L}
+            K0      = {K0}
+            FRINGE  = 1
+            FB1     = {FB1}
+            FB2     = {FB2}
+        );
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_CORR END);
+        """
+        lattice_path = write_lattice(
+            lattice_text, filename = "corrector_fringe_import_on_momentum.sad")
+
+        sad_particles = track_sad(
+            lattice_filepath    = lattice_path.name,
+            line_name           = "TEST_LINE",
+            x_init               = x_init,
+            px_init              = px_init,
+            y_init               = y_init,
+            py_init              = py_init,
+            zeta_init            = zeta_init,
+            delta_init           = delta_init,
+            n_turns              = 1,
+            rfsw                 = False,
+            with_progress        = False)
+
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path            = str(lattice_path),
+            output_directory            = "N/A",
+            _verbose                    = False,
+            _test_mode                  = True,
+            _import_sad_bend_fringes    = True)
+
+        xs_particles = xt.Particles(
+            "positron",
+            p0c     = 1.0E9,
+            x       = x_init.copy(),
+            px      = px_init.copy(),
+            y       = y_init.copy(),
+            py      = py_init.copy(),
+            zeta    = zeta_init.copy(),
+            delta   = delta_init.copy())
+        line.track(xs_particles, num_turns = 1)
+    finally:
+        os.chdir(cwd)
+
+    np.testing.assert_allclose(
+        xs_particles.py, sad_particles["py"], rtol = 1E-3, atol = 1E-12,
+        err_msg = (
+            "On-momentum, the fh=FB1/12, FB2/12 closed form should "
+            "reproduce SAD's corrector fringe kick to a fraction of a "
+            "percent."))
+
+@pytest.mark.parametrize("delta", [0.03, -0.03])
+def test_corrector_fringe_import_off_momentum_residual_is_bounded(write_lattice, tmp_path, delta):
+    """
+    Off-momentum residual, same known limitation as the ANGLE!=0 case
+    (see test_bend.py's equivalent test) -- asserted explicitly so an
+    upstream Xsuite/MAD-NG change surfaces as a failing test for review,
+    not a silent pass.
+    """
+    L, K0, FB1, FB2 = 0.4, 0.03, 0.025, 0.018
+    y0 = 0.002
+    x_init      = np.array([0.0])
+    px_init     = np.array([0.0])
+    y_init      = np.array([y0])
+    py_init     = np.array([0.0])
+    zeta_init   = np.array([0.0])
+    delta_init  = np.array([delta])
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        lattice_text = f"""\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND        TEST_CORR   = (
+            L       = {L}
+            K0      = {K0}
+            FRINGE  = 1
+            FB1     = {FB1}
+            FB2     = {FB2}
+        );
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_CORR END);
+        """
+        lattice_path = write_lattice(
+            lattice_text, filename = f"corrector_fringe_import_off_momentum_{delta:+.3f}.sad")
+
+        sad_particles = track_sad(
+            lattice_filepath    = lattice_path.name,
+            line_name           = "TEST_LINE",
+            x_init               = x_init,
+            px_init              = px_init,
+            y_init               = y_init,
+            py_init              = py_init,
+            zeta_init            = zeta_init,
+            delta_init           = delta_init,
+            n_turns              = 1,
+            rfsw                 = False,
+            with_progress        = False)
+
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path            = str(lattice_path),
+            output_directory            = "N/A",
+            _verbose                    = False,
+            _test_mode                  = True,
+            _import_sad_bend_fringes    = True)
+
+        xs_particles = xt.Particles(
+            "positron",
+            p0c     = 1.0E9,
+            x       = x_init.copy(),
+            px      = px_init.copy(),
+            y       = y_init.copy(),
+            py      = py_init.copy(),
+            zeta    = zeta_init.copy(),
+            delta   = delta_init.copy())
+        line.track(xs_particles, num_turns = 1)
+    finally:
+        os.chdir(cwd)
+
+    rel_err_pct = 100 * (xs_particles.py[0] - sad_particles["py"][0]) / sad_particles["py"][0]
+    # Measured residual at this geometry/delta: -0.11% (delta=+0.03),
+    # +0.11% (delta=-0.03) -- much smaller than the ANGLE!=0 case, since
+    # the corrector's body kick has no delta-dependence of its own.
+    expected_pct = {0.03: -0.11, -0.03: 0.11}[delta]
+    assert abs(rel_err_pct - expected_pct) < 0.1, (
+        f"Off-momentum residual for delta={delta} should stay near the "
+        f"currently-characterised {expected_pct}% (got {rel_err_pct:.3f}%). "
+        "A residual well outside this band means Xsuite's native fringe "
+        "momentum-scaling has changed -- worth reviewing whether the "
+        "off-momentum limitation this flag carries can now be relaxed.")

@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       2026-07-12
 """
 
 ################################################################################
@@ -126,6 +126,18 @@ env.new(
                 if corr.edge_exit_angle_fdown != 0:
                     corr_generation += f""",
     edge_exit_angle_fdown   = {corr.edge_exit_angle_fdown}"""
+                if corr.edge_entry_fint != 0:
+                    corr_generation += f""",
+    edge_entry_fint         = {corr.edge_entry_fint:.24f}"""
+                if corr.edge_entry_hgap != 0:
+                    corr_generation += f""",
+    edge_entry_hgap         = {corr.edge_entry_hgap:.24f}"""
+                if corr.edge_exit_fint != 0:
+                    corr_generation += f""",
+    edge_exit_fint          = {corr.edge_exit_fint:.24f}"""
+                if corr.edge_exit_hgap != 0:
+                    corr_generation += f""",
+    edge_exit_hgap          = {corr.edge_exit_hgap:.24f}"""
                 # Append shifts if they exist
                 if corr.shift_x != 0:
                     corr_generation += f""",
@@ -192,6 +204,18 @@ env.new(
                 if corr.edge_exit_angle_fdown != 0:
                     corr_generation += f""",
     edge_exit_angle_fdown   = {corr.edge_exit_angle_fdown}"""
+                if corr.edge_entry_fint != 0:
+                    corr_generation += f""",
+    edge_entry_fint         = {corr.edge_entry_fint:.24f}"""
+                if corr.edge_entry_hgap != 0:
+                    corr_generation += f""",
+    edge_entry_hgap         = {corr.edge_entry_hgap:.24f}"""
+                if corr.edge_exit_fint != 0:
+                    corr_generation += f""",
+    edge_exit_fint          = {corr.edge_exit_fint:.24f}"""
+                if corr.edge_exit_hgap != 0:
+                    corr_generation += f""",
+    edge_exit_hgap          = {corr.edge_exit_hgap:.24f}"""
                 # Append shifts if they exist
                 if corr.shift_x != 0:
                     corr_generation += f""",
@@ -258,6 +282,18 @@ env.new(
                 if corr.edge_exit_angle_fdown != 0:
                     corr_generation += f""",
     edge_exit_angle_fdown   = {corr.edge_exit_angle_fdown}"""
+                if corr.edge_entry_fint != 0:
+                    corr_generation += f""",
+    edge_entry_fint         = {corr.edge_entry_fint:.24f}"""
+                if corr.edge_entry_hgap != 0:
+                    corr_generation += f""",
+    edge_entry_hgap         = {corr.edge_entry_hgap:.24f}"""
+                if corr.edge_exit_fint != 0:
+                    corr_generation += f""",
+    edge_exit_fint          = {corr.edge_exit_fint:.24f}"""
+                if corr.edge_exit_hgap != 0:
+                    corr_generation += f""",
+    edge_exit_hgap          = {corr.edge_exit_hgap:.24f}"""
                 # Append shifts if they exist
                 if corr.shift_x != 0:
                     corr_generation += f""",

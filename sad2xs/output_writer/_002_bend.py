@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-12
 """
 
 ################################################################################
@@ -140,6 +140,18 @@ env.new(
                 if bend.edge_exit_angle_fdown != 0:
                     bend_generation += f""",
     edge_exit_angle_fdown   = {bend.edge_exit_angle_fdown}"""
+                if bend.edge_entry_fint != 0:
+                    bend_generation += f""",
+    edge_entry_fint         = {bend.edge_entry_fint:.24f}"""
+                if bend.edge_entry_hgap != 0:
+                    bend_generation += f""",
+    edge_entry_hgap         = {bend.edge_entry_hgap:.24f}"""
+                if bend.edge_exit_fint != 0:
+                    bend_generation += f""",
+    edge_exit_fint          = {bend.edge_exit_fint:.24f}"""
+                if bend.edge_exit_hgap != 0:
+                    bend_generation += f""",
+    edge_exit_hgap          = {bend.edge_exit_hgap:.24f}"""
                 # Append shifts if they exist
                 if bend.shift_x != 0:
                     bend_generation += f""",
@@ -208,6 +220,18 @@ env.new(
                 if bend.edge_exit_angle_fdown != 0:
                     bend_generation += f""",
     edge_exit_angle_fdown   = {bend.edge_exit_angle_fdown}"""
+                if bend.edge_entry_fint != 0:
+                    bend_generation += f""",
+    edge_entry_fint         = {bend.edge_entry_fint:.24f}"""
+                if bend.edge_entry_hgap != 0:
+                    bend_generation += f""",
+    edge_entry_hgap         = {bend.edge_entry_hgap:.24f}"""
+                if bend.edge_exit_fint != 0:
+                    bend_generation += f""",
+    edge_exit_fint          = {bend.edge_exit_fint:.24f}"""
+                if bend.edge_exit_hgap != 0:
+                    bend_generation += f""",
+    edge_exit_hgap          = {bend.edge_exit_hgap:.24f}"""
                 # Append shifts if they exist
                 if bend.shift_x != 0:
                     bend_generation += f""",
@@ -276,6 +300,18 @@ env.new(
                 if bend.edge_exit_angle_fdown != 0:
                     bend_generation += f""",
     edge_exit_angle_fdown   = {bend.edge_exit_angle_fdown}"""
+                if bend.edge_entry_fint != 0:
+                    bend_generation += f""",
+    edge_entry_fint         = {bend.edge_entry_fint:.24f}"""
+                if bend.edge_entry_hgap != 0:
+                    bend_generation += f""",
+    edge_entry_hgap         = {bend.edge_entry_hgap:.24f}"""
+                if bend.edge_exit_fint != 0:
+                    bend_generation += f""",
+    edge_exit_fint          = {bend.edge_exit_fint:.24f}"""
+                if bend.edge_exit_hgap != 0:
+                    bend_generation += f""",
+    edge_exit_hgap          = {bend.edge_exit_hgap:.24f}"""
                 # Append shifts if they exist
                 if bend.shift_x != 0:
                     bend_generation += f""",

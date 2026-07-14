@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-14
 ================================================================================
 """
 ################################################################################
@@ -18,7 +18,9 @@ Date:       2026-06-21
 import numpy as np
 import pytest
 
-from tests.support.lattices import write_minimal_bend_lattice, write_minimal_transfer_lattice
+from tests.support.lattices import (
+    write_asymmetric_closed_ring, write_minimal_bend_lattice,
+    write_minimal_transfer_lattice)
 from sad2xs.sad_helpers import survey_sad
 from sad2xs.sad_helpers.survey import generate_survey_print_function
 
@@ -270,10 +272,9 @@ def test_survey_sad_reverse_element_order_flips_s_axis(
         tmp_path,
         monkeypatch):
     """
-    With reverse_element_order=True the s-values should be reflected about the
-    midpoint so that START moves to s = total_length and END moves to s = 0.
-    The row order in the table (and X, Y, Z values) is unchanged — only the
-    s-axis is flipped.
+    With reverse_element_order=True, survey_sad computes SAD's own native
+    reversed line (LINE REV = (-line_name)), so END becomes the new line's
+    first element (s = 0) and START becomes the last (s = total_length).
     """
     sv_forward  = _run_survey(tmp_path, monkeypatch, reverse_element_order = False)
     sv_reversed = _run_survey(tmp_path, monkeypatch, reverse_element_order = True)
@@ -289,6 +290,52 @@ def test_survey_sad_reverse_element_order_flips_s_axis(
         "With reverse_element_order=True, START should be at s = total_length. "
         f"Got s at START: {s_reversed[names.index('START')]}; "
         f"expected: {total_length}.")
+
+
+def test_survey_sad_reverse_element_order_matches_sad_native_reversed_line(
+        tmp_path,
+        monkeypatch):
+    """
+    survey_sad's reverse_element_order=True must match SAD's own native
+    line reversal (LINE REV = (-FWD)) row-for-row on a deliberately
+    asymmetric ring -- see the equivalent twiss_sad test for the full
+    rationale (an earlier Python-side relabeling mislabelled every row by
+    one element). This compares against a REV line defined directly in the
+    lattice file, independent of the reverse_element_order code path under
+    test.
+    """
+    filename, fwd_name, rev_name = write_asymmetric_closed_ring(tmp_path)
+    monkeypatch.chdir(tmp_path)
+
+    sv_native = survey_sad(
+        lattice_filepath = filename,
+        line_name        = rev_name,
+        closed           = True,
+        wall_time        = 30)
+
+    sv_reversed = survey_sad(
+        lattice_filepath      = filename,
+        line_name             = fwd_name,
+        closed                = True,
+        reverse_element_order = True,
+        wall_time             = 30)
+
+    name_to_idx_native   = {n: i for i, n in enumerate(sv_native.name)}
+    name_to_idx_reversed = {n: i for i, n in enumerate(sv_reversed.name)}
+
+    assert set(name_to_idx_native) == set(name_to_idx_reversed), (
+        "Expected the native REV line and reverse_element_order=True to "
+        f"share exactly the same element names. Native: {list(sv_native.name)}, "
+        f"reversed: {list(sv_reversed.name)}.")
+
+    for column in ("X", "Y", "Z", "theta", "phi", "psi"):
+        for name in name_to_idx_native:
+            native_val   = getattr(sv_native, column)[name_to_idx_native[name]]
+            reversed_val = getattr(sv_reversed, column)[name_to_idx_reversed[name]]
+            assert reversed_val == pytest.approx(native_val, abs = 1E-9), (
+                f"survey_sad(reverse_element_order=True) column '{column}' "
+                f"at '{name}' should match SAD's native REV line exactly. "
+                f"Native: {native_val}, reversed: {reversed_val}.")
 
 
 def test_survey_sad_reverse_survey_horizontal_flips_x_plane_coordinates(

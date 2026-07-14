@@ -36,7 +36,7 @@ filename; SAD's shell wrapper requires a relative path in the working directory.
 
 ## Coverage
 
-312 tests across 16 files. All require the SAD binary.
+307 tests across 16 files. All require the SAD binary.
 
 ### Parameter matrix (accept/reject)
 
@@ -46,10 +46,10 @@ is tested as either accepted or rejected — nothing is left untested either way
 
 | Element | Accepted | Rejected |
 |---------|----------|---------|
-| QUAD | K1, DX, DY, ROTATE | ANGLE, K0, SK0, SK1, K2–K4, SK2–SK4, HARM, FREQ, BZ |
+| QUAD | K1, DX, DY, ROTATE, DISFRIN | ANGLE, K0, SK0, SK1, K2–K4, SK2–SK4, HARM, FREQ, BZ |
 | SEXT | K2, DX, DY, ROTATE | ANGLE, K0, SK0, K1, SK1, SK2, K3–K4, SK3–SK4, HARM, FREQ, BZ |
 | OCT | K3, DX, DY, ROTATE | ANGLE, K0, SK0, K1–K2, SK1–SK2, SK3, K4, SK4, HARM, FREQ, BZ |
-| BEND | ANGLE, K0, K1, DX, DY, ROTATE | SK0, SK1, K2–K4, SK2–SK4, HARM, FREQ, BZ |
+| BEND | ANGLE, K0, K1, DX, DY, ROTATE, F1, FRINGE, FB1, FB2 | SK0, SK1, K2–K4, SK2–SK4, HARM, FREQ, BZ |
 | MULT | ANGLE, K0–K4, SK0–SK4, DX, DY, ROTATE, HARM, FREQ, FRINGE, DISFRIN | BZ |
 | CAVI | VOLT, FREQ, HARM, PHI, DX, DY, ROTATE | ANGLE, K0–K4, SK0–SK4, BZ |
 | SOL | BZ, DX, DY, DISFRIN | ANGLE, K0–K4, SK0–SK4, HARM, FREQ, ROTATE |
@@ -81,7 +81,32 @@ happened to work:
   identically to an unset `FRINGE` and keep it. `DISFRIN` does *not* control this
   term (unlike SOL, where DISFRIN is the fringe switch). Verified against
   SAD 1.4.4.2k64 via `transfer_matrix_sad`, see the dipole-fringe section of
-  `test_mult.py`.
+  `test_mult.py`. A K0-only MULT with a real nonzero `FB1`/`FB2` does **not**
+  reproduce the same fringe formula as the equivalent K0-only BEND — confirmed
+  directly (`test_mult_k0_fringe_with_nonzero_fb_does_not_match_equivalent_bend`);
+  MULT's fringe treatment is out of scope for the BEND fringe import below.
+- **BEND's F1/FRINGE soft-edge fringe (`test_bend.py`)**: a linear-plus-cubic-in-`y`
+  kick at each edge, sized by `F1` (symmetric) or `FB1`/`FB2` (per-edge, additive
+  on top of `F1`), gated by `FRINGE` (0/unset = off, nonzero = on) — confirmed
+  inert without `FRINGE` (`test_bend_f1_is_inert_without_fringe`) and active with
+  it (`test_bend_fringe_1_activates_f1`). Applies identically to the `ANGLE != 0`
+  sector-bend path and the `ANGLE == 0`, K0-only corrector path (a BEND with no
+  ANGLE) — both pinned against real SAD binary output
+  (`test_bend_angle_nonzero_f1_fringe_matches_sad_reference_values`,
+  `test_corrector_fringe_matches_sad_reference_values`). See
+  `docs/sad-behaviour.md` for the closed-form mapping onto Xsuite's native edge
+  model this enables.
+- **QUAD's default hard-edge fringe (`test_quad.py`)**: SAD applies a default
+  hard-edge quadrupole fringe kick, gated off by `DISFRIN=1` — the same
+  convention used by SOL. The kick is nonlinear in the transverse offset, so
+  it is invisible at the tiny (1E-4) amplitudes most QUAD tracking tests use;
+  confirmed with a realistic centimeter/10s-of-mrad-scale offset
+  (`test_quad_disfrin_changes_tracking_at_large_offset`). Xsuite's
+  `Quadrupole` already supports the identical mechanism natively
+  (`edge_entry_active`/`edge_exit_active`) — SAD2XS now enables it by default
+  via `configure_quadrupole_model(edge='full')`, mirroring how bend edges are
+  configured. See `docs/sad-behaviour.md` and
+  `tests/conversion/elements/test_quad.py`.
 - **CAVI's VOLT**: no orbit perturbation in CALC4D Twiss (a real SAD/COD limitation,
   not a bug); a real energy deviation (delta != 0) in tracking.
 - **SOL's BZ**: nonzero Twiss coupling (R1/R4) that *persists* past the exit fringe —

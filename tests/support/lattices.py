@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-12
 ================================================================================
 """
 ################################################################################
@@ -62,6 +62,43 @@ def write_minimal_bend_lattice(tmp_path):
         """))
 
     return lattice_path.name, "TEST_LINE"
+
+
+################################################################################
+# Asymmetric closed ring lattice
+################################################################################
+def write_asymmetric_closed_ring(tmp_path):
+    """
+    Write a closed ring with deliberately asymmetric elements (bend E1 != E2
+    with F1/FRINGE, a K0-only corrector with FB1 != FB2, two opposite-sign
+    quads) plus a native SAD-reversed line (LINE REV = (-FWD)). Used to
+    verify reverse_element_order=True against SAD's own native reversal
+    independently of the reverse_element_order code path under test.
+
+    Returns (filename, fwd_line_name, rev_line_name) for direct use as
+    sad_helpers arguments after monkeypatch.chdir(tmp_path).
+    """
+    lattice_path = tmp_path / "test_asymmetric_ring.sad"
+    lattice_path.write_text(textwrap.dedent("""\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND    B1  = (L=2.0 ANGLE=0.15 E1=0.3 E2=0.7 F1=0.05 FRINGE=1);
+        DRIFT   D1  = (L=1.0);
+        BEND    C1  = (L=0.4 K0=0.03 FRINGE=1 FB1=0.025 FB2=0.010);
+        DRIFT   D2  = (L=1.0);
+        QUAD    Q1  = (L=0.3 K1=0.8);
+        DRIFT   D3  = (L=1.0);
+        QUAD    Q2  = (L=0.3 K1=-0.6);
+        DRIFT   D4  = (L=1.0);
+
+        MARK    START = ()
+                END   = ();
+
+        LINE    FWD = (START B1 D1 C1 D2 Q1 D3 Q2 D4 END);
+        LINE    REV = (-FWD);
+        """))
+
+    return lattice_path.name, "FWD", "REV"
 
 
 ################################################################################

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-24
+Date:       2026-07-12
 ================================================================================
 """
 ################################################################################
@@ -58,6 +58,30 @@ def test_bend_accepts_dy(sad_accepts):
 def test_bend_accepts_rotate(sad_accepts):
     sad_accepts(
         "BEND B1 = (L=1.0 ROTATE=0.1);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START B1 END);")
+
+def test_bend_accepts_f1(sad_accepts):
+    sad_accepts(
+        "BEND B1 = (L=1.0 ANGLE=0.01 F1=0.05);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START B1 END);")
+
+def test_bend_accepts_fringe(sad_accepts):
+    sad_accepts(
+        "BEND B1 = (L=1.0 ANGLE=0.01 F1=0.05 FRINGE=1);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START B1 END);")
+
+def test_bend_accepts_fb1(sad_accepts):
+    sad_accepts(
+        "BEND B1 = (L=1.0 ANGLE=0.01 FRINGE=1 FB1=0.05);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START B1 END);")
+
+def test_bend_accepts_fb2(sad_accepts):
+    sad_accepts(
+        "BEND B1 = (L=1.0 ANGLE=0.01 FRINGE=1 FB2=0.05);\n"
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START B1 END);")
 
@@ -313,3 +337,106 @@ def test_corrector_without_length_k0_gives_orbit_kick(tmp_path):
     r_k0  = run(0.01, "corr_k0_nonzero.sad")
     assert r_k0["px"][0] != pytest.approx(r_ref["px"][0]), (
         "K0 in a no-L corrector should produce a nonzero horizontal orbit kick.")
+
+################################################################################
+# F1/FRINGE soft-edge fringe (ground truth) -- see docs/sad-behaviour.md
+################################################################################
+def _track_bend_probe(tmp_path, lattice_body, name, y_vals, delta_vals):
+    lat = tmp_path / name
+    lat.write_text(f"MOMENTUM = 1.0 GEV;\n{lattice_body}\n")
+    n = len(y_vals)
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        return track_sad(
+            lattice_filepath    = lat.name,
+            line_name           = "TEST",
+            x_init              = np.zeros(n),
+            px_init             = np.zeros(n),
+            y_init              = y_vals,
+            py_init             = np.zeros(n),
+            zeta_init           = np.zeros(n),
+            delta_init          = delta_vals,
+            n_turns             = 1,
+            rfsw                = False,
+            with_progress       = False)
+    finally:
+        os.chdir(cwd)
+
+def test_bend_f1_is_inert_without_fringe(tmp_path):
+    """
+    F1 on an ANGLE!=0 BEND has no effect unless FRINGE is also set
+    (nonzero) — matching the SAD manual's "when FRINGE is non-zero, the
+    effect of the linear fringe F1 is taken into account". Default
+    FRINGE is off.
+    """
+    y_vals = np.array([0.002])
+    delta_vals = np.zeros(1)
+    body_no_fringe = "BEND B = (L=2.0 ANGLE=0.2 F1=0.05);\nMARK START=()\n END=();\nLINE TEST=(START B END);"
+    body_f1_zero   = "BEND B = (L=2.0 ANGLE=0.2);\nMARK START=()\n END=();\nLINE TEST=(START B END);"
+    r_f1     = _track_bend_probe(tmp_path, body_no_fringe, "bend_f1_no_fringe.sad", y_vals, delta_vals)
+    r_no_f1  = _track_bend_probe(tmp_path, body_f1_zero, "bend_no_f1.sad", y_vals, delta_vals)
+    assert r_f1["py"][0] == pytest.approx(r_no_f1["py"][0], abs=1e-15), (
+        "F1 on an ANGLE!=0 BEND should have no effect while FRINGE is unset "
+        "(default off) — the fringe kick should be identical to a BEND "
+        "with no F1 at all.")
+
+def test_bend_fringe_1_activates_f1(tmp_path):
+    """
+    FRINGE=1 on an ANGLE!=0 BEND activates the F1 fringe kick.
+    """
+    y_vals = np.array([0.002])
+    delta_vals = np.zeros(1)
+    body_fringe_off = "BEND B = (L=2.0 ANGLE=0.2 F1=0.05);\nMARK START=()\n END=();\nLINE TEST=(START B END);"
+    body_fringe_on  = "BEND B = (L=2.0 ANGLE=0.2 F1=0.05 FRINGE=1);\nMARK START=()\n END=();\nLINE TEST=(START B END);"
+    r_off = _track_bend_probe(tmp_path, body_fringe_off, "bend_fringe_off.sad", y_vals, delta_vals)
+    r_on  = _track_bend_probe(tmp_path, body_fringe_on, "bend_fringe_on.sad", y_vals, delta_vals)
+    assert r_on["py"][0] != pytest.approx(r_off["py"][0]), (
+        "FRINGE=1 on an ANGLE!=0 BEND with F1 set should change the "
+        "vertical kick relative to FRINGE unset.")
+
+def test_bend_angle_nonzero_f1_fringe_matches_sad_reference_values(tmp_path):
+    """
+    Pinned ground truth: L=2.0, ANGLE=0.2, F1=0.05, FRINGE=1, on-momentum
+    (delta=0), py(y) at y=0.001/0.002/0.003/0.005. These are real SAD
+    binary outputs recorded once and locked in — any future change in
+    SAD2XS's understanding of this formula should be checked against a
+    fresh SAD run, not against this file.
+    """
+    y_vals = np.array([0.001, 0.002, 0.003, 0.005])
+    delta_vals = np.zeros(4)
+    body = "BEND B = (L=2.0 ANGLE=0.2 F1=0.05 FRINGE=1);\nMARK START=()\n END=();\nLINE TEST=(START B END);"
+    result = _track_bend_probe(tmp_path, body, "bend_f1_reference.sad", y_vals, delta_vals)
+
+    expected_py = np.array([
+        1.66414047e-07, 3.3122696527e-07, 4.92837637e-07, 8.00047913e-07])
+    np.testing.assert_allclose(
+        result["py"], expected_py, rtol=1e-6,
+        err_msg=(
+            "SAD's on-momentum py(y) for an ANGLE!=0 BEND with F1/FRINGE "
+            "set no longer matches the pinned reference values — SAD's "
+            "fringe behaviour may have changed, or this reference lattice "
+            "was altered unintentionally."))
+
+def test_corrector_fringe_matches_sad_reference_values(tmp_path):
+    """
+    Pinned ground truth for the ANGLE=0, K0-only corrector case (the real
+    BW*-series wigglers' code path): L=0.5, K0=0.05, FB1=0.03, FB2=0.02,
+    FRINGE=1, on-momentum (delta=0), py(y) at y=0.001/0.002/0.003/0.005.
+    Real SAD binary outputs, recorded once and locked in.
+    """
+    y_vals = np.array([0.001, 0.002, 0.003, 0.005])
+    delta_vals = np.zeros(4)
+    body = "BEND C = (L=0.5 K0=0.05 FRINGE=1 FB1=0.03 FB2=0.02);\nMARK START=()\n END=();\nLINE TEST=(START C END);"
+    result = _track_bend_probe(tmp_path, body, "corr_f1_reference.sad", y_vals, delta_vals)
+
+    expected_py = np.array([
+        -4.923607804287169e-06, -9.850545721904283e-06,
+        -1.4784143852842083e-05, -2.4684641007911894e-05])
+    np.testing.assert_allclose(
+        result["py"], expected_py, rtol=1e-6,
+        err_msg=(
+            "SAD's on-momentum py(y) for a K0-only corrector with "
+            "FB1/FB2/FRINGE set no longer matches the pinned reference "
+            "values — SAD's fringe behaviour may have changed, or this "
+            "reference lattice was altered unintentionally."))

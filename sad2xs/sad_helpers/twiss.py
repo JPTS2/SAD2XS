@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-10
+Date:       2026-07-14
 """
 
 ################################################################################
@@ -195,6 +195,14 @@ def twiss_sad(
     cmd_file = f"_sad_twiss_{uid}.sad"
     out_file = f"_sad_twiss_{uid}.tfs"
 
+    # Native SAD reversal via a live ExtractBeamLine[] -- see docs/sad-behaviour.md.
+    reversal_commands = ""
+    if reverse_element_order:
+        use_line_name = f"REV{uid.upper()}"
+        reversal_commands = (
+            f"LINE {use_line_name} = -ExtractBeamLine[];\n"
+            f"USE {use_line_name};\n")
+
     logger.debug("Creating SAD command")
     sad_command = f"""OFF ECHO;
 
@@ -213,6 +221,7 @@ FFS["{trpt_flag}{rfsw_flag}{rad_flag}{radcod_flag}{radtaper_flag}NOFLUC;"];
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 GetMAIN["./{lattice_filepath}"];
 USE {line_name};
+{reversal_commands}
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Run any additional altering commands
@@ -294,55 +303,6 @@ abort;
     tw_sad["qx"]            = sad_twiss["Q1"]
     tw_sad["qy"]            = sad_twiss["Q2"]
     tw_sad["circumference"] = sad_twiss["LENGTH"]
-
-    ########################################
-    # Element Order Reversal
-    ########################################
-    if reverse_element_order:
-        tw_sad.s        = tw_sad.s[-1] - tw_sad.s
-        tw_sad.x        *= +1
-        tw_sad.px       *= +1 * -1
-        tw_sad.y        *= +1
-        tw_sad.py       *= +1 * -1
-        tw_sad.zeta     = tw_sad.zeta[-1] - tw_sad.zeta
-        tw_sad.delta    = tw_sad.delta[-1] - tw_sad.delta
-        tw_sad.betx     *= +1
-        tw_sad.bety     *= +1
-        tw_sad.alfx     *= +1 * -1
-        tw_sad.alfy     *= +1 * -1
-        tw_sad.dx       *= +1
-        tw_sad.dpx      *= +1 * -1
-        tw_sad.dy       *= +1
-        tw_sad.dpy      *= +1 * -1
-        tw_sad.mux      = tw_sad.mux[-1] - tw_sad.mux
-        tw_sad.muy      = tw_sad.muy[-1] - tw_sad.muy
-        tw_sad.R1       *= +1
-        tw_sad.R2       *= +1
-        tw_sad.R3       *= +1
-        tw_sad.R4       *= +1
-
-        tw_sad.name     = np.flip(tw_sad.name)
-        tw_sad.s        = np.flip(tw_sad.s)
-        tw_sad.x        = np.flip(tw_sad.x)
-        tw_sad.px       = np.flip(tw_sad.px)
-        tw_sad.y        = np.flip(tw_sad.y)
-        tw_sad.py       = np.flip(tw_sad.py)
-        tw_sad.zeta     = np.flip(tw_sad.zeta)
-        tw_sad.delta    = np.flip(tw_sad.delta)
-        tw_sad.betx     = np.flip(tw_sad.betx)
-        tw_sad.bety     = np.flip(tw_sad.bety)
-        tw_sad.alfx     = np.flip(tw_sad.alfx)
-        tw_sad.alfy     = np.flip(tw_sad.alfy)
-        tw_sad.dx       = np.flip(tw_sad.dx)
-        tw_sad.dpx      = np.flip(tw_sad.dpx)
-        tw_sad.dy       = np.flip(tw_sad.dy)
-        tw_sad.dpy      = np.flip(tw_sad.dpy)
-        tw_sad.mux      = np.flip(tw_sad.mux)
-        tw_sad.muy      = np.flip(tw_sad.muy)
-        tw_sad.R1       = np.flip(tw_sad.R1)
-        tw_sad.R2       = np.flip(tw_sad.R2)
-        tw_sad.R3       = np.flip(tw_sad.R3)
-        tw_sad.R4       = np.flip(tw_sad.R4)
 
     ########################################
     # Bend Direction Reversal

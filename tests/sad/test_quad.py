@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-24
+Date:       2026-07-13
 ================================================================================
 """
 ################################################################################
@@ -213,3 +213,57 @@ def test_quad_without_length_k1_gives_linear_kick(tmp_path):
     r_k1  = run(0.5, "quad_k1_nonzero_track.sad")
     assert r_k1["px"][0] != pytest.approx(r_ref["px"][0]), (
         "K1 in a no-L QUAD should deflect an off-axis particle (kick = -K1*x).")
+
+################################################################################
+# Hard-edge fringe field (DISFRIN) -- see docs/sad-behaviour.md
+################################################################################
+def test_quad_accepts_disfrin(sad_accepts):
+    """
+    SAD accepts DISFRIN on a QUAD element.
+    """
+    sad_accepts(
+        "QUAD Q1 = (L=0.5 K1=0.4 DISFRIN=1);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START Q1 END);")
+
+def test_quad_disfrin_changes_tracking_at_large_offset(tmp_path):
+    """
+    DISFRIN=1 on a QUAD changes tracking for a particle entering with a
+    realistic, centimeter/10s-of-mrad-scale transverse offset, proving
+    SAD applies a real default fringe kick that DISFRIN suppresses (not a
+    no-op parameter). At a tiny offset (e.g. 1E-4, as used by most other
+    QUAD tracking tests in this suite) the difference is negligible,
+    since the kick is nonlinear in the offset -- this test uses a larger
+    offset specifically to make the effect resolvable.
+    """
+    def run(disfrin, name):
+        lat = tmp_path / name
+        lat.write_text(
+            "MOMENTUM = 1.0 GEV;\n"
+            f"QUAD Q1 = (L=0.5 K1=0.4{' DISFRIN=1' if disfrin else ''});\n"
+            "MARK START = ()\n     END   = ();\n"
+            "LINE TEST = (START Q1 END);\n")
+        cwd = os.getcwd()
+        os.chdir(tmp_path)
+        try:
+            return track_sad(
+                lattice_filepath    = lat.name,
+                line_name           = "TEST",
+                x_init              = np.array([2E-2]),
+                px_init             = np.array([2E-2]),
+                y_init              = np.array([0.0]),
+                py_init             = np.array([0.0]),
+                zeta_init           = np.array([0.0]),
+                delta_init          = np.array([0.0]),
+                n_turns             = 1,
+                rfsw                = False,
+                with_progress       = False)
+        finally:
+            os.chdir(cwd)
+
+    r_default  = run(False, "quad_disfrin_default.sad")
+    r_disfrin  = run(True, "quad_disfrin_1.sad")
+    assert r_disfrin["px"][0] != pytest.approx(r_default["px"][0]), (
+        "DISFRIN=1 should change tracking through a QUAD at a realistic "
+        "offset, proving SAD applies a real default fringe kick that "
+        "DISFRIN suppresses.")

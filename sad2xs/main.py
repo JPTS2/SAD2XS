@@ -3,7 +3,7 @@ Unofficial SAD to XSuite Lattice Converter
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-27
+Date:       2026-07-13
 """
 
 ################################################################################
@@ -274,6 +274,13 @@ def convert_sad_to_xsuite(
     log_section_heading("Configuring Bend Model", mode = 'section')
 
     line.configure_bend_model(edge = config.EDGE_MODEL_BEND)
+
+    ########################################
+    # Set quad edges
+    ########################################
+    log_section_heading("Configuring Quadrupole Model", mode = 'section')
+
+    line.configure_quadrupole_model(edge = config.EDGE_MODEL_QUAD)
 
     ############################################################################
     # Line reversals

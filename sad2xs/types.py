@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-10
+Date:       2026-07-13
 """
 
 ################################################################################
@@ -70,6 +70,7 @@ class ConfigLike(Protocol):
     N_SLICES_MULT_RF:               int
 
     EDGE_MODEL_BEND:                str
+    EDGE_MODEL_QUAD:                str
 
     OUTPUT_STRING_SEP:              int
     OUTPUT_STRING_LENGTH:           int

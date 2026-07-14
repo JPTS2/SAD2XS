@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-13
 ================================================================================
 """
 ################################################################################
@@ -234,6 +234,30 @@ def test_xsuite_bend_model_configuration_call_used_by_sad2xs():
         "Xsuite configure_bend_model should apply the configured entry edge model.")
     assert line["test_bend"].edge_exit_model == config.EDGE_MODEL_BEND, (
         "Xsuite configure_bend_model should apply the configured exit edge model.")
+
+def test_xsuite_quadrupole_model_configuration_call_used_by_sad2xs():
+    """
+    Xsuite lines should accept the quadrupole edge (fringe) model
+    configuration SAD2XS makes. Unlike Bend's edge_entry_model/
+    edge_exit_model (a string), Quadrupole's edge='full' sets the boolean
+    edge_entry_active/edge_exit_active flags -- SAD applies a default
+    hard-edge quadrupole fringe kick (verified against real SAD, gated by
+    DISFRIN) that Xsuite's Quadrupole already supports natively via these
+    flags, so SAD2XS enables them by default to match.
+    """
+    config = Config(_verbose = False)
+    line = xt.Line(
+        elements      = [xt.Quadrupole(length = 1.0, k1 = 0.1)],
+        element_names = ["test_quad"])
+
+    line.configure_quadrupole_model(edge = config.EDGE_MODEL_QUAD)
+
+    assert line["test_quad"].edge_entry_active == True, (
+        "Xsuite configure_quadrupole_model should activate the entry edge "
+        "fringe when EDGE_MODEL_QUAD is 'full'.")
+    assert line["test_quad"].edge_exit_active == True, (
+        "Xsuite configure_quadrupole_model should activate the exit edge "
+        "fringe when EDGE_MODEL_QUAD is 'full'.")
 
 def test_xsuite_line_table_exposes_writer_filter_fields_used_by_sad2xs():
     """
