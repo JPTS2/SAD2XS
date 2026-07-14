@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       24-06-2026
+Date:       2026-07-12
 """
 
 ################################################################################
@@ -129,6 +129,20 @@ def survey_sad(
     cmd_file = f"_sad_survey_{uid}.sad"
     out_file = f"_sad_survey_{uid}.tfs"
 
+    # Native SAD reversal via a temp-file LINE declaration, not a
+    # Python-side relabeling -- see docs/sad-behaviour.md.
+    use_line_name       = line_name
+    load_lattice_filepath = lattice_filepath
+    rev_lattice_filepath = f"_sad_survey_{uid}_rev.sad"
+    if reverse_element_order:
+        use_line_name = f"REV{uid.upper()}"
+        with open(lattice_filepath, encoding = "utf-8") as _f:
+            _lattice_text = _f.read()
+        with open(rev_lattice_filepath, "w", encoding = "utf-8") as _f:
+            _f.write(_lattice_text)
+            _f.write(f"\nLINE {use_line_name} = (-{line_name});\n")
+        load_lattice_filepath = rev_lattice_filepath
+
     logger.debug("Creating SAD command")
     sad_command = f"""OFF ECHO;
 
@@ -140,8 +154,8 @@ FFS;
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Load and set line
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-GetMAIN["./{lattice_filepath}"];
-USE {line_name};
+GetMAIN["./{load_lattice_filepath}"];
+USE {use_line_name};
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Run any additional altering commands
@@ -185,6 +199,8 @@ abort;
     finally:
         if os.path.exists(out_file):
             os.remove(out_file)
+        if reverse_element_order and os.path.exists(rev_lattice_filepath):
+            os.remove(rev_lattice_filepath)
 
     ########################################
     # Convert the element types
@@ -231,18 +247,6 @@ abort;
     # Required to allow any kind of plotting
     dummy_line  = xt.Line()
     sv_sad.line = dummy_line
-
-    ########################################
-    # Element Order Reversal
-    ########################################
-    if reverse_element_order:
-        sv_sad.s        = sv_sad.s[-1] - sv_sad.s
-        sv_sad.X        *= +1                       # pylint: disable=no-member
-        sv_sad.Y        *= +1                       # pylint: disable=no-member
-        sv_sad.Z        *= +1                       # pylint: disable=no-member
-        sv_sad.theta    *= +1                       # pylint: disable=no-member
-        sv_sad.phi      *= +1                       # pylint: disable=no-member
-        sv_sad.psi      *= +1                       # pylint: disable=no-member
 
     ########################################
     # Bend Direction Reversal
