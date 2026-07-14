@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-13
 ================================================================================
 """
 ################################################################################
@@ -871,6 +871,137 @@ def test_quad_conversion_matches_sad_tracking_for_transverse_offsets(
         sad_coordinates         = _quad_sad_coordinates(sad_particles),
         xsuite_coordinates      = _quad_xsuite_coordinates(xs_particles),
         parameters              = {"k1l": k1l})
+
+########################################
+# Tracking At Large Transverse Offsets (Quadrupole Fringe)
+########################################
+def test_quad_conversion_default_enables_edge_fringe(write_lattice, tmp_path):
+    """
+    SAD applies a default hard-edge quadrupole fringe kick (gated by
+    DISFRIN, verified empirically against real SAD -- see
+    tests/sad/test_quad.py), which Xsuite's Quadrupole supports natively
+    via edge_entry_active/edge_exit_active but only enables when
+    configure_quadrupole_model(edge='full') is called. This is now the
+    converter's default (EDGE_MODEL_QUAD='full' in config.py, applied by
+    main.py alongside configure_bend_model).
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        QUAD        TEST_QUAD   = (L = 0.5 K1 = 0.4);
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_QUAD END);
+        """,
+        filename = "quad_default_fringe.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path    = str(lattice_path),
+        output_directory    = "N/A",
+        _verbose            = False,
+        _test_mode          = True)
+
+    assert line["test_quad"].edge_entry_active == True, (
+        "SAD2XS should enable the quadrupole entry fringe by default, to "
+        "match SAD's own default hard-edge quadrupole fringe kick.")
+    assert line["test_quad"].edge_exit_active == True, (
+        "SAD2XS should enable the quadrupole exit fringe by default, to "
+        "match SAD's own default hard-edge quadrupole fringe kick.")
+
+
+def test_quad_conversion_matches_sad_tracking_for_large_transverse_offsets(
+        write_lattice,
+        tmp_path):
+    """
+    The quadrupole fringe kick is nonlinear in the transverse offset, so it
+    is invisible at the small (1E-4) amplitudes used above. At a
+    centimeter/10s-of-mrad-scale offset, enabling the fringe leaves a
+    small, known residual (a formula-level SAD/Xsuite difference, not a
+    converter bug) -- pinned explicitly below so an upstream Xsuite/MAD-NG
+    change surfaces as a failing test, not a silent pass.
+    """
+    k1l        = -0.4
+    x_init     = np.array([2E-2])
+    px_init    = np.array([2E-2])
+    y_init     = np.array([0.0])
+    py_init    = np.array([0.0])
+    zeta_init  = np.zeros_like(x_init)
+    delta_init = np.zeros_like(x_init)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+
+    try:
+        lattice_text = f"""\
+        MOMENTUM    = 1.0 GEV;
+
+        QUAD        TEST_QUAD   = (L = 0.5 K1 = {k1l});
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_QUAD END);
+        """
+        lattice_path = write_lattice(
+            lattice_text,
+            filename = f"quad_fringe_offset_k1l_{k1l:+.3f}.sad")
+
+        sad_particles = track_sad(
+            lattice_filepath       = lattice_path.name,
+            line_name              = "TEST_LINE",
+            x_init                 = x_init,
+            px_init                = px_init,
+            y_init                 = y_init,
+            py_init                = py_init,
+            zeta_init              = zeta_init,
+            delta_init             = delta_init,
+            n_turns                = 1,
+            rfsw                   = True,
+            rad                    = False,
+            fluc                   = False,
+            radcod                 = False,
+            radtaper               = False,
+            turn_by_turn_monitor   = False,
+            with_progress          = False,
+            wall_time              = 30)
+
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path    = str(lattice_path),
+            output_directory    = "N/A",
+            _verbose            = False,
+            _test_mode          = True)
+
+        xs_particles = xt.Particles(
+            "positron",
+            p0c     = 1.0E9,
+            x       = x_init.copy(),
+            px      = px_init.copy(),
+            y       = y_init.copy(),
+            py      = py_init.copy(),
+            zeta    = zeta_init.copy(),
+            delta   = delta_init.copy())
+
+        line.track(xs_particles, num_turns = 1)
+    finally:
+        os.chdir(cwd)
+
+    # Measured residual at this geometry: x=-0.0129%, px=-0.0019%.
+    expected_pct = {"x": -0.0129, "px": -0.0019}
+    tol_pct      = {"x": 0.005,   "px": 0.001}
+    for coord, sad_val, xs_val in [
+            ("x", sad_particles["x"][0], xs_particles.x[0]),
+            ("px", sad_particles["px"][0], xs_particles.px[0])]:
+        rel_err_pct = 100 * (xs_val - sad_val) / sad_val
+        assert abs(rel_err_pct - expected_pct[coord]) < tol_pct[coord], (
+            f"Quadrupole fringe-enabled tracking '{coord}' residual should "
+            f"stay near the currently-characterised {expected_pct[coord]}% "
+            f"(got {rel_err_pct:.4f}%). A residual well outside this band "
+            "means Xsuite's native quadrupole fringe implementation has "
+            "changed -- worth reviewing whether this bounded-residual "
+            "limitation can now be relaxed.")
 
 ########################################
 # Tracking With Element Offsets
