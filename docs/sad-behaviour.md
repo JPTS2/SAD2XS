@@ -65,6 +65,89 @@ See `docs/design-decisions.md` ("Bend/Quadrupole/Sextupole/Octupole/
 Multipole model and integrator retune") for the converter warning this
 motivated.
 
+## `BEND` `F1`/`FRINGE` soft-edge fringe
+
+A SAD `BEND` applies a linear-plus-cubic-in-`y` fringe kick at each edge,
+sized by `F1` (symmetric) or `FB1`/`FB2` (per-edge, additive on top of
+`F1` — the effective entrance/exit fringe length is `F1+FB1`/`F1+FB2`)
+and gated by `FRINGE` (its internal name is `FRMD`; unrelated to
+`DISFRIN`, which is a separate hard-edge term): `0`/unset = off at both
+edges, `-1` = entrance only, `-2` = exit only, any other nonzero = both
+edges. `F1` has no effect unless `FRINGE` is also set — confirmed
+empirically (`tests/sad/test_bend.py`,
+`test_bend_f1_is_inert_without_fringe`), not assumed from the manual.
+This applies identically on the two SAD code paths that carry it: the
+`ANGLE != 0` sector bend (`tbend.f`) and the `ANGLE == 0`, `K0`-only
+corrector (`tsteer.f`, i.e. a `BEND` with no `ANGLE`) — SAD2XS already
+converts both to `xt.Bend`.
+
+This is a real, large effect on real magnets — up to +20% error on the
+vertical kick even on-momentum for `ANGLE != 0` sector bends, and up to
+100% error for `K0`-only correctors (their kick is exactly zero without
+any fringe treatment). It is not modelled unless
+`_import_sad_bend_fringes` is enabled (`docs/design-decisions.md`).
+
+Xsuite's native `edge_entry_model="full"` (`fint`/`hgap` on `xt.Bend`)
+turns out to already be structurally capable of reproducing SAD's kick —
+no composite element or custom physics needed. Taylor-matching SAD's
+edge formula against Xsuite's term by term (both maps transcribed
+explicitly and validated independently against the real SAD binary and
+real `xtrack`, not compared as black boxes) gives a closed form, not a
+curve fit: `fh = fint*hgap = (F1+FB1)/12` (entrance), `(F1+FB2)/12`
+(exit), derived from the requirement that both the linear and cubic
+`y`-coefficients of the kick match simultaneously at `delta=0`. This
+matches SAD to a fraction of a percent on-momentum, for both magnet
+families — the residual that remains is the small-`fh`
+(`tan(x)≈x`) approximation inherent in deriving the closed form, entirely
+negligible at the `fh` scale of a real magnet. Only the product `fint*hgap`
+reaches Xsuite's edge formula, so the split between the two is a free
+choice: SAD2XS sets `fint = F1+FB1`/`F1+FB2` directly (the raw SAD value,
+not a derived one) and `hgap` to the fixed `1/12`, so `fint` on a
+converted element is always directly traceable back to its SAD source.
+
+**Off-momentum, the two codes disagree on principle, not just in
+magnitude.** SAD's fringe-integral term scales as `1/(1+delta)`; Xsuite's
+native formula (faithfully ported from MAD-NG's own `bend_fringe`,
+confirmed variable-for-variable against MAD-NG's source) scales as
+`(1+delta)` — the opposite direction. Mechanism: the two codes share an
+identical "hard-edge" contribution (`px`-driven, from the bend's own
+dispersion) exactly, at any `fh` — proven via the identity
+`tan(atan(xp))=xp`, not just measured. The mismatch lives entirely in the
+"soft" (`F1`-driven) term, where SAD's Taylor series and Xsuite's
+Taylor-expanded `tan()`-based construction disagree in the sign of the
+`delta`-dependence.
+
+Checked against a fully independent derivation: Forest, Leemann & Schmidt,
+"Fringe Effects in MAD, Part I: Second Order Fringe in MAD-X for the
+Module PTC" (KEK Preprint 2005-109) derives the same fringe-integral term
+from scratch via a Lie-operator calculation, with no reference to SAD at
+all, and its rigorous result gets `1/(1+delta)` — the same closed form as
+SAD's, algebraically identical once the two papers' field-integral
+normalizations are matched (`F1 = 6*g*K`). But checked live, via `cpymad`
+against real, compiled PTC (not just the paper): PTC does **not**
+implement that rigorous result — it implements the same paper's different
+"MAD8-compliant" practical formula, and tracking through real PTC matches
+Xsuite/MAD-NG's `(1+delta)` scaling almost exactly (8 significant figures),
+not SAD's. So the honest state is: a paper's own rigorous derivation
+matches SAD exactly, but no currently-runnable software (SAD aside)
+implements it — real PTC, MAD-NG, and Xsuite (including Xsuite's own
+independent second implementation ported directly from PTC's Fortran
+source, not from MAD-NG) all implement the paper's other formula and
+agree with each other. This looks like one shared implementation choice,
+traceable to PTC's own actual Fortran source, reproduced repeatedly rather
+than independent confirmation. Full comparison (including the live PTC
+numbers) in
+`dev/sad_f1/derivation/PHYSICS_INTERPRETATION.md`; outreach draft in
+`dev/sad_f1/derivation/QUESTION_FOR_XSUITE_MADNG.md` (not yet sent). This
+is not a SAD2XS bug to work around.
+
+Locked in by `test_bend_fringe_import_off_momentum_residual_is_bounded`
+and its corrector equivalent (`tests/conversion/elements/test_bend.py`,
+`test_corrector.py`) as an explicit, bounded assertion on the current
+residual — not skipped, not left to silently pass or silently stay
+wrong. If Xsuite/MAD-NG's native formula ever changes upstream, these
+tests fail and surface for review rather than passing silently.
+
 ## RF focusing in accelerating `MULT`/`CAVI` elements
 
 SAD's accelerating-element tracking (`tmultiacc` in `tmulti.f`) applies an
@@ -338,3 +421,32 @@ Edwards-Teng coupling matrix, which Xsuite already computes natively
 needed to be requested upstream — it already existed; the solenoid fringe
 kick (above) was the only genuine physics gap raised with the Xsuite side,
 and was declined for the reasons given there.
+
+## `LINE X = (-Y);` reversal is a MAIN-file declaration, not a live command
+
+SAD's beamline-reversal syntax (`LINE X = (-Y);`, defining a new named line
+as the reverse of an existing one) is part of the MAIN-file declaration
+grammar that `GetMAIN` parses — the same statement class as `BEND`/`QUAD`/
+`LINE` element and line definitions. It is **not** a live FFS command:
+issuing it as a runtime statement after `GetMAIN` has already loaded the
+file fails with `???General::wrongtype: Argument must be BeamLine[ ... ]:`
+/ `???-FFS-Error-Missing beamline in USE.` when the resulting name is then
+passed to `USE`.
+
+Confirmed by direct probe: `GetMAIN["./file.sad"]; USE FWD; LINE REV = (-FWD);
+USE REV;` fails with the error above, while defining `LINE REV = (-FWD);`
+inside `file.sad` itself (so it is present when `GetMAIN` parses the file)
+and then just running `USE REV;` succeeds.
+
+`run_sad`'s error handling does not catch this failure mode — SAD exits
+0 and prints the error to stdout rather than raising, so a caller that
+doesn't inspect console output gets a silently degenerate result (in one
+reproduction: `name: ['$DUMMYMARK', '$DUMMYDRIFT']`, `betx: [inf, inf]`,
+`alfx: [nan, nan]`) rather than an exception.
+
+**Consequence**: `sad2xs.sad_helpers.twiss_sad`/`survey_sad`'s
+`reverse_element_order=True` writes the reversed-line declaration into a
+temporary copy of the lattice file (original content plus one appended
+`LINE <name> = (-<line_name>);` statement) and points `GetMAIN` at that
+copy, rather than injecting the declaration as a command after `GetMAIN`
+has already run.

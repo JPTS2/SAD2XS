@@ -85,7 +85,23 @@ The `edge_entry_angle` and `edge_exit_angle` of every `Bend` are exchanged.
 tracked through `LINE TESTREV = (-TEST)` in SAD and through the sad2xs-reversed
 Xsuite line.  Both give identical final `y` and `py`.
 
-### 2. Solenoid ks sign
+### 2. Bend fringe fields (fint/hgap)
+
+The soft-edge fringe fields imported from SAD's `F1`/`FB1`/`FB2` (see
+`docs/sad-behaviour.md`'s `BEND` `F1`/`FRINGE` section) are entry/exit-face
+quantities exactly like the poleface angles above: `edge_entry_fint`/
+`edge_entry_hgap` and `edge_exit_fint`/`edge_exit_hgap` are exchanged
+alongside `edge_entry_angle`/`edge_exit_angle` in the same per-bend loop,
+so both whole-line-mirror and individual `-elementname` reversal are
+covered uniformly.
+
+**Verified**: a K0-only corrector with asymmetric fringe (`FB1=0.08`,
+`FB2=0.01`) was tracked through `LINE TESTREV = (-TEST)` in SAD and through
+the sad2xs-reversed Xsuite line (with `_import_sad_bend_fringes=True`).
+Both give matching final `y` and `py` to within the fringe import's
+existing on-momentum tolerance.
+
+### 3. Solenoid ks sign
 
 Reversing the element order means the beam traverses the solenoid field in the
 opposite longitudinal direction.  The axial field now acts as if `BZ` has
@@ -113,7 +129,7 @@ which would have silently reset the reference species for any bound-solenoid
 (GEO) lattice with non-unity `CHARGE`. Fixed in
 `sad2xs/sad_helpers/rebuild_lattice.py`.
 
-### 3. Translations: solenoid GEO vs COORD
+### 4. Translations: solenoid GEO vs COORD
 
 There are two distinct origins for `Translation` elements in the converter:
 
@@ -140,7 +156,7 @@ left unchanged.
 | `COORD(DX=0.001)` forward | −0.001 | −0.001 | Same — beampipe offset is invariant |
 | `COORD(DX=0.001)` reversed Xsuite | − | −0.001 | Matches SAD reversed ✓ |
 
-### 4. Solenoid GEO reference-transform rotation order
+### 5. Solenoid GEO reference-transform rotation order
 
 A bound GEO solenoid region is defined by a pair of `SOL` elements (e.g.
 `SOL_IN`, `SOL_OUT`), one of which carries `GEO=1` (the reference-frame-defining
@@ -291,6 +307,7 @@ executable and inspecting output, to confirm assumptions used in the converter:
 | Claim | Verification |
 |---|---|
 | `LINE TESTREV = (-TEST)` syntax accepted | `sad_accepts` test in `tests/sad/test_line_reversal.py` |
+| Asymmetric bend fringe (FB1 != FB2) reversal matches SAD reversed line | `test_pipeline_reverse_element_order_corrector_fringe_physics_matches_sad` in `tests/conversion/pipeline/test_reverse_element_order.py` |
 | Reversed SAD line gives different element order | Two correctors C1/C2 with different K0: reversed line gives different final x |
 | COORD(DX=d) gives same x in forward and reversed SAD line | Tracked both; final x matches to < 1e-12 |
 | Solenoid GEO shifts must be baked in before conversion | `rebuild_sad_lattice` required; without it, GEO offsets are zero in converter |

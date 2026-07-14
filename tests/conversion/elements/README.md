@@ -33,16 +33,16 @@ exception — they have no twiss/tracking comparison to extend.
 |------|-----------|------|--------------------|
 | `test_apert.py` | 24 | 0 | — |
 | `test_beambeam.py` | 5 | 0 | — |
-| `test_bend.py` | 38 | 0 | — |
+| `test_bend.py` | 41 | 0 | — |
 | `test_cavi.py` | 10 | 0 | — |
 | `test_coord.py` | 10 | 0 | — |
-| `test_corrector.py` | 20 | 0 | — |
+| `test_corrector.py` | 23 | 0 | — |
 | `test_drift.py` | 7 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
 | `test_mult.py` | 26 | 0 | — |
 | `test_oct.py` | 18 | 0 | — |
-| `test_quad.py` | 18 | 0 | — |
+| `test_quad.py` | 20 | 0 | — |
 | `test_sext.py` | 18 | 0 | — |
 | `test_sol.py` | 26 | 0 | — |
 
@@ -164,11 +164,47 @@ See `docs/sad-behaviour.md` for the full empirical characterisation (the
 `ROTATE`-combined `R1`/`R4` discontinuity) and `docs/design-decisions.md`
 for the resulting converter decision.
 
+### `test_bend.py`/`test_corrector.py` fringe import note
+
+`_import_sad_bend_fringes` (private, default `False`) reproduces SAD's
+`FRINGE`/`F1`/`FB1`/`FB2` soft-edge fringe via Xsuite's native
+`fint`/`hgap`. Both files follow the same three-test pattern: a
+`..._defaults_off` test locking in that the flag has no effect unless
+explicitly enabled; a `..._matches_sad_on_momentum` test asserting a
+tight match at `delta=0`; and a `..._off_momentum_residual_is_bounded`
+test asserting the known, currently-characterised residual explicitly
+rather than skipping it — a future upstream Xsuite/MAD-NG momentum-scaling
+fix should make this test fail (residual outside the asserted band) and
+surface for review, not silently pass. See `docs/sad-behaviour.md`
+("`BEND` `F1`/`FRINGE` soft-edge fringe") for the derivation and
+`docs/design-decisions.md` ("`BEND` `F1`/`FRINGE` fringe import is
+private and on-momentum only") for why the flag is private and
+default-off.
+
 The converter warns once per lattice when it finds an `ANGLE != 0` bend with
 a nonzero `DX`/`DY` (`test_bend_converter_warns_once_for_lattice_with_offset_angled_bends`
 and its two companion tests), covering both the thick and thin
 representations. Correctors (`ANGLE == 0`) and MULT-derived dipoles never
 carry a nonzero curvature and are confirmed unaffected.
+
+### `test_quad.py` default edge fringe note
+
+SAD applies a default hard-edge quadrupole fringe kick (gated by `DISFRIN`,
+verified against real SAD in `tests/sad/test_quad.py`). Xsuite's
+`Quadrupole` supports the identical mechanism natively via
+`edge_entry_active`/`edge_exit_active`, so — unlike the private, opt-in
+`_import_sad_bend_fringes` bend flag — SAD2XS enables it by **default** via
+`configure_quadrupole_model(edge='full')` (`config.py`'s `EDGE_MODEL_QUAD`,
+applied in `main.py` and the writer's `_014_model.py` alongside
+`configure_bend_model`). `test_quad_conversion_default_enables_edge_fringe`
+locks in the default; `test_quad_conversion_matches_sad_tracking_for_large_transverse_offsets`
+confirms it materially improves agreement with SAD at realistic
+(centimeter-scale) orbit amplitudes — the kick is nonlinear in the offset,
+so it is invisible at the tiny amplitudes most other QUAD tracking tests
+use. A small residual remains even with the fringe enabled, consistent with
+a genuine small formula-level difference between SAD's and Xsuite's
+quadrupole fringe implementations rather than a further converter bug; the
+test asserts a bounded tolerance, not exact agreement.
 
 ## Shared Fixtures
 
