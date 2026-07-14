@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-10
+Date:       2026-07-12
 ================================================================================
 """
 ################################################################################
@@ -18,7 +18,9 @@ Date:       2026-07-10
 import numpy as np
 import pytest
 
-from tests.support.lattices import write_minimal_bend_lattice, write_minimal_transfer_lattice
+from tests.support.lattices import (
+    write_asymmetric_closed_ring, write_minimal_bend_lattice,
+    write_minimal_transfer_lattice)
 from sad2xs.sad_helpers import (
     compute_chromatic_functions,
     compute_second_order_dispersions,
@@ -300,6 +302,64 @@ def test_twiss_sad_reverse_element_order_puts_end_before_start(
     assert names.index("END") < names.index("START"), (
         "With reverse_element_order=True, END should appear before START. "
         f"Got names: {names}.")
+
+
+def test_twiss_sad_reverse_element_order_matches_sad_native_reversed_line(
+        tmp_path,
+        monkeypatch):
+    """
+    twiss_sad's reverse_element_order=True must match SAD's own native line
+    reversal (LINE REV = (-FWD)) row-for-row on a deliberately asymmetric
+    closed ring (bend E1 != E2 with F1/FRINGE, corrector FB1 != FB2,
+    opposite-sign quads) -- not merely put END before START.
+
+    An earlier implementation computed the forward line's twiss and then
+    applied a Python-side transformation (sign flips + np.flip) to
+    approximate the reversed line. That approach mislabelled every row by
+    one element: relabelled row i numerically equalled native row i+1 (to
+    floating-point precision), because SAD's own table convention (row =
+    element's entrance) shifts which boundary point counts as an element's
+    entrance under reversal. This test compares twiss_sad's
+    reverse_element_order=True against a REV line defined directly in the
+    lattice file -- an independent SAD calculation that does not exercise
+    the reverse_element_order code path at all -- so a row-mislabelling
+    regression would be caught here.
+    """
+    filename, fwd_name, rev_name = write_asymmetric_closed_ring(tmp_path)
+    monkeypatch.chdir(tmp_path)
+
+    tw_native = twiss_sad(
+        lattice_filepath = filename,
+        line_name        = rev_name,
+        closed           = True,
+        calc6d           = False,
+        wall_time        = 30)
+
+    tw_reversed = twiss_sad(
+        lattice_filepath      = filename,
+        line_name             = fwd_name,
+        closed                = True,
+        calc6d                = False,
+        reverse_element_order = True,
+        wall_time             = 30)
+
+    name_to_idx_native   = {n: i for i, n in enumerate(tw_native.name)}
+    name_to_idx_reversed = {n: i for i, n in enumerate(tw_reversed.name)}
+    common = set(name_to_idx_native) & set(name_to_idx_reversed)
+
+    assert len(common) >= 8, (
+        "Expected the native REV line and reverse_element_order=True to "
+        f"share element names. Native: {list(tw_native.name)}, "
+        f"reversed: {list(tw_reversed.name)}.")
+
+    for column in ("betx", "bety", "alfx", "alfy", "mux", "muy", "dx", "dy"):
+        for name in common:
+            native_val   = tw_native[column][name_to_idx_native[name]]
+            reversed_val = tw_reversed[column][name_to_idx_reversed[name]]
+            assert reversed_val == pytest.approx(native_val, abs = 1E-9), (
+                f"twiss_sad(reverse_element_order=True) column '{column}' at "
+                f"'{name}' should match SAD's native REV line exactly. "
+                f"Native: {native_val}, reversed: {reversed_val}.")
 
 
 def test_twiss_sad_reverse_survey_horizontal_flips_x_plane_dispersion(
