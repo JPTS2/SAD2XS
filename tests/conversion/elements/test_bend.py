@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-10
+Date:       2026-07-12
 ================================================================================
 """
 ################################################################################
@@ -3034,3 +3034,207 @@ def test_bend_offset_rotated_coupling_is_a_sad_side_artifact(write_lattice, tmp_
             f"SAD's {name} should likewise barely change between the two "
             "offset magnitudes three orders of magnitude apart -- the "
             "same magnitude-independent signature as R1/R4.")
+
+################################################################################
+# F1/FRINGE soft-edge fringe import (_import_sad_bend_fringes) -- see
+# docs/sad-behaviour.md and docs/design-decisions.md
+################################################################################
+def test_bend_fringe_import_defaults_off(write_lattice, tmp_path):
+    """
+    Without _import_sad_bend_fringes, F1/FRINGE on a BEND should have no
+    effect on the converted xt.Bend -- edge_entry_fint/hgap stay at
+    Xsuite's own defaults, same as if F1/FRINGE were never set.
+    """
+    lattice_text = """\
+    MOMENTUM    = 1.0 GEV;
+
+    BEND        TEST_BEND   = (
+        L       = 1.2
+        ANGLE   = 0.08
+        F1      = 0.04
+        FRINGE  = 1
+    );
+
+    MARK        START       = ()
+                END         = ();
+
+    LINE        TEST_LINE   = (START TEST_BEND END);
+    """
+    lattice_path = write_lattice(lattice_text, filename = "bend_fringe_import_default_off.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path    = str(lattice_path),
+        output_directory    = "N/A",
+        _verbose            = False,
+        _test_mode          = True)
+
+    bend = line["test_bend"]
+    assert bend.edge_entry_fint == 0.0 and bend.edge_entry_hgap == 0.0, (
+        "F1/FRINGE should be ignored by default (_import_sad_bend_fringes "
+        "defaults to False) -- edge_entry_fint/hgap should stay at "
+        "Xsuite's own defaults, not be populated from F1.")
+
+@pytest.mark.parametrize("delta", [0.0])
+def test_bend_fringe_import_matches_sad_on_momentum(write_lattice, tmp_path, delta):
+    """
+    With _import_sad_bend_fringes=True, on-momentum (delta=0) tracking
+    through a converted ANGLE!=0 BEND should match SAD closely -- the
+    fh=F1/12 mapping is a derived closed form here, not an approximation
+    (docs/sad-behaviour.md).
+    """
+    L, ANGLE, F1 = 1.2, 0.08, 0.04
+    y0 = 0.002
+    x_init      = np.array([0.0])
+    px_init     = np.array([0.0])
+    y_init      = np.array([y0])
+    py_init     = np.array([0.0])
+    zeta_init   = np.array([0.0])
+    delta_init  = np.array([delta])
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        lattice_text = f"""\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND        TEST_BEND   = (
+            L       = {L}
+            ANGLE   = {ANGLE}
+            F1      = {F1}
+            FRINGE  = 1
+        );
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_BEND END);
+        """
+        lattice_path = write_lattice(
+            lattice_text, filename = f"bend_fringe_import_on_momentum_{delta:+.3f}.sad")
+
+        sad_particles = track_sad(
+            lattice_filepath    = lattice_path.name,
+            line_name           = "TEST_LINE",
+            x_init               = x_init,
+            px_init              = px_init,
+            y_init               = y_init,
+            py_init              = py_init,
+            zeta_init            = zeta_init,
+            delta_init           = delta_init,
+            n_turns              = 1,
+            rfsw                 = False,
+            with_progress        = False)
+
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path            = str(lattice_path),
+            output_directory            = "N/A",
+            _verbose                    = False,
+            _test_mode                  = True,
+            _import_sad_bend_fringes    = True)
+
+        xs_particles = xt.Particles(
+            "positron",
+            p0c     = 1.0E9,
+            x       = x_init.copy(),
+            px      = px_init.copy(),
+            y       = y_init.copy(),
+            py      = py_init.copy(),
+            zeta    = zeta_init.copy(),
+            delta   = delta_init.copy())
+        line.track(xs_particles, num_turns = 1)
+    finally:
+        os.chdir(cwd)
+
+    np.testing.assert_allclose(
+        xs_particles.py, sad_particles["py"], rtol = 1E-3, atol = 1E-12,
+        err_msg = (
+            "On-momentum, the fh=F1/12 closed form should reproduce SAD's "
+            "BEND fringe kick to a fraction of a percent."))
+
+@pytest.mark.parametrize("delta", [0.03, -0.03])
+def test_bend_fringe_import_off_momentum_residual_is_bounded(write_lattice, tmp_path, delta):
+    """
+    Off-momentum, Xsuite's native fint/hgap fringe formula scales the
+    wrong way with delta relative to SAD (docs/sad-behaviour.md,
+    docs/design-decisions.md) -- a known, characterised limitation, not a
+    converter bug. This asserts the CURRENT bounded residual explicitly:
+    if Xsuite/MAD-NG's upstream formula ever changes, this test should
+    start failing (residual outside the asserted band) and surface for
+    review, rather than silently continuing to pass or silently staying
+    wrong.
+    """
+    L, ANGLE, F1 = 1.2, 0.08, 0.04
+    y0 = 0.002
+    x_init      = np.array([0.0])
+    px_init     = np.array([0.0])
+    y_init      = np.array([y0])
+    py_init     = np.array([0.0])
+    zeta_init   = np.array([0.0])
+    delta_init  = np.array([delta])
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        lattice_text = f"""\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND        TEST_BEND   = (
+            L       = {L}
+            ANGLE   = {ANGLE}
+            F1      = {F1}
+            FRINGE  = 1
+        );
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_BEND END);
+        """
+        lattice_path = write_lattice(
+            lattice_text, filename = f"bend_fringe_import_off_momentum_{delta:+.3f}.sad")
+
+        sad_particles = track_sad(
+            lattice_filepath    = lattice_path.name,
+            line_name           = "TEST_LINE",
+            x_init               = x_init,
+            px_init              = px_init,
+            y_init               = y_init,
+            py_init              = py_init,
+            zeta_init            = zeta_init,
+            delta_init           = delta_init,
+            n_turns              = 1,
+            rfsw                 = False,
+            with_progress        = False)
+
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path            = str(lattice_path),
+            output_directory            = "N/A",
+            _verbose                    = False,
+            _test_mode                  = True,
+            _import_sad_bend_fringes    = True)
+
+        xs_particles = xt.Particles(
+            "positron",
+            p0c     = 1.0E9,
+            x       = x_init.copy(),
+            px      = px_init.copy(),
+            y       = y_init.copy(),
+            py      = py_init.copy(),
+            zeta    = zeta_init.copy(),
+            delta   = delta_init.copy())
+        line.track(xs_particles, num_turns = 1)
+    finally:
+        os.chdir(cwd)
+
+    rel_err_pct = 100 * (xs_particles.py[0] - sad_particles["py"][0]) / sad_particles["py"][0]
+    # Measured residual at this geometry/delta: +1.65% (delta=+0.03),
+    # +3.46% (delta=-0.03). Bounded tightly around the measured value so
+    # an upstream fix (residual shrinking) surfaces for review, not a
+    # silent pass.
+    expected_pct = {0.03: 1.65, -0.03: 3.46}[delta]
+    assert abs(rel_err_pct - expected_pct) < 0.5, (
+        f"Off-momentum residual for delta={delta} should stay near the "
+        f"currently-characterised {expected_pct}% (got {rel_err_pct:.3f}%). "
+        "A residual well outside this band means Xsuite's native fringe "
+        "momentum-scaling has changed -- worth reviewing whether the "
+        "off-momentum limitation this flag carries can now be relaxed.")
