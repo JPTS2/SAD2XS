@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-11
+Date:       2026-07-13
 """
 
 ################################################################################
@@ -32,13 +32,12 @@ class Config:
     ############################################################################
     # Hidden Flags
     ############################################################################
-    # _verbose=True is shorthand for sad2xs.set_log_level("info"): it enables
-    # the conversion progress narrative for the rest of the session. Warnings
-    # and errors are always shown regardless of this flag.
+    # _verbose=True is shorthand for sad2xs.set_log_level("info")
     _verbose:                       bool            = False
     _test_mode:                     bool            = False
     _replace_repeated_elements:     bool            = True
     _install_offset_markers:        bool            = True
+    _import_sad_bend_fringes:       bool            = False
 
     ############################################################################
     # Constants
@@ -154,6 +153,7 @@ class Config:
     N_SLICES_MULT_RF:               int             = 10
 
     EDGE_MODEL_BEND:                str             = 'full'
+    EDGE_MODEL_QUAD:                str             = 'full'
 
     ########################################
     # Output Writer Constants
