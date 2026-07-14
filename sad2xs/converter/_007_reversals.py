@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-12
 """
 
 ################################################################################
@@ -83,6 +83,17 @@ def reverse_line_element_order(line):
             exit_angle                  = env[bend].edge_exit_angle
             env[bend].edge_entry_angle  = exit_angle
             env[bend].edge_exit_angle   = entry_angle
+
+            # Reverse entry/exit fringe fields (SAD F1/FB1/FB2 -> fint/hgap)
+            entry_fint                  = env[bend].edge_entry_fint
+            exit_fint                   = env[bend].edge_exit_fint
+            env[bend].edge_entry_fint   = exit_fint
+            env[bend].edge_exit_fint    = entry_fint
+
+            entry_hgap                  = env[bend].edge_entry_hgap
+            exit_hgap                   = env[bend].edge_exit_hgap
+            env[bend].edge_entry_hgap   = exit_hgap
+            env[bend].edge_exit_hgap    = entry_hgap
 
     ########################################
     # Solenoid Adjustments
