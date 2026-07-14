@@ -135,11 +135,9 @@ independent second implementation ported directly from PTC's Fortran
 source, not from MAD-NG) all implement the paper's other formula and
 agree with each other. This looks like one shared implementation choice,
 traceable to PTC's own actual Fortran source, reproduced repeatedly rather
-than independent confirmation. Full comparison (including the live PTC
-numbers) in
-`dev/sad_f1/derivation/PHYSICS_INTERPRETATION.md`; outreach draft in
-`dev/sad_f1/derivation/QUESTION_FOR_XSUITE_MADNG.md` (not yet sent). This
-is not a SAD2XS bug to work around.
+than independent confirmation. This is not a SAD2XS bug to work around —
+it is a genuine upstream formalism question, not yet raised with the
+Xsuite/MAD-NG maintainers.
 
 Locked in by `test_bend_fringe_import_off_momentum_residual_is_bounded`
 and its corrector equivalent (`tests/conversion/elements/test_bend.py`,
@@ -445,8 +443,11 @@ reproduction: `name: ['$DUMMYMARK', '$DUMMYDRIFT']`, `betx: [inf, inf]`,
 `alfx: [nan, nan]`) rather than an exception.
 
 **Consequence**: `sad2xs.sad_helpers.twiss_sad`/`survey_sad`'s
-`reverse_element_order=True` writes the reversed-line declaration into a
-temporary copy of the lattice file (original content plus one appended
-`LINE <name> = (-<line_name>);` statement) and points `GetMAIN` at that
-copy, rather than injecting the declaration as a command after `GetMAIN`
-has already run.
+`reverse_element_order=True` instead reverses the already-`USE`'d beamline
+live, via `LINE <name> = -ExtractBeamLine[]; USE <name>;` — `ExtractBeamLine[]`
+is a runtime FFS function returning a `BeamLine[...]` object directly, not
+the MAIN-file declaration grammar, so it is not subject to the restriction
+above. Verified directly against real SAD: this gives bit-for-bit identical
+Twiss/survey results to a `LINE REV = (-FWD);` declared natively in the
+lattice file, and (unlike an earlier temp-lattice-file-based workaround)
+matches element names exactly rather than only partially.

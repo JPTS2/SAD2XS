@@ -33,7 +33,7 @@ exception — they have no twiss/tracking comparison to extend.
 |------|-----------|------|--------------------|
 | `test_apert.py` | 24 | 0 | — |
 | `test_beambeam.py` | 5 | 0 | — |
-| `test_bend.py` | 41 | 0 | — |
+| `test_bend.py` | 42 | 0 | — |
 | `test_cavi.py` | 10 | 0 | — |
 | `test_coord.py` | 10 | 0 | — |
 | `test_corrector.py` | 23 | 0 | — |
