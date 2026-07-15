@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-15
 """
 
 ################################################################################
@@ -76,12 +76,14 @@ def convert_offset_markers(
     # Calculate intended marker locations
     ########################################
     offset_marker_locations = {}
+    unmoved_markers         = set()
 
     for marker in inserted_markers:
 
         base_marker     = marker.split("::")[0]
 
-        if base_marker.startswith("-"):
+        reversed_marker = base_marker.startswith("-")
+        if reversed_marker:
             base_marker = base_marker[1:]
 
         ########################################
@@ -102,29 +104,18 @@ def convert_offset_markers(
             if isinstance(offset, str):
                 offset = line.env.eval(offset)
 
+        # A reversed reference walks OFFSET in the opposite direction: the
+        # marker's own "forward" is global-backward.
+        if reversed_marker:
+            offset = 1 - offset
+
         ########################################
-        # Case 1: Marker remains in the same element
+        # Case 1: Marker stays at its own nominal position (confirmed
+        # against real SAD: 0 <= OFFSET <= 1 never moves or splits anything)
         ########################################
         if 0 <= offset <= 1:
-            marker_idx = element_names.index(marker)
-            try:
-                insert_at_ele   = element_names[marker_idx + 1]
-                s_to_insert     = tt["s", insert_at_ele]
-            except IndexError:  # Next element is the end of the line
-                s_to_insert = tt.s[-1]
-            except KeyError:    # Next element is a marker
-                relative_idx = 1
-                while True:
-                    relative_idx += 1
-                    try:
-                        insert_at_ele   = element_names[marker_idx + relative_idx]
-                        s_to_insert     = tt["s", insert_at_ele]
-                        break
-                    except KeyError:   # Next element is a marker
-                        pass
-                    except IndexError: # Next element is the end of the line
-                        s_to_insert = tt.s[-1]
-                        break
+            unmoved_markers.add(base_marker)
+            continue
 
         ########################################
         # Case 2: Marker is offset to within another element
@@ -164,9 +155,8 @@ def convert_offset_markers(
     removed_markers = []
     for marker in inserted_markers:
         base_marker     = marker.split("::")[0]
-        if base_marker.startswith("-"):
-            base_marker = base_marker[1:]
-        if base_marker not in offset_marker_offsets:
+        lookup_marker   = base_marker[1:] if base_marker.startswith("-") else base_marker
+        if lookup_marker not in offset_marker_offsets or lookup_marker in unmoved_markers:
             continue
 
         if base_marker not in removed_markers:

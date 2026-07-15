@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-15
 ================================================================================
 """
 ################################################################################
@@ -103,6 +103,98 @@ def test_pipeline_offset_marker_mark_moved_to_computed_s_position(write_lattice,
     assert "d2..0" in list(line.element_names), (
         "D2 should be split at the marker insertion point, producing 'd2..0'. "
         f"Got: {list(line.element_names)}.")
+
+
+################################################################################
+# Fractional Offset Below One (Case 1: marker stays in place)
+################################################################################
+def test_pipeline_offset_marker_fractional_offset_below_one_stays_in_place(
+        write_lattice, tmp_path):
+    """
+    A SAD MARK with 0 <= OFFSET < 1 (Case 1) should stay at its own nominal
+    s-position -- confirmed against real SAD (survey_sad): a marker with
+    OFFSET = 0.5 lands at the exact same s as one with no OFFSET at all, not
+    50% into the following element. With M1 immediately before D2 (L = 2.0,
+    starting at s = 2.0), the nominal and expected position is s = 2.0.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        DRIFT       D1      = (L = 2.0);
+        DRIFT       D2      = (L = 2.0);
+
+        MARK        M1      = (OFFSET = 0.5);
+
+        MARK        START   = ()
+                    END     = ();
+
+        LINE        TEST_LINE = (START D1 M1 D2 END);
+        """,
+        filename = "offset_marker_case1_fractional.sad")
+
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = str(output_dir),
+        _verbose         = False)
+
+    tt = line.get_table(attr = True)
+
+    assert "m1" in list(line.element_names), (
+        "A SAD MARK with OFFSET = 0.5 should remain in the converted line. "
+        f"Got: {list(line.element_names)}.")
+    assert tt["s", "m1"] == pytest.approx(2.0), (
+        "With OFFSET = 0.5 (Case 1), M1 should stay at its own nominal "
+        f"s = 2.0, not move into D2. Got: {tt['s', 'm1']:.6f}.")
+    assert "d2..0" not in list(line.element_names), (
+        "A Case 1 offset marker should never split the following element. "
+        f"Got: {list(line.element_names)}.")
+
+
+def test_pipeline_offset_marker_offset_exactly_one_stays_in_place(
+        write_lattice, tmp_path):
+    """
+    OFFSET = 1.0 is the upper (inclusive) boundary of Case 1. Confirmed
+    against real SAD: it behaves identically to OFFSET = 0.5 and OFFSET = 0
+    -- the marker stays at its own nominal s-position, it does not walk one
+    full element further (which would land it at s = 5.0, the front of D3,
+    rather than s = 2.0). D2 and D3 have different lengths so the two
+    hypotheses are numerically distinguishable.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        DRIFT       D1      = (L = 2.0);
+        DRIFT       D2      = (L = 3.0);
+        DRIFT       D3      = (L = 4.0);
+
+        MARK        M1      = (OFFSET = 1.0);
+
+        MARK        START   = ()
+                    END     = ();
+
+        LINE        TEST_LINE = (START D1 M1 D2 D3 END);
+        """,
+        filename = "offset_marker_case1_boundary.sad")
+
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = str(output_dir),
+        _verbose         = False)
+
+    tt = line.get_table(attr = True)
+
+    assert tt["s", "m1"] == pytest.approx(2.0), (
+        "With OFFSET = 1.0 (Case 1's inclusive upper boundary), M1 should "
+        "stay at its own nominal s = 2.0, not walk one full element further "
+        f"to s = 5.0. Got: {tt['s', 'm1']:.6f}.")
 
 
 ################################################################################
@@ -248,6 +340,56 @@ def test_pipeline_offset_marker_multiple_offset_markers_all_moved(write_lattice,
     assert tt["s", "m2"] == pytest.approx(6.0), (
         "M2 (before D2 of L = 4.0, OFFSET = 1.5) should be reinserted at "
         f"s = 4.0 + 4.0 * 0.5 = 6.0. Got: {tt['s', 'm2']:.6f}.")
+
+
+################################################################################
+# Reversed Marker Reference
+################################################################################
+def test_pipeline_offset_marker_reversed_reference_moved_to_computed_s_position(
+        write_lattice, tmp_path):
+    """
+    A SAD MARK with OFFSET = 1.5 (Case 2), referenced with SAD's '-' (reversed)
+    sign, should be installed 0.5 of the way into the element *preceding* its
+    nominal position -- not the element following it. Confirmed against real
+    SAD (survey_sad) on this exact lattice: the forward M placement lands at
+    s = 3.0 (0.5 into D2, the drift following its own nominal slot); the
+    reversed -M placement lands at s = 5.0 (0.5 into D3, the drift preceding
+    its own nominal slot), not s = 7.0 (which is where 0.5 into D4, the
+    following drift, would put it).
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        DRIFT       D       = (L = 2.0);
+
+        MARK        M       = (OFFSET = 1.5);
+
+        MARK        START   = ()
+                    END     = ();
+
+        LINE        TEST_LINE = (START D M D D -M D END);
+        """,
+        filename = "offset_marker_reversed_case2.sad")
+
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = str(output_dir),
+        _verbose         = False)
+
+    tt = line.get_table(attr = True)
+
+    assert tt["s", "m.0"] == pytest.approx(3.0), (
+        "The forward M placement should be unaffected by this fix: 0.5 into "
+        f"the following drift, s = 3.0. Got: {tt['s', 'm.0']:.6f}.")
+    assert tt["s", "m.1"] == pytest.approx(5.0), (
+        "The reversed -M placement should be installed 0.5 into the drift "
+        "*preceding* its nominal position (s = 5.0), matching real SAD, not "
+        "0.5 into the following drift (s = 7.0). "
+        f"Got: {tt['s', 'm.1']:.6f}.")
 
 
 ################################################################################
