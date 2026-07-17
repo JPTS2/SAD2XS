@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-16
+Date:       2026-07-17
 """
 ################################################################################
 # Required Packages
@@ -40,7 +40,7 @@ def check_symplecticity(twiss, line, *, tt = None, atol = 1E-6):
     Parameters
     ----------
     twiss : xt.TwissTable
-        Must contain `R_matrix` and `steps_r_matrix` (the latter only used
+        Must contain `R_matrix` and `steps_R_matrix` (the latter only used
         for the element-by-element fallback).
     line : xt.Line
         Line the twiss was computed on.
@@ -82,11 +82,11 @@ def check_symplecticity(twiss, line, *, tt = None, atol = 1E-6):
         # tt's last row is the synthetic "_end_point" marker, with no element
         # after it to pair as a segment end -- skip it on both sides.
         for start_ele, end_ele in zip(tt.name[:-2], tt.name[1:-1]):
-            M_ele           = line.compute_one_turn_matrix_finite_differences(
+            M_ele           = line.get_R_matrix(
                 start               = start_ele,
                 end                 = end_ele,
                 particle_on_co      = test_particle,
-                steps_r_matrix      = twiss.steps_r_matrix)["R_matrix"]
+                steps               = twiss.steps_R_matrix)["R_matrix"]
             ele_deviation   = np.max(np.abs(_residual(M_ele)))
             if ele_deviation >= atol:
                 logger.info(
