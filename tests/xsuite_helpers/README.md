@@ -20,3 +20,7 @@ Does not require the SAD binary.
 | File | Functions | Fail | Failure root cause |
 |------|-----------|------|--------------------|
 | `test_reference_energy.py` | 14 | 0 | — |
+| `test_symplecticity.py` | 4 | 0 | — |
+| `test_twiss_assertions.py` | 4 | 0 | — |
+| `test_twiss_alignment.py` | 9 | 0 | — |
+| `test_comparison_plots.py` | 5 | 0 | — |

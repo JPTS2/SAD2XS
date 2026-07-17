@@ -3,7 +3,7 @@ Package setup for SAD2XS Converter
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-16
 """
 
 ################################################################################
@@ -38,7 +38,9 @@ setup(
         "xsuite>=0.53.2"],
     extras_require                  = {
         # Required for sad2xs.sad_helpers in addition to a working SAD executable
-        "sad_helpers": ["tfs-pandas", "tqdm"]},
+        "sad_helpers": ["tfs-pandas", "tqdm"],
+        # Required for sad2xs.xsuite_helpers.plot_xsuite_sad_comparison
+        "plotting": ["matplotlib"]},
     license                         = 'Apache 2.0',
     download_url                    = "https://pypi.python.org/pypi/sad2xs",
     project_urls                    = {

@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-15
+Date:       2026-07-17
 """
 ################################################################################
 # Required Packages
@@ -18,15 +18,28 @@ logger  = logging.getLogger(__name__)
 
 _REPEAT_SUFFIX_RE  = re.compile(r"^(.*)\.(\d+)$")
 
+# One SAD solenoid-boundary element becomes 4 Xsuite placements (only
+# "_bound" carries real physics); see docs/xsuite-helpers.md for why the
+# front face isn't always "_bound". _collapse_slicing folds all 4 into one.
+_BOUNDARY_COMPOUND_SUFFIXES    = {"bound", "dxy", "dz", "rot"}
+_COMPOUND_SUFFIX_RE = re.compile(
+    r"_(?:" + "|".join(_BOUNDARY_COMPOUND_SUFFIXES) + r")(\.\d+)?$")
+
 ################################################################################
 # Name helpers
 ################################################################################
 def _collapse_slicing(name: str) -> str:
     """
     Strip xtrack's ``::N`` table-disambiguation and ``..N``/``..entry_map``
-    slicing suffixes, leaving the name of the placed element a row belongs to.
+    slicing suffixes, and sad2xs's solenoid-boundary compound suffix (keeping
+    any trailing repeat digit), leaving the name of the one logical placement
+    a row belongs to.
     """
-    return name.split("::")[0].split("..")[0]
+    name    = name.split("::")[0].split("..")[0]
+    m       = _COMPOUND_SUFFIX_RE.search(name)
+    if m:
+        name    = name[:m.start()] + (m.group(1) or "")
+    return name
 
 def _parse_repeat_suffix(name_lower: str):
     """
@@ -38,31 +51,62 @@ def _parse_repeat_suffix(name_lower: str):
         return name_lower, None
     return m.group(1), int(m.group(2))
 
+# sad2xs's only two TimeDelay-generating suffixes (solenoid-boundary "_dz",
+# reference-energy "_ref_zeta_update"); allows a repeat's trailing ".N" too.
+_TIMEDELAY_SUFFIX_RE    = re.compile(r"_(?:dz|ref_zeta_update)(?:\.\d+)?$")
+
+def compute_s_sad(xsuite_twiss):
+    """
+    Recover SAD's own `s` (real path length) from an Xsuite twiss result,
+    whose `s` is nominal/design length. The two diverge only right after a
+    TimeDelay's artificial `zeta` jump (bookkeeping for a real geometric
+    offset SAD's own `s` already includes); that jump is added back into
+    `s` here. `zeta`'s evolution everywhere else is real physics and is
+    left alone. Full derivation: docs/xsuite-helpers.md.
+
+    Returns `None` if there's no usable `zeta` column (e.g. an open-line 4D
+    twiss without a real 6D/RF setup).
+    """
+    if "zeta" not in xsuite_twiss.keys():
+        return None
+    xs_zeta = np.asarray(xsuite_twiss.zeta, dtype = float)
+    if not np.all(np.isfinite(xs_zeta)):
+        return None
+
+    xs_names    = [str(n) for n in xsuite_twiss.name]
+    xs_s        = np.asarray(xsuite_twiss.s, dtype = float)
+
+    dzeta   = np.diff(xs_zeta, prepend = 0.0)
+    dzeta[0]    = 0.0
+
+    is_timedelay        = np.array([
+        _TIMEDELAY_SUFFIX_RE.search(name.lower()) is not None for name in xs_names])
+    after_timedelay             = np.zeros(len(xs_names), dtype = bool)
+    after_timedelay[1:]         = is_timedelay[:-1]
+    artificial_jump             = np.where(after_timedelay, dzeta, 0.0)
+
+    return xs_s + np.cumsum(artificial_jump)
+
 ################################################################################
 # Align an Xsuite twiss table onto a SAD twiss table's element grid
 ################################################################################
 def align_xsuite_twiss_with_sad_twiss(
         xsuite_twiss, sad_twiss, *,
-        s_tol: float = 1E-9):
+        s_tol: float = 1E-9,
+        use_s_sad: bool = True,
+        excluded_elements: list | None = None):
     """
     Match every SAD element to its unique Xsuite row and return
-    `(xsuite_aligned, sad_twiss)`: `xsuite_aligned` cut to just the matched
-    rows, in `sad_twiss`'s own row order; `sad_twiss` is returned unchanged.
-    No interpolation -- an Xsuite row sad2xs generated with no single-element
-    SAD counterpart (solenoid geometry pieces, RF-interleaved slices, offset
+    `(xsuite_aligned, sad_twiss_aligned)`: same length, row-matched, in
+    `sad_twiss`'s own order. No interpolation -- an Xsuite row with no
+    single-element SAD counterpart (solenoid geometry pieces, offset
     markers, gap-filling drifts, ...) is dropped rather than guessed at.
-    Every SAD element must find a match (see Raises) -- filter known-
-    unconvertable elements out of `sad_twiss` before calling.
+    Every remaining SAD element must find a match (see Raises).
 
-    Matched by name in four passes, each only tried for elements still
-    unmatched, and always checked against `s_tol` before being accepted:
-    1. SAD's exact name, ranked by `s` if placed more than once.
-    2. SAD's dot-suffixed family name (distinct SAD elements sharing a
-       sad2xs-generated Xsuite base name, e.g. same-length gap-filling
-       drifts), ranked by `s`, pooling the plain and "-"-prefixed
-       (reversed-sub-line) variant of the Xsuite name.
-    3. sad2xs's solenoid-interior rename: `{name}_{neighbouring_solenoid}`.
-    4. sad2xs's solenoid-boundary compound: `{name}_bound`.
+    Matched by name in three passes (exact name, dot-suffixed family name,
+    solenoid-interior rename), each only tried for elements still
+    unmatched and always checked against `s_tol`. Full pass-by-pass
+    rationale: docs/xsuite-helpers.md.
 
     Parameters
     ----------
@@ -73,25 +117,41 @@ def align_xsuite_twiss_with_sad_twiss(
         element grid.
     s_tol : float, optional
         Max `abs(s_sad - s_xsuite)` for a match to be accepted. Default
-        1E-9 (floating-point noise) -- SAD's `s` is path length, so it can
-        genuinely differ from Xsuite's by more than that inside a large-
-        orbit region (e.g. a solenoid); pass a looser `s_tol` there.
+        1E-9.
+    use_s_sad : bool, optional
+        Default `True`: match against `compute_s_sad(xsuite_twiss)` where
+        available (see `compute_s_sad`), attached as `xsuite_aligned.s_sad`.
+        `False` matches and returns `xsuite_twiss.s` unmodified.
+    excluded_elements : list of str, optional
+        SAD element names (case-insensitive, base name only) to drop from
+        `sad_twiss` before matching -- e.g. `convert_sad_to_xsuite`'s own
+        `excluded_elements`, plus any offset markers
+        `convert_offset_markers` reports absent from the live line.
 
     Returns
     -------
     (xt.Table, xt.Table)
-        `(xsuite_aligned, sad_twiss)`, same length -- `xsuite_aligned.betx -
-        sad_twiss.betx` is a direct element-by-element comparison.
+        `(xsuite_aligned, sad_twiss_aligned)` -- `xsuite_aligned.betx -
+        sad_twiss_aligned.betx` is a direct element-by-element comparison.
+        `xsuite_aligned.s` is untouched; a `use_s_sad` correction is
+        attached separately as `.s_sad`, not overwritten onto `.s`.
 
     Raises
     ------
     AssertionError
-        If any SAD element found no Xsuite match.
+        If any SAD element (after `excluded_elements`) found no Xsuite match.
     """
 
     ########################################
     # SAD side: target element grid
     ########################################
+    if excluded_elements:
+        excluded_lower  = {e.lower() for e in excluded_elements}
+        keep    = np.array([
+            _parse_repeat_suffix(str(n).lower())[0] not in excluded_lower
+            for n in sad_twiss.name])
+        sad_twiss   = sad_twiss.rows[keep]
+
     sad_names   = [str(n) for n in sad_twiss.name]
     n_sad       = len(sad_names)
     sad_s       = np.asarray(sad_twiss.s, dtype = float)
@@ -101,21 +161,22 @@ def align_xsuite_twiss_with_sad_twiss(
         sad_positions_by_base[name.lower()].append(i)
 
     ########################################
-    # Xsuite side (drop the trailing "_end_point" row, if present)
+    # Xsuite side (drop the trailing "_end_point" row, if present).
+    # Matching/ranking always uses raw xs_s, never s_sad -- s_sad isn't
+    # constant across a solenoid-boundary compound's own pieces.
     ########################################
     xs_names    = [str(n) for n in xsuite_twiss.name]
     xs_s        = np.asarray(xsuite_twiss.s, dtype = float)
-    xs_etype    = (
-        [str(t) for t in xsuite_twiss.element_type]
-        if "element_type" in xsuite_twiss.keys() else [None] * len(xs_names))
+    s_sad       = compute_s_sad(xsuite_twiss) if use_s_sad else None
     if xs_names and xs_names[-1] == "_end_point":
-        xs_names, xs_s, xs_etype   = xs_names[:-1], xs_s[:-1], xs_etype[:-1]
+        xs_names, xs_s  = xs_names[:-1], xs_s[:-1]
+        if s_sad is not None:
+            s_sad   = s_sad[:-1]
+    s_for_tol   = s_sad if s_sad is not None else xs_s
 
     ########################################
-    # Face row per placement: smallest s, or the explicit {name}_entry
-    # marker slice_thick_elements() wraps every sliced element with, which
-    # is guaranteed to be the true front face even if an entry edge/fringe
-    # map ties it on s.
+    # Face row per placement: smallest s, or the {name}_entry marker
+    # slice_thick_elements() adds, which wins any tie on s.
     ########################################
     face_row_for_placement     = {}
     for i, (name, s) in enumerate(zip(xs_names, xs_s)):
@@ -127,15 +188,9 @@ def align_xsuite_twiss_with_sad_twiss(
         if name.endswith("_entry"):
             face_row_for_placement[name[:-len("_entry")]]  = (i, xs_s[i])
 
-    solenoid_bases  = {
-        _collapse_slicing(name).lower()
-        for name, etype in zip(xs_names, xs_etype)
-        if etype in ("UniformSolenoid", "VariableSolenoid")}
-
-    # Repeat-suffixed placements, indexed by their stripped base -- only
-    # consulted once a name has failed an exact match, so a real SAD name
-    # containing a literal ".<digits>" (e.g. "QEAP.44") is never mistaken
-    # for one of these.
+    # Repeat-suffixed placements by stripped base; only consulted after an
+    # exact-match miss, so a real SAD ".<digits>" name (e.g. "QEAP.44") is
+    # never mistaken for one.
     repeat_candidates_by_base  = defaultdict(list)
     xs_family_bases            = set()
     for collapsed, hit in face_row_for_placement.items():
@@ -154,8 +209,11 @@ def align_xsuite_twiss_with_sad_twiss(
     claimed_xs      = set()
 
     def _accept(sad_i, row_idx, s_xs):
-        if abs(s_xs - sad_s[sad_i]) > s_tol:
-            rejected_s_tol.append((sad_names[sad_i], sad_s[sad_i], s_xs))
+        # Acceptance always checks s_for_tol (s_sad where available), not
+        # the raw s_xs used for ranking.
+        s_compare   = s_for_tol[row_idx]
+        if abs(s_compare - sad_s[sad_i]) > s_tol:
+            rejected_s_tol.append((sad_names[sad_i], sad_s[sad_i], s_compare))
             return
         matched_sad_idx.append(sad_i)
         matched_xs_idx.append(row_idx)
@@ -176,9 +234,8 @@ def align_xsuite_twiss_with_sad_twiss(
     # Pass 1: SAD's exact name
     ########################################
     for base, sad_idx_list in sad_positions_by_base.items():
-        # A name that itself parses as a family placement (e.g. SAD's own
-        # "LXL28467.1") can coincidentally string-match an unrelated
-        # xtrack-numbered placement -- defer those entirely to pass 2.
+        # A SAD name that itself looks like "base.N" (e.g. "LXL28467.1")
+        # could coincidentally match an unrelated xtrack repeat -- defer to pass 2.
         self_base, self_index  = _parse_repeat_suffix(base)
         if self_index is not None and (
                 self_base in xs_family_bases
@@ -218,26 +275,39 @@ def align_xsuite_twiss_with_sad_twiss(
             _rank_match(sorted(sad_idx_list, key = lambda i: sad_s[i]), pool)
 
     ########################################
-    # Pass 3: solenoid-interior rename ({name}_{neighbouring_solenoid})
+    # Pass 3: solenoid-interior rename ({name}_{neighbouring_solenoid}).
+    # The neighbour isn't known in advance, so candidates are found by
+    # string-prefix search; `s_tol` guards against a coincidental match.
     ########################################
     for i, name in enumerate(sad_names):
         if i in claimed_sad:
             continue
-        for sol_base in solenoid_bases:
-            hit     = face_row_for_placement.get(f"{name.lower()}_{sol_base}")
-            if hit is not None and hit[0] not in claimed_xs:
+        prefix  = f"{name.lower()}_"
+        for xs_name, hit in face_row_for_placement.items():
+            if xs_name.startswith(prefix) and hit[0] not in claimed_xs \
+                    and abs(hit[1] - sad_s[i]) <= s_tol:
                 _accept(i, hit[0], hit[1])
                 break
 
-    ########################################
-    # Pass 4: solenoid-boundary compound ({name}_bound)
-    ########################################
+    # Same family-pooling as pass 2, but keyed on "{base}_{neighbour}" --
+    # a repeated element's neighbour can alternate along the family.
+    sad_interior_groups     = defaultdict(list)
     for i, name in enumerate(sad_names):
         if i in claimed_sad:
             continue
-        hit     = face_row_for_placement.get(f"{name.lower()}_bound")
-        if hit is not None and hit[0] not in claimed_xs:
-            _accept(i, hit[0], hit[1])
+        base, sad_index = _parse_repeat_suffix(name.lower())
+        if sad_index is not None:
+            sad_interior_groups[base].append(i)
+
+    for base, sad_idx_list in sad_interior_groups.items():
+        prefix  = f"{base}_"
+        pool    = [
+            hit
+            for xs_base, hits in repeat_candidates_by_base.items()
+            if xs_base.startswith(prefix)
+            for hit in hits]
+        if pool:
+            _rank_match(sorted(sad_idx_list, key = lambda i: sad_s[i]), pool)
 
     ########################################
     # Assemble result
@@ -261,8 +331,8 @@ def align_xsuite_twiss_with_sad_twiss(
     if rejected_s_tol:
         logger.info(
             "s_tol rejections: " + ", ".join(
-                f"{name} (SAD s={s_sad:.6f}, Xsuite s={s_xs:.6f})"
-                for name, s_sad, s_xs in rejected_s_tol[:10])
+                f"{name} (SAD s={sad_s_val:.6f}, Xsuite s={xs_s_val:.6f})"
+                for name, sad_s_val, xs_s_val in rejected_s_tol[:10])
             + (" ..." if len(rejected_s_tol) > 10 else ""))
 
     assert not unmatched_sad_names, (
@@ -270,4 +340,8 @@ def align_xsuite_twiss_with_sad_twiss(
         f"{unmatched_sad_names[:20]}"
         + (" ..." if len(unmatched_sad_names) > 20 else ""))
 
-    return xsuite_twiss.rows[matched_xs_idx], sad_twiss
+    xsuite_aligned  = xsuite_twiss.rows[matched_xs_idx]
+    if s_sad is not None:
+        xsuite_aligned.s_sad   = s_sad[matched_xs_idx]
+
+    return xsuite_aligned, sad_twiss
