@@ -33,10 +33,10 @@ exception — they have no twiss/tracking comparison to extend.
 |------|-----------|------|--------------------|
 | `test_apert.py` | 24 | 0 | — |
 | `test_beambeam.py` | 5 | 0 | — |
-| `test_bend.py` | 42 | 0 | — |
+| `test_bend.py` | 43 | 0 | — |
 | `test_cavi.py` | 10 | 0 | — |
 | `test_coord.py` | 10 | 0 | — |
-| `test_corrector.py` | 23 | 0 | — |
+| `test_corrector.py` | 24 | 0 | — |
 | `test_drift.py` | 7 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
@@ -166,11 +166,12 @@ for the resulting converter decision.
 
 ### `test_bend.py`/`test_corrector.py` fringe import note
 
-`_import_sad_bend_fringes` (private, default `False`) reproduces SAD's
+`_import_sad_bend_fringes` (private, default `True`) reproduces SAD's
 `FRINGE`/`F1`/`FB1`/`FB2` soft-edge fringe via Xsuite's native
-`fint`/`hgap`. Both files follow the same three-test pattern: a
-`..._defaults_off` test locking in that the flag has no effect unless
-explicitly enabled; a `..._matches_sad_on_momentum` test asserting a
+`fint`/`hgap`. Both files follow the same four-test pattern: a
+`..._defaults_on` test locking in that the flag takes effect without
+needing to be passed; a `..._explicit_off` test locking in that it can
+still be disabled; a `..._matches_sad_on_momentum` test asserting a
 tight match at `delta=0`; and a `..._off_momentum_residual_is_bounded`
 test asserting the known, currently-characterised residual explicitly
 rather than skipping it — a future upstream Xsuite/MAD-NG momentum-scaling
@@ -178,8 +179,8 @@ fix should make this test fail (residual outside the asserted band) and
 surface for review, not silently pass. See `docs/sad-behaviour.md`
 ("`BEND` `F1`/`FRINGE` soft-edge fringe") for the derivation and
 `docs/design-decisions.md` ("`BEND` `F1`/`FRINGE` fringe import is
-private and on-momentum only") for why the flag is private and
-default-off.
+private, default-on" section) for why the flag is private and the
+off-momentum caveat that comes with it.
 
 The converter warns once per lattice when it finds an `ANGLE != 0` bend with
 a nonzero `DX`/`DY` (`test_bend_converter_warns_once_for_lattice_with_offset_angled_bends`
