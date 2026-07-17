@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-14
+Date:       2026-07-16
 """
 
 ################################################################################
@@ -1458,7 +1458,9 @@ def convert_solenoids(
         ########################################
         # Read values
         ########################################
-        bz  = parse_expression(ele_vars["bz"])
+        # BZ is optional in SAD: an unset SOL element is a pure geometry/
+        # boundary marker with no field, i.e. BZ = 0.
+        bz  = parse_expression(ele_vars["bz"]) if "bz" in ele_vars else 0.0
         ks  = bz / brho
 
         # The parser stores numeric literals as floats: DISFRIN = 1 -> 1.0
