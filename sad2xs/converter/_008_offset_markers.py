@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-15
+Date:       2026-07-16
 """
 
 ################################################################################
@@ -170,5 +170,13 @@ def convert_offset_markers(
     logger.info(
         f"Converted {len(offset_marker_locations)} offset markers "
         f"({n_locations} insertion points)")
+
+    # `line` never gets these markers back -- only the generated lattice
+    # file's "Install Markers" step re-adds them.
+    if offset_marker_locations:
+        logger.warning(
+            f"{len(offset_marker_locations)} relocated offset marker(s) are "
+            "absent from the returned line (present only in the generated "
+            f"lattice file): {sorted(offset_marker_locations)}")
 
     return line, offset_marker_locations
