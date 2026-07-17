@@ -39,8 +39,8 @@ string `"on"`. All trigger access uses a `_triggers(data)` helper that checks
 **Template tests (7, not parametrised):**
 - Template has `workflow_call` trigger (required for per-folder delegation)
 - Template `test_files` input is marked `required: true`
-- Discover job uses `actions/checkout@v4` with no `ref` override (checks out triggering commit)
-- Run job uses `actions/checkout@v4` with no `ref` override (checks out triggering commit)
+- Discover job uses `actions/checkout@v7` with no `ref` override (checks out triggering commit)
+- Run job uses `actions/checkout@v7` with no `ref` override (checks out triggering commit)
 - Run job matrix strategy has `fail-fast: false`
 
 **Per-folder workflow tests (3 functions × 10 workflows = 30 instances):**
@@ -69,7 +69,7 @@ Parametrised over all 10 per-folder workflows (`test_packaging.yml`,
 - `docker-build.yml` name is stable and documented
 - Triggers on push to `main`
 - Has `workflow_dispatch` trigger
-- Uses `actions/checkout@v4`
+- Uses `actions/checkout@v7`
 
 ### `test_workflow_test_targets.py` — 3 test functions × 9 workflows = 27 instances, all expected to pass
 
