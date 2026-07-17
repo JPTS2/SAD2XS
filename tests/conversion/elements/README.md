@@ -26,8 +26,9 @@ mechanism.
 SAD-comparison tracking and Twiss checks uniformly use `rfsw=True` and compare
 `zeta`/`delta` alongside the transverse coordinates, matching `test_cavi.py`'s
 original pattern. Files with only a raw `s`/length check via `line.get_table()`
-(`test_apert.py`, `test_beambeam.py`, `test_mark.py`, `test_moni.py`) are the
-exception — they have no twiss/tracking comparison to extend.
+(`test_apert.py`, `test_beambeam.py`, `test_map.py`, `test_mark.py`,
+`test_moni.py`) are the exception — they have no twiss/tracking comparison
+to extend.
 
 | File | Functions | Fail | Failure root cause |
 |------|-----------|------|--------------------|
@@ -38,6 +39,7 @@ exception — they have no twiss/tracking comparison to extend.
 | `test_coord.py` | 10 | 0 | — |
 | `test_corrector.py` | 24 | 0 | — |
 | `test_drift.py` | 7 | 0 | — |
+| `test_map.py` | 6 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
 | `test_mult.py` | 26 | 0 | — |

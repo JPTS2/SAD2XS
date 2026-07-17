@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-16
+Date:       2026-07-17
 """
 
 ################################################################################
@@ -211,6 +211,16 @@ def convert_elements(
             environment     = environment)
         logger.info(
             f"Converted {len(parsed_elements['beambeam'])} beam-beam definitions")
+
+    ########################################
+    # Maps
+    ########################################
+    if "map" in parsed_elements:
+        log_section_heading("Converting Maps", mode = "section")
+        convert_maps(
+            parsed_elements = parsed_elements,
+            environment     = environment)
+        logger.info(f"Converted {len(parsed_elements['map'])} map definitions")
 
     ########################################
     # RF Focusing Check
@@ -1698,6 +1708,39 @@ def convert_beam_beam(parsed_elements, environment):
     beam_beams   = parsed_elements["beambeam"]
 
     for ele_name, _ in beam_beams.items():
+
+        ########################################
+        # Create Element
+        ########################################
+        environment.new(
+                name      = ele_name,
+                prototype = xt.Marker)
+        continue
+
+################################################################################
+# Convert Maps
+################################################################################
+def convert_maps(parsed_elements, environment):
+    """
+    Convert maps from the SAD parsed data
+
+    Only empty MAP elements are understood; a MAP with parameters is not
+    supported since its physical meaning is not known.
+    """
+
+    maps   = parsed_elements["map"]
+
+    for ele_name, ele_vars in maps.items():
+
+        ########################################
+        # Reject Parametrised Maps
+        ########################################
+        if ele_vars:
+            raise ValueError(
+                f"MAP element '{ele_name}' has non-empty parameters "
+                f"{ele_vars!r}. SAD2XS only supports MAP elements with no "
+                "parameters (installed as Xsuite Markers); MAP elements "
+                "with parameters are not understood and not supported.")
 
         ########################################
         # Create Element
