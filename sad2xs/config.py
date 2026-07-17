@@ -172,3 +172,8 @@ class Config:
     # Marker Insertion Tolerance
     ########################################
     MARKER_INSERTION_TOLERANCE:     float           = 1E-9
+
+    ########################################
+    # Writer Magnet Length Precision
+    ########################################
+    MAGNET_LENGTH_PRECISION:        float           = 1E-9

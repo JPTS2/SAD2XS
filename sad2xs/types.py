@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-13
+Date:       2026-07-17
 """
 
 ################################################################################
@@ -77,3 +77,4 @@ class ConfigLike(Protocol):
     ALLOWED_ELEMENTS:               set[str]
 
     MARKER_INSERTION_TOLERANCE:     float
+    MAGNET_LENGTH_PRECISION:        float
