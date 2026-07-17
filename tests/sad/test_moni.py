@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-24
+Date:       2026-07-17
 ================================================================================
 """
 ################################################################################
@@ -33,108 +33,46 @@ def test_moni_bare_accepts(sad_accepts):
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START MN1 END);")
 
-def test_moni_accepts_dx(sad_accepts):
-    sad_accepts(
-        "MONI MN1 = (DX=0.001);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
+ACCEPTED_PARAMS = [
+    pytest.param("DX=0.001",   id = "dx"),
+    pytest.param("DY=0.001",   id = "dy"),
+    pytest.param("ROTATE=0.1", id = "rotate"),
+]
 
-def test_moni_accepts_dy(sad_accepts):
+@pytest.mark.parametrize("params", ACCEPTED_PARAMS)
+def test_moni_accepts(sad_accepts, params):
     sad_accepts(
-        "MONI MN1 = (DY=0.001);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
-
-def test_moni_accepts_rotate(sad_accepts):
-    sad_accepts(
-        "MONI MN1 = (ROTATE=0.1);\n"
+        f"MONI MN1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START MN1 END);")
 
 ################################################################################
 # Rejected parameters
+#
+# See tests/sad/README.md's "Parameter matrix" for the accepted/rejected
+# table this parametrization transcribes.
 ################################################################################
-def test_moni_rejects_k0(sad_rejects):
-    sad_rejects(
-        "MONI MN1 = (K0=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
+REJECTED_PARAMS = [
+    pytest.param("K0=0.1",     id = "k0"),
+    pytest.param("K1=0.1",     id = "k1"),
+    pytest.param("K2=0.1",     id = "k2"),
+    pytest.param("BZ=0.1",     id = "bz"),
+    pytest.param("ANGLE=0.01", id = "angle"),
+    pytest.param("FREQ=400E6", id = "freq"),
+    pytest.param("HARM=1000",  id = "harm"),
+    pytest.param("K3=0.1",     id = "k3"),
+    pytest.param("K4=0.1",     id = "k4"),
+    pytest.param("SK0=0.1",    id = "sk0"),
+    pytest.param("SK1=0.1",    id = "sk1"),
+    pytest.param("SK2=0.1",    id = "sk2"),
+    pytest.param("SK3=0.1",    id = "sk3"),
+    pytest.param("SK4=0.1",    id = "sk4"),
+]
 
-def test_moni_rejects_k1(sad_rejects):
+@pytest.mark.parametrize("params", REJECTED_PARAMS)
+def test_moni_rejects(sad_rejects, params):
     sad_rejects(
-        "MONI MN1 = (K1=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
-
-def test_moni_rejects_k2(sad_rejects):
-    sad_rejects(
-        "MONI MN1 = (K2=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
-
-def test_moni_rejects_bz(sad_rejects):
-    sad_rejects(
-        "MONI MN1 = (BZ=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
-
-def test_moni_rejects_angle(sad_rejects):
-    sad_rejects(
-        "MONI MN1 = (ANGLE=0.01);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
-
-def test_moni_rejects_freq(sad_rejects):
-    sad_rejects(
-        "MONI MN1 = (FREQ=400E6);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
-
-def test_moni_rejects_harm(sad_rejects):
-    sad_rejects(
-        "MONI MN1 = (HARM=1000);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
-
-def test_moni_rejects_k3(sad_rejects):
-    sad_rejects(
-        "MONI MN1 = (K3=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
-
-def test_moni_rejects_k4(sad_rejects):
-    sad_rejects(
-        "MONI MN1 = (K4=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
-
-def test_moni_rejects_sk0(sad_rejects):
-    sad_rejects(
-        "MONI MN1 = (SK0=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
-
-def test_moni_rejects_sk1(sad_rejects):
-    sad_rejects(
-        "MONI MN1 = (SK1=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
-
-def test_moni_rejects_sk2(sad_rejects):
-    sad_rejects(
-        "MONI MN1 = (SK2=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
-
-def test_moni_rejects_sk3(sad_rejects):
-    sad_rejects(
-        "MONI MN1 = (SK3=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START MN1 END);")
-
-def test_moni_rejects_sk4(sad_rejects):
-    sad_rejects(
-        "MONI MN1 = (SK4=0.1);\n"
+        f"MONI MN1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START MN1 END);")
 

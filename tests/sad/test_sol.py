@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-24
+Date:       2026-07-17
 ================================================================================
 """
 ################################################################################
@@ -83,151 +83,49 @@ def test_sol_three_element_inner_no_bound_accepts(sad_accepts):
         "LINE TEST = (START SL1 D0 SL_MID D1 SL2 END);")
 
 ################################################################################
-# Accepted parameters (SOL + DRIFT + SOL with GEO=1 on entrance as baseline)
+# Accepted / Rejected parameters (SOL + DRIFT + SOL with GEO=1 on entrance as
+# baseline)
+#
+# See tests/sad/README.md's "Parameter matrix" for the accepted/rejected
+# table this parametrization transcribes.
 ################################################################################
-def test_sol_accepts_bz(sad_accepts):
+ACCEPTED_PARAMS = [
+    pytest.param("",              "",           id = "bz"),
+    pytest.param(" DX=0.001",     "",           id = "dx"),
+    pytest.param(" DY=0.001",     "",           id = "dy"),
+    pytest.param(" DISFRIN=1",    " DISFRIN=1", id = "disfrin"),
+]
+
+@pytest.mark.parametrize("sl1_extra,sl2_extra", ACCEPTED_PARAMS)
+def test_sol_accepts(sad_accepts, sl1_extra, sl2_extra):
     sad_accepts(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1);\n"
+        f"SOL SL1 = (BZ=0.1 BOUND=1 GEO=1{sl1_extra});\n"
         "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
+        f"SOL SL2 = (BZ=0.0 BOUND=1{sl2_extra});\n"
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START SL1 D0 SL2 END);")
 
-def test_sol_accepts_dx(sad_accepts):
-    sad_accepts(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 DX=0.001);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
+REJECTED_PARAMS = [
+    pytest.param("ANGLE=0.01",  id = "angle"),
+    pytest.param("K0=0.1",      id = "k0"),
+    pytest.param("SK0=0.1",     id = "sk0"),
+    pytest.param("K1=0.1",      id = "k1"),
+    pytest.param("SK1=0.1",     id = "sk1"),
+    pytest.param("K2=0.1",      id = "k2"),
+    pytest.param("SK2=0.1",     id = "sk2"),
+    pytest.param("K3=0.1",      id = "k3"),
+    pytest.param("SK3=0.1",     id = "sk3"),
+    pytest.param("K4=0.1",      id = "k4"),
+    pytest.param("SK4=0.1",     id = "sk4"),
+    pytest.param("HARM=1000",   id = "harm"),
+    pytest.param("FREQ=400E6",  id = "freq"),
+    pytest.param("ROTATE=0.1",  id = "rotate"),
+]
 
-def test_sol_accepts_dy(sad_accepts):
-    sad_accepts(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 DY=0.001);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-def test_sol_accepts_disfrin(sad_accepts):
-    sad_accepts(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 DISFRIN=1);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1 DISFRIN=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-
-################################################################################
-# Rejected parameters
-################################################################################
-def test_sol_rejects_angle(sad_rejects):
+@pytest.mark.parametrize("param", REJECTED_PARAMS)
+def test_sol_rejects(sad_rejects, param):
     sad_rejects(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 ANGLE=0.01);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-def test_sol_rejects_k0(sad_rejects):
-    sad_rejects(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 K0=0.1);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-def test_sol_rejects_sk0(sad_rejects):
-    sad_rejects(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 SK0=0.1);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-def test_sol_rejects_k1(sad_rejects):
-    sad_rejects(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 K1=0.1);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-def test_sol_rejects_sk1(sad_rejects):
-    sad_rejects(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 SK1=0.1);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-def test_sol_rejects_k2(sad_rejects):
-    sad_rejects(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 K2=0.1);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-def test_sol_rejects_sk2(sad_rejects):
-    sad_rejects(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 SK2=0.1);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-def test_sol_rejects_k3(sad_rejects):
-    sad_rejects(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 K3=0.1);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-def test_sol_rejects_sk3(sad_rejects):
-    sad_rejects(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 SK3=0.1);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-def test_sol_rejects_k4(sad_rejects):
-    sad_rejects(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 K4=0.1);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-def test_sol_rejects_sk4(sad_rejects):
-    sad_rejects(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 SK4=0.1);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-def test_sol_rejects_harm(sad_rejects):
-    sad_rejects(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 HARM=1000);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-def test_sol_rejects_freq(sad_rejects):
-    sad_rejects(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 FREQ=400E6);\n"
-        "DRIFT D0 = (L=1.0);\n"
-        "SOL SL2 = (BZ=0.0 BOUND=1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START SL1 D0 SL2 END);")
-
-def test_sol_rejects_rotate(sad_rejects):
-    sad_rejects(
-        "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 ROTATE=0.1);\n"
+        f"SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 {param});\n"
         "DRIFT D0 = (L=1.0);\n"
         "SOL SL2 = (BZ=0.0 BOUND=1);\n"
         "MARK START = ()\n     END   = ();\n"
