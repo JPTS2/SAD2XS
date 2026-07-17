@@ -1353,10 +1353,45 @@ def test_corrector_conversion_matches_sad_tracking_for_element_offsets(
 # FB1/FB2 soft-edge fringe import (_import_sad_bend_fringes) -- same
 # mechanism as test_bend.py's F1/FRINGE section; see docs/sad-behaviour.md
 ################################################################################
-def test_corrector_fringe_import_defaults_off(write_lattice, tmp_path):
+def test_corrector_fringe_import_defaults_on(write_lattice, tmp_path):
     """
-    Without _import_sad_bend_fringes, FB1/FB2/FRINGE on a K0-only
-    corrector should have no effect on the converted xt.Bend --
+    _import_sad_bend_fringes defaults to True -- FB1/FB2/FRINGE on a
+    K0-only corrector should populate edge_entry_fint/hgap without needing
+    to pass the flag.
+    """
+    lattice_text = """\
+    MOMENTUM    = 1.0 GEV;
+
+    BEND        TEST_CORR   = (
+        L       = 0.4
+        K0      = 0.03
+        FRINGE  = 1
+        FB1     = 0.025
+        FB2     = 0.018
+    );
+
+    MARK        START       = ()
+                END         = ();
+
+    LINE        TEST_LINE   = (START TEST_CORR END);
+    """
+    lattice_path = write_lattice(lattice_text, filename = "corrector_fringe_import_default_on.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path    = str(lattice_path),
+        output_directory    = "N/A",
+        _verbose            = False,
+        _test_mode          = True)
+
+    corrector = line["test_corr"]
+    assert corrector.edge_entry_fint == pytest.approx(0.025) and corrector.edge_entry_hgap == pytest.approx(1 / 12), (
+        "FB1/FB2/FRINGE should be imported by default "
+        "(_import_sad_bend_fringes defaults to True).")
+
+def test_corrector_fringe_import_explicit_off(write_lattice, tmp_path):
+    """
+    With _import_sad_bend_fringes explicitly disabled, FB1/FB2/FRINGE on a
+    K0-only corrector should have no effect on the converted xt.Bend --
     edge_entry_fint/hgap stay at Xsuite's own defaults.
     """
     lattice_text = """\
@@ -1375,18 +1410,19 @@ def test_corrector_fringe_import_defaults_off(write_lattice, tmp_path):
 
     LINE        TEST_LINE   = (START TEST_CORR END);
     """
-    lattice_path = write_lattice(lattice_text, filename = "corrector_fringe_import_default_off.sad")
+    lattice_path = write_lattice(lattice_text, filename = "corrector_fringe_import_explicit_off.sad")
 
     line = s2x.convert_sad_to_xsuite(
-        sad_lattice_path    = str(lattice_path),
-        output_directory    = "N/A",
-        _verbose            = False,
-        _test_mode          = True)
+        sad_lattice_path            = str(lattice_path),
+        output_directory            = "N/A",
+        _verbose                    = False,
+        _test_mode                  = True,
+        _import_sad_bend_fringes    = False)
 
     corrector = line["test_corr"]
     assert corrector.edge_entry_fint == 0.0 and corrector.edge_entry_hgap == 0.0, (
-        "FB1/FB2/FRINGE should be ignored by default "
-        "(_import_sad_bend_fringes defaults to False).")
+        "FB1/FB2/FRINGE should be ignored when _import_sad_bend_fringes is "
+        "explicitly disabled.")
 
 def test_corrector_fringe_import_matches_sad_on_momentum(write_lattice, tmp_path):
     """
