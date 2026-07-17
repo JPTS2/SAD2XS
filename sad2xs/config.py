@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-13
+Date:       2026-07-17
 """
 
 ################################################################################
@@ -86,7 +86,7 @@ class Config:
             'drift',
             'bend', 'quad', 'sext', 'oct', 'mult', 'sol',
             'cavi', 'apert', 'coord',
-            'mark', 'moni', 'beambeam'})
+            'mark', 'moni', 'beambeam', 'map'})
 
     ########################################
     # Reference Particle Defaults
