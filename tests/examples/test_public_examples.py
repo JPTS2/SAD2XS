@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-17
 ================================================================================
 """
 ################################################################################
@@ -35,11 +35,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 PUBLIC_EXAMPLE_LATTICE_DIR = REPO_ROOT / "examples" / "lattices"
 PUBLIC_EXAMPLE_DIR = REPO_ROOT / "examples"
 
-PUBLIC_EXAMPLE_LATTICES = [
-    "fccee_zh.sad",
-    "fccee_tt_collimation.sad",
-    "fccee_sol.sad",
-]
+PUBLIC_EXAMPLE_LATTICES = sorted(
+    path.name
+    for path in PUBLIC_EXAMPLE_LATTICE_DIR.glob("*.sad")
+    if "_rebuilt" not in path.name)
 
 PUBLIC_EXAMPLE_SCRIPTS = sorted(
     path
