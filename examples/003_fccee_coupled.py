@@ -1,6 +1,6 @@
 """
 ================================================================================
-Example 003: FCC-ee Solenoid Lattice Conversion
+Example 003: FCC-ee Coupled Lattice Conversion
 ================================================================================
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
@@ -15,7 +15,6 @@ Date:       2026-07-17
 ################################################################################
 # Required Packages
 ################################################################################
-import os
 from _runtime import DEFAULT_OUTPUT_DIR, configure_example_runtime
 
 SHOW_PLOTS  = globals().get("SHOW_PLOTS", True)
@@ -31,43 +30,36 @@ from sad2xs.xsuite_helpers import (
     align_xsuite_twiss_with_sad_twiss,
     assert_xsuite_matches_sad_twiss,
     compute_s_sad,
-    plot_xsuite_sad_comparison)
+    plot_xsuite_sad_comparison,
+    DEFAULT_TWISS_TOLERANCES)
 
 # SAD's coupled beta/alpha (Edwards-Teng convention) map to these Xsuite columns
 EDWARDS_TENG_COLUMNS   = {
     "betx": "betx_edw_teng", "bety": "bety_edw_teng",
     "alfx": "alfx_edw_teng", "alfy": "alfy_edw_teng"}
 
+# SAD's coupling matrix R1-R4 map onto Xsuite's Edwards-Teng R-matrix columns
+# (R11/R12/R21/R22): confirmed by independent derivation in the dev/sad_coupling
+# investigation, both agree with SAD's own R1-R4 twiss output to tolerance.
+COUPLING_COLUMNS    = {
+    "R1": "r11_edw_teng", "R2": "r12_edw_teng",
+    "R3": "r21_edw_teng", "R4": "r22_edw_teng"}
+COUPLING_TOLERANCES = {column: dict(atol = 1E-4, rtol = 1E-3) for column in COUPLING_COLUMNS}
+
 ################################################################################
 # User Parameters
 ################################################################################
-SAD_LATTICE_PATH            = "lattices/fccee_sol.sad"
-REBUILT_SAD_LATTICE_PATH    = "lattices/fccee_sol_rebuilt.sad"
+SAD_LATTICE_PATH            = "lattices/fccee_coupled.sad"
 LINE_NAME                   = "RING"
 
 ################################################################################
 # Load Reference Data
 ################################################################################
-s2x.sad_helpers.rebuild_sad_lattice(
-    lattice_filepath            = SAD_LATTICE_PATH,
-    line_name                   = LINE_NAME,
-    additional_commands         = """
-LINE["DISFRIN", "ESL*"]     = 1;
-LINE["DISFRIN", "ESR*"]     = 1;
-LINE["DISFRIN", "ESCR*"]    = 1;
-LINE["DISFRIN", "ESCL*"]    = 1;
-LINE["F1", "ESL*"]          = 0;
-LINE["F1", "ESR*"]          = 0;
-LINE["F1", "ESCL*"]         = 0;
-LINE["F1", "ESCR*"]         = 0;""",
-    output_filepath             = REBUILT_SAD_LATTICE_PATH)
-
 tw_sad  = s2x.sad_helpers.twiss_sad(
-    lattice_filepath            = REBUILT_SAD_LATTICE_PATH,
+    lattice_filepath            = SAD_LATTICE_PATH,
     line_name                   = LINE_NAME,
     calc6d                      = False,
     closed                      = True,
-    rfsw                        = True,
     reverse_element_order       = False,
     reverse_survey_horizontal   = False,
     additional_commands         = "")
@@ -76,7 +68,7 @@ tw_sad  = s2x.sad_helpers.twiss_sad(
 # Convert Lattice
 ################################################################################
 line    = s2x.convert_sad_to_xsuite(
-    sad_lattice_path            = REBUILT_SAD_LATTICE_PATH,
+    sad_lattice_path            = SAD_LATTICE_PATH,
     line_name                   = LINE_NAME,
     excluded_elements           = None,
     user_multipole_replacements = None,
@@ -84,18 +76,8 @@ line    = s2x.convert_sad_to_xsuite(
     reverse_survey_horizontal   = False,
     reverse_charge_sign         = False,
     output_directory            = OUTPUT_DIR,
-    output_filename             = "fcc_sol",
-    output_header               = "FCC-ee LCC With Solenoid")
-
-########################################
-# Delete rebuilt line
-########################################
-os.remove(REBUILT_SAD_LATTICE_PATH)
-
-########################################
-# Get table
-########################################
-tt = line.get_table(attr = True)
+    output_filename             = "fcc_coupled",
+    output_header               = "FCC-ee Coupled Lattice")
 
 ########################################
 # Twiss (with ET to compare with SAD)
@@ -110,7 +92,7 @@ tw_xs["s_sad"]  = compute_s_sad(tw_xs)
 ########################################
 # Align Xsuite Twiss with SAD Twiss
 ########################################
-tw_xs_aligned, tw_sad_aligned   = align_xsuite_twiss_with_sad_twiss(
+tw_xs_aligned, tw_sad_aligned  = align_xsuite_twiss_with_sad_twiss(
     xsuite_twiss    = tw_xs,
     sad_twiss       = tw_sad,
     s_tol           = 1E-3)
@@ -122,7 +104,8 @@ if RUN_ASSERTS:
     assert_xsuite_matches_sad_twiss(
         xsuite_aligned          = tw_xs_aligned,
         sad_aligned             = tw_sad_aligned,
-        xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
+        tolerances              = {**DEFAULT_TWISS_TOLERANCES, **COUPLING_TOLERANCES},
+        xsuite_column_overrides = {**EDWARDS_TENG_COLUMNS, **COUPLING_COLUMNS})
 
 ################################################################################
 # Comparison Plots
@@ -137,45 +120,43 @@ plot_xsuite_sad_comparison(
     xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
 
 ########################################
-# IP1 Orbit
+# Coupling Matrix: SAD R1-R4 vs Xsuite Edwards-Teng
 ########################################
-plot_xsuite_sad_comparison(
-    xsuite_aligned          = tw_xs_aligned,
-    sad_aligned             = tw_sad_aligned,
-    xsuite_column_overrides = EDWARDS_TENG_COLUMNS,
-    groups                  = ["orbit_xy", "orbit_pxpy"],
-    ele_stop                = "QD0AR.1",
-    title_prefix            = "First IP")
+fig, axs    = plt.subplots(2, 2, figsize = (10, 8), sharex = True)
+axs         = axs.flatten()
 
-tt_ip1  = tt.rows[tt.s < 2.5]
-fig, ax = plt.subplots(figsize = (6, 3))
-ax.step(tt_ip1.s, tt_ip1.ks, where = "post", label = "XS")
-ax.set_xlabel("s [m]")
-ax.set_ylabel("ks")
-ax.legend()
-ax.grid()
-fig.suptitle("First IP: Solenoid Strength")
+for ax, (sad_column, xs_column) in zip(axs, COUPLING_COLUMNS.items()):
+    ax.plot(tw_sad_aligned.s, getattr(tw_sad_aligned, sad_column), label = "SAD", color = "red")
+    ax.plot(tw_xs_aligned.s, getattr(tw_xs_aligned, xs_column), label = "Xsuite (Edwards-Teng)", color = "black", linestyle = "--")
+    ax.set_title(sad_column)
+    ax.grid()
+
+axs[0].legend()
+fig.supxlabel("s [m]")
+fig.supylabel("Coupling [m]")
+fig.suptitle("FCC-ee Coupled Lattice: SAD R-matrix vs Xsuite Edwards-Teng")
+fig.align_labels()
 
 ########################################
-# IP2 Orbit
+# Beta Functions: Mais-Ripken vs Edwards-Teng
 ########################################
-plot_xsuite_sad_comparison(
-    xsuite_aligned          = tw_xs_aligned,
-    sad_aligned             = tw_sad_aligned,
-    xsuite_column_overrides = EDWARDS_TENG_COLUMNS,
-    groups                  = ["orbit_xy", "orbit_pxpy"],
-    ele_start               = "D01.2",
-    ele_stop                = "QD0AR.2",
-    title_prefix            = "Second IP")
+# Xsuite's plain betx/bety (Mais-Ripken mode decomposition) is not the
+# coupled-optics quantity SAD reports; only the Edwards-Teng columns agree.
+fig, axs    = plt.subplots(1, 2, figsize = (10, 4), sharex = True)
 
-tt_ip2  = tt.rows[(tt.s > 22662) & (tt.s < 22667)]
-fig, ax = plt.subplots(figsize = (6, 3))
-ax.step(tt_ip2.s, tt_ip2.ks, where = "post", label = "XS")
-ax.set_xlabel("s [m]")
-ax.set_ylabel("ks")
-ax.legend()
-ax.grid()
-fig.suptitle("Second IP: Solenoid Strength")
+for ax, (sad_column, plain_column, et_column) in zip(
+        axs, [("betx", "betx", "betx_edw_teng"), ("bety", "bety", "bety_edw_teng")]):
+    ax.plot(tw_sad_aligned.s, getattr(tw_sad_aligned, sad_column), label = "SAD", color = "red")
+    ax.plot(tw_xs_aligned.s, getattr(tw_xs_aligned, plain_column), label = "Xsuite (Mais-Ripken)", color = "blue", linestyle = ":")
+    ax.plot(tw_xs_aligned.s, getattr(tw_xs_aligned, et_column), label = "Xsuite (Edwards-Teng)", color = "black", linestyle = "--")
+    ax.set_title(sad_column)
+    ax.grid()
+
+axs[0].legend()
+fig.supxlabel("s [m]")
+fig.supylabel("Beta function [m]")
+fig.suptitle("FCC-ee Coupled Lattice: Mais-Ripken vs Edwards-Teng Beta Functions")
+fig.align_labels()
 
 ################################################################################
 # Show plots

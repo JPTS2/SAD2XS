@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-12
+Date:       2026-07-17
 """
 
 ################################################################################
@@ -29,14 +29,14 @@ def create_corrector_lattice_file_information(
     ########################################
     # Get information
     ########################################
-    hcorrs, vcorrs, scorrs, _, corr_name_dict = extract_corrector_information(line, line_table)
+    hcorrs, vcorrs, scorrs, _, corr_name_dict = extract_corrector_information(line, line_table, config)
 
     hcorr_lengths       = np.array(sorted(hcorrs.keys()))
-    hcorr_names         = generate_magnet_for_replication_names(hcorrs, "hcorr")
+    hcorr_names         = generate_magnet_for_replication_names(hcorrs, "hcorr", config.MAGNET_LENGTH_PRECISION)
     vcorr_lengths       = np.array(sorted(vcorrs.keys()))
-    vcorr_names         = generate_magnet_for_replication_names(vcorrs, "vcorr")
+    vcorr_names         = generate_magnet_for_replication_names(vcorrs, "vcorr", config.MAGNET_LENGTH_PRECISION)
     scorr_lengths       = np.array(sorted(scorrs.keys()))
-    scorr_names         = generate_magnet_for_replication_names(scorrs, "scorr")
+    scorr_names         = generate_magnet_for_replication_names(scorrs, "scorr", config.MAGNET_LENGTH_PRECISION)
 
     ########################################
     # Ensure there are correctors in the line
@@ -349,11 +349,11 @@ def create_corrector_optics_file_information(
     ########################################
     # Get information
     ########################################
-    hcorrs, vcorrs, scorrs, unique_corr_variables, _ = extract_corrector_information(line, line_table)
+    hcorrs, vcorrs, scorrs, unique_corr_variables, _ = extract_corrector_information(line, line_table, config)
 
-    hcorr_names         = generate_magnet_for_replication_names(hcorrs, "hcorr")
-    vcorr_names         = generate_magnet_for_replication_names(vcorrs, "vcorr")
-    scorr_names         = generate_magnet_for_replication_names(scorrs, "scorr")
+    hcorr_names         = generate_magnet_for_replication_names(hcorrs, "hcorr", config.MAGNET_LENGTH_PRECISION)
+    vcorr_names         = generate_magnet_for_replication_names(vcorrs, "vcorr", config.MAGNET_LENGTH_PRECISION)
+    scorr_names         = generate_magnet_for_replication_names(scorrs, "scorr", config.MAGNET_LENGTH_PRECISION)
 
     ########################################
     # Ensure there are correctors in the line

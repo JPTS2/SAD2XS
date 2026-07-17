@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       2026-07-17
 """
 
 ################################################################################
@@ -44,10 +44,11 @@ def create_octupole_lattice_file_information(
     octs, unique_oct_names = extract_multipole_information(
         line        = line,
         line_table  = line_table,
-        mode        = "Octupole")
+        mode        = "Octupole",
+        config      = config)
 
     oct_lengths    = np.array(sorted(octs.keys()))
-    oct_names      = generate_magnet_for_replication_names(octs, "oct")
+    oct_names      = generate_magnet_for_replication_names(octs, "oct", config.MAGNET_LENGTH_PRECISION)
 
     ########################################
     # Ensure there are octupoles in the line
@@ -187,7 +188,8 @@ def create_octupole_optics_file_information(
     _, unique_oct_names = extract_multipole_information(
         line        = line,
         line_table  = line_table,
-        mode        = "Octupole")
+        mode        = "Octupole",
+        config      = config)
 
     ########################################
     # Ensure there are octupoles in the line

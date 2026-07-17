@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       2026-07-17
 """
 
 ################################################################################
@@ -44,10 +44,11 @@ def create_sextupole_lattice_file_information(
     sexts, unique_sext_names = extract_multipole_information(
         line        = line,
         line_table  = line_table,
-        mode        = "Sextupole")
+        mode        = "Sextupole",
+        config      = config)
 
     sext_lengths    = np.array(sorted(sexts.keys()))
-    sext_names      = generate_magnet_for_replication_names(sexts, "sext")
+    sext_names      = generate_magnet_for_replication_names(sexts, "sext", config.MAGNET_LENGTH_PRECISION)
 
     ########################################
     # Ensure there are sextupoles in the line
@@ -187,7 +188,8 @@ def create_sextupole_optics_file_information(
     _, unique_sext_names = extract_multipole_information(
         line        = line,
         line_table  = line_table,
-        mode        = "Sextupole")
+        mode        = "Sextupole",
+        config      = config)
 
     ########################################
     # Ensure there are sextupoles in the line

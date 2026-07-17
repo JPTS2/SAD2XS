@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-17
 """
 
 ################################################################################
@@ -44,10 +44,11 @@ def create_solenoid_lattice_file_information(
     sols, unique_sol_names = extract_multipole_information(
         line        = line,
         line_table  = line_table,
-        mode        = "UniformSolenoid")
+        mode        = "UniformSolenoid",
+        config      = config)
 
     sol_lengths    = np.array(sorted(sols.keys()))
-    sol_names      = generate_magnet_for_replication_names(sols, "sol")
+    sol_names      = generate_magnet_for_replication_names(sols, "sol", config.MAGNET_LENGTH_PRECISION)
 
     ########################################
     # Ensure there are solenoids in the line
