@@ -49,6 +49,14 @@ rather than one serialised element or feature.
   - Rotation (rot_s_rad/chi3): `chi3_{name}` (1 test)
   All 23 tests expected to pass.
 
+- `test_magnet_length_precision.py` (5 tests) — base-element length
+  grouping/naming for replicated magnets: quad, bend, and corrector pairs
+  whose lengths differ by less than `Config.MAGNET_LENGTH_PRECISION` reload
+  without a base-element name collision, each keeping its own strength
+  (3 tests); quad and bend pairs whose lengths differ by more than
+  `MAGNET_LENGTH_PRECISION` stay on distinct base-element lengths, i.e. are
+  not over-merged (2 tests). All 5 tests expected to pass.
+
 ## Expected Failures
 
 None. All writer pipeline tests are expected to pass.
