@@ -1,6 +1,6 @@
 """
 ================================================================================
-Example 003: FCC-ee Solenoid Lattice Conversion
+Example 005: FCC-ee Solenoid Lattice Conversion
 ================================================================================
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
@@ -25,6 +25,7 @@ OUTPUT_DIR  = configure_example_runtime(
 
 import sad2xs as s2x
 s2x.set_log_level("info")
+import numpy as np
 import matplotlib.pyplot as plt
 
 from sad2xs.xsuite_helpers import (
@@ -62,7 +63,7 @@ LINE["F1", "ESCL*"]         = 0;
 LINE["F1", "ESCR*"]         = 0;""",
     output_filepath             = REBUILT_SAD_LATTICE_PATH)
 
-tw_sad  = s2x.sad_helpers.twiss_sad(
+twp_sad  = s2x.sad_helpers.twiss_sad(
     lattice_filepath            = REBUILT_SAD_LATTICE_PATH,
     line_name                   = LINE_NAME,
     calc6d                      = False,
@@ -71,11 +72,24 @@ tw_sad  = s2x.sad_helpers.twiss_sad(
     reverse_element_order       = False,
     reverse_survey_horizontal   = False,
     additional_commands         = "")
+twe_sad  = s2x.sad_helpers.twiss_sad(
+    lattice_filepath            = REBUILT_SAD_LATTICE_PATH,
+    line_name                   = LINE_NAME,
+    calc6d                      = False,
+    closed                      = True,
+    rfsw                        = True,
+    reverse_element_order       = False,
+    reverse_survey_horizontal   = True,
+    additional_commands         = "")
 
 ################################################################################
 # Convert Lattice
 ################################################################################
-line    = s2x.convert_sad_to_xsuite(
+
+########################################
+# Positron Ring
+########################################
+linep   = s2x.convert_sad_to_xsuite(
     sad_lattice_path            = REBUILT_SAD_LATTICE_PATH,
     line_name                   = LINE_NAME,
     excluded_elements           = None,
@@ -84,8 +98,25 @@ line    = s2x.convert_sad_to_xsuite(
     reverse_survey_horizontal   = False,
     reverse_charge_sign         = False,
     output_directory            = OUTPUT_DIR,
-    output_filename             = "fcc_sol",
-    output_header               = "FCC-ee LCC With Solenoid")
+    output_filename             = "fcc_sol_p",
+    output_header               = "FCC-ee LCC Solenoid Positron Ring")
+linep.replace_all_repeated_elements()
+
+########################################
+# Electron Ring
+########################################
+linee   = s2x.convert_sad_to_xsuite(
+    sad_lattice_path            = REBUILT_SAD_LATTICE_PATH,
+    line_name                   = LINE_NAME,
+    excluded_elements           = None,
+    user_multipole_replacements = None,
+    reverse_element_order       = False,
+    reverse_survey_horizontal   = True,
+    reverse_charge_sign         = True,
+    output_directory            = OUTPUT_DIR,
+    output_filename             = "fcc_sol_e",
+    output_header               = "FCC-ee LCC Solenoid Electron Ring")
+linee.replace_all_repeated_elements()
 
 ########################################
 # Delete rebuilt line
@@ -93,26 +124,41 @@ line    = s2x.convert_sad_to_xsuite(
 os.remove(REBUILT_SAD_LATTICE_PATH)
 
 ########################################
-# Get table
+# Get tables
 ########################################
-tt = line.get_table(attr = True)
+ttp = linep.get_table(attr = True)
+tte = linee.get_table(attr = True)
 
 ########################################
 # Twiss (with ET to compare with SAD)
 ########################################
-tw_xs   = line.twiss4d(coupling_edw_teng = True)
+twp_xs  = linep.twiss4d(coupling_edw_teng = True)
+twe_xs  = linee.twiss4d(coupling_edw_teng = True)
+
+########################################
+# Survey
+########################################
+svp = linep.survey(theta0 = 0 + 15E-3)
+sve = linee.survey(theta0 = -np.pi - 15E-3)
 
 ########################################
 # Compute SAD s
 ########################################
-tw_xs["s_sad"]  = compute_s_sad(tw_xs)
+twp_xs["s_sad"] = compute_s_sad(twp_xs)
+twe_xs["s_sad"] = compute_s_sad(twe_xs)
+svp["s_sad"]    = compute_s_sad(svp)
+sve["s_sad"]    = compute_s_sad(sve)
 
 ########################################
 # Align Xsuite Twiss with SAD Twiss
 ########################################
-tw_xs_aligned, tw_sad_aligned   = align_xsuite_twiss_with_sad_twiss(
-    xsuite_twiss    = tw_xs,
-    sad_twiss       = tw_sad,
+twp_xs_aligned, twp_sad_aligned    = align_xsuite_twiss_with_sad_twiss(
+    xsuite_twiss    = twp_xs,
+    sad_twiss       = twp_sad,
+    s_tol           = 1E-3)
+twe_xs_aligned, twe_sad_aligned    = align_xsuite_twiss_with_sad_twiss(
+    xsuite_twiss    = twe_xs,
+    sad_twiss       = twe_sad,
     s_tol           = 1E-3)
 
 ########################################
@@ -120,8 +166,12 @@ tw_xs_aligned, tw_sad_aligned   = align_xsuite_twiss_with_sad_twiss(
 ########################################
 if RUN_ASSERTS:
     assert_xsuite_matches_sad_twiss(
-        xsuite_aligned          = tw_xs_aligned,
-        sad_aligned             = tw_sad_aligned,
+        xsuite_aligned          = twp_xs_aligned,
+        sad_aligned             = twp_sad_aligned,
+        xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
+    assert_xsuite_matches_sad_twiss(
+        xsuite_aligned          = twe_xs_aligned,
+        sad_aligned             = twe_sad_aligned,
         xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
 
 ################################################################################
@@ -132,50 +182,49 @@ if RUN_ASSERTS:
 # General Comparison Plots
 ########################################
 plot_xsuite_sad_comparison(
-    xsuite_aligned          = tw_xs_aligned,
-    sad_aligned             = tw_sad_aligned,
+    xsuite_aligned          = twp_xs_aligned,
+    sad_aligned             = twp_sad_aligned,
     xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
+# plot_xsuite_sad_comparison(
+#     xsuite_aligned          = twe_xs_aligned,
+#     sad_aligned             = twe_sad_aligned,
+#     xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
 
 ########################################
-# IP1 Orbit
-########################################
-plot_xsuite_sad_comparison(
-    xsuite_aligned          = tw_xs_aligned,
-    sad_aligned             = tw_sad_aligned,
-    xsuite_column_overrides = EDWARDS_TENG_COLUMNS,
-    groups                  = ["orbit_xy", "orbit_pxpy"],
-    ele_stop                = "QD0AR.1",
-    title_prefix            = "First IP")
-
-tt_ip1  = tt.rows[tt.s < 2.5]
-fig, ax = plt.subplots(figsize = (6, 3))
-ax.step(tt_ip1.s, tt_ip1.ks, where = "post", label = "XS")
-ax.set_xlabel("s [m]")
-ax.set_ylabel("ks")
-ax.legend()
-ax.grid()
-fig.suptitle("First IP: Solenoid Strength")
-
-########################################
-# IP2 Orbit
+# IR Comparison Plots
 ########################################
 plot_xsuite_sad_comparison(
-    xsuite_aligned          = tw_xs_aligned,
-    sad_aligned             = tw_sad_aligned,
+    xsuite_aligned          = twp_xs_aligned,
+    sad_aligned             = twp_sad_aligned,
     xsuite_column_overrides = EDWARDS_TENG_COLUMNS,
-    groups                  = ["orbit_xy", "orbit_pxpy"],
-    ele_start               = "D01.2",
-    ele_stop                = "QD0AR.2",
-    title_prefix            = "Second IP")
+    ele_start               = "BC2.2",
+    ele_stop                = "LD2.3")
 
-tt_ip2  = tt.rows[(tt.s > 22662) & (tt.s < 22667)]
-fig, ax = plt.subplots(figsize = (6, 3))
-ax.step(tt_ip2.s, tt_ip2.ks, where = "post", label = "XS")
-ax.set_xlabel("s [m]")
-ax.set_ylabel("ks")
-ax.legend()
-ax.grid()
-fig.suptitle("Second IP: Solenoid Strength")
+########################################
+# Overall Survey
+########################################
+fig = plt.figure(figsize = (8, 4))
+plt.plot(svp.Z, svp.X, color = "r")
+plt.plot(sve.Z, sve.X, color = "b")
+plt.xlabel("Z [m]")
+plt.ylabel("X [m]")
+fig.suptitle("FCC-ee w/ Solenoid: Survey")
+fig.align_labels()
+fig.align_titles()
+
+########################################
+# IR Survey
+########################################
+fig = plt.figure(figsize = (8, 4))
+plt.plot(svp.Z, svp.X, color = "r")
+plt.plot(sve.Z, sve.X, color = "b")
+plt.xlabel("Z [m]")
+plt.ylabel("X [m]")
+plt.xlim( -2000, 2000)
+plt.ylim(-100, 10)
+fig.suptitle("FCC-ee w/ Solenoid: IR Survey")
+fig.align_labels()
+fig.align_titles()
 
 ################################################################################
 # Show plots
