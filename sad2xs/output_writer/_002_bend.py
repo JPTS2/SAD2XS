@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-12
+Date:       2026-07-17
 """
 
 ################################################################################
@@ -41,14 +41,14 @@ def create_bend_lattice_file_information(
     # Get information
     ########################################
     hbends, vbends, sbends, _, bend_name_dict = \
-        extract_bend_information(line, line_table)
+        extract_bend_information(line, line_table, config)
 
     hbend_lengths       = np.array(sorted(hbends.keys()))
-    hbend_names         = generate_magnet_for_replication_names(hbends, "hbend")
+    hbend_names         = generate_magnet_for_replication_names(hbends, "hbend", config.MAGNET_LENGTH_PRECISION)
     vbend_lengths       = np.array(sorted(vbends.keys()))
-    vbend_names         = generate_magnet_for_replication_names(vbends, "vbend")
+    vbend_names         = generate_magnet_for_replication_names(vbends, "vbend", config.MAGNET_LENGTH_PRECISION)
     sbend_lengths       = np.array(sorted(sbends.keys()))
-    sbend_names         = generate_magnet_for_replication_names(sbends, "sbend")
+    sbend_names         = generate_magnet_for_replication_names(sbends, "sbend", config.MAGNET_LENGTH_PRECISION)
 
     ########################################
     # Ensure there are bends in the line
@@ -366,11 +366,11 @@ def create_bend_optics_file_information(
     ########################################
     # Get information
     ########################################
-    hbends, vbends, sbends, unique_bend_variables, _ = extract_bend_information(line, line_table)
+    hbends, vbends, sbends, unique_bend_variables, _ = extract_bend_information(line, line_table, config)
 
-    hbend_names         = generate_magnet_for_replication_names(hbends, "hbend")
-    vbend_names         = generate_magnet_for_replication_names(vbends, "vbend")
-    sbend_names         = generate_magnet_for_replication_names(sbends, "sbend")
+    hbend_names         = generate_magnet_for_replication_names(hbends, "hbend", config.MAGNET_LENGTH_PRECISION)
+    vbend_names         = generate_magnet_for_replication_names(vbends, "vbend", config.MAGNET_LENGTH_PRECISION)
+    sbend_names         = generate_magnet_for_replication_names(sbends, "sbend", config.MAGNET_LENGTH_PRECISION)
 
     ########################################
     # Ensure there are bends in the line

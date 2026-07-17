@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-17
 """
 
 ################################################################################
@@ -44,10 +44,11 @@ def create_quadrupole_lattice_file_information(
     quads, unique_quad_names = extract_multipole_information(
         line        = line,
         line_table  = line_table,
-        mode        = "Quadrupole")
+        mode        = "Quadrupole",
+        config      = config)
 
     quad_lengths    = np.array(sorted(quads.keys()))
-    quad_names      = generate_magnet_for_replication_names(quads, "quad")
+    quad_names      = generate_magnet_for_replication_names(quads, "quad", config.MAGNET_LENGTH_PRECISION)
 
     ########################################
     # Ensure there are quadrupoles in the line
@@ -187,7 +188,8 @@ def create_quadrupole_optics_file_information(
     _, unique_quad_names = extract_multipole_information(
         line        = line,
         line_table  = line_table,
-        mode        = "Quadrupole")
+        mode        = "Quadrupole",
+        config      = config)
 
     ########################################
     # Ensure there are quadrupoles in the line

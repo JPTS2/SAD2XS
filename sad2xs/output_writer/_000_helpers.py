@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-14
+Date:       2026-07-17
 """
 
 ################################################################################
@@ -49,21 +49,31 @@ def get_variablename(element_name):
 ################################################################################
 # Elements for replication naming
 ################################################################################
-def generate_magnet_for_replication_names(length_dict, base_string):
+def quantize_length(length, precision):
+    """
+    Round a length to the nearest integer multiple of precision.
+
+    Base elements for replication are grouped and named by length: two
+    lengths that round to the same value share a single base element, since
+    no magnet is manufactured/measured to finer precision than this.
+    """
+    return round(length / precision) * precision
+
+def generate_magnet_for_replication_names(length_dict, base_string, precision):
     """
     To simplify the output, we create base magnets for replication
     This function generates the names for these base magnets
-    Convention based on magnet type and length in microns
+    Convention based on magnet type and length, expressed as an integer
+    number of `precision` units
 
     N.B. Two assumptions:
-    1. Lengths are rounded to the nearest micron
-    2. Lengths are less than 10m
+    1. length_dict keys are already quantized to `precision`
+    2. Lengths are less than 10m at 1E-9 precision (11-digit field)
     3. Lengths are non-negative
     """
     names           = []
     length_values	= np.array(list(length_dict.keys()))
-    length_values	= length_values * 1E9
-    length_values	= length_values.astype(int)
+    length_values	= np.round(length_values / precision).astype(int)
 
     for length in length_values:
         name = f"{base_string}{length:011d}"
@@ -114,12 +124,13 @@ def get_knl_string(knl_array):
 ########################################
 # Bends
 ########################################
-def extract_bend_information(line, line_table):
+def extract_bend_information(line, line_table, config):
     """
     Docstring for extract_bend_information
-    
+
     :param line: Description
     :param line_table: Description
+    :param config: Description
     """
 
     ########################################
@@ -157,7 +168,7 @@ def extract_bend_information(line, line_table):
     for bend in unique_bend_names:
 
         # Get the length and rotation of the bend
-        length		= line[bend].length
+        length		= quantize_length(line[bend].length, config.MAGNET_LENGTH_PRECISION)
         rot_s_rad	= line[bend].rot_s_rad
 
         ########################################
@@ -192,12 +203,13 @@ def extract_bend_information(line, line_table):
 ########################################
 # Correctors
 ########################################
-def extract_corrector_information(line, line_table):
+def extract_corrector_information(line, line_table, config):
     """
     Docstring for extract_corrector_information
-    
+
     :param line: Description
     :param line_table: Description
+    :param config: Description
     """
 
     ########################################
@@ -235,7 +247,7 @@ def extract_corrector_information(line, line_table):
     for corr in unique_corr_names:
 
         # Get the length and rotation of the corr
-        length		= line[corr].length
+        length		= quantize_length(line[corr].length, config.MAGNET_LENGTH_PRECISION)
         rot_s_rad	= line[corr].rot_s_rad
 
         ########################################
@@ -270,13 +282,14 @@ def extract_corrector_information(line, line_table):
 ########################################
 # Quadrupole/Sextupole/Octupole information
 ########################################
-def extract_multipole_information(line, line_table, mode):
+def extract_multipole_information(line, line_table, mode, config):
     """
     Docstring for extract_multipole_information
-    
+
     :param line: Description
     :param line_table: Description
     :param mode: Description
+    :param config: Description
     """
 
     ########################################
@@ -293,7 +306,7 @@ def extract_multipole_information(line, line_table, mode):
     ########################################
     magnets   = {}
     for magnet in unique_names:
-        length		= line[magnet].length
+        length		= quantize_length(line[magnet].length, config.MAGNET_LENGTH_PRECISION)
         if length not in magnets:
             magnets[length] = [magnet]
         else:

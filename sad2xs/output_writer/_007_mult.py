@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       2026-07-17
 """
 
 ################################################################################
@@ -45,10 +45,11 @@ def create_multipole_lattice_file_information(
     mults, unique_mult_names = extract_multipole_information(
         line        = line,
         line_table  = line_table,
-        mode        = "Multipole")
+        mode        = "Multipole",
+        config      = config)
 
     mult_lengths    = np.array(sorted(mults.keys()))
-    mult_names      = generate_magnet_for_replication_names(mults, "mult")
+    mult_names      = generate_magnet_for_replication_names(mults, "mult", config.MAGNET_LENGTH_PRECISION)
 
     ########################################
     # Ensure there are multipoles in the line
