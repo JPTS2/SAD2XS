@@ -37,7 +37,7 @@ class Config:
     _test_mode:                     bool            = False
     _replace_repeated_elements:     bool            = True
     _install_offset_markers:        bool            = True
-    _import_sad_bend_fringes:       bool            = False
+    _import_sad_bend_fringes:       bool            = True
 
     ############################################################################
     # Constants

@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-15
 """
 
 ################################################################################
@@ -18,12 +18,13 @@ logger  = logging.getLogger(__name__)
 ################################################################################
 # Component Reversal
 ################################################################################
-def create_reversed_component(component, environment):
+def create_reversed_component(component, environment, offset_marker_names = frozenset()):
     """
     Docstring for create_reversed_component
-    
+
     :param component: Description
     :param environment: Description
+    :param offset_marker_names: Lowercase MARK/MONI/BEAMBEAM names with a SAD OFFSET
     """
 
     assert component.startswith("-"), "Component must start with '-' to be reversed"
@@ -86,6 +87,14 @@ def create_reversed_component(component, environment):
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
+    # Offset Marker (Mark, Moni, BeamBeam all convert to xt.Marker)
+    ########################################
+    elif isinstance(environment.element_dict[component[1:]], xt.Marker) \
+            and component[1:].lower() in offset_marker_names:
+        # Here we need the - sign on the element to ID offset markers
+        environment.element_dict[component] = environment.element_dict[component[1:]]
+
+    ########################################
     # Drift, Quadrupole, Sextupole, Octupole, Multipole, Cavity, Marker, Aperture
     ########################################
     else:
@@ -111,6 +120,12 @@ def convert_lines(
     # Get the required data
     ########################################
     parsed_lines    = parsed_lattice_data["lines"]
+
+    offset_marker_names = {
+        name.lower()
+        for marker_type in ("mark", "moni", "beambeam")
+        for name, marker in parsed_lattice_data["elements"].get(marker_type, {}).items()
+        if "offset" in marker}
 
     ########################################
     # Convert lines
@@ -138,7 +153,7 @@ def convert_lines(
 
                 reverse_handled_components  = []
                 for component in reversed_line_elements:
-                    component   = create_reversed_component(component, environment)
+                    component   = create_reversed_component(component, environment, offset_marker_names)
                     reverse_handled_components.append(component)
 
                 environment.new_line(
@@ -177,7 +192,7 @@ def convert_lines(
 
                 reverse_handled_components  = []
                 for component in reversed_line_elements:
-                    component   = create_reversed_component(component, environment)
+                    component   = create_reversed_component(component, environment, offset_marker_names)
                     reverse_handled_components.append(component)
 
                 environment.new_line(
@@ -203,7 +218,7 @@ def convert_lines(
                         "SAD2XS internal error: please report it with the "
                         "lattice file.")
                 reverse_handled_components.append(
-                    create_reversed_component(component, environment))
+                    create_reversed_component(component, environment, offset_marker_names))
             else:
                 reverse_handled_components.append(component)
 

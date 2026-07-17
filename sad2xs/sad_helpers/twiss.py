@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-14
+Date:       2026-07-17
 """
 
 ################################################################################
@@ -278,8 +278,10 @@ abort;
     ########################################
     s_idx       = np.argsort(np.array(sad_twiss["S"]), kind = "stable")
     tw_sad      = xt.TwissTable({
-        "name":     np.array(sad_twiss["NAME"])[s_idx],
-        "s":        np.array(sad_twiss["S"])[s_idx],
+        "name":         np.array(sad_twiss["NAME"])[s_idx],
+        "s":            np.array(sad_twiss["S"])[s_idx],
+        "element_type": np.array(sad_twiss["TYPE"])[s_idx],
+        "length":       np.array(sad_twiss["L"])[s_idx],
         "x":        np.array(sad_twiss["X"])[s_idx],
         "px":       np.array(sad_twiss["PX"])[s_idx],
         "y":        np.array(sad_twiss["Y"])[s_idx],

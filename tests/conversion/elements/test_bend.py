@@ -3039,11 +3039,10 @@ def test_bend_offset_rotated_coupling_is_a_sad_side_artifact(write_lattice, tmp_
 # F1/FRINGE soft-edge fringe import (_import_sad_bend_fringes) -- see
 # docs/sad-behaviour.md and docs/design-decisions.md
 ################################################################################
-def test_bend_fringe_import_defaults_off(write_lattice, tmp_path):
+def test_bend_fringe_import_defaults_on(write_lattice, tmp_path):
     """
-    Without _import_sad_bend_fringes, F1/FRINGE on a BEND should have no
-    effect on the converted xt.Bend -- edge_entry_fint/hgap stay at
-    Xsuite's own defaults, same as if F1/FRINGE were never set.
+    _import_sad_bend_fringes defaults to True -- F1/FRINGE on a BEND should
+    populate edge_entry_fint/hgap without needing to pass the flag.
     """
     lattice_text = """\
     MOMENTUM    = 1.0 GEV;
@@ -3060,7 +3059,7 @@ def test_bend_fringe_import_defaults_off(write_lattice, tmp_path):
 
     LINE        TEST_LINE   = (START TEST_BEND END);
     """
-    lattice_path = write_lattice(lattice_text, filename = "bend_fringe_import_default_off.sad")
+    lattice_path = write_lattice(lattice_text, filename = "bend_fringe_import_default_on.sad")
 
     line = s2x.convert_sad_to_xsuite(
         sad_lattice_path    = str(lattice_path),
@@ -3069,9 +3068,44 @@ def test_bend_fringe_import_defaults_off(write_lattice, tmp_path):
         _test_mode          = True)
 
     bend = line["test_bend"]
+    assert bend.edge_entry_fint == pytest.approx(0.04) and bend.edge_entry_hgap == pytest.approx(1 / 12), (
+        "F1/FRINGE should be imported by default (_import_sad_bend_fringes "
+        "defaults to True) -- edge_entry_fint/hgap should be populated from F1.")
+
+def test_bend_fringe_import_explicit_off(write_lattice, tmp_path):
+    """
+    With _import_sad_bend_fringes explicitly disabled, F1/FRINGE on a BEND
+    should have no effect on the converted xt.Bend -- edge_entry_fint/hgap
+    stay at Xsuite's own defaults, same as if F1/FRINGE were never set.
+    """
+    lattice_text = """\
+    MOMENTUM    = 1.0 GEV;
+
+    BEND        TEST_BEND   = (
+        L       = 1.2
+        ANGLE   = 0.08
+        F1      = 0.04
+        FRINGE  = 1
+    );
+
+    MARK        START       = ()
+                END         = ();
+
+    LINE        TEST_LINE   = (START TEST_BEND END);
+    """
+    lattice_path = write_lattice(lattice_text, filename = "bend_fringe_import_explicit_off.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path            = str(lattice_path),
+        output_directory            = "N/A",
+        _verbose                    = False,
+        _test_mode                  = True,
+        _import_sad_bend_fringes    = False)
+
+    bend = line["test_bend"]
     assert bend.edge_entry_fint == 0.0 and bend.edge_entry_hgap == 0.0, (
-        "F1/FRINGE should be ignored by default (_import_sad_bend_fringes "
-        "defaults to False) -- edge_entry_fint/hgap should stay at "
+        "F1/FRINGE should be ignored when _import_sad_bend_fringes is "
+        "explicitly disabled -- edge_entry_fint/hgap should stay at "
         "Xsuite's own defaults, not be populated from F1.")
 
 @pytest.mark.parametrize("fringe, entry_active, exit_active", [(-1, True, False), (-2, False, True)])

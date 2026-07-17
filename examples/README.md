@@ -30,7 +30,7 @@ Some examples also create a temporary rebuilt SAD lattice under `examples/lattic
 - `002_fccee_tt_collimation.py`: convert and compare a public tt collimation lattice.
 - `003_fccee_sol.py`: rebuild, convert, and compare a public solenoid lattice.
 - `004_fccee_sol_e-e+.py`: compare positron and electron-ring solenoid conversions.
-- `_example_helpers.py`: runtime setup, plotting, and comparison helpers shared by the examples.
+- `_runtime.py`: runtime setup (working directory, output folder) shared by the examples. Plotting and comparison helpers live in `sad2xs.xsuite_helpers`, not a local file.
 - `lattices/`: public SAD lattice inputs used by the examples.
 
 ## Notes

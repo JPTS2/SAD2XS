@@ -3,7 +3,7 @@
 =============================================
 Author(s):  John P T Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-16
 """
 
 ################################################################################
@@ -87,11 +87,13 @@ length   = line.get_length()
 # Install Markers
 ############################################################
 marker_insertions   = []
+attempted_markers   = []
 for marker, insert_at_s_values in MARKER_POSITIONS.items():
     for insert_at_s in insert_at_s_values:
         if (length - insert_at_s) > {config.MARKER_INSERTION_TOLERANCE:.2E}:
             marker_insertions.append(
                 env.place(name = marker, at = insert_at_s))
+            attempted_markers.append(marker)
         else:
             line.append_element(name = marker)
 try:
@@ -99,9 +101,13 @@ try:
 except AssertionError as err:
 """
         # The generated file is a standalone script: report the data loss
-        # unconditionally when it is run.
+        # unconditionally when it is run, naming the specific markers lost
+        # so it's clear which comparisons downstream are missing them.
         output_string += """\
-    print("Couldn't insert all the markers. Usually this is because of negative drifts")
+    missing_markers = sorted(set(attempted_markers) - set(line.element_names))
+    print(
+        f"Couldn't insert {len(missing_markers)} offset marker(s), usually "
+        f"because of negative drifts: {missing_markers}")
     print(err)
 """
 

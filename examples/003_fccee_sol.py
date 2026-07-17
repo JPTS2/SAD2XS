@@ -9,20 +9,14 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-07
+Date:       2026-07-17
 ================================================================================
 """
 ################################################################################
 # Required Packages
 ################################################################################
 import os
-from _example_helpers import (
-    DEFAULT_MIN_MATCHED_ELEMENTS,
-    DEFAULT_OUTPUT_DIR,
-    EDWARDS_TENG_COLUMNS,
-    assert_twiss_matches_sad,
-    configure_example_runtime,
-    create_comparison_plots)
+from _runtime import DEFAULT_OUTPUT_DIR, configure_example_runtime
 
 SHOW_PLOTS  = globals().get("SHOW_PLOTS", True)
 RUN_ASSERTS = globals().get("RUN_ASSERTS", True)
@@ -31,8 +25,18 @@ OUTPUT_DIR  = configure_example_runtime(
 
 import sad2xs as s2x
 s2x.set_log_level("info")
-import numpy as np
 import matplotlib.pyplot as plt
+
+from sad2xs.xsuite_helpers import (
+    align_xsuite_twiss_with_sad_twiss,
+    assert_xsuite_matches_sad_twiss,
+    compute_s_sad,
+    plot_xsuite_sad_comparison)
+
+# SAD's coupled beta/alpha (Edwards-Teng convention) map to these Xsuite columns
+EDWARDS_TENG_COLUMNS   = {
+    "betx": "betx_edw_teng", "bety": "bety_edw_teng",
+    "alfx": "alfx_edw_teng", "alfy": "alfy_edw_teng"}
 
 ################################################################################
 # User Parameters
@@ -94,33 +98,31 @@ os.remove(REBUILT_SAD_LATTICE_PATH)
 tt = line.get_table(attr = True)
 
 ########################################
-# Initial Twiss
+# Twiss (with ET to compare with SAD)
 ########################################
-# SAD reports coupled beta/alpha in the Edwards-Teng convention.
-tw      = line.twiss4d(coupling_edw_teng = True)
+tw_xs   = line.twiss4d(coupling_edw_teng = True)
 
 ########################################
-# Calculate SAD s
+# Compute SAD s
 ########################################
-ds              = np.concatenate([[0], tw.s[1:] - tw.s[:-1]])
-dzeta           = np.concatenate([[0], tw.zeta[1:] - tw.zeta[:-1]])
-# Ignore the shift_zeta at TimeDelay elements
-zeta_shifts     = tt.element_type == "TimeDelay"
-zeta_shifts     = np.concatenate([[0], zeta_shifts[:-1]])
-dzeta           = np.where(zeta_shifts, 0, dzeta)
+tw_xs["s_sad"]  = compute_s_sad(tw_xs)
 
-s_sad           = np.zeros_like(tw.s)
-for i in range(1, len(s_sad)):
-    s_sad[i]    = s_sad[i-1] + ds[i] - dzeta[i]
-tw["s_sad"]     = s_sad
+########################################
+# Align Xsuite Twiss with SAD Twiss
+########################################
+tw_xs_aligned, tw_sad_aligned   = align_xsuite_twiss_with_sad_twiss(
+    xsuite_twiss    = tw_xs,
+    sad_twiss       = tw_sad,
+    s_tol           = 1E-3)
 
+########################################
+# Run comparison assertions
+########################################
 if RUN_ASSERTS:
-    assert_twiss_matches_sad(
-        line                 = line,
-        twiss_xsuite         = tw,
-        twiss_sad            = tw_sad,
-        min_matched_elements = DEFAULT_MIN_MATCHED_ELEMENTS,
-        xsuite_columns       = EDWARDS_TENG_COLUMNS)
+    assert_xsuite_matches_sad_twiss(
+        xsuite_aligned          = tw_xs_aligned,
+        sad_aligned             = tw_sad_aligned,
+        xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
 
 ################################################################################
 # Comparison Plots
@@ -129,84 +131,51 @@ if RUN_ASSERTS:
 ########################################
 # General Comparison Plots
 ########################################
-create_comparison_plots(
-    tw,
-    tw_sad,
-    xsuite_columns = EDWARDS_TENG_COLUMNS)
+plot_xsuite_sad_comparison(
+    xsuite_aligned          = tw_xs_aligned,
+    sad_aligned             = tw_sad_aligned,
+    xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
 
 ########################################
 # IP1 Orbit
 ########################################
-tw_ip1      = tw.rows[tw.s < 2.5]
-tw_sad_ip1  = tw_sad.rows[tw_sad.s < 2.5]
-tt_ip1      = tt.rows[tt.s < 2.5]
+plot_xsuite_sad_comparison(
+    xsuite_aligned          = tw_xs_aligned,
+    sad_aligned             = tw_sad_aligned,
+    xsuite_column_overrides = EDWARDS_TENG_COLUMNS,
+    groups                  = ["orbit_xy", "orbit_pxpy"],
+    ele_stop                = "QD0AR.1",
+    title_prefix            = "First IP")
 
-fig, axs = plt.subplots(3, 2, figsize = (12, 8), sharex = True)
-
-axs[0, 0].plot(tw_sad_ip1.s, tw_sad_ip1.x, label = "SAD", c = "r")
-axs[0, 0].plot(tw_ip1.s_sad, tw_ip1.x, label = "XS", c = "b", linestyle = "--")
-
-axs[0, 1].plot(tw_sad_ip1.s, tw_sad_ip1.px, label = "SAD", c = "r")
-axs[0, 1].plot(tw_ip1.s_sad, tw_ip1.px, label = "XS", c = "b", linestyle = "--")
-
-axs[1, 0].plot(tw_sad_ip1.s, tw_sad_ip1.y, label = "SAD", c = "r")
-axs[1, 0].plot(tw_ip1.s_sad, tw_ip1.y, label = "XS", c = "b", linestyle = "--")
-
-axs[1, 1].plot(tw_sad_ip1.s, tw_sad_ip1.py, label = "SAD", c = "r")
-axs[1, 1].plot(tw_ip1.s_sad, tw_ip1.py, label = "XS", c = "b", linestyle = "--")
-
-axs[2, 0].step(tt_ip1.s, tt_ip1.ks, where = "post", label = "XS")
-axs[2, 1].step(tt_ip1.s, tt_ip1.ks, where = "post", label = "XS")
-
-fig.supxlabel("s [m]")
-axs[0, 0].set_ylabel("x [m]")
-axs[1, 0].set_ylabel("y [m]")
-axs[2, 0].set_ylabel("ks")
-axs[0, 1].set_ylabel("px")
-axs[1, 1].set_ylabel("py")
-axs[2, 1].set_ylabel("ks")
-fig.suptitle("First IP")
-
-for ax in axs.flat:
-    ax.legend()
-    ax.grid()
+tt_ip1  = tt.rows[tt.s < 2.5]
+fig, ax = plt.subplots(figsize = (6, 3))
+ax.step(tt_ip1.s, tt_ip1.ks, where = "post", label = "XS")
+ax.set_xlabel("s [m]")
+ax.set_ylabel("ks")
+ax.legend()
+ax.grid()
+fig.suptitle("First IP: Solenoid Strength")
 
 ########################################
 # IP2 Orbit
 ########################################
-tw_ip2      = tw.rows[(tw.s > 22662) & (tw.s < 22667)]
-tw_sad_ip2  = tw_sad.rows[(tw_sad.s > 22662) & (tw_sad.s < 22667)]
-tt_ip2      = tt.rows[(tt.s > 22662) & (tt.s < 22667)]
+plot_xsuite_sad_comparison(
+    xsuite_aligned          = tw_xs_aligned,
+    sad_aligned             = tw_sad_aligned,
+    xsuite_column_overrides = EDWARDS_TENG_COLUMNS,
+    groups                  = ["orbit_xy", "orbit_pxpy"],
+    ele_start               = "D01.2",
+    ele_stop                = "QD0AR.2",
+    title_prefix            = "Second IP")
 
-fig, axs = plt.subplots(3, 2, figsize = (12, 8), sharex = True)
-
-axs[0, 0].plot(tw_sad_ip2.s, tw_sad_ip2.x, label = "SAD", c = "r")
-axs[0, 0].plot(tw_ip2.s, tw_ip2.x, label = "XS", c = "b", linestyle = "--")
-
-axs[0, 1].plot(tw_sad_ip2.s, tw_sad_ip2.px, label = "SAD", c = "r")
-axs[0, 1].plot(tw_ip2.s, tw_ip2.px, label = "XS", c = "b", linestyle = "--")
-
-axs[1, 0].plot(tw_sad_ip2.s, tw_sad_ip2.y, label = "SAD", c = "r")
-axs[1, 0].plot(tw_ip2.s, tw_ip2.y, label = "XS", c = "b", linestyle = "--")
-
-axs[1, 1].plot(tw_sad_ip2.s, tw_sad_ip2.py, label = "SAD", c = "r")
-axs[1, 1].plot(tw_ip2.s, tw_ip2.py, label = "XS", c = "b", linestyle = "--")
-
-axs[2, 0].step(tt_ip2.s, tt_ip2.ks, where = "post", label = "XS")
-axs[2, 1].step(tt_ip2.s, tt_ip2.ks, where = "post", label = "XS")
-
-fig.supxlabel("s [m]")
-axs[0, 0].set_ylabel("x [m]")
-axs[1, 0].set_ylabel("y [m]")
-axs[2, 0].set_ylabel("ks")
-axs[0, 1].set_ylabel("px")
-axs[1, 1].set_ylabel("py")
-axs[2, 1].set_ylabel("ks")
-fig.suptitle("Second IP")
-
-for ax in axs.flat:
-    ax.legend()
-    ax.grid()
+tt_ip2  = tt.rows[(tt.s > 22662) & (tt.s < 22667)]
+fig, ax = plt.subplots(figsize = (6, 3))
+ax.step(tt_ip2.s, tt_ip2.ks, where = "post", label = "XS")
+ax.set_xlabel("s [m]")
+ax.set_ylabel("ks")
+ax.legend()
+ax.grid()
+fig.suptitle("Second IP: Solenoid Strength")
 
 ################################################################################
 # Show plots
