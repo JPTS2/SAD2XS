@@ -9,20 +9,14 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-07
+Date:       2026-07-17
 ================================================================================
 """
 ################################################################################
 # Required Packages
 ################################################################################
 import os
-from _example_helpers import (
-    DEFAULT_MIN_MATCHED_ELEMENTS,
-    DEFAULT_OUTPUT_DIR,
-    EDWARDS_TENG_COLUMNS,
-    assert_twiss_matches_sad,
-    configure_example_runtime,
-    create_comparison_plots)
+from _runtime import DEFAULT_OUTPUT_DIR, configure_example_runtime
 
 SHOW_PLOTS  = globals().get("SHOW_PLOTS", True)
 RUN_ASSERTS = globals().get("RUN_ASSERTS", True)
@@ -33,6 +27,17 @@ import sad2xs as s2x
 s2x.set_log_level("info")
 import numpy as np
 import matplotlib.pyplot as plt
+
+from sad2xs.xsuite_helpers import (
+    align_xsuite_twiss_with_sad_twiss,
+    assert_xsuite_matches_sad_twiss,
+    compute_s_sad,
+    plot_xsuite_sad_comparison)
+
+# SAD's coupled beta/alpha (Edwards-Teng convention) map to these Xsuite columns
+EDWARDS_TENG_COLUMNS   = {
+    "betx": "betx_edw_teng", "bety": "bety_edw_teng",
+    "alfx": "alfx_edw_teng", "alfy": "alfy_edw_teng"}
 
 ################################################################################
 # User Parameters
@@ -118,48 +123,85 @@ linee.replace_all_repeated_elements()
 ########################################
 os.remove(REBUILT_SAD_LATTICE_PATH)
 
-################################################################################
-# Twiss
-################################################################################
-# SAD reports coupled beta/alpha in the Edwards-Teng convention.
-twp = linep.twiss4d(coupling_edw_teng = True)
-twe = linee.twiss4d(coupling_edw_teng = True)
+########################################
+# Get tables
+########################################
+ttp = linep.get_table(attr = True)
+tte = linee.get_table(attr = True)
 
-if RUN_ASSERTS:
-    assert_twiss_matches_sad(
-        line                 = linep,
-        twiss_xsuite         = twp,
-        twiss_sad            = twp_sad,
-        min_matched_elements = DEFAULT_MIN_MATCHED_ELEMENTS,
-        xsuite_columns       = EDWARDS_TENG_COLUMNS)
-    assert_twiss_matches_sad(
-        line                 = linee,
-        twiss_xsuite         = twe,
-        twiss_sad            = twe_sad,
-        min_matched_elements = DEFAULT_MIN_MATCHED_ELEMENTS,
-        xsuite_columns       = EDWARDS_TENG_COLUMNS)
+########################################
+# Twiss (with ET to compare with SAD)
+########################################
+twp_xs  = linep.twiss4d(coupling_edw_teng = True)
+twe_xs  = linee.twiss4d(coupling_edw_teng = True)
 
-################################################################################
+########################################
 # Survey
-################################################################################
+########################################
 svp = linep.survey(theta0 = 0 + 15E-3)
 sve = linee.survey(theta0 = -np.pi - 15E-3)
 
-print("First IP")
-print(svp.rows["ip.0"])
-print(sve.rows["ip.0"])
-print("Second IP")
-print(svp.rows["ip.2"])
-print(sve.rows["ip.6"])
-print("Third IP")
-print(svp.rows["ip.4"])
-print(sve.rows["ip.4"])
-print("Fourth IP")
-print(svp.rows["ip.6"])
-print(sve.rows["ip.2"])
+########################################
+# Compute SAD s
+########################################
+twp_xs["s_sad"] = compute_s_sad(twp_xs)
+twe_xs["s_sad"] = compute_s_sad(twe_xs)
+svp["s_sad"]    = compute_s_sad(svp)
+sve["s_sad"]    = compute_s_sad(sve)
 
 ########################################
-# Overall Comparison
+# Align Xsuite Twiss with SAD Twiss
+########################################
+twp_xs_aligned, twp_sad_aligned    = align_xsuite_twiss_with_sad_twiss(
+    xsuite_twiss    = twp_xs,
+    sad_twiss       = twp_sad,
+    s_tol           = 1E-3)
+twe_xs_aligned, twe_sad_aligned    = align_xsuite_twiss_with_sad_twiss(
+    xsuite_twiss    = twe_xs,
+    sad_twiss       = twe_sad,
+    s_tol           = 1E-3)
+
+########################################
+# Run comparison assertions
+########################################
+if RUN_ASSERTS:
+    assert_xsuite_matches_sad_twiss(
+        xsuite_aligned          = twp_xs_aligned,
+        sad_aligned             = twp_sad_aligned,
+        xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
+    assert_xsuite_matches_sad_twiss(
+        xsuite_aligned          = twe_xs_aligned,
+        sad_aligned             = twe_sad_aligned,
+        xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
+
+################################################################################
+# Comparison Plots
+################################################################################
+
+########################################
+# General Comparison Plots
+########################################
+plot_xsuite_sad_comparison(
+    xsuite_aligned          = twp_xs_aligned,
+    sad_aligned             = twp_sad_aligned,
+    xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
+# plot_xsuite_sad_comparison(
+#     xsuite_aligned          = twe_xs_aligned,
+#     sad_aligned             = twe_sad_aligned,
+#     xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
+
+########################################
+# IR Comparison Plots
+########################################
+plot_xsuite_sad_comparison(
+    xsuite_aligned          = twp_xs_aligned,
+    sad_aligned             = twp_sad_aligned,
+    xsuite_column_overrides = EDWARDS_TENG_COLUMNS,
+    ele_start               = "BC2.2",
+    ele_stop                = "LD2.3")
+
+########################################
+# Overall Survey
 ########################################
 fig = plt.figure(figsize = (8, 4))
 plt.plot(svp.Z, svp.X, color = "r")
@@ -171,7 +213,7 @@ fig.align_labels()
 fig.align_titles()
 
 ########################################
-# IR Comparison
+# IR Survey
 ########################################
 fig = plt.figure(figsize = (8, 4))
 plt.plot(svp.Z, svp.X, color = "r")
@@ -183,23 +225,6 @@ plt.ylim(-100, 10)
 fig.suptitle("FCC-ee w/ Solenoid: IR Survey")
 fig.align_labels()
 fig.align_titles()
-
-################################################################################
-# Twiss comparison subsection
-################################################################################
-twp_ip      = twp.rows[
-    (twp.s > (twp["s", "ip.2"] - 20)) & \
-     (twp.s < (twp["s", "ip.2"] + 20))]
-twp_sad_ip  = twp_sad.rows[
-    (twp_sad.s > (twp_sad["s", "IP.3"] - 20)) & \
-     (twp_sad.s < (twp_sad["s", "IP.3"] + 20))]
-
-create_comparison_plots(
-    twp_ip,
-    twp_sad_ip,
-    suptitle        = "FCC-ee w/ Solenoid",
-    zero_tol        = 1E-10,
-    xsuite_columns  = EDWARDS_TENG_COLUMNS)
 
 ################################################################################
 # Show plots
