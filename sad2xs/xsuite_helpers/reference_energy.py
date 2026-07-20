@@ -27,7 +27,21 @@ import numpy as np
 # Float from Xtrack
 ################################################################################
 def _as_float(value):
-    """Return a Python float from a scalar on any Xobjects context."""
+    """
+    Return a Python float from a scalar on any Xobjects context.
+
+    Parameters
+    ----------
+    value : Any
+        A scalar value, possibly an Xobjects-context array element
+        (anything with a `.get()` method) or a 0-d/1-element numpy
+        array.
+
+    Returns
+    -------
+    float
+        `value` as a plain Python float.
+    """
     if hasattr(value, "get"):
         value = value.get()
     return float(np.asarray(value))
@@ -42,14 +56,36 @@ def _find_cavity_anchors(line, table_names, element_types):
 
     Raises ValueError if no cavity is found, or if any cavity is a
     repeated placement of a shared element definition -- see
-    install_reference_energy_updates's docstring for what that means and
-    why both possible orderings of resolving it are detected here. Three
-    complementary signals catch it: an unsliced Cavity row's own table name
-    carries the repeat directly ("cav::N"); a sliced cavity's entry/exit
-    markers repeat in line.element_names (the slices themselves don't, so
-    they can't be used); and, if repeats were resolved only after slicing,
-    two distinct exit markers still collapse to the same base name once
-    each one's own per-placement suffix is stripped.
+    `install_reference_energy_updates`'s docstring for what that means
+    and why both possible orderings of resolving it are detected here.
+    Three complementary signals catch it: an unsliced Cavity row's own
+    table name carries the repeat directly ("cav::N"); a sliced
+    cavity's entry/exit markers repeat in `line.element_names` (the
+    slices themselves don't, so they can't be used); and, if repeats
+    were resolved only after slicing, two distinct exit markers still
+    collapse to the same base name once each one's own per-placement
+    suffix is stripped.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The line the table was built from.
+    table_names : list of str
+        Element names from `line.get_table()`, excluding the final
+        synthetic row.
+    element_types : sequence
+        The corresponding `element_type` values from the same table.
+
+    Returns
+    -------
+    dict
+        `{cavity_name: anchor_name}`, in lattice order.
+
+    Raises
+    ------
+    ValueError
+        If no cavity is found, or if any cavity is a repeated
+        placement of a shared element definition.
     """
     slice_types         = {
         "ThinSliceCavity",
@@ -146,6 +182,15 @@ def install_reference_energy_updates(line, *, s_tol = 1E-6):
     xt.Table
         One row per logical cavity: name, s, and the names of the
         installed energy_update/zeta_update elements.
+
+    Raises
+    ------
+    ValueError
+        If no cavities are found, a cavity is a repeated placement of
+        a shared element definition, or an element name collision is
+        found.
+    NotImplementedError
+        If a cavity uses absolute RF timing (`absolute_time=True`).
     """
 
     ########################################
@@ -276,6 +321,18 @@ def update_reference_energy_updates(
         One row per logical cavity: name, s, the configured Delta_p0c and
         zeta_shift, and the pilot's delta/zeta/p0c immediately before and
         after each cavity.
+
+    Raises
+    ------
+    ValueError
+        If no installed reference updates are found, an
+        energy/zeta-update pair is missing its partner or misordered,
+        or (when `verify` is True) the entrance particle does not have
+        delta=zeta=0.
+    RuntimeError
+        If, after configuring a cavity's updates, the pilot's
+        delta/zeta is not zero within `atol` (only checked when
+        `verify` is True).
     """
 
     ########################################

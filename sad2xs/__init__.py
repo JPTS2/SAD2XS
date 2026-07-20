@@ -46,6 +46,29 @@ from . import xsuite_helpers
 ################################################################################
 # Has optional dependencies, so lazy import (PEP 562).
 def __getattr__(name):
+    """
+    Lazily import `sad_helpers` on first access (PEP 562).
+
+    `sad_helpers` depends on a working SAD executable and is not required
+    for the core converter, so it is only imported the first time
+    ``sad2xs.sad_helpers`` is accessed rather than eagerly at package
+    import time.
+
+    Parameters
+    ----------
+    name : str
+        Attribute name being accessed on the `sad2xs` package.
+
+    Returns
+    -------
+    module
+        The imported `sad_helpers` submodule.
+
+    Raises
+    ------
+    AttributeError
+        If `name` is not `"sad_helpers"`.
+    """
     if name == "sad_helpers":
         module = importlib.import_module(".sad_helpers", __name__)
         globals()["sad_helpers"] = module

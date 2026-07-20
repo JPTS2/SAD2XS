@@ -34,18 +34,36 @@ logger  = logging.getLogger(__name__)
 
 def _split_element_bodies(element_section: str, line_no: int | None = None) -> list[str]:
     """
-    Split a raw element section into individual element definition strings,
-    correctly handling nested parentheses in parameter values.
+    Split a raw element section into individual element definition strings.
 
-    Each element definition has the form 'NAME=(param1 param2 ...)'. A naive
-    split on ')' breaks when a parameter value itself contains parentheses —
-    e.g. 'SQRT(L0)' or '(L0 + DL) / 2'. This function tracks parenthesis
-    depth and only treats a ')' as a definition boundary when it closes the
-    outermost wrapper, i.e. when depth returns to zero.
+    Correctly handles nested parentheses in parameter values. Each
+    element definition has the form 'NAME=(param1 param2 ...)'. A naive
+    split on ')' breaks when a parameter value itself contains
+    parentheses -- e.g. 'SQRT(L0)' or '(L0 + DL) / 2'. This function
+    tracks parenthesis depth and only treats a ')' as a definition
+    boundary when it closes the outermost wrapper, i.e. when depth
+    returns to zero.
 
-    Example:
-        Input:  ' d1=(l=sqrt(l0)) d2=(l=1.0)'
-        Output: ['d1=(l=sqrt(l0))', 'd2=(l=1.0)']
+    Parameters
+    ----------
+    element_section : str
+        Raw text of a single element-type section (e.g. all `QUAD`
+        definitions concatenated together).
+    line_no : int or None, optional
+        Source line number the section starts on, used only to prefix
+        error messages. Defaults to None.
+
+    Returns
+    -------
+    list of str
+        One string per element definition, e.g.
+        ``['d1=(l=sqrt(l0))', 'd2=(l=1.0)']`` for the input
+        ``' d1=(l=sqrt(l0)) d2=(l=1.0)'``.
+
+    Raises
+    ------
+    ValueError
+        If a closing ')' has no matching '('.
     """
     element_definitions = []
     current_definition  = []
@@ -88,9 +106,26 @@ def split_element_parameters(ele_vars: str) -> list[tuple[str, str]]:
     """
     Split an element parameter string into complete name/value pairs.
 
-    SAD element values can be arithmetic expressions with spaces. Splitting the
-    whole parameter string on whitespace would break expressions such as
-    `l=l0 + dl`. This function instead splits at parameter assignments.
+    SAD element values can be arithmetic expressions containing spaces.
+    Splitting the whole parameter string on whitespace would break
+    expressions such as ``l=l0 + dl``. This function instead splits at
+    parameter assignments (an identifier followed by '=').
+
+    Parameters
+    ----------
+    ele_vars : str
+        The element's raw parameter text, e.g. ``"l=1.0 k1=k0 + dl"``.
+
+    Returns
+    -------
+    list of tuple of (str, str)
+        `(name, value)` pairs in the order they appear.
+
+    Raises
+    ------
+    ValueError
+        If `ele_vars` is non-empty but contains no `name = value`
+        assignment, or if a parameter has no value after its '='.
     """
     parameters = []
     matches = list(ELEMENT_PARAMETER_PATTERN.finditer(ele_vars))
@@ -125,9 +160,24 @@ def split_element_parameters(ele_vars: str) -> list[tuple[str, str]]:
 ################################################################################
 def _extract_scalar_global(section: str, keyword: str) -> str:
     """
-    Strip a scalar global's keyword and all whitespace/assignment characters
-    from its section, leaving the bare value text (e.g. 'momentum = 1.0 gev'
-    with keyword 'momentum' -> '1.0gev').
+    Strip a scalar global's keyword and formatting from its section.
+
+    Removes `keyword` and all whitespace/assignment characters, leaving
+    the bare value text (e.g. 'momentum = 1.0 gev' with keyword
+    'momentum' -> '1.0gev').
+
+    Parameters
+    ----------
+    section : str
+        The raw global-declaration section text.
+    keyword : str
+        The global's keyword to strip (e.g. "momentum", "mass").
+
+    Returns
+    -------
+    str
+        The bare value text, with `keyword` and all whitespace/'='
+        characters removed.
     """
     value = section
     value = value.replace(keyword, "")
@@ -142,7 +192,23 @@ def _extract_scalar_global(section: str, keyword: str) -> str:
 ################################################################################
 def ev_text_to_float(value_in_ev: str):
     """
-    Convert a string representation of energy in electron volts to a float
+    Convert a SAD energy value string to a float, in eV.
+
+    Recognises the "kev"/"mev"/"gev"/"tev"/"ev" unit suffixes SAD allows
+    on MOMENTUM/MASS declarations; a bare numeric string is interpreted
+    as already being in eV.
+
+    Parameters
+    ----------
+    value_in_ev : str
+        The energy value text, with or without a unit suffix
+        (e.g. "1.0gev", "511000.0").
+
+    Returns
+    -------
+    float or None
+        The value in eV, or None if `value_in_ev` is not a recognised
+        numeric/unit form.
     """
     if "kev" in value_in_ev:
         return float(value_in_ev.replace("kev", "")) * 1E3
@@ -167,8 +233,20 @@ def strip_sad_comments(content: str) -> str:
     """
     Remove full-line and inline SAD comments before section splitting.
 
-    SAD comments begin with `!`. Removing comments before splitting sections is
-    important because comment text can contain semicolons.
+    SAD comments begin with '!'. Removing comments before splitting
+    sections matters because comment text can itself contain semicolons,
+    which would otherwise be mistaken for section separators.
+
+    Parameters
+    ----------
+    content : str
+        Raw SAD file content.
+
+    Returns
+    -------
+    str
+        `content` with everything from '!' to the end of each line
+        removed.
     """
     cleaned_lines = []
     for line in content.splitlines():
@@ -178,10 +256,35 @@ def strip_sad_comments(content: str) -> str:
 
 def _split_sections_with_line_numbers(content: str) -> list[tuple[int, str]]:
     """
-    Split semicolon-separated SAD content into sections, pairing each with the
-    source line number it starts on so later parse errors can cite it.
+    Split semicolon-separated SAD content into sections with line numbers.
+
+    Pairs each section with the source line number it starts on, so that
+    later parse errors can cite exactly where in the file they occurred.
+
+    Parameters
+    ----------
+    content : str
+        Comment-stripped SAD file content.
+
+    Returns
+    -------
+    list of tuple of (int, str)
+        `(first_line_no, section_text)` pairs, in file order.
     """
     def _append_section(text, first_line_no):
+        """
+        Record one section, adjusting for newlines carried over from the
+        previous section's terminator.
+
+        Parameters
+        ----------
+        text : str
+            The section's raw text, possibly starting with newline(s)
+            left over from the previous section's ';' terminator.
+        first_line_no : int
+            The line number of the ';' (or file start) that began this
+            section.
+        """
         # 'text' may begin with newlines carried over from the previous
         # section's terminator — count them so the reported line matches
         # where the section's own text actually begins, not one line early.
@@ -209,10 +312,22 @@ def _split_sections_with_line_numbers(content: str) -> list[tuple[int, str]]:
 
 def load_and_clean_whitespace(sad_lattice_path: str):
     """
-    Docstring for load_and_clean_whitespace
-    
-    :param sad_lattice_path: Description
-    :type sad_lattice_path: str
+    Load a SAD file and normalise it into semicolon-delimited sections.
+
+    Strips comments, lowercases all text, collapses redundant whitespace
+    around '=', '(', ')', and unit suffixes ("rad"/"deg"), then splits
+    the result into sections, one per semicolon-terminated statement.
+
+    Parameters
+    ----------
+    sad_lattice_path : str
+        Path to the SAD lattice file.
+
+    Returns
+    -------
+    list of tuple of (int, str)
+        `(line_no, section_text)` pairs, as returned by
+        `_split_sections_with_line_numbers`.
     """
     ############################################################################
     # Load SAD File to Python
@@ -280,19 +395,48 @@ def parse_sad_file(
         config:                         ConfigLike,
         install_apertures_as_markers:   bool = False) -> dict:
     """
-    Parse lattice definitions from SAD
-    Convert a particle accelerator lattice defined in Stratgeic Accelerator 
-    Design (SAD) to the Xtrack format (part of the Xsuite packages)
+    Parse a SAD lattice file into a structured, converter-ready dictionary.
 
-    Parameters:
+    Loads and cleans the raw text, then extracts global parameters
+    (MOMENTUM/MASS/CHARGE/FSHIFT), LINE definitions, element definitions
+    (grouped by SAD element type), and deferred (symbolic) expressions.
+    SAD's own commands (ON/OFF, FFS) are recognised and dropped, since
+    sad2xs already knows which line to convert from `line_name` rather
+    than from SAD's interactive command state.
+
+    Missing MOMENTUM/MASS/CHARGE fall back to `config`'s
+    `ref_particle_p0c`/`ref_particle_mass0`/`ref_particle_q0` where
+    available; MOMENTUM has no such fallback and raises if absent from
+    both the file and `config`.
+
+    Parameters
     ----------
-    sad_lattice_path: str
-        Path to the SAD lattice file
-        
-    Outputs
-    ----------
-    parsed_lattice_data: dict
-        Dictionary of markers and their locations
+    sad_lattice_path : str
+        Path to the SAD lattice file.
+    config : ConfigLike
+        Converter configuration, supplying the allowed element-type set
+        and any reference-particle fallback values.
+    install_apertures_as_markers : bool, optional
+        If True, allow an APERT element and a MARK element to share a
+        name (the merge itself happens downstream in
+        `sad2xs.main.convert_sad_to_xsuite`). Defaults to False.
+
+    Returns
+    -------
+    dict
+        Keys: "globals" (mass0/p0c/q0/fshift), "lines" (name -> ordered
+        element-name list), "elements" (element type -> {name: {param:
+        value}}), "expressions" (deferred-expression name -> value or
+        expression string), "expression_line_numbers" (name -> source
+        line number).
+
+    Raises
+    ------
+    ValueError
+        If a SAD function definition (':=') is found, a LINE or element
+        definition is malformed, an element name collides with a
+        protected name or a different element type, or no momentum is
+        available from either the file or `config`.
     """
 
     ############################################################################

@@ -65,6 +65,11 @@ def assert_xsuite_matches_sad_twiss(
         SAD column name -> Xsuite column name, for columns compared under a
         different name on the Xsuite side (e.g. `{"betx": "betx_edw_teng"}`
         for coupled Edwards-Teng optics).
+
+    Raises
+    ------
+    AssertionError
+        If any column's values disagree beyond its tolerance.
     """
     tolerances               = tolerances or DEFAULT_TWISS_TOLERANCES
     xsuite_column_overrides  = xsuite_column_overrides or {}

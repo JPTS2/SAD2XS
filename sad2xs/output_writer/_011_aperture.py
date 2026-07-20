@@ -27,11 +27,19 @@ from ..types import ConfigLike
 ################################################################################
 def _get_unique_aperture_names(line_table: xd.table.Table) -> tuple:
     """
-    Collect the unique prototype names of each aperture type in the line.
+    Collect the unique prototype names of each aperture type in the
+    line.
 
-    :param line_table: Table describing the line elements.
-    :return: (unique_limitellipse_names, unique_limitrect_names,
-        unique_limitrectellipse_names)
+    Parameters
+    ----------
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+
+    Returns
+    -------
+    tuple of (list of str, list of str, list of str)
+        `(unique_limitellipse_names, unique_limitrect_names,
+        unique_limitrectellipse_names)`.
     """
     unique_limitellipse_names       = []
     unique_limitrect_names          = []
@@ -60,10 +68,26 @@ def _get_unique_aperture_names(line_table: xd.table.Table) -> tuple:
 
 def _resolve_aperture_name(aperture_name: str, unique_names: list) -> str:
     """
-    Strip a leading minus sign when no non-minus version of the name exists.
+    Strip a leading minus sign when no non-minus version of the name
+    exists.
 
-    This mirrors the naming used elsewhere in the writers so that the lattice
-    file element name and the optics file variable name always agree.
+    This mirrors the naming used elsewhere in the writers so that the
+    lattice file element name and the optics file variable name always
+    agree.
+
+    Parameters
+    ----------
+    aperture_name : str
+        The aperture element name, possibly '-'-prefixed.
+    unique_names : list of str
+        All unique aperture names of this type in the line.
+
+    Returns
+    -------
+    str
+        `aperture_name` with its leading '-' removed, if no
+        non-reversed sibling of the same root name exists in
+        `unique_names`; otherwise `aperture_name` unchanged.
     """
     if aperture_name.startswith("-"):
         root_name   = aperture_name[1:]
@@ -75,6 +99,21 @@ def _resolve_aperture_name(aperture_name: str, unique_names: list) -> str:
 def _optics_variable_line(variable_name: str, value: float, config: ConfigLike) -> str:
     """
     Format a single `name = value` optics variable line.
+
+    Parameters
+    ----------
+    variable_name : str
+        The optics-variable name.
+    value : float
+        The value to assign.
+    config : ConfigLike
+        Converter configuration; only `OUTPUT_STRING_SEP` is used, to
+        align the '=' signs.
+
+    Returns
+    -------
+    str
+        A single, newline-prefixed "    <name>   = <value>," line.
     """
     padding = ' ' * (config.OUTPUT_STRING_SEP - len(variable_name) + 4)
     return f"""
@@ -88,9 +127,31 @@ def create_aperture_lattice_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Write env.new() calls for all aperture elements in the line.
-    Dimensions are referenced as named variables; bootstrapped to safe
-    placeholders so LimitEllipse can be constructed before the optics file.
+    Generate the lattice-file source for every aperture element
+    (LimitEllipse, LimitRect, LimitRectEllipse).
+
+    Dimensions are referenced as named optics variables, bootstrapped
+    to safe non-zero placeholders (e.g. a=b=1.0) inline via `env[...]
+    = ...` so the element can be constructed before the optics file
+    (which sets the real values) is loaded -- `xt.LimitEllipse`
+    rejects a/b=0 at construction time.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate aperture source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Accepted for interface consistency with the other
+        `create_*_lattice_file_information` functions; not used
+        directly by this function.
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no apertures.
     """
 
     ########################################
@@ -246,16 +307,28 @@ def create_aperture_optics_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Write aperture dimensions as live optics variables so that they can be
-    inspected and tuned via the optics file after reload.
+    Generate the optics-file source assigning every aperture's
+    dimensions.
 
-    Each aperture dimension becomes a named variable of the form
-    `<dim>_<aperture_name>` (e.g. a_ap1, b_ap1, min_x_ap1, max_x_ap1).
+    Each aperture dimension becomes a named optics-variable assignment
+    of the form `<dim>_<aperture_name> = <value>,` (e.g. a_ap1, b_ap1,
+    min_x_ap1, max_x_ap1), aligned to `config.OUTPUT_STRING_SEP`, for
+    use inside the generated `env.vars.update(...)` call.
 
-    :param line: The xtrack line object.
-    :param line_table: Table describing the line elements.
-    :param config: The conversion configuration.
-    :return: The optics file fragment for apertures.
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate aperture optics source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration; only `OUTPUT_STRING_SEP` is used.
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no apertures.
     """
 
     ########################################

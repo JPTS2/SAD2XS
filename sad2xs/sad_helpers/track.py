@@ -97,6 +97,17 @@ def track_sad(
         - "x", "px", "y", "py", "zeta", "delta", "state"
         If turn_by_turn_monitor is True, each entry has shape (n_particles, n_turns + 1),
         otherwise shape (n_particles,).
+
+    Raises
+    ------
+    AssertionError
+        If the initial-condition arrays are not numpy arrays, are not
+        all the same shape, or if `n_particles` is 0 or exceeds 1E6.
+    RuntimeError
+        If the SAD process dies early, exits non-zero, or times out.
+    ValueError
+        If SAD's output contains a Mathematica undefined-symbol
+        marker (see `_check_mathematica_output`).
     """
 
     ########################################

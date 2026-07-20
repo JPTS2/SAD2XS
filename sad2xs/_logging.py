@@ -38,6 +38,20 @@ class _SAD2XSFormatter(logging.Formatter):
     The INFO/DEBUG narrative is left unprefixed.
     """
     def format(self, record):
+        """
+        Format a log record, prefixing WARNING/ERROR levels only.
+
+        Parameters
+        ----------
+        record : logging.LogRecord
+            The log record to format.
+
+        Returns
+        -------
+        str
+            The formatted message: prefixed with "SAD2XS <LEVEL>:" for
+            WARNING and above, otherwise the bare message.
+        """
         if record.levelno >= logging.WARNING:
             return f"SAD2XS {record.levelname}: {record.getMessage()}"
         return record.getMessage()

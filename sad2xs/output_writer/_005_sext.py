@@ -33,16 +33,34 @@ def create_sextupole_lattice_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_sextupole_lattice_file_information
-    
-    :param line: Description
-    :type line: xt.Line
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Generate the lattice-file source for every SEXT element.
+
+    Groups sextupoles by quantized length (from
+    `extract_multipole_information`), writes one base `xt.Sextupole`
+    per length, then clones every individual sextupole from its
+    length's base element. A "simple" sextupole (see
+    `check_is_simple_quad_sext_oct`) is written as a single-line clone
+    with just k2 or k2s (whichever is active); any other sextupole is
+    written with every non-zero strength/offset/combined-multipole
+    parameter listed explicitly. Strengths are referenced as live
+    optics variables ("k2_<name>"/"k2s_<name>"), not baked-in
+    literals.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate sextupole source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration; only `MAGNET_LENGTH_PRECISION` is
+        used.
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no sextupoles.
     """
 
     ########################################
@@ -177,16 +195,36 @@ def create_sextupole_optics_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_sextupole_optics_file_information
-    
-    :param line: Description
-    :type line: xt.Line
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Generate the optics-file source assigning every sextupole's
+    k2/k2s.
+
+    Writes one `k2_<name>`/`k2s_<name> = <value>,` line per distinct
+    sextupole optics-variable name, aligned to
+    `config.OUTPUT_STRING_SEP`, for use inside the generated
+    `env.vars.update(...)` call. Zero values are omitted (the writer's
+    `default_to_zero` setting covers them).
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate sextupole optics source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration (`MAGNET_LENGTH_PRECISION`,
+        `OUTPUT_STRING_SEP`).
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no sextupoles.
+
+    Raises
+    ------
+    KeyError
+        If neither the sextupole variable nor its reversed form is
+        found in `line`.
     """
 
     ########################################

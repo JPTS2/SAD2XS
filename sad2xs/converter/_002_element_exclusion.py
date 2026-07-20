@@ -27,14 +27,26 @@ def exclude_elements(
         parsed_lattice_data:    dict,
         excluded_elements:      list[str] | None) -> dict:
     """
-    Docstring for exclude_elements
+    Remove user-excluded elements from the parsed lattice data, in place.
 
-    :param parsed_lattice_data: Description
-    :type parsed_lattice_data: dict
-    :param excluded_elements: Description
-    :type excluded_elements: list[str] | None
-    :return: Description
-    :rtype: dict[Any, Any]
+    Matches both a name and its explicit reversal (a leading '-', SAD's
+    own reversed-element marker) so an element excluded in one direction
+    is also excluded in the other. Removed elements are dropped from
+    every element-type dictionary and from every LINE's component list.
+
+    Parameters
+    ----------
+    parsed_lattice_data : dict
+        Parsed lattice data, as returned by `parse_sad_file`.
+    excluded_elements : list of str or None
+        Element names to exclude (case-insensitive). No-op if None or
+        empty.
+
+    Returns
+    -------
+    dict
+        `parsed_lattice_data`, with excluded elements removed. The same
+        object is returned and mutated in place.
     """
 
     ########################################

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-10
+Date:       2026-07-20
 ================================================================================
 """
 ################################################################################
@@ -25,11 +25,27 @@ from ..helpers import species_from_mass_and_charge
 ################################################################################
 def parse_expression(expression):
     """
-    Convert a SAD expression value to a Python float or a stripped string.
+    Convert a SAD expression value to a Python float or a stripped
+    string.
 
-    - int   -> float
-    - float -> float
-    - str   -> float if the string is numeric, otherwise stripped string
+    Parameters
+    ----------
+    expression : int, float, or str
+        A parsed SAD parameter value: `int`/`float` pass through as a
+        float; `str` is returned as a float if numeric, otherwise as
+        a stripped deferred-expression string (with `log(` mapped to
+        `log10(` and `ln(` mapped to `log(`, matching SAD's own
+        logarithm naming).
+
+    Returns
+    -------
+    float or str
+        The parsed value.
+
+    Raises
+    ------
+    TypeError
+        If `expression` is not an int, float, or str.
     """
     if isinstance(expression, float):
         return expression
@@ -52,8 +68,22 @@ def parse_expression(expression):
 ################################################################################
 def is_effectively_zero(val, tol: float = 1E-12) -> bool:
     """
-    Return True if val is numerically zero within tol.
-    String expressions cannot be evaluated and are always treated as non-zero.
+    Return True if `val` is numerically zero within `tol`.
+
+    String expressions cannot be evaluated and are always treated as
+    non-zero.
+
+    Parameters
+    ----------
+    val : float or str
+        The value to check.
+    tol : float, optional
+        Absolute tolerance. Defaults to 1E-12.
+
+    Returns
+    -------
+    bool
+        True if `val` is numeric and `abs(val) <= tol`.
     """
     try:
         return abs(float(val)) <= tol
@@ -65,8 +95,23 @@ def is_effectively_zero(val, tol: float = 1E-12) -> bool:
 ################################################################################
 def values_provably_equal(val_1, val_2, tol: float = 1E-9) -> bool:
     """
-    Return True if two SAD-parsed values are numerically equal within tol,
-    or the exact same deferred expression string.
+    Return True if two SAD-parsed values are numerically equal within
+    `tol`, or the exact same deferred expression string.
+
+    Parameters
+    ----------
+    val_1 : float or str
+        First value.
+    val_2 : float or str
+        Second value.
+    tol : float, optional
+        Absolute tolerance for the numeric case. Defaults to 1E-9.
+
+    Returns
+    -------
+    bool
+        True if both are numeric and equal within `tol`, or both are
+        strings and equal after stripping whitespace.
     """
     if isinstance(val_1, (int, float)) and isinstance(val_2, (int, float)):
         return abs(float(val_1) - float(val_2)) <= tol
@@ -76,9 +121,24 @@ def values_provably_equal(val_1, val_2, tol: float = 1E-9) -> bool:
 
 def values_provably_opposite(val_1, val_2, tol: float = 1E-9) -> bool:
     """
-    Return True if two SAD-parsed values are numerically equal and opposite
-    in sign within tol, or one deferred expression is a literal "-" prefix
-    of the other.
+    Return True if two SAD-parsed values are numerically equal and
+    opposite in sign within `tol`, or one deferred expression is a
+    literal "-" prefix of the other.
+
+    Parameters
+    ----------
+    val_1 : float or str
+        First value.
+    val_2 : float or str
+        Second value.
+    tol : float, optional
+        Absolute tolerance for the numeric case. Defaults to 1E-9.
+
+    Returns
+    -------
+    bool
+        True if both are numeric and sum to ~0 within `tol`, or one
+        string is `"-"` + the other after stripping whitespace.
     """
     if isinstance(val_1, (int, float)) and isinstance(val_2, (int, float)):
         return abs(float(val_1) + float(val_2)) <= tol
@@ -97,7 +157,17 @@ def values_provably_opposite(val_1, val_2, tol: float = 1E-9) -> bool:
 def get_element_length(ele_vars: dict):
     """
     Extract element length from a parsed SAD parameter dict.
-    Returns 0.0 if 'l' is absent.
+
+    Parameters
+    ----------
+    ele_vars : dict
+        The element's parsed parameters.
+
+    Returns
+    -------
+    float or str
+        `ele_vars["l"]` (parsed via `parse_expression`), or 0.0 if
+        "l" is absent.
     """
     return parse_expression(ele_vars.get("l", 0.0))
 
@@ -107,7 +177,21 @@ def get_element_length(ele_vars: dict):
 def get_element_integrated_strength(ele_vars: dict, key: str, default: float = 0.0):
     """
     Extract a strength parameter from a parsed SAD parameter dict.
-    Returns default if key is absent.
+
+    Parameters
+    ----------
+    ele_vars : dict
+        The element's parsed parameters.
+    key : str
+        The strength parameter's key (e.g. "k1", "angle").
+    default : float, optional
+        Value to return if `key` is absent. Defaults to 0.0.
+
+    Returns
+    -------
+    float or str
+        `ele_vars[key]` (parsed via `parse_expression`), or `default`
+        if `key` is absent.
     """
     return parse_expression(ele_vars.get(key, default))
 
@@ -116,16 +200,26 @@ def get_element_integrated_strength(ele_vars: dict, key: str, default: float = 0
 ########################################
 def divide_integrated_strength(kl, length):
     """
-    Divide integrated strength kl by element length to obtain a per-unit-length
-    strength (e.g. k1l / l -> k1).
+    Divide integrated strength `kl` by element `length` to obtain a
+    per-unit-length strength (e.g. k1l / l -> k1).
 
-    Both kl and length may be a float or a string expression (deferred variable).
-    - Returns 0.0 if kl is exactly zero.
-    - Returns a float if both inputs are numeric.
-    - Returns a string expression otherwise.
+    Both `kl` and `length` may be a float or a string expression
+    (deferred variable). Callers must ensure `length` is non-zero;
+    this function is only valid for thick elements, so the thin/thick
+    split must occur before calling it.
 
-    Callers must ensure length is non-zero. This function is only valid for
-    thick elements; the thin/thick split must occur before calling it.
+    Parameters
+    ----------
+    kl : float or str
+        Integrated strength.
+    length : float or str
+        Element length.
+
+    Returns
+    -------
+    float or str
+        0.0 if `kl` is exactly zero; a float if both inputs are
+        numeric; otherwise a string expression `"{kl} / {length}"`.
     """
     if isinstance(kl, (int, float)) and kl == 0.0:
         return 0.0
@@ -138,13 +232,28 @@ def divide_integrated_strength(kl, length):
 ########################################
 def define_strength_variable(environment, ele_name: str, k_name: str, k_value):
     """
-    Register a per-unit-length strength in the xtrack environment and return
-    a reference expression to it.
+    Register a per-unit-length strength in the xtrack environment and
+    return a reference expression to it.
 
-    If k_value is non-zero, stores it as environment['{k_name}_{ele_name}']
-    and returns the key string so it can be passed to environment.new().
-    If k_value is zero, returns k_value unchanged without touching the
-    environment.
+    Parameters
+    ----------
+    environment : xt.Environment
+        The Xsuite environment to register the variable into.
+    ele_name : str
+        The element's name.
+    k_name : str
+        The strength parameter's name (e.g. "k1", "k0").
+    k_value : float or str
+        The strength value.
+
+    Returns
+    -------
+    float or str
+        If `k_value` is non-zero: stores it as
+        `environment['{k_name}_{ele_name}']` and returns that key
+        string, so it can be passed to `environment.new()`. If
+        `k_value` is zero: returns it unchanged without touching the
+        environment.
     """
     if k_value != 0:
         var_name = f"{k_name}_{ele_name}"
@@ -159,16 +268,34 @@ def parse_rf_parameters(environment, ele_name: str, ele_vars: dict):
     """
     Parse SAD VOLT/FREQ/PHI/HARM into Xsuite Cavity-ready values.
 
-    HARM and FREQ are mutually exclusive in SAD; if HARM is present it takes
-    priority and FREQ is discarded (harmonic tracks Xsuite's own revolution-
-    frequency derivation). FREQ and PHI, when non-zero, are registered as
-    deferred environment variables (freq_{name}, phase_{name}) so they can be
-    tuned after conversion. VOLT is always registered as vol_{name} for the
-    same reason, but is returned as a literal value, matching how it is
+    HARM and FREQ are mutually exclusive in SAD; if HARM is present it
+    takes priority and FREQ is discarded (harmonic tracks Xsuite's
+    own revolution-frequency derivation). FREQ and PHI, when
+    non-zero, are registered as deferred environment variables
+    (freq_{name}, phase_{name}) so they can be tuned after
+    conversion. VOLT is always registered as vol_{name} for the same
+    reason, but is returned as a literal value, matching how it is
     passed directly to xt.Cavity today.
 
-    Returns (voltage, frequency, harmonic, phase) ready to pass to
-    environment.new(prototype=xt.Cavity, ...).
+    Parameters
+    ----------
+    environment : xt.Environment
+        The Xsuite environment to register RF variables into.
+    ele_name : str
+        The element's name.
+    ele_vars : dict
+        The element's parsed parameters.
+
+    Returns
+    -------
+    tuple of (float, float or str, float or str, float or str)
+        `(voltage, frequency, harmonic, phase)`, ready to pass to
+        `environment.new(prototype=xt.Cavity, ...)`.
+
+    Raises
+    ------
+    ValueError
+        If PHI is present but not a float or str.
     """
     voltage = 0.0
     freq    = 0.0
@@ -213,13 +340,30 @@ def parse_rf_parameters(environment, ele_name: str, ele_vars: dict):
 ################################################################################
 def combine_k0_sk0(knl0, ksl0, rotation):
     """
-    Combine SAD MULT integrated K0/SK0 into a single (k0l, rotation) pair.
+    Combine SAD MULT integrated K0/SK0 into a single (k0l, rotation)
+    pair.
 
-    knl0, ksl0, and rotation may each independently be a float or a string
-    expression (deferred variable). A string expression is built whenever any
-    of the three is deferred, since a mixed numeric/deferred computation
-    cannot be evaluated directly; otherwise the combination is computed
-    numerically.
+    `knl0`, `ksl0`, and `rotation` may each independently be a float
+    or a string expression (deferred variable). A string expression
+    is built whenever any of the three is deferred, since a mixed
+    numeric/deferred computation cannot be evaluated directly;
+    otherwise the combination is computed numerically.
+
+    Parameters
+    ----------
+    knl0 : float or str
+        Integrated normal dipole strength (K0L).
+    ksl0 : float or str
+        Integrated skew dipole strength (SK0L).
+    rotation : float or str
+        The element's rotation, in radians (Xsuite sign convention).
+
+    Returns
+    -------
+    tuple of (float or str, float or str)
+        `(k0l, rotation)`: the combined dipole strength and the
+        rotation needed to orient it (adjusted from the input
+        `rotation` when only `ksl0` is non-zero).
     """
     if knl0 != 0 and ksl0 != 0:
         if isinstance(knl0, str) or isinstance(ksl0, str) or isinstance(rotation, str):
@@ -246,14 +390,32 @@ def combine_k0_sk0(knl0, ksl0, rotation):
 ################################################################################
 def get_element_misalignments(ele_vars: dict, rotation_correction: float = 0.0):
     """
-    Extract transverse misalignments and rotation from a parsed SAD element
-    parameter dict.
+    Extract transverse misalignments and rotation from a parsed SAD
+    element parameter dict.
 
-    Rotations in SAD are opposite in sign to Xsuite; the returned rotation is
-    already negated. rotation_correction (radians) is added after negation.
+    Rotations in SAD are opposite in sign to Xsuite; the returned
+    rotation is already negated. `rotation_correction` (radians) is
+    added after negation.
 
-    Returns (shift_x, shift_y, rotation). Each value is a float or a string
-    expression depending on whether the SAD parameter was numeric or deferred.
+    Parameters
+    ----------
+    ele_vars : dict
+        The element's parsed parameters.
+    rotation_correction : float, optional
+        Radians added to the negated rotation. Defaults to 0.0.
+
+    Returns
+    -------
+    tuple of (float or str, float or str, float or str)
+        `(shift_x, shift_y, rotation)`. Each value is a float or a
+        string expression depending on whether the SAD parameter was
+        numeric or deferred.
+
+    Raises
+    ------
+    TypeError
+        If ROTATE parses to something other than a float, int, or
+        str.
     """
     shift_x  = parse_expression(ele_vars.get("dx",     0.0))
     shift_y  = parse_expression(ele_vars.get("dy",     0.0))
@@ -278,11 +440,28 @@ def only_index_nonzero(
         idx:    int,
         tol:    float) -> bool:
     """
-    Return True if all of the following hold:
-      1. length is non-zero (if numeric); a string length is assumed non-zero.
-      2. Every entry in knl and ksl except at index idx is zero within tol.
-         Non-numeric string values are treated as non-zero.
-      3. At least one of knl[idx], ksl[idx] is non-zero within tol.
+    Check whether only one multipole order (index `idx`) is active.
+
+    Parameters
+    ----------
+    length : float or str
+        Element length. A string length is assumed non-zero.
+    knl : list
+        Integrated normal-strength values.
+    ksl : list
+        Integrated skew-strength values.
+    idx : int
+        The multipole order index that is allowed to be non-zero.
+    tol : float
+        Absolute tolerance for "zero" (see `is_effectively_zero`).
+
+    Returns
+    -------
+    bool
+        True if: `length` is non-zero (when numeric); every entry in
+        `knl`/`ksl` except at `idx` is zero within `tol` (a
+        non-numeric string value counts as non-zero); and at least
+        one of `knl[idx]`/`ksl[idx]` is non-zero within `tol`.
     """
     if isinstance(length, (int, float)):
         if abs(length) <= tol:

@@ -56,16 +56,27 @@ def convert_elements(
         user_multipole_replacements:    dict | None,
         config:                         ConfigLike) -> None:
     """
-    Docstring for convert_elements
+    Convert every parsed SAD element into the Xsuite environment.
 
-    :param parsed_lattice_data: Description
-    :type parsed_lattice_data: dict
-    :param environment: Description
-    :type environment: xt.Environment
-    :param user_multipole_replacements: Description
-    :type user_multipole_replacements: dict | None
-    :param config: Description
-    :type config: ConfigLike
+    Dispatches to one converter function per element type present in
+    `parsed_lattice_data`, in a fixed order (drifts, bends/correctors,
+    quadrupoles, sextupoles, octupoles, multipoles, cavities, apertures,
+    solenoids, coordinate transformations, markers, monitors, beam-beam,
+    maps). After conversion, warns once if the lattice contains any
+    Cavity elements, since SAD2XS does not model SAD's transverse
+    RF-focusing kick.
+
+    Parameters
+    ----------
+    parsed_lattice_data : dict
+        Parsed lattice data, as returned by `parse_sad_file`.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
+    user_multipole_replacements : dict or None
+        Per-element overrides controlling how specific MULT elements
+        convert (see `convert_multipoles`).
+    config : ConfigLike
+        Converter configuration (tolerances, multipole order, etc.).
     """
 
     ########################################
@@ -251,7 +262,26 @@ def convert_elements(
 ################################################################################
 def convert_drifts(parsed_elements, environment):
     """
-    Convert drifts from the SAD parsed data
+    Convert SAD DRIFT elements into Xsuite Drift elements.
+
+    Warns once for the whole lattice if any drift has a negative
+    length (SAD2XS converts these as-is, but they commonly indicate
+    overlapping element geometry or survey rounding in the source
+    lattice, and are likely to break tracking/Twiss or offset-marker
+    insertion).
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data (element
+        type -> {name: {param: value}}).
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
+
+    Raises
+    ------
+    ValueError
+        If a DRIFT element has no length.
     """
 
     drifts  = parsed_elements["drift"]
@@ -298,9 +328,24 @@ def _canonicalize_dipole_rotation(rotation):
     """
     Return the SAD-origin canonical dipole rotation and field sign.
 
-    Xsuite Bend has one dipole field direction plus an element rotation. For
-    SAD-origin dipoles, equivalent pi and -pi/2 rotations are represented by
-    a field sign flip; vertical dipoles use +pi/2.
+    Xsuite Bend has one dipole field direction plus an element
+    rotation. For SAD-origin dipoles, equivalent pi and -pi/2 rotations
+    are represented by a field sign flip instead; vertical dipoles use
+    +pi/2. Symbolic (deferred) rotations are passed through unchanged
+    with a field sign of +1, since their runtime value is not known at
+    conversion time.
+
+    Parameters
+    ----------
+    rotation : float or str
+        The element's rotation, in radians (Xsuite sign convention),
+        or a deferred expression string.
+
+    Returns
+    -------
+    tuple of (float or str, int)
+        `(canonical_rotation, field_sign)`, where `field_sign` is +1 or
+        -1 and should multiply the dipole field strength (e.g. k0l).
     """
     if not isinstance(rotation, (int, float, np.number)):
         return rotation, +1
@@ -323,6 +368,20 @@ def _has_nonzero_offset(shift_x, shift_y, tol) -> bool:
 
     A symbolic (deferred) value is treated conservatively as possibly
     nonzero, since its runtime value is not known at conversion time.
+
+    Parameters
+    ----------
+    shift_x : float or str
+        Horizontal misalignment, or a deferred expression string.
+    shift_y : float or str
+        Vertical misalignment, or a deferred expression string.
+    tol : float
+        Absolute tolerance below which a numeric value counts as zero.
+
+    Returns
+    -------
+    bool
+        True if `shift_x` or `shift_y` is non-numeric or exceeds `tol`.
     """
     return not (
         is_effectively_zero(shift_x, tol)
@@ -331,12 +390,36 @@ def _has_nonzero_offset(shift_x, shift_y, tol) -> bool:
 
 def _bend_fringe_edge_kwargs(ele_vars, config) -> dict:
     """
-    Derive xt.Bend edge fint/hgap from a SAD BEND's FRINGE/F1/FB1/FB2, or
-    {} if fringe import is disabled or FRINGE gates both edges off.
+    Derive Xsuite Bend edge fint/hgap kwargs from a SAD BEND's fringe
+    parameters.
 
-    Closed form and FRINGE gating convention: docs/sad-behaviour.md.
-    F1/FB1/FB2 must be concrete numbers; symbolic fringe lengths are not
-    supported.
+    Returns {} if fringe import is disabled
+    (`config._import_sad_bend_fringes`) or the SAD FRINGE flag gates
+    both edges off. FRINGE = -1 disables the entry edge only, FRINGE =
+    -2 disables the exit edge only. The closed form (edge_*_fint =
+    F1 + FB1/FB2, edge_*_hgap = 1/12) and the FRINGE gating convention
+    are documented in docs/sad-behaviour.md.
+
+    Parameters
+    ----------
+    ele_vars : dict
+        The BEND element's parsed parameters.
+    config : ConfigLike
+        Converter configuration; only `_import_sad_bend_fringes` is
+        used.
+
+    Returns
+    -------
+    dict
+        Keyword arguments for `xt.Bend` (`edge_entry_fint`,
+        `edge_entry_hgap`, `edge_exit_fint`, `edge_exit_hgap`, as
+        applicable), or {} if fringe import does not apply.
+
+    Raises
+    ------
+    ValueError
+        If FRINGE, F1, FB1, or FB2 is a deferred expression rather
+        than a concrete number.
     """
     if not config._import_sad_bend_fringes:
         return {}
@@ -373,7 +456,36 @@ def _bend_fringe_edge_kwargs(ele_vars, config) -> dict:
 
 def convert_bends(parsed_elements, environment, config):
     """
-    Convert bends from the SAD parsed data
+    Convert SAD BEND elements with ANGLE != 0 into Xsuite Bend or
+    Multipole elements.
+
+    A thin (L=0 or no L) bend converts to a Multipole with `hxl` set to
+    k0l, so it still bends the reference orbit and generates
+    dispersion. A thick bend converts to an `xt.Bend`, with
+    E1/E2/AE1/AE2 combined into edge_entry_angle/edge_exit_angle and,
+    if `config._import_sad_bend_fringes` is set, F1/FB1/FB2 imported as
+    native Xsuite edge fringe parameters (see
+    `_bend_fringe_edge_kwargs`). BEND elements with ANGLE == 0 or no
+    ANGLE are correctors, handled by `convert_correctors` instead.
+
+    Any rotation that SAD encodes as a field-sign flip (pi or -pi/2,
+    see `_canonicalize_dipole_rotation`) is absorbed into k0/k1 rather
+    than left as an element rotation.
+
+    Warns once for the whole lattice if any ANGLE != 0 bend also has a
+    nonzero DX/DY: SAD2XS cannot reproduce SAD's reference-orbit
+    convention for a displaced curved element (the converted lattice
+    keeps the design curvature fixed regardless of the shift).
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
+    config : ConfigLike
+        Converter configuration (misalignment tolerances, fringe-import
+        flag).
     """
 
     bends  = parsed_elements["bend"]
@@ -517,7 +629,27 @@ def convert_bends(parsed_elements, environment, config):
 ################################################################################
 def convert_correctors(parsed_elements, environment, config):
     """
-    Convert correctors from the SAD parsed data
+    Convert SAD BEND elements with ANGLE == 0 (or no ANGLE) into Xsuite
+    corrector Bend/Multipole elements.
+
+    A thin (L=0) corrector converts to a Multipole carrying K0/K1 as a
+    pure kick. A thick corrector converts to an `xt.Bend` with angle
+    implicitly zero (design curvature h=0), K0/K1 as its field
+    strengths, and both edge angles fixed at zero. If
+    `config._import_sad_bend_fringes` is set, the same fringe-import
+    path as `convert_bends` applies (see `_bend_fringe_edge_kwargs`).
+
+    BEND elements with a nonzero ANGLE are real bends, handled by
+    `convert_bends` instead; this function is a no-op for those.
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
+    config : ConfigLike
+        Converter configuration (fringe-import flag).
     """
 
     bends  = parsed_elements["bend"]
@@ -603,13 +735,30 @@ def convert_correctors(parsed_elements, environment, config):
 ################################################################################
 def _absorb_rotation_into_field(kl, n: int, rotation: float):
     """
-    For a typed element with a pure normal field kl (skew = 0):
-    if rotation (Xsuite sign, = -SAD ROTATE) is an integer multiple
-    of π/(2n), rotate the field into (kl_eff, ksl_eff) and signal
-    that the rotation has been absorbed (set to 0).
+    Absorb a typed multipole's rotation into its field, where possible.
 
-    n = 2 (quad), 3 (sext), 4 (oct).
-    Returns (kl_eff, ksl_eff, absorbed: bool).
+    For a typed element (QUAD/SEXT/OCT, n = 2/3/4) with a pure normal
+    field `kl` (skew = 0): if `rotation` (Xsuite sign, = -SAD ROTATE)
+    is an integer multiple of pi/(2n), the field has that many-fold
+    rotational symmetry and the rotation can be represented exactly as
+    a (kl_eff, ksl_eff) pair instead of an element rotation.
+
+    Parameters
+    ----------
+    kl : float or str
+        The element's integrated normal-field strength (skew assumed
+        zero on input).
+    n : int
+        The multipole order: 2 (quad), 3 (sext), or 4 (oct).
+    rotation : float
+        The element's rotation, in radians (Xsuite sign convention).
+
+    Returns
+    -------
+    tuple of (float or str, float or str, bool)
+        `(kl_eff, ksl_eff, absorbed)`. If `absorbed` is False, `kl_eff`
+        equals the input `kl`, `ksl_eff` is 0.0, and `rotation` should
+        be kept as the element's rotation.
     """
     fundamental = np.pi / (2 * n)
     m           = rotation / fundamental
@@ -620,24 +769,59 @@ def _absorb_rotation_into_field(kl, n: int, rotation: float):
     cos_p     = int(round(np.cos(phase)))       # ∈ {-1, 0, 1}
     neg_sin_p = int(round(-np.sin(phase)))      # ∈ {-1, 0, 1}
 
-    def _apply(factor):
-        if factor == 0: return 0.0
-        if factor == 1: return kl
+    def _scaled_kl(sign_factor):
+        """
+        Scale `kl` by a {-1, 0, 1} coefficient from the rotation phase.
+
+        Parameters
+        ----------
+        sign_factor : int
+            One of -1, 0, or 1 (a rounded cos/sin of the rotation
+            phase).
+
+        Returns
+        -------
+        float or str
+            0.0 if `sign_factor` is 0, `kl` unchanged if +1, or the
+            negation of `kl` if -1.
+        """
+        if sign_factor == 0: return 0.0
+        if sign_factor == 1: return kl
         return -kl if isinstance(kl, (int, float)) else f"-{kl}"
 
-    return _apply(cos_p), _apply(neg_sin_p), True
+    return _scaled_kl(cos_p), _scaled_kl(neg_sin_p), True
 
 def _convert_typed_multipole(ele_name, ele_vars, environment, n, xtype, k_name):
     """
-    Convert a typed multipole element (QUAD / SEXT / OCT).
+    Convert a typed multipole element (QUAD, SEXT, or OCT).
 
-    n       = 2 (quad), 3 (sext), 4 (oct)
-    xtype   = xt.Quadrupole / xt.Sextupole / xt.Octupole
-    k_name  = "k1" / "k2" / "k3"
+    A thin (L=0 or no L) element converts to a Multipole carrying the
+    integrated strength at index `n - 1`. A thick element converts to
+    `xtype` (`xt.Quadrupole`/`Sextupole`/`Octupole`) with the strength
+    divided by length and registered as a live optics variable (see
+    `define_strength_variable`).
 
-    Any SAD ROTATE that is an integer multiple of π/(2n) is absorbed
-    into the field components and the rotation is dropped from the
-    Xsuite element.  All other rotations are preserved as rot_s_rad.
+    Any SAD ROTATE that is an integer multiple of pi/(2n) is absorbed
+    into the field components (see `_absorb_rotation_into_field`) and
+    the rotation is dropped from the Xsuite element; all other
+    rotations are preserved as `rot_s_rad`.
+
+    Parameters
+    ----------
+    ele_name : str
+        The element's name.
+    ele_vars : dict
+        The element's parsed parameters.
+    environment : xt.Environment
+        The Xsuite environment to create the converted element into.
+    n : int
+        The multipole order: 2 (quad), 3 (sext), or 4 (oct).
+    xtype : type
+        The Xsuite element class for the thick case: `xt.Quadrupole`,
+        `xt.Sextupole`, or `xt.Octupole`.
+    k_name : str
+        The SAD/Xsuite normal-strength parameter name: "k1", "k2", or
+        "k3".
     """
     k_idx   = n - 1           # knl/ksl index
     ks_name = f"{k_name}s"    # "k1s", "k2s", "k3s"
@@ -710,7 +894,19 @@ def _convert_typed_multipole(ele_name, ele_vars, environment, n, xtype, k_name):
 # Convert Quadrupoles
 ################################################################################
 def convert_quadrupoles(parsed_elements, environment):
-    """Convert quadrupoles from the SAD parsed data."""
+    """
+    Convert SAD QUAD elements into Xsuite Quadrupole/Multipole elements.
+
+    Thin wrapper around `_convert_typed_multipole` for order n=2
+    (strength parameter "k1").
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
+    """
     for ele_name, ele_vars in parsed_elements["quad"].items():
         _convert_typed_multipole(ele_name, ele_vars, environment, 2, xt.Quadrupole, "k1")
 
@@ -718,7 +914,19 @@ def convert_quadrupoles(parsed_elements, environment):
 # Convert Sextupoles
 ################################################################################
 def convert_sextupoles(parsed_elements, environment):
-    """Convert sextupoles from the SAD parsed data."""
+    """
+    Convert SAD SEXT elements into Xsuite Sextupole/Multipole elements.
+
+    Thin wrapper around `_convert_typed_multipole` for order n=3
+    (strength parameter "k2").
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
+    """
     for ele_name, ele_vars in parsed_elements["sext"].items():
         _convert_typed_multipole(ele_name, ele_vars, environment, 3, xt.Sextupole, "k2")
 
@@ -726,7 +934,22 @@ def convert_sextupoles(parsed_elements, environment):
 # Convert Octupoles
 ################################################################################
 def convert_octupoles(parsed_elements, environment, config):
-    """Convert octupoles from the SAD parsed data."""
+    """
+    Convert SAD OCT elements into Xsuite Octupole/Multipole elements.
+
+    Thin wrapper around `_convert_typed_multipole` for order n=4
+    (strength parameter "k3").
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
+    config : ConfigLike
+        Accepted for interface consistency with the other element-type
+        converters; not used directly by this function.
+    """
     for ele_name, ele_vars in parsed_elements["oct"].items():
         _convert_typed_multipole(ele_name, ele_vars, environment, 4, xt.Octupole, "k3")
 
@@ -739,7 +962,56 @@ def convert_multipoles(
         user_multipole_replacements,
         config) -> None:
     """
-    Convert multipoles from the SAD parsed data
+    Convert SAD MULT elements into Xsuite elements.
+
+    Each MULT is handled by the first applicable case, in order:
+
+    1. RF-carrying (VOLT/HARM/FREQ present): sliced into alternating
+       Multipole/Cavity element pairs (`config.N_SLICES_MULT_RF`
+       slices, 1 if thin), wrapped in a sub-line named after the
+       element, since Xsuite has no single element combining a
+       multipole kick with RF.
+    2. User-replaced (`user_multipole_replacements`, by name prefix):
+       converted to the requested single-purpose element (Bend,
+       Quadrupole, Sextupole, or Octupole), using only the field order
+       that element type supports.
+    3. Auto-simplified (`config.SIMPLIFY_MULTIPOLES`): if only one
+       field order (k0/sk0, k1/sk1, k2/sk2, or k3/sk3) is non-zero,
+       converted to the corresponding single-purpose element.
+    4. Otherwise: converted to a true Xsuite Multipole carrying every
+       order up to `config.MAX_KNL_ORDER`.
+
+    Cases 2-3 both canonicalize any k0/sk0-only rotation the same way
+    `convert_bends` does (see `_canonicalize_dipole_rotation`), and
+    both require a non-zero length (integrated strengths must be
+    divided by length).
+
+    Warns once for the whole lattice if any MULT was auto-simplified
+    to a Bend/corrector: Xsuite's bend fringe model does not exactly
+    reproduce SAD's MULT dipole fringe convention (residual optics
+    differences scale as O(theta^4)).
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
+    user_multipole_replacements : dict or None
+        Maps a name prefix to a replacement element type ("Bend",
+        "Quadrupole", "Sextupole", or "Octupole"); any MULT whose name
+        starts with a listed prefix is converted to that type instead
+        of a generic Multipole.
+    config : ConfigLike
+        Converter configuration (`MAX_KNL_ORDER`, `SIMPLIFY_MULTIPOLES`,
+        `KNL_ZERO_TOL`, `N_SLICES_MULT_RF`).
+
+    Raises
+    ------
+    ValueError
+        If a thin (zero-length) MULT is targeted by
+        `user_multipole_replacements`, or if an unknown replacement
+        type is given.
     """
 
     mults   = parsed_elements["mult"]
@@ -1143,7 +1415,17 @@ def convert_multipoles(
 ################################################################################
 def convert_cavities(parsed_elements, environment, config):
     """
-    Convert cavities from the SAD parsed data
+    Convert SAD CAVI elements into Xsuite Cavity elements.
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
+    config : ConfigLike
+        Converter configuration; forwarded to `parse_rf_parameters` for
+        VOLT/HARM/FREQ handling.
     """
 
     cavis   = parsed_elements["cavi"]
@@ -1184,11 +1466,28 @@ def convert_cavities(parsed_elements, environment, config):
 ################################################################################
 def convert_apertures(parsed_elements, environment):
     """
-    Convert apertures from the SAD parsed data.
+    Convert SAD APERT elements into Xsuite aperture elements.
 
-    A combined APERT with rectangular bounds that can't be proven symmetric
-    is split into a LimitRect + LimitEllipse pair wrapped in a sub-line
-    named after the element, mirroring convert_coordinate_transformations.
+    Chooses LimitRect, LimitEllipse, or LimitRectEllipse depending on
+    which of AX/AY/DX1/DX2/DY1/DY2 are present. A combined APERT with
+    rectangular bounds that can't be proven symmetric about its own
+    centre is split into a LimitRect + LimitEllipse pair wrapped in a
+    sub-line named after the element (mirroring
+    `convert_coordinate_transformations`), since `xt.LimitRectEllipse`
+    only supports symmetric bounds.
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
+
+    Raises
+    ------
+    ValueError
+        If an APERT element has no recognised bound parameters, or its
+        derived aperture type is unsupported.
     """
 
     aperts  = parsed_elements["apert"]
@@ -1440,7 +1739,38 @@ def convert_solenoids(
         environment,
         config) -> None:
     """
-    Convert solenoids from the SAD parsed data
+    Convert SAD SOL elements into Xsuite UniformSolenoid elements.
+
+    An unbound SOL (no BOUND) is a plain UniformSolenoid with
+    ks = BZ / brho. A bound SOL (BOUND present) additionally carries
+    geometric offset/rotation, and is installed as a sub-line of
+    [UniformSolenoid, Translation (DX/DY), TimeDelay (DZ), Rotation
+    (CHI1/CHI2/CHI3)] -- reordered later in the pipeline (see
+    `sad2xs.converter._006_solenoid_converter`). Offset/rotation
+    sources depend on GEO: when GEO is set, DPX/DPY (not CHI1/CHI2) are
+    used, and DZ is invalid.
+
+    Warns once for the whole lattice if any solenoid lacks DISFRIN=1:
+    SAD2XS does not model the SAD solenoid fringe kick, so the
+    converted lattice behaves as if DISFRIN=1 had been set everywhere.
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
+        Must already have "p0c" and "q0" registered (used to compute
+        brho).
+    config : ConfigLike
+        Converter configuration (misalignment tolerances, coordinate
+        sign conventions).
+
+    Raises
+    ------
+    ValueError
+        If a computed offset/rotation value is neither a float nor a
+        deferred-expression string.
     """
 
     # environment["q0"] must be the imported charge here, not a
@@ -1669,7 +1999,14 @@ def convert_solenoids(
 ################################################################################
 def convert_markers(parsed_elements, environment):
     """
-    Convert markers from the SAD parsed data
+    Convert SAD MARK elements into Xsuite Marker elements.
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
     """
 
     markers   = parsed_elements["mark"]
@@ -1689,7 +2026,17 @@ def convert_markers(parsed_elements, environment):
 ################################################################################
 def convert_monitors(parsed_elements, environment):
     """
-    Convert monitors from the SAD parsed data
+    Convert SAD MONI elements into Xsuite Marker elements.
+
+    SAD2XS does not model beam-position-monitor behaviour; MONI
+    elements are installed as zero-length, transparent Markers.
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
     """
 
     monitors   = parsed_elements["moni"]
@@ -1709,7 +2056,17 @@ def convert_monitors(parsed_elements, environment):
 ################################################################################
 def convert_beam_beam(parsed_elements, environment):
     """
-    Convert beam-beam interactions from the SAD parsed data
+    Convert SAD beam-beam elements into Xsuite Marker elements.
+
+    SAD2XS does not model beam-beam interactions; these elements are
+    installed as zero-length, transparent Markers.
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
     """
 
     beam_beams   = parsed_elements["beambeam"]
@@ -1729,10 +2086,23 @@ def convert_beam_beam(parsed_elements, environment):
 ################################################################################
 def convert_maps(parsed_elements, environment):
     """
-    Convert maps from the SAD parsed data
+    Convert SAD MAP elements into Xsuite Marker elements.
 
-    Only empty MAP elements are understood; a MAP with parameters is not
-    supported since its physical meaning is not known.
+    Only empty MAP elements are understood; a MAP with parameters is
+    not supported since its physical meaning is not known. Installed as
+    zero-length, transparent Markers.
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
+
+    Raises
+    ------
+    ValueError
+        If a MAP element has any non-empty parameters.
     """
 
     maps   = parsed_elements["map"]
@@ -1765,7 +2135,33 @@ def convert_coordinate_transformations(
         environment,
         config) -> None:
     """
-    Convert coordinate transformations from the SAD parsed data
+    Convert SAD COORD elements into Xsuite Translation/Rotation
+    elements.
+
+    Chooses the simplest representation for the number of active
+    transforms: a single Translation/Rotation for one active
+    transform, a combined Translation for DX+DY only, or -- for
+    anything more complex -- a sub-line of individually-named
+    Translation/Rotation elements in the order CHI1, CHI2, CHI3, then
+    DX/DY (or the reverse, DX/DY first, if DIR is set), per the SAD
+    manual's stated convention. A COORD with no recognised transform at
+    all is installed as a no-op Translation, with a warning.
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        The "elements" sub-dictionary of parsed lattice data.
+    environment : xt.Environment
+        The Xsuite environment to create converted elements into.
+    config : ConfigLike
+        Converter configuration (misalignment tolerances, coordinate
+        sign conventions).
+
+    Raises
+    ------
+    ValueError
+        If a computed offset/rotation value is neither a float nor a
+        deferred-expression string.
     """
 
     coord_transforms   = parsed_elements["coord"]

@@ -23,7 +23,30 @@ from ..types import ConfigLike
 ################################################################################
 def create_model_lattice_file_information(config: ConfigLike) -> str:
     """
-    Docstring
+    Generate the lattice-file source configuring per-element-type
+    models and integrators.
+
+    Writes the same `line.set(...)`/`configure_bend_model`/
+    `configure_quadrupole_model` calls
+    `sad2xs.main.convert_sad_to_xsuite` itself applies during
+    conversion, baking `config`'s model/integrator/kick-count settings
+    into the generated file as literal values, so a reloaded line
+    reproduces the exact same modelling choices without needing the
+    original `Config` object. Also emits
+    `line.replace_all_repeated_elements()` if
+    `config._replace_repeated_elements` is set.
+
+    Parameters
+    ----------
+    config : ConfigLike
+        Converter configuration supplying every model/integrator/
+        kick-count setting and `_replace_repeated_elements`.
+
+    Returns
+    -------
+    str
+        The generated Python source configuring the reloaded line's
+        modelling.
     """
 
     output_string = f"""

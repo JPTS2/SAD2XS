@@ -34,16 +34,36 @@ def create_multipole_lattice_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_multipole_lattice_file_information
-    
-    :param line: Description
-    :type line: xt.Line
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Generate the lattice-file source for every Xsuite Multipole
+    element.
+
+    Groups multipoles by quantized length (from
+    `extract_multipole_information`), writes one base `xt.Multipole`
+    per length (thick, with `config.MAX_KNL_ORDER` slots), then
+    clones every individual multipole from its length's base element.
+    A "simple" (unpowered, unshifted, unrotated) multipole (see
+    `check_is_simple_unpowered_multipole`) is written as a bare clone;
+    any other multipole is written with its full knl/ksl arrays and
+    any non-zero offset/rotation. Unlike the typed magnets (bend,
+    quad, sext, oct), multipole strengths are baked into the file as
+    literal knl/ksl values, not referenced as live optics variables --
+    there is no corresponding `create_multipole_optics_file_information`.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate multipole source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration (`MAGNET_LENGTH_PRECISION`,
+        `MAX_KNL_ORDER`, `OUTPUT_STRING_LENGTH`).
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no multipoles.
     """
 
     ########################################

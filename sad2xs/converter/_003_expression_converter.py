@@ -32,12 +32,28 @@ def convert_expressions(
         parsed_lattice_data:    dict,
         environment:            xt.Environment) -> None:
     """
-    Docstring for convert_expressions
+    Convert SAD globals and deferred expressions into live xdeps
+    expressions in the Xsuite environment.
 
-    :param parsed_lattice_data: Description
-    :type parsed_lattice_data: dict
-    :param environment: Description
-    :type environment: xt.Environment
+    Global variables and deferred expressions may reference each other
+    in any order, so each group is retried up to 10 times, registering
+    whichever entries successfully resolve on each pass, until either
+    every entry converts or no further progress is possible.
+
+    Parameters
+    ----------
+    parsed_lattice_data : dict
+        Parsed lattice data, as returned by `parse_sad_file`.
+    environment : xt.Environment
+        The Xsuite environment to register variables and expressions
+        into.
+
+    Raises
+    ------
+    ValueError
+        If any global variable or deferred expression cannot be
+        resolved after 10 passes (e.g. a circular or invalid
+        reference).
     """
 
     ########################################

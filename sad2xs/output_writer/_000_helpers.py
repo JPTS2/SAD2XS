@@ -27,8 +27,20 @@ import numpy as np
 ########################################
 def get_parentname(element_name):
     """
-    Elements may be repeated or inverted
-    Repeated elements are suffixed with ::0, ::1 etc
+    Strip a replica suffix from an element name, if present.
+
+    Repeated (cloned) elements are suffixed by Xsuite with "::0",
+    "::1", etc.
+
+    Parameters
+    ----------
+    element_name : str
+        The element name, possibly with a "::N" replica suffix.
+
+    Returns
+    -------
+    str
+        `element_name` with any "::N" suffix removed.
     """
     # Assume to start that the parent name is the element name excluding replica
     parent_name    = element_name.split('::')[0]
@@ -37,9 +49,21 @@ def get_parentname(element_name):
 
 def get_variablename(element_name):
     """
-    Elements may be repeated or inverted
-    Repeated elements are suffixed with ::0, ::1 etc
-    Inverted elements are prefixed with a '-' but take the same variable as the non-inverted element
+    Get the base-element (optics-variable) name for an element.
+
+    Strips both the "::N" replica suffix (see `get_parentname`) and
+    any leading '-' reversal marker, since a reversed element shares
+    its optics variables with the non-reversed original.
+
+    Parameters
+    ----------
+    element_name : str
+        The element name, possibly reversed and/or a replica.
+
+    Returns
+    -------
+    str
+        The base name used for this element's optics variables.
     """
 
     # Get the parent name
@@ -58,25 +82,53 @@ def get_variablename(element_name):
 ################################################################################
 def quantize_length(length, precision):
     """
-    Round a length to the nearest integer multiple of precision.
+    Round a length to the nearest integer multiple of `precision`.
 
     Base elements for replication are grouped and named by length: two
-    lengths that round to the same value share a single base element, since
-    no magnet is manufactured/measured to finer precision than this.
+    lengths that round to the same value share a single base element,
+    since no magnet is manufactured/measured to finer precision than
+    this.
+
+    Parameters
+    ----------
+    length : float
+        The element length, in metres.
+    precision : float
+        The rounding precision, in metres (see
+        `Config.MAGNET_LENGTH_PRECISION`).
+
+    Returns
+    -------
+    float
+        `length` rounded to the nearest multiple of `precision`.
     """
     return round(length / precision) * precision
 
 def generate_magnet_for_replication_names(length_dict, base_string, precision):
     """
-    To simplify the output, we create base magnets for replication
-    This function generates the names for these base magnets
-    Convention based on magnet type and length, expressed as an integer
-    number of `precision` units
+    Generate base-element names for replication, keyed by length.
 
-    N.B. Two assumptions:
-    1. length_dict keys are already quantized to `precision`
-    2. Lengths are less than 10m at 1E-9 precision (11-digit field)
-    3. Lengths are non-negative
+    Each name is `base_string` followed by the length expressed as an
+    integer number of `precision` units, zero-padded to 11 digits.
+
+    Parameters
+    ----------
+    length_dict : dict
+        Mapping of quantized length -> list of element names sharing
+        that length (as produced by `extract_bend_information`,
+        `extract_multipole_information`, etc.). Keys must already be
+        quantized to `precision`.
+    base_string : str
+        The element-family prefix (e.g. "quad", "sext").
+    precision : float
+        The length quantization precision, in metres. Lengths must be
+        non-negative and below 10 m at 1E-9 precision (an 11-digit
+        field).
+
+    Returns
+    -------
+    list of str
+        One base-element name per length in `length_dict`, sorted.
     """
     names           = []
     length_values	= np.array(list(length_dict.keys()))
@@ -94,7 +146,19 @@ def generate_magnet_for_replication_names(length_dict, base_string, precision):
 ################################################################################
 def get_knl_string(knl_array):
     """
-    Returns a string with the knl values
+    Format a knl/ksl array as a Python list literal, trimmed of
+    trailing zeros.
+
+    Parameters
+    ----------
+    knl_array : numpy.ndarray
+        The integrated multipole strength array (knl or ksl).
+
+    Returns
+    -------
+    str
+        A string like "[1.0e+00, 0, 2.5e-01]", with any trailing run
+        of zero entries omitted, or "[]" if every entry is zero.
     """
     # If all zero, just give an empty array
     if np.all(knl_array == 0):
@@ -133,11 +197,34 @@ def get_knl_string(knl_array):
 ########################################
 def extract_bend_information(line, line_table, config):
     """
-    Docstring for extract_bend_information
+    Collect real (h != 0) bends from a line and group them for
+    replication.
 
-    :param line: Description
-    :param line_table: Description
-    :param config: Description
+    Distinguishes bends from correctors by `h != 0` (design
+    curvature), then buckets each bend's base element by quantized
+    length into horizontal (rot_s_rad ~ 0), vertical (rot_s_rad ~
+    pi/2), or skew (any other rotation) groups. The writer classifies
+    the line as-is; it does not repair or canonicalize bend
+    orientation during serialization.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The line to extract bend information from.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration; only `MAGNET_LENGTH_PRECISION` is
+        used.
+
+    Returns
+    -------
+    tuple of (dict, dict, dict, list of str, dict)
+        `(hbends, vbends, sbends, unique_bend_variables,
+        bend_name_dict)`: three quantized-length -> [element name]
+        dictionaries (horizontal/vertical/skew), the sorted list of
+        distinct optics-variable base names, and a map from each
+        unique bend's element name to its optics-variable base name.
     """
 
     ########################################
@@ -212,11 +299,35 @@ def extract_bend_information(line, line_table, config):
 ########################################
 def extract_corrector_information(line, line_table, config):
     """
-    Docstring for extract_corrector_information
+    Collect correctors (h == 0 Bend elements) from a line and group
+    them for replication.
 
-    :param line: Description
-    :param line_table: Description
-    :param config: Description
+    Distinguishes correctors from real bends by `h == 0` (no design
+    curvature), then buckets each corrector's base element by
+    quantized length into horizontal (rot_s_rad ~ 0), vertical
+    (rot_s_rad ~ pi/2), or skew (any other rotation) groups. The
+    writer classifies the line as-is; it does not repair or
+    canonicalize corrector orientation during serialization.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The line to extract corrector information from.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration; only `MAGNET_LENGTH_PRECISION` is
+        used.
+
+    Returns
+    -------
+    tuple of (dict, dict, dict, list of str, dict)
+        `(hcorrs, vcorrs, scorrs, unique_corr_variables,
+        corr_name_dict)`: three quantized-length -> [element name]
+        dictionaries (horizontal/vertical/skew), the sorted list of
+        distinct optics-variable base names, and a map from each
+        unique corrector's element name to its optics-variable base
+        name.
     """
 
     ########################################
@@ -291,12 +402,29 @@ def extract_corrector_information(line, line_table, config):
 ########################################
 def extract_multipole_information(line, line_table, mode, config):
     """
-    Docstring for extract_multipole_information
+    Collect elements of one Xsuite type from a line, grouped by
+    quantized length for replication.
 
-    :param line: Description
-    :param line_table: Description
-    :param mode: Description
-    :param config: Description
+    Parameters
+    ----------
+    line : xt.Line
+        The line to extract element information from.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    mode : str
+        The Xsuite element-type name to match against
+        `line_table.element_type` (e.g. "Quadrupole", "Sextupole",
+        "Octupole", "Multipole", "UniformSolenoid").
+    config : ConfigLike
+        Converter configuration; only `MAGNET_LENGTH_PRECISION` is
+        used.
+
+    Returns
+    -------
+    tuple of (dict, list of str)
+        `(magnets, unique_names)`: a quantized-length -> [element
+        name] dictionary, and the list of distinct element names
+        found (in first-seen order).
     """
 
     ########################################
@@ -329,10 +457,26 @@ def extract_multipole_information(line, line_table, mode, config):
 ################################################################################
 def check_is_simple_bend_corr(line, replica_name):
     """
-    Docstring for check_is_simple_bend_corr
-    
-    :param line: Description
-    :param replica_name: Description
+    True if a Bend/corrector element has no edge, offset, or
+    combined-order field terms that would make cloning it unsafe.
+
+    A "simple" element (zero edge angles/fringe fint-hgap, zero
+    shift_x/shift_y, zero k1, and all-zero knl/ksl) is one whose full
+    behaviour is captured by its length, k0, and rotation alone, so it
+    can be safely represented by `env.new(..., mode="clone")` from a
+    base element sharing those three values.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The line containing `replica_name`.
+    replica_name : str
+        The element name to check.
+
+    Returns
+    -------
+    bool
+        True if the element is "simple" in the above sense.
     """
     is_simple = False
 
@@ -355,11 +499,30 @@ def check_is_simple_bend_corr(line, replica_name):
 
 def check_is_simple_quad_sext_oct(line, replica_name, mode):
     """
-    Docstring for check_is_simple_quad_sext_oct
-    
-    :param line: Description
-    :param replica_name: Description
-    :param mode: Description
+    True if a QUAD/SEXT/OCT-typed element has no offset, rotation, or
+    combined-order field terms that would make cloning it unsafe.
+
+    A "simple" element has at most one of its normal/skew strength
+    pair non-zero (never both), zero shift_x/shift_y/rot_s_rad, and
+    all-zero knl/ksl, so it can be safely represented by
+    `env.new(..., mode="clone")` from a base element sharing its
+    length and single active strength.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The line containing `replica_name`.
+    replica_name : str
+        The element name to check.
+    mode : str
+        The element type to check against: "Quadrupole", "Sextupole",
+        or "Octupole".
+
+    Returns
+    -------
+    bool
+        True if the element is "simple" in the above sense. False for
+        any `mode` other than the three listed.
     """
     is_simple   = False
 
@@ -397,11 +560,24 @@ def check_is_simple_quad_sext_oct(line, replica_name, mode):
 
 def check_is_skew_quad_sext_oct(line, replica_name, mode):
     """
-    Docstring for check_is_skew_quad_sext_oct
-    
-    :param line: Description
-    :param replica_name: Description
-    :param mode: Description
+    True if a QUAD/SEXT/OCT-typed element's skew strength is nonzero.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The line containing `replica_name`.
+    replica_name : str
+        The element name to check.
+    mode : str
+        The element type to check against: "Quadrupole", "Sextupole",
+        or "Octupole".
+
+    Returns
+    -------
+    bool
+        True if the element's skew strength (k1s/k2s/k3s, matching
+        `mode`) is nonzero. False for any `mode` other than the three
+        listed.
     """
     is_skew     = False
 
@@ -421,10 +597,21 @@ def check_is_skew_quad_sext_oct(line, replica_name, mode):
 
 def check_is_simple_unpowered_multipole(line, replica_name):
     """
-    Docstring for check_is_simple_unpowered_multipole
-    
-    :param line: Description
-    :param replica_name: Description
+    True if a Multipole element carries no field and no offset/
+    rotation.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The line containing `replica_name`.
+    replica_name : str
+        The element name to check.
+
+    Returns
+    -------
+    bool
+        True if knl and ksl are all-zero and shift_x/shift_y/
+        rot_s_rad are zero.
     """
     is_simple_unpowered = False
 
@@ -439,10 +626,21 @@ def check_is_simple_unpowered_multipole(line, replica_name):
 
 def check_is_simple_solenoid(line, replica_name):
     """
-    Docstring for check_is_simple_solenoid
-    
-    :param line: Description
-    :param replica_name: Description
+    True if a UniformSolenoid element carries no extra multipole
+    field and no transverse offset/rotation beyond its ks.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The line containing `replica_name`.
+    replica_name : str
+        The element name to check.
+
+    Returns
+    -------
+    bool
+        True if knl and ksl are all-zero and mult_shift_x/
+        mult_shift_y/rot_s_rad are zero.
     """
     is_simple_unpowered = False
 

@@ -33,16 +33,34 @@ def create_solenoid_lattice_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_solenoid_lattice_file_information
-    
-    :param line: Description
-    :type line: xt.Line
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Generate the lattice-file source for every UniformSolenoid
+    element.
+
+    Groups solenoids by quantized length (from
+    `extract_multipole_information`), writes one base
+    `xt.UniformSolenoid` per length (with `config.MAX_KNL_ORDER`
+    slots), then clones every individual solenoid from its length's
+    base element with its ks, any combined knl/ksl field (from
+    elements absorbed into the solenoid region by
+    `convert_solenoids`), and any non-zero offset/rotation/x0/y0.
+    Unlike bend/quad/sext/oct, no separate optics file is written for
+    solenoids -- ks and any combined field are baked in as literals.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate solenoid source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration (`MAGNET_LENGTH_PRECISION`,
+        `MAX_KNL_ORDER`, `OUTPUT_STRING_LENGTH`).
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no solenoids.
     """
 
     ########################################

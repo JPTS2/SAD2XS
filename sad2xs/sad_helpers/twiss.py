@@ -33,7 +33,17 @@ logger  = logging.getLogger(__name__)
 ################################################################################
 def generate_twiss_print_function():
     """
-    TBD
+    Build the SAD-side `SaveTwissFile[filename_]` function definition.
+
+    Writes lattice length, fractional tunes (Q1/Q2), and every line
+    element's Twiss record (NAME, TYPE, S, L, BETX/Y, ALFX/Y, MUX/Y,
+    DX/Y, DPX/Y, X/PX/Y/PY, DZ, DELTA, R1-R4) to `filename`, in TFS
+    format. Used by `twiss_sad` to extract SAD's Twiss output.
+
+    Returns
+    -------
+    str
+        The SAD command text defining `SaveTwissFile`.
     """
 
     twiss_command   = """
@@ -173,15 +183,80 @@ def twiss_sad(
         wall_time:              int     = 30,
         sad_path:               str     = "sad"):
     """
-    Generate a SAD command to compute the twiss parameters of a lattice.
+    Compute a lattice's Twiss parameters in real SAD, as an Xsuite
+    TwissTable.
 
-    trpt : bool, default False
-        If True, declare the beam line a transport line rather than part of
-        a storage ring (SAD's TRPT flag, antonym RING): the nominal/reference
-        momentum is carried along the line by accelerating elements, rather
-        than held fixed at the line's initial MOMENTUM. Independent of
-        rfsw/rad/radcod -- see docs/sad-behaviour.md for the physics this
-        controls.
+    Runs SAD's own Twiss (CELL/INS + CALC4D/CALC6D + COD + CALC),
+    reads back the TFS file `generate_twiss_print_function` writes,
+    and reassembles the result as an `xt.TwissTable` with column
+    names matching Xsuite's convention.
+
+    Parameters
+    ----------
+    lattice_filepath : str
+        Path to the SAD lattice file, relative to the current working
+        directory (SAD changes into the script's own directory, so
+        the lattice must be reachable from there).
+    line_name : str
+        The SAD line to USE.
+    reverse_element_order : bool, optional
+        Reverse the line's element order natively in SAD (via
+        `-ExtractBeamLine[]`) before computing Twiss. Defaults to
+        False.
+    reverse_survey_horizontal : bool, optional
+        Flip the sign of the horizontal-plane columns in the returned
+        Twiss (mirrors `reverse_line_survey_horizontal`'s
+        convention). Defaults to False.
+    closed : bool, optional
+        If True, treat the lattice as a closed ring (SAD's CELL); if
+        False, as a transfer line (SAD's INS). Defaults to True.
+    calc6d : bool, optional
+        If True, use SAD's CALC6D (longitudinal + transverse); if
+        False, CALC4D (transverse only). Defaults to False.
+    trpt : bool, optional
+        If True, declare the beam line a transport line rather than
+        part of a storage ring (SAD's TRPT flag, antonym RING): the
+        nominal/reference momentum is carried along the line by
+        accelerating elements, rather than held fixed at the line's
+        initial MOMENTUM. Independent of rfsw/rad/radcod -- see
+        docs/sad-behaviour.md for the physics this controls. Defaults
+        to False.
+    rfsw : bool, optional
+        Enable RF cavities (SAD's RFSW flag). Defaults to True.
+    rad : bool, optional
+        Enable radiation effects (SAD's RAD flag). Defaults to False.
+    radcod : bool, optional
+        Include radiation damping in the closed-orbit search (SAD's
+        RADCOD flag). Defaults to False.
+    radtaper : bool, optional
+        Enable RF/orbit tapering for radiation (SAD's RADTAPER flag).
+        Defaults to False.
+    delta0 : float, optional
+        Reference momentum offset (SAD's DP0). Defaults to 0.0.
+    additional_commands : str, optional
+        Extra SAD commands run after loading the line and before the
+        Twiss. Defaults to "".
+    wall_time : int, optional
+        Timeout, in seconds, for the SAD subprocess. Defaults to 30.
+    sad_path : str, optional
+        Path to the SAD executable. Defaults to "sad".
+
+    Returns
+    -------
+    xt.TwissTable
+        The lattice's Twiss parameters, ordered by s. Also carries
+        "qx", "qy", and "circumference" as table-level attributes.
+
+    Raises
+    ------
+    RuntimeError
+        If the SAD subprocess times out or exits non-zero (see
+        `run_sad`).
+    ValueError
+        If SAD's output contains a Mathematica undefined-symbol
+        marker (see `_check_mathematica_output`), or the TFS output
+        cannot be parsed (a physically degenerate lattice
+        configuration).
     """
 
     ########################################
@@ -364,9 +439,61 @@ def compute_second_order_dispersions(
         wall_time:              int                     = 60,
         sad_path:               str                     = "sad"):
     """
-    Compute the second order dispersions and add them to the provided twiss table.
+    Compute second-order dispersions and add them to a Twiss table.
 
-    With thanks to G. Broggi for the method.
+    Runs `twiss_sad` twice (at `delta0` and `delta0 + ddelta`) and
+    finite-differences the result: ddx = 2 * (x(delta0+ddelta) -
+    x(delta0) - dx(delta0) * ddelta) / ddelta**2 (and equivalently for
+    px/y/py). With thanks to G. Broggi for the method.
+
+    If `sad_twiss` is given, its s/x/px/y/py/zeta/delta columns are
+    checked against the on-momentum Twiss computed here as a
+    consistency guard before adding the new columns.
+
+    Parameters
+    ----------
+    lattice_filepath : str
+        Path to the SAD lattice file.
+    line_name : str
+        The SAD line to USE.
+    sad_twiss : xt.TwissTable or None, optional
+        An existing Twiss table to add the second-order-dispersion
+        columns to. If None, the on-momentum Twiss computed here is
+        used and returned. Defaults to None.
+    reverse_element_order, reverse_survey_horizontal, closed, calc6d : bool
+        Forwarded to `twiss_sad` for both the on- and off-momentum
+        Twiss calls.
+    rfsw, rad, radcod, radtaper : bool
+        Forwarded to `twiss_sad` for both the on- and off-momentum
+        Twiss calls.
+    delta0 : float, optional
+        Forwarded to `twiss_sad` for both the on- and off-momentum
+        Twiss calls.
+    additional_commands : str, optional
+        Forwarded to `twiss_sad` for both the on- and off-momentum
+        Twiss calls.
+    wall_time : int, optional
+        Forwarded to `twiss_sad` for both the on- and off-momentum
+        Twiss calls.
+    sad_path : str, optional
+        Forwarded to `twiss_sad` for both the on- and off-momentum
+        Twiss calls.
+    ddelta : float, optional
+        The momentum-offset step used for the finite difference.
+        Defaults to 1E-4.
+
+    Returns
+    -------
+    xt.TwissTable
+        `sad_twiss` (or the newly computed on-momentum Twiss, if
+        `sad_twiss` was None), with "ddx", "ddpx", "ddy", "ddpy"
+        columns added.
+
+    Raises
+    ------
+    AssertionError
+        If `sad_twiss` is given and its s/x/px/y/py/zeta/delta
+        columns do not match the on-momentum Twiss computed here.
     """
 
     ########################################
@@ -488,9 +615,56 @@ def compute_chromatic_functions(
         wall_time:              int                     = 60,
         sad_path:               str                     = "sad"):
     """
-    Compute the chromatic functions and add them to the provided twiss table.
+    Compute the chromatic functions (MAD8-convention Wx/Wy) and add
+    them to a Twiss table.
 
-    With thanks to G. Broggi for the method.
+    Runs `twiss_sad` three times (at delta0, delta0 + ddelta, and
+    delta0 - ddelta) and central-differences beta/alpha to build the
+    chromatic amplitude/phase functions, following MAD8 physics
+    manual section 6.3. With thanks to G. Broggi for the method.
+
+    If `sad_twiss` is given, its s/x/px/y/py/zeta/delta columns are
+    checked against the on-momentum Twiss computed here as a
+    consistency guard before adding the new columns.
+
+    Parameters
+    ----------
+    lattice_filepath : str
+        Path to the SAD lattice file.
+    line_name : str
+        The SAD line to USE.
+    sad_twiss : xt.TwissTable or None, optional
+        An existing Twiss table to add the chromatic-function columns
+        to. If None, the on-momentum Twiss computed here is used and
+        returned. Defaults to None.
+    reverse_element_order, reverse_survey_horizontal, closed, calc6d : bool
+        Forwarded to `twiss_sad` for all three Twiss calls.
+    rfsw, rad, radcod, radtaper : bool
+        Forwarded to `twiss_sad` for all three Twiss calls.
+    delta0 : float, optional
+        Forwarded to `twiss_sad` for all three Twiss calls.
+    additional_commands : str, optional
+        Forwarded to `twiss_sad` for all three Twiss calls.
+    wall_time : int, optional
+        Forwarded to `twiss_sad` for all three Twiss calls.
+    sad_path : str, optional
+        Forwarded to `twiss_sad` for all three Twiss calls.
+    ddelta : float, optional
+        The momentum-offset step used for the central difference.
+        Defaults to 1E-4.
+
+    Returns
+    -------
+    xt.TwissTable
+        `sad_twiss` (or the newly computed on-momentum Twiss, if
+        `sad_twiss` was None), with "bx_chrom", "by_chrom",
+        "ax_chrom", "ay_chrom", "wx_chrom", "wy_chrom" columns added.
+
+    Raises
+    ------
+    AssertionError
+        If `sad_twiss` is given and its s/x/px/y/py/zeta/delta
+        columns do not match the on-momentum Twiss computed here.
     """
 
     ########################################

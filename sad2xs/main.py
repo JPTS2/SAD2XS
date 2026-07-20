@@ -57,7 +57,60 @@ def convert_sad_to_xsuite(
         reverse_charge_sign:                 bool        = False,
         install_apertures_as_markers:   bool        = False,
         **kwargs):
-    
+    """
+    Convert a SAD lattice file to an Xsuite line, in one call.
+
+    Parses the SAD file, builds an Xsuite environment, and converts every
+    expression, element, and line. Applies solenoid reference-shift
+    corrections and configures per-element-type integrator models, then
+    writes the result to lattice and optics files on disk and reloads it
+    from those files, so the returned line matches the generated output.
+
+    If ``_test_mode`` is set (via a keyword argument, see `Config`), the
+    in-memory line is returned immediately after conversion, before any
+    files are written -- used by the test suite to avoid disk I/O per
+    test.
+
+    Parameters
+    ----------
+    sad_lattice_path : str
+        Path to the input SAD lattice file.
+    output_directory : str
+        Directory to write the generated lattice and optics files into.
+    output_filename : str or None, optional
+        Base filename for the generated output files. Defaults to the
+        input filename (without its ``.sad`` extension) when not given.
+    line_name : str or None, optional
+        SAD line name to select for conversion. Defaults to the longest
+        line in the lattice (by length, or by element count for
+        all-thin lines) when not given.
+    output_header : str, optional
+        Header text stamped into the generated lattice and optics files.
+    excluded_elements : list or None, optional
+        Element names to drop from the parsed lattice before conversion.
+    user_multipole_replacements : dict or None, optional
+        Per-element overrides controlling how specific elements convert
+        to multipoles.
+    reverse_element_order : bool, optional
+        Reverse the element order of the selected line.
+    reverse_survey_horizontal : bool, optional
+        Reverse the bend directions of the selected line (horizontal
+        survey mirroring).
+    reverse_charge_sign : bool, optional
+        Flip the sign of the reference particle's charge.
+    install_apertures_as_markers : bool, optional
+        Convert APERT elements to MARK elements instead of aperture
+        objects.
+    **kwargs
+        Forwarded to `Config` to override converter configuration
+        defaults (e.g. element models, integrators, tolerances).
+
+    Returns
+    -------
+    xt.Line
+        The converted Xsuite line, reloaded from the generated output
+        files (or the in-memory line directly, if ``_test_mode`` is set).
+    """
     ############################################################################
     # Load config
     ############################################################################

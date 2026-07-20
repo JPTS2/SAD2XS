@@ -41,6 +41,16 @@ def _collapse_slicing(name: str) -> str:
     slicing suffixes, and sad2xs's solenoid-boundary compound suffix (keeping
     any trailing repeat digit), leaving the name of the one logical placement
     a row belongs to.
+
+    Parameters
+    ----------
+    name : str
+        An Xsuite twiss-table row name.
+
+    Returns
+    -------
+    str
+        The name of the logical placement this row belongs to.
     """
     name    = name.split("::")[0].split("..")[0]
     m       = _COMPOUND_SUFFIX_RE.search(name)
@@ -52,6 +62,17 @@ def _parse_repeat_suffix(name_lower: str):
     """
     Undo `line.replace_all_repeated_elements()`'s ``{name}.{i}`` renaming ->
     (base, i), or (name_lower, None) if it doesn't match.
+
+    Parameters
+    ----------
+    name_lower : str
+        A lowercased element name, possibly ``{base}.{i}``-suffixed.
+
+    Returns
+    -------
+    tuple of (str, int or None)
+        `(base, i)` if `name_lower` matches the repeat-suffix
+        pattern, otherwise `(name_lower, None)`.
     """
     m   = _REPEAT_SUFFIX_RE.match(name_lower)
     if m is None:
@@ -71,8 +92,17 @@ def compute_s_sad(xsuite_twiss):
     `s` here. `zeta`'s evolution everywhere else is real physics and is
     left alone. Full derivation: docs/xsuite-helpers.md.
 
-    Returns `None` if there's no usable `zeta` column (e.g. an open-line 4D
-    twiss without a real 6D/RF setup).
+    Parameters
+    ----------
+    xsuite_twiss : xt.TwissTable
+        A converted line's twiss result.
+
+    Returns
+    -------
+    numpy.ndarray or None
+        SAD-equivalent `s` values, or `None` if there's no usable
+        `zeta` column (e.g. an open-line 4D twiss without a real
+        6D/RF setup).
     """
     if "zeta" not in xsuite_twiss.keys():
         return None
@@ -216,6 +246,25 @@ def align_xsuite_twiss_with_sad_twiss(
     claimed_xs      = set()
 
     def _accept(sad_i, row_idx, s_xs):
+        """
+        Accept or reject a candidate SAD-to-Xsuite row match by
+        `s_tol`, recording it in the shared matched/claimed state on
+        acceptance.
+
+        Acceptance always checks `s_for_tol` (s_sad where available),
+        not the raw `s_xs` used for ranking.
+
+        Parameters
+        ----------
+        sad_i : int
+            Index into `sad_names`/`sad_s` of the candidate SAD
+            element.
+        row_idx : int
+            Index into `xs_names`/`xs_s` of the candidate Xsuite row.
+        s_xs : float
+            The candidate row's ranking `s` value (unused for the
+            tolerance check itself, kept for the rejection log).
+        """
         # Acceptance always checks s_for_tol (s_sad where available), not
         # the raw s_xs used for ranking.
         s_compare   = s_for_tol[row_idx]
@@ -228,6 +277,27 @@ def align_xsuite_twiss_with_sad_twiss(
         claimed_xs.add(row_idx)
 
     def _rank_match(sad_idx_sorted_by_s, candidates):
+        """
+        Pair SAD elements to Xsuite candidates in matching rank order
+        by `s`, then hand each pair to `_accept`.
+
+        Both `sad_idx_sorted_by_s` and `candidates` are sorted by
+        position and paired index-for-index, so the Nth-lowest-s SAD
+        element gets the Nth-lowest-s remaining candidate -- correct
+        when a family's members are consistently ordered on both
+        sides, which every caller of `_rank_match` in this function
+        already ensures.
+
+        Parameters
+        ----------
+        sad_idx_sorted_by_s : list of int
+            SAD element indices for one name/family group, sorted by
+            `s`.
+        candidates : iterable of tuple of (int, float)
+            `(row_idx, s_xs)` Xsuite row candidates for the same
+            group; already-claimed rows are filtered out and the rest
+            sorted by `s_xs` before pairing.
+        """
         candidates  = sorted(
             {c for c in candidates if c[0] not in claimed_xs},
             key = lambda c: c[1])

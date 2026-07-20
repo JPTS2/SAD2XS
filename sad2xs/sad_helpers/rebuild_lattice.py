@@ -47,6 +47,19 @@ def rebuild_sad_lattice(
     output_filepath : str or None, optional
         Path to the output SAD lattice file. If None, appends "_rebuilt" to the
         input filename.
+    wall_time : int, optional
+        Timeout, in seconds, for the SAD subprocess. Defaults to 30.
+    sad_path : str, optional
+        Path to the SAD executable. Defaults to "sad".
+
+    Raises
+    ------
+    RuntimeError
+        If the SAD subprocess times out or exits non-zero (see
+        `run_sad`).
+    ValueError
+        If the rebuilt lattice contains a Mathematica undefined-symbol
+        marker (see `_check_mathematica_output`).
     """
 
     ########################################

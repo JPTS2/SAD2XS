@@ -35,7 +35,58 @@ def emit_sad(
         wall_time:              int         = 30,
         sad_path:               str         = "sad") -> dict:
     """
-    Generate a SAD command to compute the twiss parameters of a lattice.
+    Compute a lattice's 6D equilibrium emittance and radiation
+    parameters in real SAD.
+
+    Runs SAD's EMIT command (CALC6D + COD + CALC first) and parses
+    its terminal output block (captured between explicit
+    "! START EMIT"/"! END EMIT" markers) into a dictionary of physical
+    quantities, converting each value's printed unit suffix (mm/um/nm,
+    TeV/GeV/MeV/keV/eV, GHz/MHz/kHz/Hz, GV/MV/kV/V) to SI.
+
+    Parameters
+    ----------
+    lattice_filepath : str
+        Path to the SAD lattice file, relative to the current working
+        directory (SAD changes into the script's own directory, so
+        the lattice must be reachable from there).
+    line_name : str
+        The SAD line to USE.
+    radcod : bool, optional
+        Include radiation damping in the closed-orbit search (SAD's
+        RADCOD flag). Defaults to False.
+    radtaper : bool, optional
+        Enable RF/orbit tapering for radiation (SAD's RADTAPER flag).
+        Defaults to False.
+    additional_commands : str, optional
+        Extra SAD commands run after loading the line and before the
+        EMIT calculation. Defaults to "".
+    wall_time : int, optional
+        Timeout, in seconds, for the SAD subprocess. Defaults to 30.
+    sad_path : str, optional
+        Path to the SAD executable. Defaults to "sad".
+
+    Returns
+    -------
+    dict
+        Keys: design_momentum, revolution_frequency, eneloss_turn,
+        effective_voltage, equilibrium_zeta, momentum_compaction,
+        orbit_dilation, effective_harmonic, bucket_height,
+        synchrotron_frequency, imag_tune, real_tune, damping_turn,
+        damping_time, damping_partition, gemitt_x, gemitt_y,
+        gemitt_z, energy_spread, bunch_length -- each in SI units
+        (radians, metres, seconds, Hz, volts, eV as appropriate); the
+        three damping/tune tuples are (x, y, z) or (x, y).
+
+    Raises
+    ------
+    RuntimeError
+        If the SAD subprocess times out or exits non-zero (see
+        `run_sad`).
+    ValueError
+        If SAD's output contains a Mathematica undefined-symbol
+        marker (see `_check_mathematica_output`), or an unrecognised
+        unit suffix is encountered while parsing a value.
     """
 
     ########################################
@@ -130,6 +181,24 @@ abort;
     # Data cleaning functions
     ############################################################################
     def convert_length(string: str) -> float:
+        """
+        Convert a SAD length value string to metres.
+
+        Parameters
+        ----------
+        string : str
+            A value with a unit suffix: " mm", " um", " nm", or " m".
+
+        Returns
+        -------
+        float
+            The value in metres.
+
+        Raises
+        ------
+        ValueError
+            If `string` has no recognised length unit suffix.
+        """
         if string.endswith(" mm"):
             return float(string.split(" mm")[0].strip()) * 1E-3
         if string.endswith(" um"):
@@ -141,6 +210,25 @@ abort;
         raise ValueError("Unknown length units")
 
     def convert_energy(string: str) -> float:
+        """
+        Convert a SAD energy value string to eV.
+
+        Parameters
+        ----------
+        string : str
+            A value with a unit suffix: " TeV", " GeV", " MeV",
+            " keV", or " eV".
+
+        Returns
+        -------
+        float
+            The value in eV.
+
+        Raises
+        ------
+        ValueError
+            If `string` has no recognised energy unit suffix.
+        """
         if string.endswith(" TeV"):
             return float(string.split(" TeV")[0].strip()) * 1E12
         if string.endswith(" GeV"):
@@ -154,6 +242,25 @@ abort;
         raise ValueError("Unknown energy units")
 
     def convert_frequency(string: str) -> float:
+        """
+        Convert a SAD frequency value string to Hz.
+
+        Parameters
+        ----------
+        string : str
+            A value with a unit suffix: " GHz", " MHz", " kHz", or
+            " Hz".
+
+        Returns
+        -------
+        float
+            The value in Hz.
+
+        Raises
+        ------
+        ValueError
+            If `string` has no recognised frequency unit suffix.
+        """
         if string.endswith(" GHz"):
             return float(string.split(" GHz")[0].strip()) * 1E9
         if string.endswith(" MHz"):
@@ -165,6 +272,24 @@ abort;
         raise ValueError("Unknown frequency units")
 
     def convert_voltage(string: str) -> float:
+        """
+        Convert a SAD voltage value string to volts.
+
+        Parameters
+        ----------
+        string : str
+            A value with a unit suffix: " GV", " MV", " kV", or " V".
+
+        Returns
+        -------
+        float
+            The value in volts.
+
+        Raises
+        ------
+        ValueError
+            If `string` has no recognised voltage unit suffix.
+        """
         if string.endswith(" GV"):
             return float(string.split(" GV")[0].strip()) * 1E9
         if string.endswith(" MV"):

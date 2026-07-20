@@ -52,11 +52,27 @@ def transfer_matrix_sad(
     end_element : str | None, optional
         Name of the ending element for the transfer matrix calculation.
         If None, the end of the beamline is used.
+    wall_time : int, optional
+        Timeout, in seconds, for the SAD subprocess. Defaults to 30.
+    sad_path : str, optional
+        Path to the SAD executable. Defaults to "sad".
 
     Returns
     -------
     np.ndarray
         The transfer matrix as a NumPy array.
+
+    Raises
+    ------
+    ValueError
+        If exactly one of `start_element`/`end_element` is given (both
+        or neither are required), if SAD's output contains a
+        Mathematica undefined-symbol marker (see
+        `_check_mathematica_output`), or if no matrix is found in
+        SAD's output.
+    RuntimeError
+        If the SAD subprocess times out or exits non-zero (see
+        `run_sad`).
     """
 
     ########################################

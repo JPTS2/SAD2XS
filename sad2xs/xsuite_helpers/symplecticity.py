@@ -34,6 +34,19 @@ _J  = np.array([
 # Symplecticity residual: (M.T @ J @ M) - J, zero for a symplectic M
 ################################################################################
 def _residual(M):
+    """
+    Compute the symplecticity residual of a transfer matrix.
+
+    Parameters
+    ----------
+    M : numpy.ndarray
+        A 6x6 transfer matrix.
+
+    Returns
+    -------
+    numpy.ndarray
+        `(M.T @ J @ M) - J`, the zero matrix for a symplectic `M`.
+    """
     return (M.T @ _J @ M) - _J
 
 ################################################################################

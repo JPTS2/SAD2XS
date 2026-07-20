@@ -33,16 +33,34 @@ def create_octupole_lattice_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_octupole_lattice_file_information
-    
-    :param line: Description
-    :type line: xt.Line
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Generate the lattice-file source for every OCT element.
+
+    Groups octupoles by quantized length (from
+    `extract_multipole_information`), writes one base `xt.Octupole`
+    per length, then clones every individual octupole from its
+    length's base element. A "simple" octupole (see
+    `check_is_simple_quad_sext_oct`) is written as a single-line clone
+    with just k3 or k3s (whichever is active); any other octupole is
+    written with every non-zero strength/offset/combined-multipole
+    parameter listed explicitly. Strengths are referenced as live
+    optics variables ("k3_<name>"/"k3s_<name>"), not baked-in
+    literals.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate octupole source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration; only `MAGNET_LENGTH_PRECISION` is
+        used.
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no octupoles.
     """
 
     ########################################
@@ -177,16 +195,36 @@ def create_octupole_optics_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_octupole_optics_file_information
-    
-    :param line: Description
-    :type line: xt.Line
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Generate the optics-file source assigning every octupole's
+    k3/k3s.
+
+    Writes one `k3_<name>`/`k3s_<name> = <value>,` line per distinct
+    octupole optics-variable name, aligned to
+    `config.OUTPUT_STRING_SEP`, for use inside the generated
+    `env.vars.update(...)` call. Zero values are omitted (the writer's
+    `default_to_zero` setting covers them).
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate octupole optics source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration (`MAGNET_LENGTH_PRECISION`,
+        `OUTPUT_STRING_SEP`).
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no octupoles.
+
+    Raises
+    ------
+    KeyError
+        If neither the octupole variable nor its reversed form is
+        found in `line`.
     """
 
     ########################################

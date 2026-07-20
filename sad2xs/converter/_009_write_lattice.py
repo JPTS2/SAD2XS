@@ -55,12 +55,50 @@ def write_lattice(
         offset_marker_locations:    dict | None,
         config:                     ConfigLike | None):
     """
-    Write the outputs to the specified files.
-    
-    Parameters:
-    line (xt.Line): The xtrack line object.
-    output_filename (str): The base name for the output files.
-    header (str): The header for the output files.
+    Write a converted line to a self-contained, reloadable Python
+    lattice file.
+
+    Generates a `.py` file that reconstructs `line` from scratch when
+    executed against a fresh `xt.Environment`: reference-particle
+    globals, then one section per element family (drifts, bends,
+    correctors, quadrupoles, sextupoles, octupoles, multipoles,
+    solenoids, cavities, reference shifts, apertures, markers), then
+    the LINE definition and modelling (integrator/model) settings, and
+    finally any resolved offset-marker insertion points. Elements are
+    grouped by length (see `sad2xs.output_writer._000_helpers`) so
+    identical elements are written once and reused via
+    `env.new(..., mode="clone")`; a '-'-prefixed element is only
+    written if no non-reversed sibling of the same root name exists in
+    the line.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to write. Must already have reference-
+        particle globals (mass0/p0c/q0, and fshift) available either
+        as line variables or on `line.particle_ref`.
+    output_filename : str
+        Base filename (without extension) for the generated `.py`
+        file.
+    output_directory : str or None
+        Directory to write the file into.
+    output_header : str
+        Header text stamped into the generated file, above the
+        standard "Converted using the SAD2XS Converter" block.
+    offset_marker_locations : dict or None
+        Resolved offset-marker insertion points, as returned by
+        `sad2xs.converter._008_offset_markers.convert_offset_markers`.
+        If given, an "Install Offset Markers" section is appended.
+    config : ConfigLike or None
+        Converter configuration. If None, a default `Config()` is
+        used (the path taken when `write_lattice` is called directly,
+        outside `convert_sad_to_xsuite`).
+
+    Raises
+    ------
+    ValueError
+        If a reference-particle global is unavailable from both
+        `line`'s variables and `line.particle_ref`.
     """
 
     ########################################
