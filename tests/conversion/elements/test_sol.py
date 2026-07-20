@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-11
+Date:       2026-07-20
 ================================================================================
 """
 ################################################################################
@@ -46,6 +46,7 @@ from tests.support.diagnostics import (
     diagnostic_report_path,
     write_tracking_failure_report,
     write_twiss_failure_report)
+from tests.support.tracking_helpers import track_xsuite_particles
 from sad2xs.sad_helpers import twiss_sad
 
 ################################################################################
@@ -1099,17 +1100,8 @@ def _run_sol_tracking_comparison(
             _verbose         = False,
             _test_mode       = True)
 
-        xs_particles = xt.Particles(
-            "positron",
-            p0c     = 1.0E9,
-            x     = x_init.copy(),
-            px    = px_init.copy(),
-            y     = y_init.copy(),
-            py    = py_init.copy(),
-            zeta  = zeta_init.copy(),
-            delta = delta_init.copy())
-
-        line.track(xs_particles, num_turns = 1)
+        xs_particles = track_xsuite_particles(
+            line, x_init, px_init, y_init, py_init, zeta_init, delta_init)
     finally:
         os.chdir(cwd)
 
@@ -1217,17 +1209,8 @@ def test_sol_disfrin_off_diverges_from_xsuite_in_tracking(write_lattice, tmp_pat
             _verbose         = False,
             _test_mode       = True)
 
-        xs_particles = xt.Particles(
-            "positron",
-            p0c     = 1.0E9,
-            x     = x_init.copy(),
-            px    = px_init.copy(),
-            y     = y_init.copy(),
-            py    = py_init.copy(),
-            zeta  = zeta_init.copy(),
-            delta = delta_init.copy())
-
-        line.track(xs_particles, num_turns = 1)
+        xs_particles = track_xsuite_particles(
+            line, x_init, px_init, y_init, py_init, zeta_init, delta_init)
     finally:
         os.chdir(cwd)
 

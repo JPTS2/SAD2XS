@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-11
+Date:       2026-07-20
 ================================================================================
 """
 ################################################################################
@@ -48,7 +48,24 @@ from tests.support.diagnostics import (
     diagnostic_report_path,
     write_tracking_failure_report,
     write_twiss_failure_report)
+from tests.support.tracking_helpers import track_xsuite_particles
 from sad2xs.sad_helpers import twiss_sad
+
+################################################################################
+# Shared Tracking Coordinates
+################################################################################
+def _standard_five_particle_offsets():
+    """
+    Standard 5-particle probe reused by several tracking comparisons: a
+    null particle plus one offset each in x, px, y, py.
+    """
+    x_init     = np.array([0.0, 1E-4, 0.0, 1E-4, -1E-4])
+    px_init    = np.array([0.0, 0.0, 1E-4, 0.0, -1E-4])
+    y_init     = np.array([0.0, 0.0, 1E-4, 1E-4, -1E-4])
+    py_init    = np.array([0.0, 1E-4, 0.0, -1E-4, 1E-4])
+    zeta_init  = np.zeros_like(x_init)
+    delta_init = np.zeros_like(x_init)
+    return x_init, px_init, y_init, py_init, zeta_init, delta_init
 
 ################################################################################
 # Diagnostic Helpers
@@ -1320,12 +1337,8 @@ def test_mult_conversion_matches_sad_tracking_for_combined_orders(
     """
     Converted combined-order SAD MULT elements should match SAD tracking.
     """
-    x_init     = np.array([0.0, 1E-4, 0.0, 1E-4, -1E-4])
-    px_init    = np.array([0.0, 0.0, 1E-4, 0.0, -1E-4])
-    y_init     = np.array([0.0, 0.0, 1E-4, 1E-4, -1E-4])
-    py_init    = np.array([0.0, 1E-4, 0.0, -1E-4, 1E-4])
-    zeta_init  = np.zeros_like(x_init)
-    delta_init = np.zeros_like(x_init)
+    x_init, px_init, y_init, py_init, zeta_init, delta_init = \
+        _standard_five_particle_offsets()
 
     cwd = os.getcwd()
     os.chdir(tmp_path)
@@ -1375,17 +1388,8 @@ def test_mult_conversion_matches_sad_tracking_for_combined_orders(
             _verbose            = False,
             _test_mode          = True)
 
-        xs_particles = xt.Particles(
-            "positron",
-            p0c     = 1.0E9,
-            x       = x_init.copy(),
-            px      = px_init.copy(),
-            y       = y_init.copy(),
-            py      = py_init.copy(),
-            zeta    = zeta_init.copy(),
-            delta   = delta_init.copy())
-
-        line.track(xs_particles, num_turns = 1)
+        xs_particles = track_xsuite_particles(
+            line, x_init, px_init, y_init, py_init, zeta_init, delta_init)
     finally:
         os.chdir(cwd)
 
@@ -1413,12 +1417,8 @@ def test_mult_conversion_matches_sad_tracking_for_thin_multipole(
     """
     Converted thin SAD MULT elements should match SAD tracking.
     """
-    x_init     = np.array([0.0, 1E-4, 0.0, 1E-4, -1E-4])
-    px_init    = np.array([0.0, 0.0, 1E-4, 0.0, -1E-4])
-    y_init     = np.array([0.0, 0.0, 1E-4, 1E-4, -1E-4])
-    py_init    = np.array([0.0, 1E-4, 0.0, -1E-4, 1E-4])
-    zeta_init  = np.zeros_like(x_init)
-    delta_init = np.zeros_like(x_init)
+    x_init, px_init, y_init, py_init, zeta_init, delta_init = \
+        _standard_five_particle_offsets()
 
     cwd = os.getcwd()
     os.chdir(tmp_path)
@@ -1463,17 +1463,8 @@ def test_mult_conversion_matches_sad_tracking_for_thin_multipole(
             _verbose            = False,
             _test_mode          = True)
 
-        xs_particles = xt.Particles(
-            "positron",
-            p0c     = 1.0E9,
-            x       = x_init.copy(),
-            px      = px_init.copy(),
-            y       = y_init.copy(),
-            py      = py_init.copy(),
-            zeta    = zeta_init.copy(),
-            delta   = delta_init.copy())
-
-        line.track(xs_particles, num_turns = 1)
+        xs_particles = track_xsuite_particles(
+            line, x_init, px_init, y_init, py_init, zeta_init, delta_init)
     finally:
         os.chdir(cwd)
 
