@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-20
 ================================================================================
 """
 ################################################################################
@@ -18,8 +18,7 @@ Date:       2026-06-21
 import pytest
 import xtrack as xt
 
-import sad2xs as s2x
-from sad2xs.config import Config
+from tests.support.writer_helpers import write_and_load as _shared_write_and_load
 
 ################################################################################
 # Helpers
@@ -29,29 +28,8 @@ def _writer_roundtrip(line, tmp_path):
     Write a line using the public SAD2XS writer entry points and reload it in a
     clean Xsuite environment. Returns the reloaded line.
     """
-    output_dir = tmp_path / "writer_output"
-    output_dir.mkdir()
-
-    s2x.write_lattice(
-        line                    = line,
-        output_filename         = "test_lattice",
-        output_directory        = str(output_dir),
-        output_header           = "Drift writer test",
-        offset_marker_locations = None,
-        config                  = Config(_verbose = False))
-
-    s2x.write_optics(
-        line              = line,
-        output_filename   = "test_lattice_import_optics",
-        output_directory  = str(output_dir),
-        output_header     = "Drift writer test",
-        config            = Config(_verbose = False))
-
-    env = xt.Environment()
-    env.call(str(output_dir / "test_lattice.py"))
-    env.call(str(output_dir / "test_lattice_import_optics.py"))
-
-    return env.lines["line"]
+    _, reloaded_line = _shared_write_and_load(line, tmp_path, output_header = "Drift writer test")
+    return reloaded_line
 
 
 def _build_drift_line(length):

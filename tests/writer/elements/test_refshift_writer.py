@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-20
 ================================================================================
 """
 ################################################################################
@@ -18,8 +18,7 @@ Date:       2026-06-21
 import pytest
 import xtrack as xt
 
-import sad2xs as s2x
-from sad2xs.config import Config
+from tests.support.writer_helpers import write_and_load as _shared_write_and_load
 
 ################################################################################
 # Helpers
@@ -42,29 +41,7 @@ def _write_and_load(line, tmp_path):
     always references the variable, and env.vars.default_to_zero = True returns
     0 for any undefined variable on reload.
     """
-    output_dir = tmp_path / "writer_output"
-    output_dir.mkdir()
-
-    s2x.write_lattice(
-        line                    = line,
-        output_filename         = "test_lattice",
-        output_directory        = str(output_dir),
-        output_header           = "Reference shift writer test",
-        offset_marker_locations = None,
-        config                  = Config(_verbose = False))
-
-    s2x.write_optics(
-        line              = line,
-        output_filename   = "test_lattice_import_optics",
-        output_directory  = str(output_dir),
-        output_header     = "Reference shift writer test",
-        config            = Config(_verbose = False))
-
-    env = xt.Environment()
-    env.call(str(output_dir / "test_lattice.py"))
-    env.call(str(output_dir / "test_lattice_import_optics.py"))
-
-    return env, env.lines["line"]
+    return _shared_write_and_load(line, tmp_path, output_header = "Reference shift writer test")
 
 
 def _writer_roundtrip(line, tmp_path):
