@@ -37,7 +37,7 @@ class _SAD2XSFormatter(logging.Formatter):
     Prefix warnings and errors so they stand out on the terminal.
     The INFO/DEBUG narrative is left unprefixed.
     """
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         """
         Format a log record, prefixing WARNING/ERROR levels only.
 

@@ -20,6 +20,15 @@ from __future__ import annotations
 from typing import Protocol
 
 ################################################################################
+# Parsed SAD Value Type
+################################################################################
+# A parsed SAD parameter value: either numeric, or a deferred
+# expression string (an unresolved reference to a variable/expression
+# defined elsewhere in the lattice file) -- see
+# `converter._000_helpers.parse_expression`.
+SadValue = float | str
+
+################################################################################
 # Config Type
 ################################################################################
 class ConfigLike(Protocol):

@@ -17,11 +17,12 @@ Date:       2026-07-20
 # Required Packages
 ################################################################################
 import numpy as np
+import xtrack as xt
 
 ################################################################################
 # Line Element Order Reversal
 ################################################################################
-def reverse_line_element_order(line):
+def reverse_line_element_order(line: xt.Line) -> xt.Line:
     """
     Reverse a line's element order (SAD's '-LINE' operator).
 
@@ -165,7 +166,7 @@ def reverse_line_element_order(line):
 ################################################################################
 # Line Bend Direction Reversal
 ################################################################################
-def reverse_line_survey_horizontal(line):
+def reverse_line_survey_horizontal(line: xt.Line) -> xt.Line:
     """
     Flip a line's horizontal bend direction (mirror the survey through
     the horizontal plane), without reversing element order.

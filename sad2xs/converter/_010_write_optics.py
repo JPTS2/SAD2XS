@@ -44,7 +44,7 @@ def write_optics(
         output_filename:            str,
         output_directory:           str,
         output_header:              str,
-        config:                     ConfigLike | None):
+        config:                     ConfigLike | None) -> None:
     """
     Write a companion "import optics" Python file for a converted line.
 

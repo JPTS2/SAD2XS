@@ -190,7 +190,7 @@ def _extract_scalar_global(section: str, keyword: str) -> str:
 ################################################################################
 # Electron Volt Conversion
 ################################################################################
-def ev_text_to_float(value_in_ev: str):
+def ev_text_to_float(value_in_ev: str) -> float | None:
     """
     Convert a SAD energy value string to a float, in eV.
 
@@ -271,7 +271,7 @@ def _split_sections_with_line_numbers(content: str) -> list[tuple[int, str]]:
     list of tuple of (int, str)
         `(first_line_no, section_text)` pairs, in file order.
     """
-    def _append_section(text, first_line_no):
+    def _append_section(text: str, first_line_no: int) -> None:
         """
         Record one section, adjusting for newlines carried over from the
         previous section's terminator.
@@ -310,7 +310,7 @@ def _split_sections_with_line_numbers(content: str) -> list[tuple[int, str]]:
 
     return sections
 
-def load_and_clean_whitespace(sad_lattice_path: str):
+def load_and_clean_whitespace(sad_lattice_path: str) -> list[tuple[int, str]]:
     """
     Load a SAD file and normalise it into semicolon-delimited sections.
 
@@ -393,7 +393,7 @@ def load_and_clean_whitespace(sad_lattice_path: str):
 def parse_sad_file(
         sad_lattice_path:               str,
         config:                         ConfigLike,
-        install_apertures_as_markers:   bool = False) -> dict:
+        install_apertures_as_markers:   bool        = False) -> dict:
     """
     Parse a SAD lattice file into a structured, converter-ready dictionary.
 

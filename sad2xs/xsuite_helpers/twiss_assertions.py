@@ -16,6 +16,7 @@ Date:       2026-07-20
 # Required Packages
 ################################################################################
 import numpy as np
+import xtrack as xt
 
 ################################################################################
 # Default per-column tolerances
@@ -46,9 +47,11 @@ _BASELINE_SUBTRACTED_COLUMNS   = {"zeta"}
 # Assert two aligned twiss tables agree
 ################################################################################
 def assert_xsuite_matches_sad_twiss(
-        xsuite_aligned, sad_aligned, *,
-        tolerances               = None,
-        xsuite_column_overrides  = None):
+        xsuite_aligned:             xt.Table,
+        sad_aligned:                xt.Table,
+        *,
+        tolerances:                 dict[str, dict[str, float]] | None  = None,
+        xsuite_column_overrides:    dict[str, str] | None               = None) -> None:
     """
     Assert an Xsuite/SAD twiss pair agrees column by column, within
     per-column tolerance.

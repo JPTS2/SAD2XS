@@ -31,7 +31,7 @@ logger  = logging.getLogger(__name__)
 ################################################################################
 # SAD Twiss Print Function
 ################################################################################
-def generate_twiss_print_function():
+def generate_twiss_print_function() -> str:
     """
     Build the SAD-side `SaveTwissFile[filename_]` function definition.
 
@@ -176,21 +176,21 @@ Close[fn];
 # Twiss
 ################################################################################
 def twiss_sad(
-        lattice_filepath:       str,
-        line_name:              str,
-        reverse_element_order:  bool    = False,
-        reverse_survey_horizontal: bool    = False,
-        closed:                 bool    = True,
-        calc6d:                 bool    = False,
-        trpt:                   bool    = False,
-        rfsw:                   bool    = True,
-        rad:                    bool    = False,
-        radcod:                 bool    = False,
-        radtaper:               bool    = False,
-        delta0:                 float   = 0.0,
-        additional_commands:    str     = "",
-        wall_time:              int     = 30,
-        sad_path:               str     = "sad"):
+        lattice_filepath:           str,
+        line_name:                  str,
+        reverse_element_order:      bool    = False,
+        reverse_survey_horizontal:  bool    = False,
+        closed:                     bool    = True,
+        calc6d:                     bool    = False,
+        trpt:                       bool    = False,
+        rfsw:                       bool    = True,
+        rad:                        bool    = False,
+        radcod:                     bool    = False,
+        radtaper:                   bool    = False,
+        delta0:                     float   = 0.0,
+        additional_commands:        str     = "",
+        wall_time:                  int     = 30,
+        sad_path:                   str     = "sad") -> xt.TwissTable:
     """
     Compute a lattice's Twiss parameters in real SAD, as an Xsuite
     TwissTable.
@@ -431,22 +431,22 @@ abort;
 # Add second order dispersions to twiss
 ################################################################################
 def compute_second_order_dispersions(
-        lattice_filepath:       str,
-        line_name:              str,
-        sad_twiss:              xt.TwissTable | None    = None,
-        reverse_element_order:  bool                    = False,
-        reverse_survey_horizontal: bool                    = False,
-        closed:                 bool                    = True,
-        calc6d:                 bool                    = False,
-        rfsw:                   bool                    = True,
-        rad:                    bool                    = False,
-        radcod:                 bool                    = False,
-        radtaper:               bool                    = False,
-        delta0:                 float                   = 0.0,
-        ddelta:                 float                   = 1E-4,
-        additional_commands:    str                     = "",
-        wall_time:              int                     = 60,
-        sad_path:               str                     = "sad"):
+        lattice_filepath:           str,
+        line_name:                  str,
+        sad_twiss:                  xt.TwissTable | None    = None,
+        reverse_element_order:      bool                    = False,
+        reverse_survey_horizontal:  bool                    = False,
+        closed:                     bool                    = True,
+        calc6d:                     bool                    = False,
+        rfsw:                       bool                    = True,
+        rad:                        bool                    = False,
+        radcod:                     bool                    = False,
+        radtaper:                   bool                    = False,
+        delta0:                     float                   = 0.0,
+        ddelta:                     float                   = 1E-4,
+        additional_commands:        str                     = "",
+        wall_time:                  int                     = 60,
+        sad_path:                   str                     = "sad") -> xt.TwissTable:
     """
     Compute second-order dispersions and add them to a Twiss table.
 
@@ -607,22 +607,22 @@ def compute_second_order_dispersions(
 # Add chromatic functions
 ################################################################################
 def compute_chromatic_functions(
-        lattice_filepath:       str,
-        line_name:              str,
-        sad_twiss:              xt.TwissTable | None    = None,
-        reverse_element_order:  bool                    = False,
-        reverse_survey_horizontal: bool                    = False,
-        closed:                 bool                    = True,
-        calc6d:                 bool                    = False,
-        rfsw:                   bool                    = True,
-        rad:                    bool                    = False,
-        radcod:                 bool                    = False,
-        radtaper:               bool                    = False,
-        delta0:                 float                   = 0.0,
-        ddelta:                 float                   = 1E-4,
-        additional_commands:    str                     = "",
-        wall_time:              int                     = 60,
-        sad_path:               str                     = "sad"):
+        lattice_filepath:           str,
+        line_name:                  str,
+        sad_twiss:                  xt.TwissTable | None    = None,
+        reverse_element_order:      bool                    = False,
+        reverse_survey_horizontal:  bool                    = False,
+        closed:                     bool                    = True,
+        calc6d:                     bool                    = False,
+        rfsw:                       bool                    = True,
+        rad:                        bool                    = False,
+        radcod:                     bool                    = False,
+        radtaper:                   bool                    = False,
+        delta0:                     float                   = 0.0,
+        ddelta:                     float                   = 1E-4,
+        additional_commands:        str                     = "",
+        wall_time:                  int                     = 60,
+        sad_path:                   str                     = "sad") -> xt.TwissTable:
     """
     Compute the chromatic functions (MAD8-convention Wx/Wy) and add
     them to a Twiss table.

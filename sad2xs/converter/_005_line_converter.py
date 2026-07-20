@@ -25,7 +25,10 @@ logger  = logging.getLogger(__name__)
 ################################################################################
 # Component Reversal
 ################################################################################
-def create_reversed_component(component, environment, offset_marker_names = frozenset()):
+def create_reversed_component(
+        component:              str,
+        environment:            xt.Environment,
+        offset_marker_names:    frozenset[str]  = frozenset()) -> str:
     """
     Create (or identify) the reversed counterpart of one line component.
 

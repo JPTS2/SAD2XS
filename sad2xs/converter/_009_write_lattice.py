@@ -53,7 +53,7 @@ def write_lattice(
         output_directory:           str | None,
         output_header:              str,
         offset_marker_locations:    dict | None,
-        config:                     ConfigLike | None):
+        config:                     ConfigLike | None) -> None:
     """
     Write a converted line to a self-contained, reloadable Python
     lattice file.

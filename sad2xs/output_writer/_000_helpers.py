@@ -17,6 +17,10 @@ Date:       2026-07-20
 # Import Packages
 ################################################################################
 import numpy as np
+import xdeps as xd
+import xtrack as xt
+
+from ..types import ConfigLike
 
 ################################################################################
 # Naming
@@ -25,7 +29,7 @@ import numpy as np
 ########################################
 # Parent/Variable Name Extraction
 ########################################
-def get_parentname(element_name):
+def get_parentname(element_name: str) -> str:
     """
     Strip a replica suffix from an element name, if present.
 
@@ -47,7 +51,7 @@ def get_parentname(element_name):
 
     return parent_name
 
-def get_variablename(element_name):
+def get_variablename(element_name: str) -> str:
     """
     Get the base-element (optics-variable) name for an element.
 
@@ -80,7 +84,7 @@ def get_variablename(element_name):
 ################################################################################
 # Elements for replication naming
 ################################################################################
-def quantize_length(length, precision):
+def quantize_length(length: float, precision: float) -> float:
     """
     Round a length to the nearest integer multiple of `precision`.
 
@@ -104,7 +108,10 @@ def quantize_length(length, precision):
     """
     return round(length / precision) * precision
 
-def generate_magnet_for_replication_names(length_dict, base_string, precision):
+def generate_magnet_for_replication_names(
+        length_dict:    dict[float, list[str]],
+        base_string:    str,
+        precision:      float) -> list[str]:
     """
     Generate base-element names for replication, keyed by length.
 
@@ -144,7 +151,7 @@ def generate_magnet_for_replication_names(length_dict, base_string, precision):
 ################################################################################
 # KNL/KSL arrays to strings
 ################################################################################
-def get_knl_string(knl_array):
+def get_knl_string(knl_array: np.ndarray) -> str:
     """
     Format a knl/ksl array as a Python list literal, trimmed of
     trailing zeros.
@@ -195,7 +202,12 @@ def get_knl_string(knl_array):
 ########################################
 # Bends
 ########################################
-def extract_bend_information(line, line_table, config):
+def extract_bend_information(
+        line:           xt.Line,
+        line_table:     xd.table.Table,
+        config:         ConfigLike) -> tuple[
+            dict[float, list[str]], dict[float, list[str]], dict[float, list[str]],
+            list[str], dict[str, str]]:
     """
     Collect real (h != 0) bends from a line and group them for
     replication.
@@ -297,7 +309,12 @@ def extract_bend_information(line, line_table, config):
 ########################################
 # Correctors
 ########################################
-def extract_corrector_information(line, line_table, config):
+def extract_corrector_information(
+        line:           xt.Line,
+        line_table:     xd.table.Table,
+        config:         ConfigLike) -> tuple[
+            dict[float, list[str]], dict[float, list[str]], dict[float, list[str]],
+            list[str], dict[str, str]]:
     """
     Collect correctors (h == 0 Bend elements) from a line and group
     them for replication.
@@ -400,7 +417,11 @@ def extract_corrector_information(line, line_table, config):
 ########################################
 # Quadrupole/Sextupole/Octupole information
 ########################################
-def extract_multipole_information(line, line_table, mode, config):
+def extract_multipole_information(
+        line:           xt.Line,
+        line_table:     xd.table.Table,
+        mode:           str,
+        config:         ConfigLike) -> tuple[dict[float, list[str]], list[str]]:
     """
     Collect elements of one Xsuite type from a line, grouped by
     quantized length for replication.
@@ -455,7 +476,7 @@ def extract_multipole_information(line, line_table, mode, config):
 ################################################################################
 # Element is simple to clone
 ################################################################################
-def check_is_simple_bend_corr(line, replica_name):
+def check_is_simple_bend_corr(line: xt.Line, replica_name: str) -> bool:
     """
     True if a Bend/corrector element has no edge, offset, or
     combined-order field terms that would make cloning it unsafe.
@@ -497,7 +518,7 @@ def check_is_simple_bend_corr(line, replica_name):
 
     return is_simple
 
-def check_is_simple_quad_sext_oct(line, replica_name, mode):
+def check_is_simple_quad_sext_oct(line: xt.Line, replica_name: str, mode: str) -> bool:
     """
     True if a QUAD/SEXT/OCT-typed element has no offset, rotation, or
     combined-order field terms that would make cloning it unsafe.
@@ -558,7 +579,7 @@ def check_is_simple_quad_sext_oct(line, replica_name, mode):
 
     return is_simple
 
-def check_is_skew_quad_sext_oct(line, replica_name, mode):
+def check_is_skew_quad_sext_oct(line: xt.Line, replica_name: str, mode: str) -> bool:
     """
     True if a QUAD/SEXT/OCT-typed element's skew strength is nonzero.
 
@@ -595,7 +616,7 @@ def check_is_skew_quad_sext_oct(line, replica_name, mode):
 
     return is_skew
 
-def check_is_simple_unpowered_multipole(line, replica_name):
+def check_is_simple_unpowered_multipole(line: xt.Line, replica_name: str) -> bool:
     """
     True if a Multipole element carries no field and no offset/
     rotation.
@@ -624,7 +645,7 @@ def check_is_simple_unpowered_multipole(line, replica_name):
 
     return is_simple_unpowered
 
-def check_is_simple_solenoid(line, replica_name):
+def check_is_simple_solenoid(line: xt.Line, replica_name: str) -> bool:
     """
     True if a UniformSolenoid element carries no extra multipole
     field and no transverse offset/rotation beyond its ks.

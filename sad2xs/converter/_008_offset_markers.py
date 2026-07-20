@@ -29,8 +29,8 @@ logger  = logging.getLogger(__name__)
 # Conversion Function
 ################################################################################
 def convert_offset_markers(
-        line,
-        parsed_lattice_data:    dict):
+        line:                   xt.Line,
+        parsed_lattice_data:    dict) -> tuple[xt.Line, dict[str, list[float]]]:
     """
     Resolve SAD MARK/MONI/BEAMBEAM OFFSET positions into insertion
     points.

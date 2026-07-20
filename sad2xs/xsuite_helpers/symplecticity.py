@@ -33,7 +33,7 @@ _J  = np.array([
 ################################################################################
 # Symplecticity residual: (M.T @ J @ M) - J, zero for a symplectic M
 ################################################################################
-def _residual(M):
+def _residual(M: np.ndarray) -> np.ndarray:
     """
     Compute the symplecticity residual of a transfer matrix.
 
@@ -52,7 +52,12 @@ def _residual(M):
 ################################################################################
 # Check symplecticity
 ################################################################################
-def check_symplecticity(twiss, line, *, tt = None, atol = 1E-6):
+def check_symplecticity(
+        twiss:  xt.TwissTable,
+        line:   xt.Line,
+        *,
+        tt:     xt.Table | None = None,
+        atol:   float           = 1E-6) -> tuple[bool, float]:
     """
     Check the one-turn R matrix is symplectic; if it isn't, fall back to an
     element-by-element check to find what breaks it.

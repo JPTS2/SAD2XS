@@ -781,7 +781,7 @@ def solenoid_reference_shift_corrections(
     ############################################################################
     # Flip the neccesary reference shifts
     ############################################################################
-    def flip_reference_shifts(solenoid, dxy_sign, chi_sign):
+    def flip_reference_shifts(solenoid: str, dxy_sign: int, chi_sign: int) -> None:
         """
         Flip the sign of a bound solenoid's reference-shift components.
 

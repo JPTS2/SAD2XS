@@ -31,7 +31,7 @@ logger  = logging.getLogger(__name__)
 ################################################################################
 # SAD Survey Print Function
 ################################################################################
-def generate_survey_print_function():
+def generate_survey_print_function() -> str:
     """
     Build the SAD-side `SaveSurveyFile[filename_]` function
     definition.
@@ -122,14 +122,14 @@ SaveSurveyFile[filename_]:=Module[
 # Closed Ring 4D Twiss Function
 ################################################################################
 def survey_sad(
-        lattice_filepath:       str,
-        line_name:              str,
-        closed:                 bool    = True,
-        reverse_element_order:  bool    = False,
-        reverse_survey_horizontal: bool    = False,
-        additional_commands:    str     = "",
-        wall_time:              int     = 30,
-        sad_path:               str     = "sad"):
+        lattice_filepath:           str,
+        line_name:                  str,
+        closed:                     bool    = True,
+        reverse_element_order:      bool    = False,
+        reverse_survey_horizontal:  bool    = False,
+        additional_commands:        str     = "",
+        wall_time:                  int     = 30,
+        sad_path:                   str     = "sad") -> xt.survey.SurveyTable:
     """
     Compute a lattice's global survey coordinates in real SAD, as an
     Xsuite SurveyTable.

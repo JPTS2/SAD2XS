@@ -17,7 +17,9 @@ Date:       2026-07-20
 # Required Packages
 ################################################################################
 import logging
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
+from typing import Any
 
 import xtrack as xt
 
@@ -26,7 +28,7 @@ logger  = logging.getLogger(__name__)
 ################################################################################
 # Reference Particle Species
 ################################################################################
-def species_from_mass_and_charge(mass0_ev, q0):
+def species_from_mass_and_charge(mass0_ev: float, q0: float) -> str | None:
     """
     Map a reference particle's mass and charge to an xtrack species name.
 
@@ -56,7 +58,7 @@ def species_from_mass_and_charge(mass0_ev, q0):
 ################################################################################
 # Section Heading Function
 ################################################################################
-def log_section_heading(heading, mode = 'section'):
+def log_section_heading(heading: str, mode: str = 'section') -> None:
     """
     Log a section heading at INFO level, framed by a horizontal rule.
 
@@ -84,7 +86,7 @@ def log_section_heading(heading, mode = 'section'):
 # Xtrack Progress Suppression
 ################################################################################
 @contextmanager
-def suppressed_xtrack_progress(active = True):
+def suppressed_xtrack_progress(active: bool = True) -> Iterator[None]:
     """
     Temporarily replace xtrack's progress indicator with a passthrough.
 
@@ -114,7 +116,7 @@ def suppressed_xtrack_progress(active = True):
     saved_cls       = xt_progress._config.default_indicator_cls
     saved_options   = xt_progress._config.default_options
 
-    def _passthrough(iterable, **_kwargs):
+    def _passthrough(iterable: Iterable, **_kwargs: Any) -> Iterable:
         """
         Return `iterable` unchanged, discarding any progress-bar kwargs.
 

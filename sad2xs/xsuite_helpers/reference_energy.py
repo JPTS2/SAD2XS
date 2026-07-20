@@ -18,6 +18,8 @@ Date:       2026-07-20
 ################################################################################
 import re
 from collections import Counter
+from collections.abc import Sequence
+from typing import Any
 
 import xtrack as xt
 
@@ -26,7 +28,7 @@ import numpy as np
 ################################################################################
 # Float from Xtrack
 ################################################################################
-def _as_float(value):
+def _as_float(value: Any) -> float:
     """
     Return a Python float from a scalar on any Xobjects context.
 
@@ -49,7 +51,10 @@ def _as_float(value):
 ################################################################################
 # Find logical cavities and their placement anchors
 ################################################################################
-def _find_cavity_anchors(line, table_names, element_types):
+def _find_cavity_anchors(
+        line:           xt.Line,
+        table_names:    list[str],
+        element_types:  Sequence) -> dict[str, str]:
     """
     Return {cavity_name: anchor_name}, in lattice order, for every logical
     cavity found in a line's table rows (excluding the final "" row).
@@ -141,7 +146,7 @@ def _find_cavity_anchors(line, table_names, element_types):
 ################################################################################
 # Install reference energy updates at cavities
 ################################################################################
-def install_reference_energy_updates(line, *, s_tol = 1E-6):
+def install_reference_energy_updates(line: xt.Line, *, s_tol: float = 1E-6) -> xt.Table:
     """
     Insert one ReferenceEnergyIncrease and TimeDelay per logical cavity.
 
@@ -292,7 +297,11 @@ def install_reference_energy_updates(line, *, s_tol = 1E-6):
 # Update reference energy updates at cavities
 ################################################################################
 def update_reference_energy_updates(
-        line, *, particle = None, verify = True, atol = 1E-13):
+        line:       xt.Line,
+        *,
+        particle:   xt.Particles | None = None,
+        verify:     bool                = True,
+        atol:       float               = 1E-13) -> xt.Table:
     """
     Track the reference particle and recompute the installed updates.
 

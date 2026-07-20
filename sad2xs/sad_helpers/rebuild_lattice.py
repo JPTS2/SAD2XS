@@ -32,7 +32,7 @@ def rebuild_sad_lattice(
         output_filepath:        str | None  = None,
         additional_commands:    str         = "",
         wall_time:              int         = 30,
-        sad_path:               str         = "sad"):
+        sad_path:               str         = "sad") -> None:
     """
     Output a rebuilt SAD lattice file after modifications.
 

@@ -29,7 +29,7 @@ logger  = logging.getLogger(__name__)
 ################################################################################
 # SAD Survey Print Function
 ################################################################################
-def generate_off_momentum_tune_function():
+def generate_off_momentum_tune_function() -> str:
     """
     Build the SAD-side `CalculateOffMomentumTune[x_]` function
     definition.
@@ -80,7 +80,7 @@ def chromaticity_sad(
         compute_higher_orders:  bool | int  = False,
         additional_commands:    str         = "",
         wall_time:              int         = 60,
-        sad_path:               str         = "sad"):
+        sad_path:               str         = "sad") -> dict:
     """
     Compute a lattice's chromaticity by scanning tune vs. momentum
     deviation in real SAD.

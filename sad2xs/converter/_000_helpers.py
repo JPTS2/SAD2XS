@@ -19,11 +19,12 @@ import numpy as np
 import xtrack as xt
 
 from ..helpers import species_from_mass_and_charge
+from ..types import SadValue
 
 ################################################################################
 # Expression Parsing
 ################################################################################
-def parse_expression(expression):
+def parse_expression(expression: int | float | str) -> SadValue:
     """
     Convert a SAD expression value to a Python float or a stripped
     string.
@@ -66,7 +67,7 @@ def parse_expression(expression):
 ################################################################################
 # Zero Check
 ################################################################################
-def is_effectively_zero(val, tol: float = 1E-12) -> bool:
+def is_effectively_zero(val: SadValue, tol: float = 1E-12) -> bool:
     """
     Return True if `val` is numerically zero within `tol`.
 
@@ -93,7 +94,7 @@ def is_effectively_zero(val, tol: float = 1E-12) -> bool:
 ################################################################################
 # Provable Equality Check
 ################################################################################
-def values_provably_equal(val_1, val_2, tol: float = 1E-9) -> bool:
+def values_provably_equal(val_1: SadValue, val_2: SadValue, tol: float = 1E-9) -> bool:
     """
     Return True if two SAD-parsed values are numerically equal within
     `tol`, or the exact same deferred expression string.
@@ -119,7 +120,7 @@ def values_provably_equal(val_1, val_2, tol: float = 1E-9) -> bool:
         return val_1.strip() == val_2.strip()
     return False
 
-def values_provably_opposite(val_1, val_2, tol: float = 1E-9) -> bool:
+def values_provably_opposite(val_1: SadValue, val_2: SadValue, tol: float = 1E-9) -> bool:
     """
     Return True if two SAD-parsed values are numerically equal and
     opposite in sign within `tol`, or one deferred expression is a
@@ -154,7 +155,7 @@ def values_provably_opposite(val_1, val_2, tol: float = 1E-9) -> bool:
 ########################################
 # Element Length
 ########################################
-def get_element_length(ele_vars: dict):
+def get_element_length(ele_vars: dict[str, SadValue]) -> SadValue:
     """
     Extract element length from a parsed SAD parameter dict.
 
@@ -174,7 +175,10 @@ def get_element_length(ele_vars: dict):
 ########################################
 # Integrated Element Strength
 ########################################
-def get_element_integrated_strength(ele_vars: dict, key: str, default: float = 0.0):
+def get_element_integrated_strength(
+        ele_vars:   dict[str, SadValue],
+        key:        str,
+        default:    float               = 0.0) -> SadValue:
     """
     Extract a strength parameter from a parsed SAD parameter dict.
 
@@ -198,7 +202,7 @@ def get_element_integrated_strength(ele_vars: dict, key: str, default: float = 0
 ########################################
 # Divide Integrated Strength by Length
 ########################################
-def divide_integrated_strength(kl, length):
+def divide_integrated_strength(kl: SadValue, length: SadValue) -> SadValue:
     """
     Divide integrated strength `kl` by element `length` to obtain a
     per-unit-length strength (e.g. k1l / l -> k1).
@@ -230,7 +234,11 @@ def divide_integrated_strength(kl, length):
 ########################################
 # Define Strength Variable in Environment
 ########################################
-def define_strength_variable(environment, ele_name: str, k_name: str, k_value):
+def define_strength_variable(
+        environment:    xt.Environment,
+        ele_name:       str,
+        k_name:         str,
+        k_value:        SadValue) -> SadValue:
     """
     Register a per-unit-length strength in the xtrack environment and
     return a reference expression to it.
@@ -264,7 +272,10 @@ def define_strength_variable(environment, ele_name: str, k_name: str, k_value):
 ################################################################################
 # Parse RF Parameters (VOLT / FREQ / PHI / HARM)
 ################################################################################
-def parse_rf_parameters(environment, ele_name: str, ele_vars: dict):
+def parse_rf_parameters(
+        environment:    xt.Environment,
+        ele_name:       str,
+        ele_vars:       dict[str, SadValue]) -> tuple[float, SadValue, SadValue, SadValue]:
     """
     Parse SAD VOLT/FREQ/PHI/HARM into Xsuite Cavity-ready values.
 
@@ -341,7 +352,10 @@ def parse_rf_parameters(environment, ele_name: str, ele_vars: dict):
 ################################################################################
 # Combine K0/SK0 Dipole Orders
 ################################################################################
-def combine_k0_sk0(knl0, ksl0, rotation):
+def combine_k0_sk0(
+        knl0:       SadValue,
+        ksl0:       SadValue,
+        rotation:   SadValue) -> tuple[SadValue, SadValue]:
     """
     Combine SAD MULT integrated K0/SK0 into a single (k0l, rotation)
     pair.
@@ -391,7 +405,9 @@ def combine_k0_sk0(knl0, ksl0, rotation):
 ################################################################################
 # Compute Element Misalignments
 ################################################################################
-def get_element_misalignments(ele_vars: dict, rotation_correction: float = 0.0):
+def get_element_misalignments(
+        ele_vars:               dict[str, SadValue],
+        rotation_correction:    float               = 0.0) -> tuple[SadValue, SadValue, SadValue]:
     """
     Extract transverse misalignments and rotation from a parsed SAD
     element parameter dict.
@@ -437,9 +453,9 @@ def get_element_misalignments(ele_vars: dict, rotation_correction: float = 0.0):
 # Multipole Order Check
 ################################################################################
 def only_index_nonzero(
-        length,
-        knl:    list,
-        ksl:    list,
+        length: SadValue,
+        knl:    list[SadValue],
+        ksl:    list[SadValue],
         idx:    int,
         tol:    float) -> bool:
     """

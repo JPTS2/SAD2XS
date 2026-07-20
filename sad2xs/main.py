@@ -17,6 +17,7 @@ Date:       2026-07-20
 # Required Packages
 ################################################################################
 import logging
+from typing import Any
 
 import xtrack as xt
 
@@ -47,16 +48,17 @@ logger  = logging.getLogger(__name__)
 def convert_sad_to_xsuite(
         sad_lattice_path:               str,
         output_directory:               str,
-        output_filename:                str | None  = None,
-        line_name:                      str | None  = None,
-        output_header:                  str         = "SAD to XSuite Lattice Conversion",
-        excluded_elements:              list | None = None,
-        user_multipole_replacements:    dict | None = None,
-        reverse_element_order:          bool        = False,
-        reverse_survey_horizontal:         bool        = False,
-        reverse_charge_sign:                 bool        = False,
-        install_apertures_as_markers:   bool        = False,
-        **kwargs):
+        output_filename:                str | None              = None,
+        line_name:                      str | None              = None,
+        output_header:                  str                     = \
+            "SAD to XSuite Lattice Conversion",
+        excluded_elements:              list[str] | None        = None,
+        user_multipole_replacements:    dict[str, str] | None   = None,
+        reverse_element_order:          bool                    = False,
+        reverse_survey_horizontal:      bool                    = False,
+        reverse_charge_sign:            bool                    = False,
+        install_apertures_as_markers:   bool                    = False,
+        **kwargs: Any) -> xt.Line:
     """
     Convert a SAD lattice file to an Xsuite line, in one call.
 
@@ -420,7 +422,6 @@ def convert_sad_to_xsuite(
 
     ########################################
     # Cleanly load from the generated files
-    # (xtrack progress bars suppressed in quiet mode)
     ########################################
     env     = xt.Environment()
     with suppressed_xtrack_progress(active = not logger.isEnabledFor(logging.INFO)):

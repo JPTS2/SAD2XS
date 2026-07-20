@@ -24,7 +24,7 @@ import numpy as np
 from scipy.constants import c as clight
 from scipy.constants import e as qe
 
-from ..types import ConfigLike
+from ..types import ConfigLike, SadValue
 from ..helpers import log_section_heading
 from ._000_helpers import (
     parse_expression,
@@ -53,7 +53,7 @@ UNCONSTRAINED_APERTURE_BOUND = 1.0E10
 def convert_elements(
         parsed_lattice_data:            dict,
         environment:                    xt.Environment,
-        user_multipole_replacements:    dict | None,
+        user_multipole_replacements:    dict[str, str] | None,
         config:                         ConfigLike) -> None:
     """
     Convert every parsed SAD element into the Xsuite environment.
@@ -260,7 +260,7 @@ def convert_elements(
 ################################################################################
 # Convert drift
 ################################################################################
-def convert_drifts(parsed_elements, environment):
+def convert_drifts(parsed_elements: dict[str, dict], environment: xt.Environment) -> None:
     """
     Convert SAD DRIFT elements into Xsuite Drift elements.
 
@@ -324,7 +324,7 @@ def convert_drifts(parsed_elements, environment):
 ################################################################################
 # Convert Bends
 ################################################################################
-def _canonicalize_dipole_rotation(rotation):
+def _canonicalize_dipole_rotation(rotation: SadValue) -> tuple[SadValue, int]:
     """
     Return the SAD-origin canonical dipole rotation and field sign.
 
@@ -362,7 +362,7 @@ def _canonicalize_dipole_rotation(rotation):
     return rotation, +1
 
 
-def _has_nonzero_offset(shift_x, shift_y, tol) -> bool:
+def _has_nonzero_offset(shift_x: SadValue, shift_y: SadValue, tol: float) -> bool:
     """
     True if either misalignment is symbolic or numerically nonzero.
 
@@ -388,7 +388,7 @@ def _has_nonzero_offset(shift_x, shift_y, tol) -> bool:
         and is_effectively_zero(shift_y, tol))
 
 
-def _bend_fringe_edge_kwargs(ele_vars, config) -> dict:
+def _bend_fringe_edge_kwargs(ele_vars: dict[str, SadValue], config: ConfigLike) -> dict[str, float]:
     """
     Derive Xsuite Bend edge fint/hgap kwargs from a SAD BEND's fringe
     parameters.
@@ -455,7 +455,10 @@ def _bend_fringe_edge_kwargs(ele_vars, config) -> dict:
     return kwargs
 
 
-def convert_bends(parsed_elements, environment, config):
+def convert_bends(
+        parsed_elements:    dict[str, dict],
+        environment:        xt.Environment,
+        config:             ConfigLike) -> None:
     """
     Convert SAD BEND elements with ANGLE != 0 into Xsuite Bend or
     Multipole elements.
@@ -628,7 +631,10 @@ def convert_bends(parsed_elements, environment, config):
 ################################################################################
 # Convert Correctors
 ################################################################################
-def convert_correctors(parsed_elements, environment, config):
+def convert_correctors(
+        parsed_elements:    dict[str, dict],
+        environment:        xt.Environment,
+        config:             ConfigLike) -> None:
     """
     Convert SAD BEND elements with ANGLE == 0 (or no ANGLE) into Xsuite
     corrector Bend/Multipole elements.
@@ -734,7 +740,10 @@ def convert_correctors(parsed_elements, environment, config):
 ################################################################################
 # Typed multipole helpers (QUAD / SEXT / OCT)
 ################################################################################
-def _absorb_rotation_into_field(kl, n: int, rotation: float):
+def _absorb_rotation_into_field(
+        kl:         SadValue,
+        n:          int,
+        rotation:   float) -> tuple[SadValue, SadValue, bool]:
     """
     Absorb a typed multipole's rotation into its field, where possible.
 
@@ -770,7 +779,7 @@ def _absorb_rotation_into_field(kl, n: int, rotation: float):
     cos_p     = int(round(np.cos(phase)))       # ∈ {-1, 0, 1}
     neg_sin_p = int(round(-np.sin(phase)))      # ∈ {-1, 0, 1}
 
-    def _scaled_kl(sign_factor):
+    def _scaled_kl(sign_factor: int) -> SadValue:
         """
         Scale `kl` by a {-1, 0, 1} coefficient from the rotation phase.
 
@@ -792,7 +801,13 @@ def _absorb_rotation_into_field(kl, n: int, rotation: float):
 
     return _scaled_kl(cos_p), _scaled_kl(neg_sin_p), True
 
-def _convert_typed_multipole(ele_name, ele_vars, environment, n, xtype, k_name):
+def _convert_typed_multipole(
+        ele_name:       str,
+        ele_vars:       dict[str, SadValue],
+        environment:    xt.Environment,
+        n:              int,
+        xtype:          type,
+        k_name:         str) -> None:
     """
     Convert a typed multipole element (QUAD, SEXT, or OCT).
 
@@ -894,7 +909,7 @@ def _convert_typed_multipole(ele_name, ele_vars, environment, n, xtype, k_name):
 ################################################################################
 # Convert Quadrupoles
 ################################################################################
-def convert_quadrupoles(parsed_elements, environment):
+def convert_quadrupoles(parsed_elements: dict[str, dict], environment: xt.Environment) -> None:
     """
     Convert SAD QUAD elements into Xsuite Quadrupole/Multipole elements.
 
@@ -914,7 +929,7 @@ def convert_quadrupoles(parsed_elements, environment):
 ################################################################################
 # Convert Sextupoles
 ################################################################################
-def convert_sextupoles(parsed_elements, environment):
+def convert_sextupoles(parsed_elements: dict[str, dict], environment: xt.Environment) -> None:
     """
     Convert SAD SEXT elements into Xsuite Sextupole/Multipole elements.
 
@@ -934,7 +949,10 @@ def convert_sextupoles(parsed_elements, environment):
 ################################################################################
 # Convert Octupoles
 ################################################################################
-def convert_octupoles(parsed_elements, environment, config):
+def convert_octupoles(
+        parsed_elements:    dict[str, dict],
+        environment:        xt.Environment,
+        config:             ConfigLike) -> None:
     """
     Convert SAD OCT elements into Xsuite Octupole/Multipole elements.
 
@@ -958,10 +976,10 @@ def convert_octupoles(parsed_elements, environment, config):
 # Convert Multipoles
 ################################################################################
 def convert_multipoles(
-        parsed_elements,
-        environment,
-        user_multipole_replacements,
-        config) -> None:
+        parsed_elements:                dict[str, dict],
+        environment:                    xt.Environment,
+        user_multipole_replacements:    dict[str, str] | None,
+        config:                         ConfigLike) -> None:
     """
     Convert SAD MULT elements into Xsuite elements.
 
@@ -1414,7 +1432,10 @@ def convert_multipoles(
 ################################################################################
 # Convert Cavities
 ################################################################################
-def convert_cavities(parsed_elements, environment, config):
+def convert_cavities(
+        parsed_elements:    dict[str, dict],
+        environment:        xt.Environment,
+        config:             ConfigLike) -> None:
     """
     Convert SAD CAVI elements into Xsuite Cavity elements.
 
@@ -1465,7 +1486,7 @@ def convert_cavities(parsed_elements, environment, config):
 ################################################################################
 # Convert Apertures
 ################################################################################
-def convert_apertures(parsed_elements, environment):
+def convert_apertures(parsed_elements: dict[str, dict], environment: xt.Environment) -> None:
     """
     Convert SAD APERT elements into Xsuite aperture elements.
 
@@ -1736,9 +1757,9 @@ def convert_apertures(parsed_elements, environment):
 # Convert Solenoids
 ################################################################################
 def convert_solenoids(
-        parsed_elements,
-        environment,
-        config) -> None:
+        parsed_elements:    dict[str, dict],
+        environment:        xt.Environment,
+        config:             ConfigLike) -> None:
     """
     Convert SAD SOL elements into Xsuite UniformSolenoid elements.
 
@@ -1998,7 +2019,7 @@ def convert_solenoids(
 ################################################################################
 # Convert Markers
 ################################################################################
-def convert_markers(parsed_elements, environment):
+def convert_markers(parsed_elements: dict[str, dict], environment: xt.Environment) -> None:
     """
     Convert SAD MARK elements into Xsuite Marker elements.
 
@@ -2025,7 +2046,7 @@ def convert_markers(parsed_elements, environment):
 ################################################################################
 # Convert Monitors
 ################################################################################
-def convert_monitors(parsed_elements, environment):
+def convert_monitors(parsed_elements: dict[str, dict], environment: xt.Environment) -> None:
     """
     Convert SAD MONI elements into Xsuite Marker elements.
 
@@ -2055,7 +2076,7 @@ def convert_monitors(parsed_elements, environment):
 ################################################################################
 # Convert Beam-Beam Interactions
 ################################################################################
-def convert_beam_beam(parsed_elements, environment):
+def convert_beam_beam(parsed_elements: dict[str, dict], environment: xt.Environment) -> None:
     """
     Convert SAD beam-beam elements into Xsuite Marker elements.
 
@@ -2085,7 +2106,7 @@ def convert_beam_beam(parsed_elements, environment):
 ################################################################################
 # Convert Maps
 ################################################################################
-def convert_maps(parsed_elements, environment):
+def convert_maps(parsed_elements: dict[str, dict], environment: xt.Environment) -> None:
     """
     Convert SAD MAP elements into Xsuite Marker elements.
 
@@ -2132,9 +2153,9 @@ def convert_maps(parsed_elements, environment):
 # Convert Coordinate Transformations
 ################################################################################
 def convert_coordinate_transformations(
-        parsed_elements,
-        environment,
-        config) -> None:
+        parsed_elements:    dict[str, dict],
+        environment:        xt.Environment,
+        config:             ConfigLike) -> None:
     """
     Convert SAD COORD elements into Xsuite Translation/Rotation
     elements.

@@ -17,6 +17,7 @@ Date:       2026-07-20
 # Required Packages
 ################################################################################
 import importlib
+from types import ModuleType
 
 ################################################################################
 # Logging (default: warnings and errors only)
@@ -45,7 +46,7 @@ from . import xsuite_helpers
 # SAD Helpers Functions
 ################################################################################
 # Has optional dependencies, so lazy import (PEP 562).
-def __getattr__(name):
+def __getattr__(name: str) -> ModuleType:
     """
     Lazily import `sad_helpers` on first access (PEP 562).
 

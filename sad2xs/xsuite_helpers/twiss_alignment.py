@@ -18,8 +18,10 @@ Date:       2026-07-20
 import logging
 import re
 from collections import defaultdict
+from collections.abc import Iterable
 
 import numpy as np
+import xtrack as xt
 
 logger  = logging.getLogger(__name__)
 
@@ -58,7 +60,7 @@ def _collapse_slicing(name: str) -> str:
         name    = name[:m.start()] + (m.group(1) or "")
     return name
 
-def _parse_repeat_suffix(name_lower: str):
+def _parse_repeat_suffix(name_lower: str) -> tuple[str, int | None]:
     """
     Undo `line.replace_all_repeated_elements()`'s ``{name}.{i}`` renaming ->
     (base, i), or (name_lower, None) if it doesn't match.
@@ -83,7 +85,7 @@ def _parse_repeat_suffix(name_lower: str):
 # reference-energy "_ref_zeta_update"); allows a repeat's trailing ".N" too.
 _TIMEDELAY_SUFFIX_RE    = re.compile(r"_(?:dz|ref_zeta_update)(?:\.\d+)?$")
 
-def compute_s_sad(xsuite_twiss):
+def compute_s_sad(xsuite_twiss: xt.TwissTable) -> np.ndarray | None:
     """
     Recover SAD's own `s` (real path length) from an Xsuite twiss result,
     whose `s` is nominal/design length. The two diverge only right after a
@@ -128,10 +130,12 @@ def compute_s_sad(xsuite_twiss):
 # Align an Xsuite twiss table onto a SAD twiss table's element grid
 ################################################################################
 def align_xsuite_twiss_with_sad_twiss(
-        xsuite_twiss, sad_twiss, *,
-        s_tol: float = 1E-9,
-        use_s_sad: bool = True,
-        excluded_elements: list | None = None):
+        xsuite_twiss:       xt.TwissTable,
+        sad_twiss:          xt.TwissTable,
+        *,
+        s_tol:              float               = 1E-9,
+        use_s_sad:          bool                = True,
+        excluded_elements:  list[str] | None    = None) -> tuple[xt.Table, xt.Table]:
     """
     Match every SAD element to its unique Xsuite row and return
     `(xsuite_aligned, sad_twiss_aligned)`: same length, row-matched, in
@@ -245,7 +249,7 @@ def align_xsuite_twiss_with_sad_twiss(
     claimed_sad     = set()
     claimed_xs      = set()
 
-    def _accept(sad_i, row_idx, s_xs):
+    def _accept(sad_i: int, row_idx: int, s_xs: float) -> None:
         """
         Accept or reject a candidate SAD-to-Xsuite row match by
         `s_tol`, recording it in the shared matched/claimed state on
@@ -276,7 +280,9 @@ def align_xsuite_twiss_with_sad_twiss(
         claimed_sad.add(sad_i)
         claimed_xs.add(row_idx)
 
-    def _rank_match(sad_idx_sorted_by_s, candidates):
+    def _rank_match(
+            sad_idx_sorted_by_s:    list[int],
+            candidates:             Iterable[tuple[int, float]]) -> None:
         """
         Pair SAD elements to Xsuite candidates in matching rank order
         by `s`, then hand each pair to `_accept`.

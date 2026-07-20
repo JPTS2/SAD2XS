@@ -15,7 +15,16 @@ Date:       2026-07-20
 ################################################################################
 # Required Packages
 ################################################################################
+from collections.abc import Iterable
+from types import ModuleType
+from typing import TYPE_CHECKING
+
 import numpy as np
+import xtrack as xt
+
+if TYPE_CHECKING:
+    import matplotlib.axes
+    import matplotlib.figure
 
 ################################################################################
 # Quantity groups -- one figure per group, one row pair per quantity.
@@ -54,7 +63,7 @@ AVAILABLE_GROUPS    = tuple(_QUANTITY_GROUPS)
 ################################################################################
 # Small helpers
 ################################################################################
-def _zero_small_values(array, tol):
+def _zero_small_values(array: np.ndarray, tol: float) -> np.ndarray:
     """
     Zero values below `tol` so floating-point noise doesn't clutter
     a plot.
@@ -76,7 +85,7 @@ def _zero_small_values(array, tol):
     array[np.abs(array) < tol]  = 0
     return array
 
-def _difference(xs_values, sad_values, sad_column):
+def _difference(xs_values: np.ndarray, sad_values: np.ndarray, sad_column: str) -> np.ndarray:
     """
     Compute (Xsuite - SAD), relative (%) for beta functions, absolute
     otherwise.
@@ -106,7 +115,11 @@ def _difference(xs_values, sad_values, sad_column):
                 np.nan)
     return xs_values - sad_values
 
-def _window_by_element(xsuite_aligned, sad_aligned, ele_start, ele_stop):
+def _window_by_element(
+        xsuite_aligned: xt.Table,
+        sad_aligned:    xt.Table,
+        ele_start:      str | None,
+        ele_stop:       str | None) -> tuple[xt.Table, xt.Table]:
     """
     Cut both aligned tables to the row range [ele_start, ele_stop].
 
@@ -151,7 +164,10 @@ def _window_by_element(xsuite_aligned, sad_aligned, ele_start, ele_stop):
 # there's no reason to make Xsuite redraw thousands of magnets from scratch
 # on each of them.
 ################################################################################
-def _draw_lattice_ribbon(overlay_ax, xsuite_aligned, cache):
+def _draw_lattice_ribbon(
+        overlay_ax:     "matplotlib.axes.Axes",
+        xsuite_aligned: xt.Table,
+        cache:          dict) -> tuple["matplotlib.axes.Axes", list, list]:
     """
     First call (`cache["bars"] is None`): let `xt.TwissTable.plot
     (lattice_only=True)` do the real work, then read the bars it drew
@@ -210,9 +226,19 @@ def _draw_lattice_ribbon(overlay_ax, xsuite_aligned, cache):
 # One quantity-group figure
 ################################################################################
 def _plot_group(
-        plt, xsuite_aligned, sad_aligned, title, quantities, *,
-        figsize, include_diff, xsuite_column_overrides, zero_tol,
-        title_prefix, lattice_cache):
+        plt:                        ModuleType,
+        xsuite_aligned:             xt.Table,
+        sad_aligned:                xt.Table,
+        title:                      str,
+        quantities:                 list[tuple[str, str, str]],
+        *,
+        figsize:                    tuple[float, float],
+        include_diff:               bool,
+        xsuite_column_overrides:    dict[str, str],
+        zero_tol:                   float,
+        title_prefix:               str | None,
+        lattice_cache:              dict | None
+        ) -> tuple["matplotlib.figure.Figure", list["matplotlib.axes.Axes"]]:
     """
     Draw one quantity-group figure: one overlay (+ optional
     difference) row per quantity in `quantities`.
@@ -314,16 +340,19 @@ def _plot_group(
 # Public comparison-plot function
 ################################################################################
 def plot_xsuite_sad_comparison(
-        xsuite_aligned, sad_aligned, *,
-        groups                  = None,
-        ele_start                = None,
-        ele_stop                 = None,
-        figsize                  = (8, 6),
-        include_diff             = True,
-        xsuite_column_overrides  = None,
-        zero_tol                 = 1E-12,
-        title_prefix             = None,
-        show_lattice             = True):
+        xsuite_aligned:             xt.Table,
+        sad_aligned:                xt.Table,
+        *,
+        groups:                     Iterable[str] | None    = None,
+        ele_start:                  str | None              = None,
+        ele_stop:                   str | None              = None,
+        figsize:                    tuple[float, float]     = (8, 6),
+        include_diff:               bool                    = True,
+        xsuite_column_overrides:    dict[str, str] | None   = None,
+        zero_tol:                   float                   = 1E-12,
+        title_prefix:               str | None              = None,
+        show_lattice:               bool                    = True
+        ) -> dict[str, tuple["matplotlib.figure.Figure", list["matplotlib.axes.Axes"]]]:
     """
     Overlay Xsuite against SAD for each quantity group in `groups` (default
     `AVAILABLE_GROUPS`, i.e. all of them), one figure per group, with an
