@@ -95,3 +95,7 @@ Quiet mode (the default) must produce **no output at all** for a warning-free co
 Issues should describe shareable behaviour.
 
 If a private lattice exposes a bug, the public issue should describe the minimal public reproduction or the general converter feature that is missing. Do not include private lattice files, private names, or machine-specific details that are not shareable.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

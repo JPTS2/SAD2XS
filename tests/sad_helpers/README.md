@@ -31,3 +31,7 @@ from there rather than defining local copies.
 - **Asymmetric closed ring** (`write_asymmetric_closed_ring`): a deliberately asymmetric ring (bend `E1 != E2` with `F1`/`FRINGE`, K0-only corrector with `FB1 != FB2`, two opposite-sign quads) with both a `FWD` line and a native SAD-reversed `REV` line (`LINE REV = (-FWD)`). Used to verify `reverse_element_order=True` against SAD's own native reversal independently of the code path under test.
 
 `test_track_sad.py` also uses a local marker-only lattice (two markers, no physical elements) that is unique to tracking edge-case tests and is not shared.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

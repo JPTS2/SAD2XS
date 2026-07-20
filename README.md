@@ -91,3 +91,7 @@ This is not equivalently supported in Xsuite.
 The test suite covers parser, converter elements, conversion pipeline, writer,
 SAD helpers, examples, installation, packaging, and CI configuration — 1653
 tests in total. See [docs/testing.md](docs/testing.md) for full details.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

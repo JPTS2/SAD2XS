@@ -79,3 +79,7 @@ calls should use the public `sad2xs.sad_helpers` API.
 Physics comparison tests may write ignored Markdown diagnostics under
 `tests/artifacts/conversion/`. Keep artifact paths aligned with the test source,
 for example `tests/artifacts/conversion/elements/bend/`.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

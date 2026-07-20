@@ -451,3 +451,7 @@ above. Verified directly against real SAD: this gives bit-for-bit identical
 Twiss/survey results to a `LINE REV = (-FWD);` declared natively in the
 lattice file, and (unlike an earlier temp-lattice-file-based workaround)
 matches element names exactly rather than only partially.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

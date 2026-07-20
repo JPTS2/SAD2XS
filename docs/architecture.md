@@ -105,3 +105,7 @@ Next release target: importing and using the core converter should not require S
 The repository may be validated against private or non-shareable lattices during development. Those lattices must not be required for public tests or CI, and public issues should use synthetic reproductions.
 
 Public regression tests should isolate the converter behaviour being protected without depending on private accelerator files.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

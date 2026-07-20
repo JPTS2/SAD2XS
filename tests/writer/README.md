@@ -46,3 +46,7 @@ use pipeline tests to verify whole-line behaviour.
 
 - `elements/`: element-specific serialisation, one file per element family.
 - `pipeline/`: whole-writer entry points and supported-element policy.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

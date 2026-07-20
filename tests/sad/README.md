@@ -225,3 +225,7 @@ than assumed to follow from ROTATE):
 
 **BEAMBEAM** — Beam–beam elements are not currently converted by SAD2XS. Testing
 their SAD parameter acceptance is premature and out of scope.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

@@ -147,3 +147,7 @@ Known limitations:
 
 - `additional_commands` is raw SAD text and is not sandboxed or validated;
 - subprocess output parsing is tailored to the current generated SAD commands.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

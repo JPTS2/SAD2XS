@@ -28,3 +28,7 @@ Does not require the SAD binary.
 | File | Functions | Fail | Failure root cause |
 |------|-----------|------|--------------------|
 | `test_cavity.py` | 1 (2 parametrised instances) | 0 | — |
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0
