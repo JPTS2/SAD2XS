@@ -1,5 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter
+================================================================================
+SAD Helpers: Rebuild Lattice
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
+Email:      john.salvesen@cern.ch
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -21,7 +32,7 @@ def rebuild_sad_lattice(
         output_filepath:        str | None  = None,
         additional_commands:    str         = "",
         wall_time:              int         = 30,
-        sad_path:               str         = "sad"):
+        sad_path:               str         = "sad") -> None:
     """
     Output a rebuilt SAD lattice file after modifications.
 
@@ -31,11 +42,24 @@ def rebuild_sad_lattice(
         Path to the input SAD lattice file.
     line_name : str
         Name of the line in the SAD lattice file.
-    additional_commands : str, optional
-        Additional SAD commands to include before saving the lattice.
     output_filepath : str or None, optional
         Path to the output SAD lattice file. If None, appends "_rebuilt" to the
         input filename.
+    additional_commands : str, optional
+        Additional SAD commands to include before saving the lattice.
+    wall_time : int, optional
+        Timeout, in seconds, for the SAD subprocess. Defaults to 30.
+    sad_path : str, optional
+        Path to the SAD executable. Defaults to "sad".
+
+    Raises
+    ------
+    RuntimeError
+        If the SAD subprocess times out or exits non-zero (see
+        `run_sad`).
+    ValueError
+        If the rebuilt lattice contains a Mathematica undefined-symbol
+        marker (see `_check_mathematica_output`).
     """
 
     ########################################

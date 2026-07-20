@@ -12,3 +12,7 @@ folder's purpose remains clear.
 
 Use paths that mirror the source test area, for example
 `conversion/elements/sol/` for solenoid conversion diagnostics.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

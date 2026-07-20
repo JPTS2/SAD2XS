@@ -241,3 +241,7 @@ example `cavi`, `aper`, `moni`, and `sol`.
 For large element families a subfolder is acceptable, but do not add
 per-element subfolders by default unless the test set is large enough to
 justify the extra navigation.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

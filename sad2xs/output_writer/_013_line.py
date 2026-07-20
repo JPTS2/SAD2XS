@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Output Writer - Line
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Output Writer: Line Assembly
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -27,14 +34,30 @@ def create_line_lattice_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_line_lattice_file_information
-    
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Generate the lattice-file source assembling the written line
+    ("line = env.lines['line']") from its base-element names.
+
+    Drops any element type not in `config.ALLOWED_ELEMENTS` (warning
+    once for the whole lattice about what was omitted and why), then
+    resolves each remaining element to the base-element name actually
+    written by the other `create_*_lattice_file_information`
+    functions (stripping a leading '-' or an embedded '-' suffix
+    wherever the corresponding non-reversed base element is the one
+    that exists, matching the same minus-sign cleanup applied to the
+    written elements themselves).
+
+    Parameters
+    ----------
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration (`ALLOWED_ELEMENTS`,
+        `OUTPUT_STRING_LENGTH`).
+
+    Returns
+    -------
+    str
+        The generated Python source assembling and naming the line.
     """
 
     ########################################

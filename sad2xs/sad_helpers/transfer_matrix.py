@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: SAD Helpers Transfer Matrix
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+SAD Helpers: Transfer Matrix
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       24-06-2026
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -31,7 +38,11 @@ def transfer_matrix_sad(
         wall_time:              int         = 30,
         sad_path:               str         = "sad") -> np.ndarray:
     """
-    Compute the transfer matrix of a SAD lattice between two elements.
+    Compute the 4D (transverse-only) transfer matrix of a SAD lattice
+    between two elements.
+
+    Runs SAD's CALC4D and reads back `TransferMatrix[...]`; the result
+    has no longitudinal/energy coupling terms.
 
     Parameters
     ----------
@@ -45,11 +56,27 @@ def transfer_matrix_sad(
     end_element : str | None, optional
         Name of the ending element for the transfer matrix calculation.
         If None, the end of the beamline is used.
+    wall_time : int, optional
+        Timeout, in seconds, for the SAD subprocess. Defaults to 30.
+    sad_path : str, optional
+        Path to the SAD executable. Defaults to "sad".
 
     Returns
     -------
     np.ndarray
-        The transfer matrix as a NumPy array.
+        The 4x4 transfer matrix.
+
+    Raises
+    ------
+    ValueError
+        If exactly one of `start_element`/`end_element` is given (both
+        or neither are required), if SAD's output contains a
+        Mathematica undefined-symbol marker (see
+        `_check_mathematica_output`), or if no matrix is found in
+        SAD's output.
+    RuntimeError
+        If the SAD subprocess times out or exits non-zero (see
+        `run_sad`).
     """
 
     ########################################

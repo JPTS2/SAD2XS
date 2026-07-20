@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Line Converter
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Line Converter
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-15
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -18,13 +25,44 @@ logger  = logging.getLogger(__name__)
 ################################################################################
 # Component Reversal
 ################################################################################
-def create_reversed_component(component, environment, offset_marker_names = frozenset()):
+def create_reversed_component(
+        component:              str,
+        environment:            xt.Environment,
+        offset_marker_names:    frozenset[str]  = frozenset()) -> str:
     """
-    Docstring for create_reversed_component
+    Create (or identify) the reversed counterpart of one line component.
 
-    :param component: Description
-    :param environment: Description
-    :param offset_marker_names: Lowercase MARK/MONI/BEAMBEAM names with a SAD OFFSET
+    A reversed component name always starts with '-'. For element
+    types whose physics genuinely differs under reversal (Bend:
+    entry/exit edge angles swapped; UniformSolenoid: ks negated;
+    Translation/TimeDelay/Rotation: cloned so the reversed line gets
+    its own copy; Marker elements that are SAD OFFSET markers:
+    identified rather than cloned, so later offset-marker handling can
+    still find them by name), a genuinely reversed clone is created.
+    Every other element type (Drift, Quadrupole, Sextupole, Octupole,
+    Multipole, Cavity, plain Marker, Aperture) is direction-symmetric,
+    so the '-' prefix is simply dropped and the original element
+    reused.
+
+    Parameters
+    ----------
+    component : str
+        The reversed component name, e.g. "-QF1" (must start with '-').
+    environment : xt.Environment
+        The Xsuite environment containing `component[1:]`.
+    offset_marker_names : frozenset of str, optional
+        Lowercase names of MARK/MONI/BEAMBEAM elements that carry a SAD
+        OFFSET, used to distinguish an offset marker (identified, not
+        cloned) from an ordinary marker (reused as-is). Defaults to an
+        empty frozenset.
+
+    Returns
+    -------
+    str
+        The name to use for this component in the reversed line:
+        either the original `component` (if a genuine reversed clone
+        was created or identified) or `component[1:]` (if the element
+        is direction-symmetric).
     """
 
     assert component.startswith("-"), "Component must start with '-' to be reversed"
@@ -109,12 +147,34 @@ def convert_lines(
         parsed_lattice_data:    dict,
         environment:            xt.Environment) -> None:
     """
-    Docstring for convert_lines
-    
-    :param parsed_lattice_data: Description
-    :type parsed_lattice_data: dict
-    :param environment: Description
-    :type environment: xt.Environment
+    Build every parsed SAD LINE as an Xsuite line, handling reversals.
+
+    Reversed line references ('-LINENAME') are resolved in three
+    passes: (1) reversed real (imported) sublines have their element
+    order reversed and every component negated; (2) reversed generated
+    sublines (e.g. solenoid/reference-shift/thick-cavity sub-lines,
+    which are never reordered) have every component negated but keep
+    their order; (3) any remaining reversed component (a single
+    element, not a subline) is resolved directly via
+    `create_reversed_component`. Reversed generated sublines are
+    deduplicated by name, so repeated references reuse the same
+    `*_reversed` line.
+
+    Parameters
+    ----------
+    parsed_lattice_data : dict
+        Parsed lattice data, as returned by `parse_sad_file`.
+    environment : xt.Environment
+        The Xsuite environment to build lines into. Must already have
+        every element and any generated sub-lines (solenoids,
+        reference shifts, etc.) created.
+
+    Raises
+    ------
+    ValueError
+        If a reversed subline reference survives both reversal passes
+        (an internal-consistency check -- indicates a SAD2XS bug), or
+        if any parsed line fails to convert.
     """
     ########################################
     # Get the required data

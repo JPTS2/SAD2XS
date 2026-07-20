@@ -52,3 +52,7 @@ These documents do not yet cover:
 - detailed examples for every conversion mode.
 
 Those sections should be added as the public API, docstrings, and supported conversion behaviours are stabilised.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

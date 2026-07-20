@@ -1,14 +1,30 @@
 """
-(Unofficial) SAD to XSuite Converter: Xsuite Helpers Comparison Plots
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Xsuite Helpers: Comparison Plots
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-17
+Date:       2026-07-20
+================================================================================
 """
 ################################################################################
 # Required Packages
 ################################################################################
+from collections.abc import Iterable
+from types import ModuleType
+from typing import TYPE_CHECKING
+
 import numpy as np
+import xtrack as xt
+
+if TYPE_CHECKING:
+    import matplotlib.axes
+    import matplotlib.figure
 
 ################################################################################
 # Quantity groups -- one figure per group, one row pair per quantity.
@@ -47,14 +63,50 @@ AVAILABLE_GROUPS    = tuple(_QUANTITY_GROUPS)
 ################################################################################
 # Small helpers
 ################################################################################
-def _zero_small_values(array, tol):
-    """Zero values below `tol` so floating-point noise doesn't clutter a plot."""
+def _zero_small_values(array: np.ndarray, tol: float) -> np.ndarray:
+    """
+    Zero values below `tol` so floating-point noise doesn't clutter
+    a plot.
+
+    Parameters
+    ----------
+    array : array_like
+        The values to clean.
+    tol : float
+        Absolute threshold below which a value is set to zero.
+
+    Returns
+    -------
+    numpy.ndarray
+        `array` as a float array, with values where `abs(value) < tol`
+        set to zero.
+    """
     array   = np.array(array, dtype = float)
     array[np.abs(array) < tol]  = 0
     return array
 
-def _difference(xs_values, sad_values, sad_column):
-    """(Xsuite - SAD), relative (%) for beta functions, absolute otherwise."""
+def _difference(xs_values: np.ndarray, sad_values: np.ndarray, sad_column: str) -> np.ndarray:
+    """
+    Compute (Xsuite - SAD), relative (%) for beta functions, absolute
+    otherwise.
+
+    Parameters
+    ----------
+    xs_values : array_like
+        Xsuite values for this quantity.
+    sad_values : array_like
+        SAD values for this quantity.
+    sad_column : str
+        The SAD column name, used to decide whether the difference is
+        relative (see `_RELATIVE_DIFF_COLUMNS`) or absolute.
+
+    Returns
+    -------
+    numpy.ndarray
+        The difference, as a percentage of `sad_values` (NaN where
+        `sad_values` is zero) for beta functions, or the plain
+        difference otherwise.
+    """
     if sad_column in _RELATIVE_DIFF_COLUMNS:
         with np.errstate(divide = "ignore", invalid = "ignore"):
             return np.where(
@@ -63,10 +115,36 @@ def _difference(xs_values, sad_values, sad_column):
                 np.nan)
     return xs_values - sad_values
 
-def _window_by_element(xsuite_aligned, sad_aligned, ele_start, ele_stop):
-    """Cut both aligned tables to the row range [ele_start, ele_stop] (by
-    SAD element name, case-insensitive like align_xsuite_twiss_with_sad_twiss's
-    own name matching, inclusive). No-op if neither is given."""
+def _window_by_element(
+        xsuite_aligned: xt.Table,
+        sad_aligned:    xt.Table,
+        ele_start:      str | None,
+        ele_stop:       str | None) -> tuple[xt.Table, xt.Table]:
+    """
+    Cut both aligned tables to the row range [ele_start, ele_stop].
+
+    Matched by SAD element name, case-insensitive, the same way
+    `align_xsuite_twiss_with_sad_twiss` matches names. No-op if
+    neither `ele_start` nor `ele_stop` is given.
+
+    Parameters
+    ----------
+    xsuite_aligned : xt.Table
+        Xsuite-side aligned table.
+    sad_aligned : xt.Table
+        SAD-side aligned table, whose `name` column is used for
+        matching.
+    ele_start : str or None
+        Name of the first element to keep (inclusive).
+    ele_stop : str or None
+        Name of the last element to keep (inclusive).
+
+    Returns
+    -------
+    tuple of (xt.Table, xt.Table)
+        `(xsuite_aligned, sad_aligned)`, windowed to the requested
+        row range.
+    """
     if ele_start is None and ele_stop is None:
         return xsuite_aligned, sad_aligned
 
@@ -86,17 +164,35 @@ def _window_by_element(xsuite_aligned, sad_aligned, ele_start, ele_stop):
 # there's no reason to make Xsuite redraw thousands of magnets from scratch
 # on each of them.
 ################################################################################
-def _draw_lattice_ribbon(overlay_ax, xsuite_aligned, cache):
+def _draw_lattice_ribbon(
+        overlay_ax:     "matplotlib.axes.Axes",
+        xsuite_aligned: xt.Table,
+        cache:          dict) -> tuple["matplotlib.axes.Axes", list, list]:
     """
     First call (`cache["bars"] is None`): let `xt.TwissTable.plot
     (lattice_only=True)` do the real work, then read the bars it drew
-    straight off the axis and cache that geometry. Every later call just
-    copies those bars onto its own axis instead of asking Xsuite to
-    recompute and redraw the whole ribbon again.
+    straight off the axis and cache that geometry. Every later call
+    just copies those bars onto its own axis instead of asking Xsuite
+    to recompute and redraw the whole ribbon again.
 
-    Returns `(data_axis, legend_handles, legend_labels)` -- `data_axis` is
-    where the SAD/Xsuite comparison curves belong, a twin axis of
-    `overlay_ax`, matching how Xsuite layers real data over its own bars.
+    Parameters
+    ----------
+    overlay_ax : matplotlib.axes.Axes
+        The axis to draw the ribbon onto (or copy it onto, on
+        subsequent calls).
+    xsuite_aligned : xt.Table
+        The table to draw the ribbon from, on the first call.
+    cache : dict
+        Shared cache dict with keys "bars" and "legend", populated on
+        the first call and reused on every subsequent call.
+
+    Returns
+    -------
+    tuple of (matplotlib.axes.Axes, list, list)
+        `(data_axis, legend_handles, legend_labels)` -- `data_axis` is
+        where the SAD/Xsuite comparison curves belong, a twin axis of
+        `overlay_ax`, matching how Xsuite layers real data over its
+        own bars.
     """
     if cache["bars"] is None:
         pl  = xsuite_aligned.plot(lattice_only = True, ax = overlay_ax, x = "s", grid = False)
@@ -130,10 +226,60 @@ def _draw_lattice_ribbon(overlay_ax, xsuite_aligned, cache):
 # One quantity-group figure
 ################################################################################
 def _plot_group(
-        plt, xsuite_aligned, sad_aligned, title, quantities, *,
-        figsize, include_diff, xsuite_column_overrides, zero_tol,
-        title_prefix, lattice_cache):
+        plt:                        ModuleType,
+        xsuite_aligned:             xt.Table,
+        sad_aligned:                xt.Table,
+        title:                      str,
+        quantities:                 list[tuple[str, str, str]],
+        *,
+        figsize:                    tuple[float, float],
+        include_diff:               bool,
+        xsuite_column_overrides:    dict[str, str],
+        zero_tol:                   float,
+        title_prefix:               str | None,
+        lattice_cache:              dict | None
+        ) -> tuple["matplotlib.figure.Figure", list["matplotlib.axes.Axes"]]:
+    """
+    Draw one quantity-group figure: one overlay (+ optional
+    difference) row per quantity in `quantities`.
 
+    Parameters
+    ----------
+    plt : module
+        The `matplotlib.pyplot` module (passed in rather than
+        imported here, so this stays a pure helper of
+        `plot_xsuite_sad_comparison`, which does the lazy import).
+    xsuite_aligned : xt.Table
+        Xsuite-side aligned table (already windowed, if requested).
+    sad_aligned : xt.Table
+        SAD-side aligned table (already windowed, if requested).
+    title : str
+        The figure's title (see `_QUANTITY_GROUPS`).
+    quantities : list of tuple
+        `(sad_column, overlay_label, diff_label)` triples for this
+        group (see `_QUANTITY_GROUPS`).
+    figsize : tuple
+        Passed to `plt.figure`.
+    include_diff : bool
+        Add a (Xsuite - SAD) row flush under every overlay row.
+    xsuite_column_overrides : dict
+        SAD column name -> Xsuite column name, for quantities where
+        the two sides use different names.
+    zero_tol : float
+        Values with `abs(value) < zero_tol` are shown as exactly zero.
+    title_prefix : str or None
+        Prepended to the figure's title as
+        `"{title_prefix}: {title}"`.
+    lattice_cache : dict or None
+        Shared cache for `_draw_lattice_ribbon`, or None to skip
+        drawing the lattice ribbon.
+
+    Returns
+    -------
+    tuple of (matplotlib.figure.Figure, list of matplotlib.axes.Axes)
+        The figure and its axes (overlay and, if `include_diff`,
+        difference axes interleaved).
+    """
     fig     = plt.figure(figsize = figsize)
     outer   = fig.add_gridspec(len(quantities), 1, hspace = 0.4)
 
@@ -194,16 +340,19 @@ def _plot_group(
 # Public comparison-plot function
 ################################################################################
 def plot_xsuite_sad_comparison(
-        xsuite_aligned, sad_aligned, *,
-        groups                  = None,
-        ele_start                = None,
-        ele_stop                 = None,
-        figsize                  = (8, 6),
-        include_diff             = True,
-        xsuite_column_overrides  = None,
-        zero_tol                 = 1E-12,
-        title_prefix             = None,
-        show_lattice             = True):
+        xsuite_aligned:             xt.Table,
+        sad_aligned:                xt.Table,
+        *,
+        groups:                     Iterable[str] | None    = None,
+        ele_start:                  str | None              = None,
+        ele_stop:                   str | None              = None,
+        figsize:                    tuple[float, float]     = (8, 6),
+        include_diff:               bool                    = True,
+        xsuite_column_overrides:    dict[str, str] | None   = None,
+        zero_tol:                   float                   = 1E-12,
+        title_prefix:               str | None              = None,
+        show_lattice:               bool                    = True
+        ) -> dict[str, tuple["matplotlib.figure.Figure", list["matplotlib.axes.Axes"]]]:
     """
     Overlay Xsuite against SAD for each quantity group in `groups` (default
     `AVAILABLE_GROUPS`, i.e. all of them), one figure per group, with an

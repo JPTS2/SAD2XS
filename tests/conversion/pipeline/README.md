@@ -43,3 +43,7 @@ Covers `reverse_charge_sign=True` and species-aware reference particle setup.
 Tests: default positron species, proton mass → proton species, charge sign
 reversal (positron → electron, proton → antiproton), p0c/mass0 isolation, and
 UserWarning emission when `CHARGE != 1` is found in the SAD file. All 6 pass.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

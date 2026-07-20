@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Xsuite Helpers Symplecticity Check
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Xsuite Helpers: Symplecticity Check
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-17
+Date:       2026-07-20
+================================================================================
 """
 ################################################################################
 # Required Packages
@@ -26,13 +33,31 @@ _J  = np.array([
 ################################################################################
 # Symplecticity residual: (M.T @ J @ M) - J, zero for a symplectic M
 ################################################################################
-def _residual(M):
+def _residual(M: np.ndarray) -> np.ndarray:
+    """
+    Compute the symplecticity residual of a transfer matrix.
+
+    Parameters
+    ----------
+    M : numpy.ndarray
+        A 6x6 transfer matrix.
+
+    Returns
+    -------
+    numpy.ndarray
+        `(M.T @ J @ M) - J`, the zero matrix for a symplectic `M`.
+    """
     return (M.T @ _J @ M) - _J
 
 ################################################################################
 # Check symplecticity
 ################################################################################
-def check_symplecticity(twiss, line, *, tt = None, atol = 1E-6):
+def check_symplecticity(
+        twiss:  xt.TwissTable,
+        line:   xt.Line,
+        *,
+        tt:     xt.Table | None = None,
+        atol:   float           = 1E-6) -> tuple[bool, float]:
     """
     Check the one-turn R matrix is symplectic; if it isn't, fall back to an
     element-by-element check to find what breaks it.

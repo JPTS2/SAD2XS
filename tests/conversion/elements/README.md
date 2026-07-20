@@ -215,3 +215,7 @@ test asserts a bounded tolerance, not exact agreement.
 - `xsuite_environment` — a fresh `xt.Environment` for direct converter tests
 - `parsed_elements` — helper for constructing minimal parsed element dictionaries
 - `assert_environment_element` — assertion helper for environment element contents
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

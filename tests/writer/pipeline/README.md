@@ -60,3 +60,7 @@ rather than one serialised element or feature.
 ## Expected Failures
 
 None. All writer pipeline tests are expected to pass.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

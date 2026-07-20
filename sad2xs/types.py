@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Types
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Shared Type Definitions
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-17
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -11,6 +18,15 @@ Date:       2026-07-17
 ################################################################################
 from __future__ import annotations
 from typing import Protocol
+
+################################################################################
+# Parsed SAD Value Type
+################################################################################
+# A parsed SAD parameter value: either numeric, or a deferred
+# expression string (an unresolved reference to a variable/expression
+# defined elsewhere in the lattice file) -- see
+# `converter._000_helpers.parse_expression`.
+SadValue = float | str
 
 ################################################################################
 # Config Type

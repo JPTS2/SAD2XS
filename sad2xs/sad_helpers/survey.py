@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: SAD Helpers Survey
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+SAD Helpers: Survey
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-14
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -24,9 +31,19 @@ logger  = logging.getLogger(__name__)
 ################################################################################
 # SAD Survey Print Function
 ################################################################################
-def generate_survey_print_function():
+def generate_survey_print_function() -> str:
     """
-    TBD
+    Build the SAD-side `SaveSurveyFile[filename_]` function
+    definition.
+
+    Writes every line element's TFS-style survey record (NAME, TYPE,
+    S, L, GX, GY, GZ, GCHI1, GCHI2, GCHI3) to `filename`. Used by
+    `survey_sad` to extract SAD's global survey coordinates.
+
+    Returns
+    -------
+    str
+        The SAD command text defining `SaveSurveyFile`.
     """
 
     survey_command  = """
@@ -105,16 +122,68 @@ SaveSurveyFile[filename_]:=Module[
 # Closed Ring 4D Twiss Function
 ################################################################################
 def survey_sad(
-        lattice_filepath:       str,
-        line_name:              str,
-        closed:                 bool    = True,
-        reverse_element_order:  bool    = False,
-        reverse_survey_horizontal: bool    = False,
-        additional_commands:    str     = "",
-        wall_time:              int     = 30,
-        sad_path:               str     = "sad"):
+        lattice_filepath:           str,
+        line_name:                  str,
+        closed:                     bool    = True,
+        reverse_element_order:      bool    = False,
+        reverse_survey_horizontal:  bool    = False,
+        additional_commands:        str     = "",
+        wall_time:                  int     = 30,
+        sad_path:                   str     = "sad") -> xt.survey.SurveyTable:
     """
-    Generate a SAD command to compute the twiss parameters of a lattice.
+    Compute a lattice's global survey coordinates in real SAD, as an
+    Xsuite SurveyTable.
+
+    Runs SAD's own survey (CELL/INS + COD + CALC), reads back the TFS
+    file `generate_survey_print_function` writes, maps SAD element
+    TYPE strings onto their Xsuite equivalents, and reassembles the
+    result as an `xt.survey.SurveyTable` with axes remapped into
+    Xsuite's convention (X = -GY, Y = -GZ, Z = +GX; theta = -GCHI1,
+    phi = -GCHI2, psi = +GCHI3). `reverse_element_order` uses SAD's
+    own `-ExtractBeamLine[]` to reverse natively rather than
+    reimplementing reversal in Python (see docs/sad-behaviour.md).
+
+    Parameters
+    ----------
+    lattice_filepath : str
+        Path to the SAD lattice file, relative to the current working
+        directory (SAD changes into the script's own directory, so
+        the lattice must be reachable from there).
+    line_name : str
+        The SAD line to USE.
+    closed : bool, optional
+        If True, treat the lattice as a closed ring (SAD's CELL); if
+        False, as a transfer line (SAD's INS). Defaults to True.
+    reverse_element_order : bool, optional
+        Reverse the line's element order natively in SAD before
+        surveying. Defaults to False.
+    reverse_survey_horizontal : bool, optional
+        Flip the sign of X/theta/psi in the returned survey (mirrors
+        `reverse_line_survey_horizontal`'s convention). Defaults to
+        False.
+    additional_commands : str, optional
+        Extra SAD commands run after loading the line and before the
+        survey. Defaults to "".
+    wall_time : int, optional
+        Timeout, in seconds, for the SAD subprocess. Defaults to 30.
+    sad_path : str, optional
+        Path to the SAD executable. Defaults to "sad".
+
+    Returns
+    -------
+    xt.survey.SurveyTable
+        The lattice's global survey coordinates, in Xsuite's axis
+        convention, ordered by S. Element types not in the SAD-to-
+        Xsuite map are labelled "Unknown".
+
+    Raises
+    ------
+    RuntimeError
+        If the SAD subprocess times out or exits non-zero (see
+        `run_sad`).
+    ValueError
+        If SAD's output contains a Mathematica undefined-symbol
+        marker (see `_check_mathematica_output`).
     """
 
     ########################################

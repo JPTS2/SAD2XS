@@ -40,3 +40,7 @@ Some examples also create a temporary rebuilt SAD lattice under `examples/lattic
 ## Notes
 
 These scripts call SAD through `sad2xs.sad_helpers`, generate plots, and may take longer than unit tests. Public regression tests should live under `tests/` and should use reduced synthetic inputs where possible.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

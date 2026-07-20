@@ -57,3 +57,7 @@ which is expected and acceptable behaviour).
 | `test_import_boundary_write_optics_is_callable` | `sad2xs.write_optics` is callable |
 | `test_import_boundary_sad_helpers_is_a_module` | `sad2xs.sad_helpers` is a `types.ModuleType` |
 | `test_import_boundary_core_import_does_not_require_tfs` | `import sad2xs` succeeds with `tfs` blocked at the import-system level |
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

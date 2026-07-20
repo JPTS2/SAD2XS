@@ -22,3 +22,7 @@ reused across unrelated test areas.
 - `test_sad_executable.py` (1 test) — SAD executable smoke check: verifies the
   `sad` command is on PATH and runs the committed installation test lattice
   (`sad_installation_test.sad`) to completion with returncode 0.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

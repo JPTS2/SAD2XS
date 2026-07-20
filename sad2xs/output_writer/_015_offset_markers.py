@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Output Writer - Offset Markers
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Output Writer: Offset Markers
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-16
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -20,6 +27,37 @@ from ..types import ConfigLike
 def create_offset_marker_lattice_file_information(
         offset_marker_locations:    dict,
         config:                     ConfigLike) -> str:
+    """
+    Generate the lattice-file source re-inserting resolved offset
+    markers at their computed s-positions.
+
+    Writes a `MARKER_POSITIONS` dict (marker name -> list of
+    s-positions), then, if `config._install_offset_markers` is set,
+    installs each marker via `env.place`/`line.insert` -- or, if a
+    marker's position is within `config.MARKER_INSERTION_TOLERANCE` of
+    the line's end, via `line.append_element` instead, since
+    `line.insert` cannot place an element exactly at the end. Any
+    marker `line.insert` fails to place (most often because a
+    negative drift makes the requested s-position unreachable) is
+    reported with a `print()` at runtime, naming exactly which markers
+    were lost, rather than failing the whole reload silently.
+
+    Parameters
+    ----------
+    offset_marker_locations : dict
+        Resolved offset-marker insertion points, as returned by
+        `sad2xs.converter._008_offset_markers.convert_offset_markers`.
+    config : ConfigLike
+        Converter configuration (`_install_offset_markers`,
+        `MARKER_INSERTION_TOLERANCE`, `_replace_repeated_elements`,
+        `OUTPUT_STRING_SEP`, `OUTPUT_STRING_LENGTH`).
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if
+        `offset_marker_locations` is empty.
+    """
 
     ########################################
     # Ensure there are offset markers in the line

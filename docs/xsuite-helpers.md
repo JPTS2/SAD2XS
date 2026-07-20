@@ -186,3 +186,7 @@ plot_xsuite_sad_comparison(
     ele_start   = "qf1.l4",
     ele_stop    = "qf1.r4")
 ```
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

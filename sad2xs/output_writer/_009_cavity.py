@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Output Writer - Cavities
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Output Writer: Cavities
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -25,16 +32,32 @@ def create_cavity_lattice_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_cavity_lattice_file_information
-    
-    :param line: Description
-    :type line: xt.Line
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Generate the lattice-file source for every CAVI element.
+
+    Unlike the other magnet families, cavities are not grouped/cloned
+    by length -- each is written individually, since RF parameters
+    rarely repeat exactly. voltage/phase are always referenced as
+    live optics variables; frequency is written as
+    "freq_<name> * (1 + fshift)" (SAD's FSHIFT convention) unless the
+    element has a non-zero harmonic number, in which case harmonic is
+    referenced instead and Xsuite derives frequency from it.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate cavity source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Accepted for interface consistency with the other
+        `create_*_lattice_file_information` functions; not used
+        directly by this function.
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no cavities.
     """
 
     ########################################
@@ -116,16 +139,37 @@ def create_cavity_optics_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_cavity_optics_file_information
-    
-    :param line: Description
-    :type line: xt.Line
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Generate the optics-file source assigning every cavity's RF
+    parameters.
+
+    Writes `volt_<name>`, `phase_<name>`, and either `harm_<name>` (if
+    the cavity has a non-zero harmonic number) or `freq_<name>`
+    (otherwise) per distinct cavity, aligned to
+    `config.OUTPUT_STRING_SEP`, for use inside the generated
+    `env.vars.update(...)` call. Reversed ('-'-prefixed) cavities are
+    skipped, since they share the same optics variables as their
+    non-reversed counterpart.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate cavity optics source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration; only `OUTPUT_STRING_SEP` is used.
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no cavities.
+
+    Raises
+    ------
+    KeyError
+        If neither a cavity name nor its reversed form is found in
+        `line`.
     """
 
     ########################################

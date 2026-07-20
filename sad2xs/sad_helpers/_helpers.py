@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: SAD Helpers Internal Utilities
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+SAD Helpers: Internal Utilities
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-04
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -25,12 +32,38 @@ def run_sad(
         wall_time:      int,
         sad_path:       str) -> str:
     """
-    Write a SAD command file, run SAD on it, and return SAD's terminal output.
+    Write a SAD command file, run SAD on it, and return SAD's
+    terminal output.
 
-    The command file is removed afterwards regardless of outcome. Failures
-    are raised as RuntimeError with SAD's stdout/stderr embedded, so the
-    diagnostic travels with the exception instead of relying on terminal
-    scrollback.
+    The command file is removed afterwards regardless of outcome.
+    Failures are raised as RuntimeError with SAD's stdout/stderr
+    embedded, so the diagnostic travels with the exception instead of
+    relying on terminal scrollback.
+
+    Parameters
+    ----------
+    sad_command : str
+        The SAD command script to write to `cmd_file` and execute.
+    cmd_file : str
+        Path to write the command file to (removed after the call).
+    task_name : str
+        A short label for this run, used in log messages and error
+        text (e.g. "twiss", "track").
+    wall_time : int
+        Timeout, in seconds, for the SAD subprocess.
+    sad_path : str
+        Path to the SAD executable.
+
+    Returns
+    -------
+    str
+        SAD's captured stdout.
+
+    Raises
+    ------
+    RuntimeError
+        If SAD times out, or exits with a non-zero status (with SAD's
+        stdout/stderr embedded in the message).
     """
     logger.debug(f"Running SAD {task_name} ({cmd_file})")
     try:
@@ -72,6 +105,28 @@ _MATHEMATICA_UNDEFINED = frozenset({
     "DirectedInfinity"})
 
 def _check_mathematica_output(raw: str) -> None:
+    """
+    Raise if SAD's output contains a Mathematica undefined-symbol
+    marker.
+
+    SAD can exit 0 while a physically degenerate lattice
+    configuration causes its underlying Mathematica computation to
+    silently fail, leaving symbols like "medium" or "Indeterminate"
+    in the output instead of numbers. Since the exit code alone
+    cannot detect this, callers that parse SAD's output should check
+    it with this function first.
+
+    Parameters
+    ----------
+    raw : str
+        SAD's raw terminal output.
+
+    Raises
+    ------
+    ValueError
+        If any known Mathematica undefined-symbol marker is found in
+        `raw`.
+    """
     found = [s for s in _MATHEMATICA_UNDEFINED if s in raw]
     if found:
         raise ValueError(

@@ -1,14 +1,22 @@
 """
-(Unofficial) SAD to XSuite Converter: Xsuite Helpers Twiss Assertions
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Xsuite Helpers: Twiss Assertions
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-17
+Date:       2026-07-20
+================================================================================
 """
 ################################################################################
 # Required Packages
 ################################################################################
 import numpy as np
+import xtrack as xt
 
 ################################################################################
 # Default per-column tolerances
@@ -39,9 +47,11 @@ _BASELINE_SUBTRACTED_COLUMNS   = {"zeta"}
 # Assert two aligned twiss tables agree
 ################################################################################
 def assert_xsuite_matches_sad_twiss(
-        xsuite_aligned, sad_aligned, *,
-        tolerances               = None,
-        xsuite_column_overrides  = None):
+        xsuite_aligned:             xt.Table,
+        sad_aligned:                xt.Table,
+        *,
+        tolerances:                 dict[str, dict[str, float]] | None  = None,
+        xsuite_column_overrides:    dict[str, str] | None               = None) -> None:
     """
     Assert an Xsuite/SAD twiss pair agrees column by column, within
     per-column tolerance.
@@ -58,6 +68,11 @@ def assert_xsuite_matches_sad_twiss(
         SAD column name -> Xsuite column name, for columns compared under a
         different name on the Xsuite side (e.g. `{"betx": "betx_edw_teng"}`
         for coupled Edwards-Teng optics).
+
+    Raises
+    ------
+    AssertionError
+        If any column's values disagree beyond its tolerance.
     """
     tolerances               = tolerances or DEFAULT_TWISS_TOLERANCES
     xsuite_column_overrides  = xsuite_column_overrides or {}

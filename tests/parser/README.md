@@ -82,3 +82,7 @@ over.
 a dedented string and changes the working directory to the file's parent so
 the parser can find it by name. All parser tests should use this fixture
 rather than defining local file-writing helpers.
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

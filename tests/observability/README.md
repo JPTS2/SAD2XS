@@ -72,3 +72,7 @@ Placed in the **SAD-required** CI job.
 | `test_twiss_sad_is_silent_by_default` | `capfd` captures nothing for a successful call |
 | `test_survey_sad_is_silent_by_default` | `capfd` captures nothing for a successful call |
 | `test_twiss_sad_logs_sad_output_at_debug_level` | debug records include the narrative and SAD's terminal output |
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

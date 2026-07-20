@@ -1,22 +1,42 @@
 """
-(Unofficial) SAD to XSuite Converter: Line Reversals
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Line Reversals
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-12
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
 # Required Packages
 ################################################################################
 import numpy as np
+import xtrack as xt
 
 ################################################################################
 # Line Element Order Reversal
 ################################################################################
-def reverse_line_element_order(line):
-    """ Reverse the order of elements in a line and adjust their parameters
-    accordingly to maintain the same physics but in the opposite direction.
+def reverse_line_element_order(line: xt.Line) -> xt.Line:
+    """
+    Reverse a line's element order (SAD's '-LINE' operator).
+
+    Mirrors the line (via `xt.Line.mirror`) and then fixes up the
+    physics quantities that a plain element-order reversal gets wrong:
+    bend edge angles/fringe fint/hgap are swapped (the old exit edge
+    becomes the new entry edge and vice versa), solenoid ks is
+    negated, and solenoid GEO reference-shift Translations (name
+    suffix "_dxy") are negated since the former exit boundary is now
+    the entrance. Standalone COORD-derived Translations (no "_dxy"
+    suffix) are left unchanged, since a COORD offset is a fixed
+    geometric property of the beampipe and does not flip sign under
+    reversal (verified against SAD's own `-LINE` output for both
+    cases).
 
     Parameters
     ----------
@@ -26,7 +46,8 @@ def reverse_line_element_order(line):
     Returns
     -------
     xt.Line
-        A new line with elements in reverse order and adjusted parameters.
+        The same line object, mirrored and with reversal-sensitive
+        parameters corrected in place.
     """
 
     ########################################
@@ -145,19 +166,35 @@ def reverse_line_element_order(line):
 ################################################################################
 # Line Bend Direction Reversal
 ################################################################################
-def reverse_line_survey_horizontal(line):
-    """ Reverse the order of elements in a line and adjust their parameters
-    accordingly to maintain the same physics but in the opposite direction.
+def reverse_line_survey_horizontal(line: xt.Line) -> xt.Line:
+    """
+    Flip a line's horizontal bend direction (mirror the survey through
+    the horizontal plane), without reversing element order.
+
+    Every element keeps its position in the line, but each bending/
+    field-carrying element has its horizontal-plane quantities
+    negated and vertical-plane quantities left alone (or vice versa,
+    following each element's own reflection parity): bend angle/k0
+    and even knl/odd ksl orders negate, quadrupole/sextupole/
+    octupole/multipole field orders negate by the same even/odd
+    parity rule, and every element's shift_x/rot_s_rad negate while
+    shift_y stays unchanged (a reflection through the horizontal
+    plane). Solenoids additionally get their x0/y0 recomputed from
+    the new shift/rotation. Standalone Translation/Rotation
+    reference-shift elements follow the same pattern: Translation's
+    shift_x negates and shift_y is unchanged; Rotation's rot_y_rad and
+    rot_s_rad negate and rot_x_rad is unchanged.
 
     Parameters
     ----------
     line : xt.Line
-        The original line to be reversed.
+        The original line whose bend direction should be flipped.
 
     Returns
     -------
     xt.Line
-        A new line with elements in reverse order and adjusted parameters.
+        The same line object, with reflection-sensitive parameters
+        corrected in place.
     """
 
     ########################################

@@ -86,3 +86,7 @@ of examples, and `docs/sad-behaviour.md` for the underlying SAD physics and
 convention notes behind each one (solenoid `DISFRIN` fringe kick, `MULT`
 `K0`/`SK0` dipole fringe, bend element-offset reference-orbit convention,
 Edwards-Teng/Mais-Ripken twiss conventions in coupled regions).
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

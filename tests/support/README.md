@@ -20,3 +20,7 @@ should not run SAD, perform assertions, or have side effects at import time.
 | `lattices.py` | Shared SAD lattice-writing helpers for SAD helper tests: `write_minimal_transfer_lattice`, `write_minimal_bend_lattice`, `write_asymmetric_closed_ring`, `write_fodo_ring` |
 | `writer_helpers.py` | Shared write+reload mechanics for `tests/writer/elements/`: `write_and_load`, `writer_roundtrip` |
 | `tracking_helpers.py` | Shared Xsuite particle build+track mechanics for `tests/conversion/elements/`: `track_xsuite_particles` |
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

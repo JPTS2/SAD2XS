@@ -82,3 +82,7 @@ template's own normalisation logic).
 | `test_ci_folder_workflow_lists_at_least_one_test_target` | 9 PASS | Each workflow has a non-empty `test_files:` block |
 | `test_ci_folder_workflow_test_targets_all_exist` | 9 PASS | Each listed path (`tests/<folder>`) exists as a directory |
 | `test_ci_folder_workflow_test_targets_are_under_tests_directory` | 9 PASS | All paths start with `tests/` |
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

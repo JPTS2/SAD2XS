@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Offset Marker Converter
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Offset Marker Converter
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-16
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -22,10 +29,43 @@ logger  = logging.getLogger(__name__)
 # Conversion Function
 ################################################################################
 def convert_offset_markers(
-        line,
-        parsed_lattice_data:    dict):
+        line:                   xt.Line,
+        parsed_lattice_data:    dict) -> tuple[xt.Line, dict[str, list[float]]]:
     """
-    Markers in SAD have an offset parameter that is not replicated in Xsuite
+    Resolve SAD MARK/MONI/BEAMBEAM OFFSET positions into insertion
+    points.
+
+    SAD's OFFSET parameter places a marker at a fractional position
+    relative to its own nominal location: 0 <= OFFSET <= 1 leaves it
+    in place (a no-op, confirmed against real SAD); any other value
+    moves it into a neighbouring element, at
+    s = (that element's start) + (that element's length) *
+    (OFFSET mod 1), where the neighbouring element is floor(OFFSET)
+    positions away. A reversed reference walks OFFSET in the opposite
+    direction (1 - OFFSET). Offset markers whose target element is a
+    UniformSolenoid are permanently excluded, with a warning, since
+    slicing a solenoid is not supported: the marker is removed from
+    `line` like any moved marker, but never re-inserted anywhere (see
+    `test_pipeline_offset_marker_solenoid_exclusion_removes_marker_permanently`).
+    Every other offset marker that does move is
+    removed from `line` here -- the moved positions are only
+    re-inserted later, when the lattice file is generated (see
+    `sad2xs.output_writer._015_offset_markers`); `line` itself never
+    gets them back.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to resolve and remove offset markers from.
+    parsed_lattice_data : dict
+        Parsed lattice data, as returned by `parse_sad_file`.
+
+    Returns
+    -------
+    tuple of (xt.Line, dict)
+        `(line, offset_marker_locations)`, where
+        `offset_marker_locations` maps each moved marker's base name
+        to a list of s-positions it should be re-inserted at.
     """
 
     ########################################

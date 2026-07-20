@@ -326,3 +326,7 @@ executable and inspecting output, to confirm assumptions used in the converter:
 | `reverse_element_order` | No | Yes (negate, composes with charge-dependent base) | No | Yes (mirror) |
 | `reverse_charge_sign` | Yes | Yes (negate, since ks depends on q0) | No | No |
 | `reverse_survey_horizontal` | No | Yes (negate, composes with charge-dependent base) | Partial (see table) | No |
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

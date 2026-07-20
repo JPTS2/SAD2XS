@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Output Writer - Reference Shifts
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Output Writer: Reference Shifts
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -22,14 +29,28 @@ def create_refshift_lattice_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_refshift_lattice_file_information
+    Generate the lattice-file source for every reference-shift
+    element (Translation, TimeDelay, Rotation).
 
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Each element is written individually (no length-based grouping or
+    cloning, unlike the magnet families), with its shift/rotation
+    components referenced as live optics variables
+    ("dx_"/"dy_"/"dz_"/"chi1_"/"chi2_"/"chi3_" + name).
+
+    Parameters
+    ----------
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Accepted for interface consistency with the other
+        `create_*_lattice_file_information` functions; not used
+        directly by this function.
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no reference-shift elements.
     """
 
     ########################################
@@ -174,16 +195,30 @@ def create_refshift_optics_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_refshift_optics_file_information
+    Generate the optics-file source assigning every reference-shift
+    element's parameters.
 
-    :param line: Description
-    :type line: xt.Line
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Writes `dx_`/`dy_` (Translation), `dz_` (TimeDelay), and
+    `chi1_`/`chi2_`/`chi3_` (Rotation) optics-variable assignments per
+    distinct element, aligned to `config.OUTPUT_STRING_SEP`, for use
+    inside the generated `env.vars.update(...)` call. Zero values are
+    omitted (the writer's `default_to_zero` setting covers them).
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate reference-shift optics source
+        for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration; only `OUTPUT_STRING_SEP` is used.
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no reference-shift elements.
     """
 
     ########################################

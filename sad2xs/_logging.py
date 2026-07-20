@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Logging Configuration
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Logging Configuration
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-04
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -30,7 +37,21 @@ class _SAD2XSFormatter(logging.Formatter):
     Prefix warnings and errors so they stand out on the terminal.
     The INFO/DEBUG narrative is left unprefixed.
     """
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
+        """
+        Format a log record, prefixing WARNING/ERROR levels only.
+
+        Parameters
+        ----------
+        record : logging.LogRecord
+            The log record to format.
+
+        Returns
+        -------
+        str
+            The formatted message: prefixed with "SAD2XS <LEVEL>:" for
+            WARNING and above, otherwise the bare message.
+        """
         if record.levelno >= logging.WARNING:
             return f"SAD2XS {record.levelname}: {record.getMessage()}"
         return record.getMessage()

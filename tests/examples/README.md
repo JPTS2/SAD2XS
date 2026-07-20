@@ -35,3 +35,7 @@ live under `tests/examples/lattices/`.
     and the example's own assertions enabled (1 parametrized test).
   - Script contract: each numbered public example script references at least
     one committed lattice file under `examples/lattices` (1 test).
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0

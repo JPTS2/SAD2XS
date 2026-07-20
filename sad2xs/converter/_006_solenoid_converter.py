@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Solenoid Converter
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Solenoid Converter
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-10
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -26,14 +33,37 @@ def convert_solenoids(
         environment:            xt.Environment,
         config:                 ConfigLike) -> None:
     """
-    Docstring for convert_solenoids
-    
-    :param parsed_lattice_data: Description
-    :type parsed_lattice_data: dict
-    :param environment: Description
-    :type environment: xt.Environment
-    :param config: Description
-    :type config: ConfigLike
+    Convert non-solenoid elements inside bound solenoid regions into
+    equivalent UniformSolenoid elements carrying the local ks.
+
+    Between each pair of BOUND solenoid markers, every element picks
+    up the solenoidal field active at that point in the lattice (the
+    ks of the nearest preceding, or if reversed, nearest following,
+    boundary solenoid): Drifts convert directly; Bend/Quadrupole/
+    Sextupole/Octupole/Multipole elements convert to a UniformSolenoid
+    carrying both their own field (as knl/ksl) and ks, with x0/y0 set
+    to keep the transverse offset consistent under the field rotation.
+    Thin, field-free elements (Translation, TimeDelay, Rotation,
+    Marker, aperture limits, zero-length Cavity) are left alone; any
+    other thick element found inside a solenoid region is warned
+    about, not converted.
+
+    Parameters
+    ----------
+    parsed_lattice_data : dict
+        Parsed lattice data, as returned by `parse_sad_file`.
+    environment : xt.Environment
+        The Xsuite environment containing the lines and elements to
+        convert. Must already have every element and every line
+        created (including reversed lines).
+    config : ConfigLike
+        Converter configuration; only `MAX_KNL_ORDER` is used.
+
+    Raises
+    ------
+    ValueError
+        If BOUND solenoids in a line are not paired (an odd number in
+        entrance/exit order).
     """
 
     ########################################
@@ -461,18 +491,45 @@ def solenoid_reference_shift_corrections(
         reverse_line:           bool,
         config:                 ConfigLike) -> None:
     """
-    Docstring for solenoid_reference_shift_corrections
-    
-    :param line: Description
-    :type line: xt.Line
-    :param parsed_lattice_data: Description
-    :type parsed_lattice_data: dict
-    :param environment: Description
-    :type environment: xt.Environment
-    :param reverse_line: Description
-    :type reverse_line: bool
-    :param config: Description
-    :type config: ConfigLike
+    Correct and reorder the reference-frame shift elements installed
+    by `convert_solenoids` for each bound solenoid boundary.
+
+    Each BOUND solenoid was converted (in
+    `_004_element_converter.convert_solenoids`) to a sub-line of
+    [UniformSolenoid, Translation, TimeDelay, Rotation] components in a
+    fixed generic order; this function fixes that
+    order and the sign of the Translation/Rotation parameters per
+    boundary, based on whether it is an inbound (entrance) or outbound
+    (exit) boundary, whether it is the GEO boundary of its pair, and
+    whether the inbound/outbound solenoids of the pair were
+    individually reversed (by line reversal). The correct sign
+    combinations were verified empirically against real SAD Twiss
+    output (see test_sol_reference_transform_orbit_matches_sad_twiss
+    and test_sol_reference_transform_restores_design_orbit_at_end).
+
+    Parameters
+    ----------
+    line : xt.Line
+        The line whose bound solenoid boundaries should be corrected.
+    parsed_lattice_data : dict
+        Parsed lattice data, as returned by `parse_sad_file`.
+    environment : xt.Environment
+        The Xsuite environment containing `line`'s elements.
+    reverse_line : bool
+        Not used directly by this function -- reversal is instead
+        detected per solenoid from its own name (a leading '-').
+        Accepted for interface consistency with the conversion
+        pipeline's other line-level correction calls.
+    config : ConfigLike
+        Not used directly by this function. Accepted for interface
+        consistency with the conversion pipeline's other line-level
+        correction calls.
+
+    Raises
+    ------
+    ValueError
+        If BOUND solenoids in `line` are not paired, or if neither
+        solenoid in a pair is the GEO boundary.
     """
 
     ########################################
@@ -724,7 +781,22 @@ def solenoid_reference_shift_corrections(
     ############################################################################
     # Flip the neccesary reference shifts
     ############################################################################
-    def flip_reference_shifts(solenoid, dxy_sign, chi_sign):
+    def flip_reference_shifts(solenoid: str, dxy_sign: int, chi_sign: int) -> None:
+        """
+        Flip the sign of a bound solenoid's reference-shift components.
+
+        Parameters
+        ----------
+        solenoid : str
+            The solenoid's base name (without the "_bound"/"_dxy"/
+            "_rot" suffix).
+        dxy_sign : int
+            Multiplies the `{solenoid}_dxy` Translation's
+            shift_x/shift_y.
+        chi_sign : int
+            Multiplies the `{solenoid}_rot` Rotation's
+            rot_y_rad/rot_x_rad/rot_s_rad.
+        """
         translation_name = f"{solenoid}_dxy"
         rot_name = f"{solenoid}_rot"
 

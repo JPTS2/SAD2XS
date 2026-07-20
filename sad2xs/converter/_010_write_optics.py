@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Optics Writer
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Optics Writer
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       24-06-2026
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -37,14 +44,35 @@ def write_optics(
         output_filename:            str,
         output_directory:           str,
         output_header:              str,
-        config:                     ConfigLike | None):
+        config:                     ConfigLike | None) -> None:
     """
-    Write the outputs to the specified files.
-    
-    Parameters:
-    line (xt.Line): The xtrack line object.
-    output_filename (str): The base name for the output files.
-    header (str): The header for the output files.
+    Write a companion "import optics" Python file for a converted line.
+
+    Generates a `.py` file that, when executed against the
+    environment produced by loading the file `write_lattice` wrote,
+    calls `env.vars.update(...)` with every live optics variable
+    (bend/corrector/quadrupole/sextupole/octupole strengths, cavity
+    RF parameters, reference shifts, aperture bounds) as a single
+    keyword-argument block. Kept separate from the lattice file itself
+    so a user can re-import just the strengths onto an already-loaded
+    line without rebuilding its structure.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to write optics variables for.
+    output_filename : str
+        Base filename (without extension) for the generated `.py`
+        file.
+    output_directory : str
+        Directory to write the file into.
+    output_header : str
+        Header text stamped into the generated file, above the
+        standard "Converted using the SAD2XS Converter" block.
+    config : ConfigLike or None
+        Converter configuration. If None, a default `Config()` is
+        used (the path taken when `write_optics` is called directly,
+        outside `convert_sad_to_xsuite`).
     """
 
     ########################################

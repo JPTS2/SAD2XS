@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Output Writer - Correctors
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Output Writer: Correctors
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-17
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -24,7 +31,36 @@ def create_corrector_lattice_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Generate the lattice-file source for every corrector (h == 0
+    Bend) element.
 
+    Groups correctors by orientation (horizontal, vertical, or skew,
+    from `extract_corrector_information`) and quantized length, writes
+    one base `xt.Bend` per group, then clones every individual
+    corrector from its group's base element. A "simple" corrector
+    (see `check_is_simple_bend_corr`) is written as a single-line
+    clone with just k0; any other corrector is written with every
+    non-zero edge/offset/combined-multipole parameter listed
+    explicitly. k0/k1 are referenced as live optics variables
+    ("k0_<name>"/"k1_<name>"), not baked-in literals.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate corrector source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration; only `MAGNET_LENGTH_PRECISION` is
+        used.
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no correctors.
+    """
 
     ########################################
     # Get information
@@ -334,16 +370,35 @@ def create_corrector_optics_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_corrector_optics_file_information
-    
-    :param line: Description
-    :type line: xt.Line
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Generate the optics-file source assigning every corrector's k0/k1.
+
+    Writes one `k0_<name>`/`k1_<name> = <value>,` line per distinct
+    corrector optics-variable name, aligned to
+    `config.OUTPUT_STRING_SEP`, for use inside the generated
+    `env.vars.update(...)` call. Zero values are omitted (the writer's
+    `default_to_zero` setting covers them).
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate corrector optics source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration (`MAGNET_LENGTH_PRECISION`,
+        `OUTPUT_STRING_SEP`).
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no correctors.
+
+    Raises
+    ------
+    KeyError
+        If neither `corr_variable` nor its reversed form is found in
+        `line`.
     """
 
     ########################################
