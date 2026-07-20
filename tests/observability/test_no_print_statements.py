@@ -9,14 +9,11 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-04
+Date:       2026-07-20
 ================================================================================
 
-All package terminal output goes through the sad2xs logger. A print() call
-anywhere in the package bypasses the level control and quiet mode; runtime
-tests only catch prints on code paths their lattices exercise, so this scans
-every source file instead. (print statements inside generated-file string
-templates are string literals, not call nodes, and pass the scan naturally.)
+See tests/observability/README.md ("test_no_print_statements.py") for the
+output policy and gap this source scan closes.
 """
 ################################################################################
 # Required Packages

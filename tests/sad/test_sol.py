@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-17
+Date:       2026-07-20
 ================================================================================
 """
 ################################################################################
@@ -25,12 +25,8 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 ################################################################################
 # Structural probes: SOL pairing and BOUND requirement
 #
-# From fcc_sol_dummy.sad: SOL is a zero-length fringe element. The physical
-# length lives in a DRIFT placed between an entrance SOL (GEO=1) and an exit
-# SOL (no GEO). BOUND=1 is required on the entrance and exit SOL elements.
-# Internal SOL elements (if any) do not require BOUND.
-#
-# Minimum valid pattern: SOL(GEO=1, BOUND=1) + DRIFT + SOL(BOUND=1)
+# See tests/sad/README.md's "SOL structural requirement" for the
+# pairing/BOUND/GEO rules these probes check.
 ################################################################################
 def test_sol_single_no_bound_rejects(sad_rejects):
     sad_rejects(
@@ -134,12 +130,8 @@ def test_sol_rejects(sad_rejects, param):
 ################################################################################
 # Effect on Twiss and tracking
 #
-# A live BZ solenoid permanently rotates x-y coupling into the downstream
-# optics (Twiss R1-R4 nonzero from the exit fringe onward — unlike the pure
-# geometric GEO/DX frame shift, this coupling is NOT undone by the exit
-# fringe, confirmed empirically at SOL_END/SOL_OUT/END all showing the same
-# nonzero R1/R4). Tracking independently confirms the same conclusion via a
-# direct x->y kick on an off-axis particle.
+# See tests/sad/README.md's "SOL's BZ" bullet for why this coupling persists
+# past the exit fringe, unlike a pure geometric GEO/DX frame shift.
 ################################################################################
 def test_sol_bz_gives_nonzero_twiss_coupling(tmp_path):
     """
