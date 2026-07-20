@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-24
+Date:       2026-07-17
 ================================================================================
 """
 ################################################################################
@@ -114,9 +114,9 @@ def test_ci_template_requires_test_files_input():
 ################################################################################
 # Template — discover job checkout
 ################################################################################
-def test_ci_template_discover_job_uses_checkout_v4():
+def test_ci_template_discover_job_uses_checkout_v7():
     """
-    The discover job must use actions/checkout@v4. An older version risks
+    The discover job must use actions/checkout@v7. An older version risks
     incompatibility with the ubuntu-24.04 runner.
     """
     data  = _load(TEMPLATE_PATH)
@@ -124,8 +124,8 @@ def test_ci_template_discover_job_uses_checkout_v4():
     step  = _checkout_step(steps)
     assert step is not None, (
         "The 'discover' job in _test_template.yml should have a checkout step.")
-    assert step["uses"] == "actions/checkout@v4", (
-        f"Discover job should use actions/checkout@v4, got: {step['uses']!r}")
+    assert step["uses"] == "actions/checkout@v7", (
+        f"Discover job should use actions/checkout@v7, got: {step['uses']!r}")
 
 
 def test_ci_template_discover_job_does_not_override_checkout_ref():
@@ -150,17 +150,17 @@ def test_ci_template_discover_job_does_not_override_checkout_ref():
 ################################################################################
 # Template — run job checkout
 ################################################################################
-def test_ci_template_run_job_uses_checkout_v4():
+def test_ci_template_run_job_uses_checkout_v7():
     """
-    The run job must use actions/checkout@v4.
+    The run job must use actions/checkout@v7.
     """
     data  = _load(TEMPLATE_PATH)
     steps = data["jobs"]["run"]["steps"]
     step  = _checkout_step(steps)
     assert step is not None, (
         "The 'run' job in _test_template.yml should have a checkout step.")
-    assert step["uses"] == "actions/checkout@v4", (
-        f"Run job should use actions/checkout@v4, got: {step['uses']!r}")
+    assert step["uses"] == "actions/checkout@v7", (
+        f"Run job should use actions/checkout@v7, got: {step['uses']!r}")
 
 
 def test_ci_template_run_job_does_not_override_checkout_ref():
@@ -360,9 +360,9 @@ def test_ci_docker_build_has_workflow_dispatch_trigger():
         "docker-build.yml should have a 'workflow_dispatch' trigger.")
 
 
-def test_ci_docker_build_uses_checkout_v4():
+def test_ci_docker_build_uses_checkout_v7():
     """
-    The Docker build job must use actions/checkout@v4.
+    The Docker build job must use actions/checkout@v7.
     """
     data  = _load(DOCKER_PATH)
     jobs  = data["jobs"]
@@ -370,6 +370,6 @@ def test_ci_docker_build_uses_checkout_v4():
     step  = _checkout_step(job["steps"])
     assert step is not None, (
         "docker-build.yml should have a checkout step.")
-    assert step["uses"] == "actions/checkout@v4", (
-        f"docker-build.yml checkout should use actions/checkout@v4. "
+    assert step["uses"] == "actions/checkout@v7", (
+        f"docker-build.yml checkout should use actions/checkout@v7. "
         f"Got: {step['uses']!r}")

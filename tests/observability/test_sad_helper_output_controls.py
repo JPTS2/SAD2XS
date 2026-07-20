@@ -9,15 +9,12 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-04
+Date:       2026-07-20
 ================================================================================
 
-sad_helpers output policy: helpers are silent by default; the progress and
-SAD-terminal-output narrative is exposed through sad2xs.set_log_level
-("debug"), not through per-function verbosity parameters. Failures raise
-RuntimeError with SAD's stdout/stderr embedded. The signature tests below
-guard the single-mechanism design: if a _verbose parameter appears on a
-helper, the logging-based control has been bypassed.
+See tests/observability/README.md ("test_sad_helper_output_controls.py") for
+the single-mechanism design this file guards. Helper failures raise
+RuntimeError with SAD's stdout/stderr embedded.
 """
 ################################################################################
 # Required Packages

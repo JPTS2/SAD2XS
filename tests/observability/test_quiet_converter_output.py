@@ -9,12 +9,11 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-04
+Date:       2026-07-20
 ================================================================================
 
-Output policy: errors are raised, warnings are always shown, progress (INFO)
-and detail (DEBUG) are opt-in via _verbose=True or sad2xs.set_log_level. A
-clean conversion at the default level is completely silent.
+See tests/observability/README.md ("Output Policy") for the policy this
+file protects.
 """
 ################################################################################
 # Required Packages

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-24
+Date:       2026-07-17
 ================================================================================
 """
 ################################################################################
@@ -27,45 +27,20 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 # APERT supports multiple aperture shapes (ellipse, rect, rectellipse), each
 # with their own parameter set. DX, DY, ROTATE are non-obvious.
 ################################################################################
-def test_apert_accepts_ax(sad_accepts):
-    sad_accepts(
-        "APERT A1 = (AX=0.05);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
+ACCEPTED_PARAMS = [
+    pytest.param("AX=0.05",                       id = "ax"),
+    pytest.param("AY=0.03",                       id = "ay"),
+    pytest.param("AX=0.05 AY=0.03 DX=0.001",       id = "dx"),
+    pytest.param("AX=0.05 AY=0.03 DY=0.001",       id = "dy"),
+    pytest.param("AX=0.05 AY=0.03 ROTATE=0.1",     id = "rotate"),
+    pytest.param("DX1=-0.01 DX2=0.02",             id = "dx1_dx2"),
+    pytest.param("DY1=-0.01 DY2=0.02",             id = "dy1_dy2"),
+]
 
-def test_apert_accepts_ay(sad_accepts):
+@pytest.mark.parametrize("params", ACCEPTED_PARAMS)
+def test_apert_accepts(sad_accepts, params):
     sad_accepts(
-        "APERT A1 = (AY=0.03);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_accepts_dx(sad_accepts):
-    sad_accepts(
-        "APERT A1 = (AX=0.05 AY=0.03 DX=0.001);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_accepts_dy(sad_accepts):
-    sad_accepts(
-        "APERT A1 = (AX=0.05 AY=0.03 DY=0.001);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_accepts_rotate(sad_accepts):
-    sad_accepts(
-        "APERT A1 = (AX=0.05 AY=0.03 ROTATE=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_accepts_dx1_dx2(sad_accepts):
-    sad_accepts(
-        "APERT A1 = (DX1=-0.01 DX2=0.02);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_accepts_dy1_dy2(sad_accepts):
-    sad_accepts(
-        "APERT A1 = (DY1=-0.01 DY2=0.02);\n"
+        f"APERT A1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START A1 END);")
 
@@ -349,88 +324,30 @@ def test_apert_degenerate_rectangle_bound_behavior(tmp_path):
 
 ################################################################################
 # Rejected parameters
-# APERT is a geometry element — it has no magnetic field parameters.
+# APERT is a geometry element — it has no magnetic field parameters. See
+# tests/sad/README.md's "Parameter matrix" for the full accepted/rejected
+# table this parametrization transcribes.
 ################################################################################
-def test_apert_rejects_angle(sad_rejects):
-    sad_rejects(
-        "APERT A1 = (AX=0.05 AY=0.03 ANGLE=0.01);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
+REJECTED_PARAMS = [
+    pytest.param("AX=0.05 AY=0.03 ANGLE=0.01", id = "angle"),
+    pytest.param("AX=0.05 AY=0.03 K0=0.1",     id = "k0"),
+    pytest.param("AX=0.05 AY=0.03 SK0=0.1",    id = "sk0"),
+    pytest.param("AX=0.05 AY=0.03 K1=0.1",     id = "k1"),
+    pytest.param("AX=0.05 AY=0.03 SK1=0.1",    id = "sk1"),
+    pytest.param("AX=0.05 AY=0.03 K2=0.1",     id = "k2"),
+    pytest.param("AX=0.05 AY=0.03 SK2=0.1",    id = "sk2"),
+    pytest.param("AX=0.05 AY=0.03 K3=0.1",     id = "k3"),
+    pytest.param("AX=0.05 AY=0.03 SK3=0.1",    id = "sk3"),
+    pytest.param("AX=0.05 AY=0.03 K4=0.1",     id = "k4"),
+    pytest.param("AX=0.05 AY=0.03 SK4=0.1",    id = "sk4"),
+    pytest.param("AX=0.05 AY=0.03 BZ=0.1",     id = "bz"),
+    pytest.param("AX=0.05 AY=0.03 HARM=1000",  id = "harm"),
+    pytest.param("AX=0.05 AY=0.03 FREQ=400E6", id = "freq"),
+]
 
-def test_apert_rejects_k0(sad_rejects):
+@pytest.mark.parametrize("params", REJECTED_PARAMS)
+def test_apert_rejects(sad_rejects, params):
     sad_rejects(
-        "APERT A1 = (AX=0.05 AY=0.03 K0=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_rejects_sk0(sad_rejects):
-    sad_rejects(
-        "APERT A1 = (AX=0.05 AY=0.03 SK0=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_rejects_k1(sad_rejects):
-    sad_rejects(
-        "APERT A1 = (AX=0.05 AY=0.03 K1=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_rejects_sk1(sad_rejects):
-    sad_rejects(
-        "APERT A1 = (AX=0.05 AY=0.03 SK1=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_rejects_k2(sad_rejects):
-    sad_rejects(
-        "APERT A1 = (AX=0.05 AY=0.03 K2=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_rejects_sk2(sad_rejects):
-    sad_rejects(
-        "APERT A1 = (AX=0.05 AY=0.03 SK2=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_rejects_k3(sad_rejects):
-    sad_rejects(
-        "APERT A1 = (AX=0.05 AY=0.03 K3=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_rejects_sk3(sad_rejects):
-    sad_rejects(
-        "APERT A1 = (AX=0.05 AY=0.03 SK3=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_rejects_k4(sad_rejects):
-    sad_rejects(
-        "APERT A1 = (AX=0.05 AY=0.03 K4=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_rejects_sk4(sad_rejects):
-    sad_rejects(
-        "APERT A1 = (AX=0.05 AY=0.03 SK4=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_rejects_bz(sad_rejects):
-    sad_rejects(
-        "APERT A1 = (AX=0.05 AY=0.03 BZ=0.1);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_rejects_harm(sad_rejects):
-    sad_rejects(
-        "APERT A1 = (AX=0.05 AY=0.03 HARM=1000);\n"
-        "MARK START = ()\n     END   = ();\n"
-        "LINE TEST = (START A1 END);")
-
-def test_apert_rejects_freq(sad_rejects):
-    sad_rejects(
-        "APERT A1 = (AX=0.05 AY=0.03 FREQ=400E6);\n"
+        f"APERT A1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START A1 END);")

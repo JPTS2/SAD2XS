@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-12
+Date:       2026-07-20
 ================================================================================
 """
 ################################################################################
@@ -19,8 +19,7 @@ import numpy as np
 import pytest
 import xtrack as xt
 
-import sad2xs as s2x
-from sad2xs.config import Config
+from tests.support.writer_helpers import write_and_load as _shared_write_and_load
 
 ################################################################################
 # Helpers
@@ -47,29 +46,7 @@ def _write_and_load(line, tmp_path):
     Edge angles and shifts follow the same convention as bends: bare literals
     and literal Python strings respectively.
     """
-    output_dir = tmp_path / "writer_output"
-    output_dir.mkdir()
-
-    s2x.write_lattice(
-        line                    = line,
-        output_filename         = "test_lattice",
-        output_directory        = str(output_dir),
-        output_header           = "Corrector writer test",
-        offset_marker_locations = None,
-        config                  = Config(_verbose = False))
-
-    s2x.write_optics(
-        line              = line,
-        output_filename   = "test_lattice_import_optics",
-        output_directory  = str(output_dir),
-        output_header     = "Corrector writer test",
-        config            = Config(_verbose = False))
-
-    env = xt.Environment()
-    env.call(str(output_dir / "test_lattice.py"))
-    env.call(str(output_dir / "test_lattice_import_optics.py"))
-
-    return env, env.lines["line"]
+    return _shared_write_and_load(line, tmp_path, output_header = "Corrector writer test")
 
 
 def _writer_roundtrip(line, tmp_path):

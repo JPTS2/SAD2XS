@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-20
 ================================================================================
 """
 ################################################################################
@@ -22,16 +22,9 @@ from sad2xs.converter._001_parser import parse_sad_file
 
 ################################################################################
 # SAD Function Definitions
-################################################################################
-# SAD user-defined functions ('name[args] := expression') are explicitly
-# rejected rather than silently misparsed — a bare ':=' previously produced a
-# garbage deferred-expression key instead of an error.
-# Since a definition is always rejected before it is ever used, the three
-# original "function call" tests (deferred expression, element expression,
-# nested calls) no longer have a reachable scenario to exercise: every one of
-# them fails at the same definition line, with the same error. They are
-# consolidated into the two tests below rather than duplicated three times
-# over.
+#
+# See tests/parser/README.md's "test_functions.py note" for why these are
+# rejected outright and why the tests below are consolidated to two.
 ################################################################################
 def test_sad_function_definition_raises_clear_error(write_lattice):
     """
