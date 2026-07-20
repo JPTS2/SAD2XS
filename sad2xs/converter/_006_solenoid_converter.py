@@ -494,9 +494,10 @@ def solenoid_reference_shift_corrections(
     Correct and reorder the reference-frame shift elements installed
     by `convert_solenoids` for each bound solenoid boundary.
 
-    Each BOUND solenoid was converted (in `convert_elements`) to a
-    sub-line of [UniformSolenoid, Translation, TimeDelay, Rotation]
-    components in a fixed generic order; this function fixes that
+    Each BOUND solenoid was converted (in
+    `_004_element_converter.convert_solenoids`) to a sub-line of
+    [UniformSolenoid, Translation, TimeDelay, Rotation] components in a
+    fixed generic order; this function fixes that
     order and the sign of the Translation/Rotation parameters per
     boundary, based on whether it is an inbound (entrance) or outbound
     (exit) boundary, whether it is the GEO boundary of its pair, and

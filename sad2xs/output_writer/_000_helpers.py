@@ -460,11 +460,11 @@ def check_is_simple_bend_corr(line, replica_name):
     True if a Bend/corrector element has no edge, offset, or
     combined-order field terms that would make cloning it unsafe.
 
-    A "simple" element (zero edge angles/fringe fint-hgap, zero
-    shift_x/shift_y, zero k1, and all-zero knl/ksl) is one whose full
-    behaviour is captured by its length, k0, and rotation alone, so it
-    can be safely represented by `env.new(..., mode="clone")` from a
-    base element sharing those three values.
+    A "simple" element (zero edge angles/fdown terms/fringe fint-hgap,
+    zero shift_x/shift_y, zero k1, and all-zero knl/ksl) is one whose
+    full behaviour is captured by its length, k0, and rotation alone,
+    so it can be safely represented by `env.new(..., mode="clone")`
+    from a base element sharing those three values.
 
     Parameters
     ----------

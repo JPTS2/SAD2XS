@@ -55,7 +55,11 @@ def track_sad(
         wall_time:              int         = 24*60*60,
         sad_path:               str         = "sad") -> dict:
     """
-    Track particles in SAD
+    Track particles through a SAD lattice in real SAD.
+
+    Writes the initial coordinates as SAD arrays, tracks them for
+    `n_turns` with `TrackParticles`, and reads the result back from a
+    `Put[...]`-written data file.
 
     Parameters
     ----------
@@ -64,39 +68,45 @@ def track_sad(
     line_name : str
         Name of the line in the SAD file.
     x_init, px_init, y_init, py_init, zeta_init, delta_init : np.ndarray
-        Initial conditions for the particles.
+        Initial conditions for the particles; all must be the same
+        shape.
     n_turns : int
         Number of turns to track.
-    turn_by_turn_monitor : bool, default False
-        If True, return turn-by-turn data.
-    rfsw : bool, default True
-        If True, enable RF cavities.
-    rad : bool, default False
-        If True, enable radiation effects.
-    radcod : bool, default False
-        If True, enable radiation code.
-    fluc : bool, default False
-        If True, enable quantum radiation effects.
-    radtaper : bool, default False
-        If True, enable radiation tapering.
-    n_cores_max : int, default 1
-        Maximum number of cores to use.
-    with_progress : bool or int, default True
-        If True or int, show progress every "int" turns.
-    wall_time : int, default 86400
-        Maximum wall time in seconds for the SAD process.
-    sad_path : str, default "sad"
-        Path to the SAD executable.
-        If installed via SAD2XS install_sad_macos, this should be set to the alias "sad".
+    rfsw : bool, optional
+        Enable RF cavities (SAD's RFSW flag). Defaults to True.
+    rad : bool, optional
+        Enable radiation effects (SAD's RAD flag). Defaults to False.
+    fluc : bool, optional
+        Enable quantum-excitation (stochastic photon emission)
+        radiation effects (SAD's FLUC flag). Defaults to False.
+    radcod : bool, optional
+        Include radiation damping in the closed-orbit search (SAD's
+        RADCOD flag). Defaults to False.
+    radtaper : bool, optional
+        Enable RF/orbit tapering for radiation (SAD's RADTAPER flag).
+        Defaults to False.
+    turn_by_turn_monitor : bool, optional
+        If True, return coordinates at every turn instead of only the
+        final turn. Defaults to False.
+    with_progress : bool or int, optional
+        If True, print progress every 10 turns; if an int, print every
+        that many turns; if False, print no progress. Defaults to
+        True.
+    n_cores_max : int, optional
+        Maximum number of SAD parallel processes (NPARA) to use.
+        Defaults to 1.
+    wall_time : int, optional
+        Timeout, in seconds, for the SAD subprocess. Defaults to 86400
+        (24 hours).
+    sad_path : str, optional
+        Path to the SAD executable. Defaults to "sad".
 
     Returns
     -------
     dict
-        Dictionary containing the tracked particle data.
-        Entries are:
-        - "x", "px", "y", "py", "zeta", "delta", "state"
-        If turn_by_turn_monitor is True, each entry has shape (n_particles, n_turns + 1),
-        otherwise shape (n_particles,).
+        Keys: "x", "px", "y", "py", "zeta", "delta", "state". If
+        `turn_by_turn_monitor` is True, each entry has shape
+        (n_particles, n_turns + 1); otherwise shape (n_particles,).
 
     Raises
     ------

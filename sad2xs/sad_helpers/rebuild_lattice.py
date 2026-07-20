@@ -42,11 +42,11 @@ def rebuild_sad_lattice(
         Path to the input SAD lattice file.
     line_name : str
         Name of the line in the SAD lattice file.
-    additional_commands : str, optional
-        Additional SAD commands to include before saving the lattice.
     output_filepath : str or None, optional
         Path to the output SAD lattice file. If None, appends "_rebuilt" to the
         input filename.
+    additional_commands : str, optional
+        Additional SAD commands to include before saving the lattice.
     wall_time : int, optional
         Timeout, in seconds, for the SAD subprocess. Defaults to 30.
     sad_path : str, optional

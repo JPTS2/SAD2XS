@@ -43,8 +43,11 @@ def convert_offset_markers(
     (OFFSET mod 1), where the neighbouring element is floor(OFFSET)
     positions away. A reversed reference walks OFFSET in the opposite
     direction (1 - OFFSET). Offset markers whose target element is a
-    UniformSolenoid are left in place with a warning, since slicing a
-    solenoid is not supported. Every offset marker that does move is
+    UniformSolenoid are permanently excluded, with a warning, since
+    slicing a solenoid is not supported: the marker is removed from
+    `line` like any moved marker, but never re-inserted anywhere (see
+    `test_pipeline_offset_marker_solenoid_exclusion_removes_marker_permanently`).
+    Every other offset marker that does move is
     removed from `line` here -- the moved positions are only
     re-inserted later, when the lattice file is generated (see
     `sad2xs.output_writer._015_offset_markers`); `line` itself never

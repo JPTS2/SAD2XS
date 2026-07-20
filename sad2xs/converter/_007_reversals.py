@@ -180,8 +180,9 @@ def reverse_line_survey_horizontal(line):
     shift_y stays unchanged (a reflection through the horizontal
     plane). Solenoids additionally get their x0/y0 recomputed from
     the new shift/rotation. Standalone Translation/Rotation
-    reference-shift elements follow the same shift_x/rot_s_rad-negate,
-    shift_y/rot_x_rad-unchanged pattern.
+    reference-shift elements follow the same pattern: Translation's
+    shift_x negates and shift_y is unchanged; Rotation's rot_y_rad and
+    rot_s_rad negate and rot_x_rad is unchanged.
 
     Parameters
     ----------

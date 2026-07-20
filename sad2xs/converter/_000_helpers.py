@@ -273,9 +273,12 @@ def parse_rf_parameters(environment, ele_name: str, ele_vars: dict):
     own revolution-frequency derivation). FREQ and PHI, when
     non-zero, are registered as deferred environment variables
     (freq_{name}, phase_{name}) so they can be tuned after
-    conversion. VOLT is always registered as vol_{name} for the same
-    reason, but is returned as a literal value, matching how it is
-    passed directly to xt.Cavity today.
+    conversion; the returned frequency expression also multiplies by
+    `(1 + fshift)`, SAD's global FSHIFT frequency-shift knob (parsed
+    from the lattice file's FSHIFT global, defaulting to 0.0 -- see
+    `parse_sad_file`). VOLT is always registered as vol_{name} for the
+    same reason, but is returned as a literal value, matching how it
+    is passed directly to xt.Cavity today.
 
     Parameters
     ----------

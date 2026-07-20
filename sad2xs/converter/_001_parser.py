@@ -404,10 +404,11 @@ def parse_sad_file(
     sad2xs already knows which line to convert from `line_name` rather
     than from SAD's interactive command state.
 
-    Missing MOMENTUM/MASS/CHARGE fall back to `config`'s
+    Missing MOMENTUM/MASS/CHARGE each fall back to `config`'s
     `ref_particle_p0c`/`ref_particle_mass0`/`ref_particle_q0` where
-    available; MOMENTUM has no such fallback and raises if absent from
-    both the file and `config`.
+    available. Unlike MASS (defaults to the electron mass) and CHARGE
+    (defaults to +1), MOMENTUM has no further default: it raises if
+    absent from both the file and `config`.
 
     Parameters
     ----------

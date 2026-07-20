@@ -395,10 +395,11 @@ def _bend_fringe_edge_kwargs(ele_vars, config) -> dict:
 
     Returns {} if fringe import is disabled
     (`config._import_sad_bend_fringes`) or the SAD FRINGE flag gates
-    both edges off. FRINGE = -1 disables the entry edge only, FRINGE =
-    -2 disables the exit edge only. The closed form (edge_*_fint =
-    F1 + FB1/FB2, edge_*_hgap = 1/12) and the FRINGE gating convention
-    are documented in docs/sad-behaviour.md.
+    both edges off. FRINGE = -1 disables the exit edge only (entrance
+    stays active), FRINGE = -2 disables the entry edge only (exit stays
+    active). The closed form (edge_*_fint = F1 + FB1/FB2, edge_*_hgap =
+    1/12) and the FRINGE gating convention are documented in
+    docs/sad-behaviour.md.
 
     Parameters
     ----------
@@ -2142,10 +2143,10 @@ def convert_coordinate_transformations(
     transforms: a single Translation/Rotation for one active
     transform, a combined Translation for DX+DY only, or -- for
     anything more complex -- a sub-line of individually-named
-    Translation/Rotation elements in the order CHI1, CHI2, CHI3, then
-    DX/DY (or the reverse, DX/DY first, if DIR is set), per the SAD
-    manual's stated convention. A COORD with no recognised transform at
-    all is installed as a no-op Translation, with a warning.
+    Translation/Rotation elements in the order DX/DY, then CHI1, CHI2,
+    CHI3 (or the reverse, CHI1/CHI2/CHI3 first, if DIR is set), per the
+    SAD manual's stated convention. A COORD with no recognised transform
+    at all is installed as a no-op Translation, with a warning.
 
     Parameters
     ----------

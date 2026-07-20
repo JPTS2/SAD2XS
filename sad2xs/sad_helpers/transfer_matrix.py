@@ -38,7 +38,11 @@ def transfer_matrix_sad(
         wall_time:              int         = 30,
         sad_path:               str         = "sad") -> np.ndarray:
     """
-    Compute the transfer matrix of a SAD lattice between two elements.
+    Compute the 4D (transverse-only) transfer matrix of a SAD lattice
+    between two elements.
+
+    Runs SAD's CALC4D and reads back `TransferMatrix[...]`; the result
+    has no longitudinal/energy coupling terms.
 
     Parameters
     ----------
@@ -60,7 +64,7 @@ def transfer_matrix_sad(
     Returns
     -------
     np.ndarray
-        The transfer matrix as a NumPy array.
+        The 4x4 transfer matrix.
 
     Raises
     ------

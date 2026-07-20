@@ -40,6 +40,15 @@ def generate_twiss_print_function():
     DX/Y, DPX/Y, X/PX/Y/PY, DZ, DELTA, R1-R4) to `filename`, in TFS
     format. Used by `twiss_sad` to extract SAD's Twiss output.
 
+    SAD's native `Twiss[]` keys `"DX"/"DY"/"DPX"/"DPY"` are
+    closed-orbit position/angle, and `"PEX"/"PEY"/"PEPX"/"PEPY"` are
+    dispersion -- SAD's own defined convention. SAD2XS's column names
+    here follow the DX/DY = dispersion convention used elsewhere in
+    this codebase (matching Xsuite) instead, so `Twiss["PEX", ...]`
+    etc. is written under the "DX" column and `Twiss["DX", ...]` etc.
+    under the "X" column, remapping SAD's key names to SAD2XS's column
+    names -- this is intentional, not a mismatch.
+
     Returns
     -------
     str
@@ -469,6 +478,9 @@ def compute_second_order_dispersions(
     delta0 : float, optional
         Forwarded to `twiss_sad` for both the on- and off-momentum
         Twiss calls.
+    ddelta : float, optional
+        The momentum-offset step used for the finite difference.
+        Defaults to 1E-4.
     additional_commands : str, optional
         Forwarded to `twiss_sad` for both the on- and off-momentum
         Twiss calls.
@@ -478,9 +490,6 @@ def compute_second_order_dispersions(
     sad_path : str, optional
         Forwarded to `twiss_sad` for both the on- and off-momentum
         Twiss calls.
-    ddelta : float, optional
-        The momentum-offset step used for the finite difference.
-        Defaults to 1E-4.
 
     Returns
     -------
@@ -643,15 +652,15 @@ def compute_chromatic_functions(
         Forwarded to `twiss_sad` for all three Twiss calls.
     delta0 : float, optional
         Forwarded to `twiss_sad` for all three Twiss calls.
+    ddelta : float, optional
+        The momentum-offset step used for the central difference.
+        Defaults to 1E-4.
     additional_commands : str, optional
         Forwarded to `twiss_sad` for all three Twiss calls.
     wall_time : int, optional
         Forwarded to `twiss_sad` for all three Twiss calls.
     sad_path : str, optional
         Forwarded to `twiss_sad` for all three Twiss calls.
-    ddelta : float, optional
-        The momentum-offset step used for the central difference.
-        Defaults to 1E-4.
 
     Returns
     -------

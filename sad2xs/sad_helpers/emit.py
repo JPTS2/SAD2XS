@@ -75,8 +75,10 @@ def emit_sad(
         synchrotron_frequency, imag_tune, real_tune, damping_turn,
         damping_time, damping_partition, gemitt_x, gemitt_y,
         gemitt_z, energy_spread, bunch_length -- each in SI units
-        (radians, metres, seconds, Hz, volts, eV as appropriate); the
-        three damping/tune tuples are (x, y, z) or (x, y).
+        (radians, metres, seconds, Hz, volts, eV as appropriate);
+        damping_turn/damping_time/damping_partition are always
+        (x, y, z), while imag_tune/real_tune have as many entries as
+        SAD prints on that line (typically (x, y) or (x, y, z)).
 
     Raises
     ------
