@@ -366,10 +366,10 @@ def align_xsuite_twiss_with_sad_twiss(
         if i in claimed_sad:
             continue
         prefix  = f"{name.lower()}_"
-        for xs_name, hit in face_row_for_placement.items():
-            if xs_name.startswith(prefix) and hit[0] not in claimed_xs \
-                    and abs(hit[1] - sad_s[i]) <= s_tol:
-                _accept(i, hit[0], hit[1])
+        for xs_name, (row_idx, s_xs) in face_row_for_placement.items():
+            if xs_name.startswith(prefix) and row_idx not in claimed_xs \
+                    and abs(s_xs - sad_s[i]) <= s_tol:
+                _accept(i, row_idx, s_xs)
                 break
 
     # Same family-pooling as pass 2, but keyed on "{base}_{neighbour}" --
