@@ -1,9 +1,14 @@
 # ==============================================================================
-# Dockerfile to Build and Run SAD (Strategic Accelerator Design) Software
-# =============================================
-# Author(s):  John P T Salvesen
+# Docker Image: Build and Run SAD
+# ==============================================================================
+# SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+#
+# This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+# See LICENSE for details.
+#
+# Authors:    John P. T. Salvesen
 # Email:      john.salvesen@cern.ch
-# Date:       30-09-2025
+# Date:       2026-07-20
 # ==============================================================================
 
 ################################################################################
