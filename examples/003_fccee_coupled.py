@@ -26,12 +26,15 @@ import sad2xs as s2x
 s2x.set_log_level("info")
 import matplotlib.pyplot as plt
 
-from sad2xs.xsuite_helpers import (
-    align_xsuite_twiss_with_sad_twiss,
-    assert_xsuite_matches_sad_twiss,
-    compute_s_sad,
-    plot_xsuite_sad_comparison,
-    DEFAULT_TWISS_TOLERANCES)
+from sad2xs.xsuite_helpers import align_xsuite_twiss_with_sad_twiss, \
+    assert_xsuite_matches_sad_twiss, compute_s_sad, plot_xsuite_sad_comparison, \
+    DEFAULT_TWISS_TOLERANCES
+
+################################################################################
+# User Parameters
+################################################################################
+SAD_LATTICE_PATH            = "lattices/fccee_coupled.sad"
+LINE_NAME                   = "RING"
 
 # SAD's coupled beta/alpha (Edwards-Teng convention) map to these Xsuite columns
 EDWARDS_TENG_COLUMNS   = {
@@ -45,12 +48,6 @@ COUPLING_COLUMNS    = {
     "R1": "r11_edw_teng", "R2": "r12_edw_teng",
     "R3": "r21_edw_teng", "R4": "r22_edw_teng"}
 COUPLING_TOLERANCES = {column: dict(atol = 1E-4, rtol = 1E-3) for column in COUPLING_COLUMNS}
-
-################################################################################
-# User Parameters
-################################################################################
-SAD_LATTICE_PATH            = "lattices/fccee_coupled.sad"
-LINE_NAME                   = "RING"
 
 ################################################################################
 # Load Reference Data
