@@ -294,9 +294,9 @@ def test_quad_converter_creates_all_quadrupoles(
             element_name    = quad_name,
             element_type    = xt.Quadrupole)
         assert quad.length == pytest.approx(0.5), (
-            f"Converted quadrupole '{quad_name}' should preserve length.")
+            f"Converted quadrupole `{quad_name}` should preserve length.")
         assert quad.k1 == pytest.approx(expected_k1), (
-            f"Converted quadrupole '{quad_name}' should preserve integrated "
+            f"Converted quadrupole `{quad_name}` should preserve integrated "
             "strength divided by length.")
 
 ########################################
@@ -668,11 +668,11 @@ def test_quad_pipeline_preserves_names_order_lengths_and_strengths(write_lattice
             ("qd", -0.2),
             ("qz", 0.0)]:
         assert isinstance(line[quad_name], xt.Quadrupole), (
-            f"Converted element '{quad_name}' should be an Xsuite Quadrupole.")
+            f"Converted element `{quad_name}` should be an Xsuite Quadrupole.")
         assert line[quad_name].length == pytest.approx(0.5), (
-            f"Converted quadrupole '{quad_name}' should preserve length.")
+            f"Converted quadrupole `{quad_name}` should preserve length.")
         assert line[quad_name].k1 == pytest.approx(expected_k1), (
-            f"Converted quadrupole '{quad_name}' should preserve integrated "
+            f"Converted quadrupole `{quad_name}` should preserve integrated "
             "strength divided by length.")
 
 def test_quad_pipeline_preserves_offsets_and_rotation(write_lattice):
@@ -885,8 +885,8 @@ def test_quad_conversion_default_enables_edge_fringe(write_lattice, tmp_path):
     DISFRIN, verified empirically against real SAD -- see
     tests/sad/test_quad.py), which Xsuite's Quadrupole supports natively
     via edge_entry_active/edge_exit_active but only enables when
-    configure_quadrupole_model(edge='full') is called. This is now the
-    converter's default (EDGE_MODEL_QUAD='full' in config.py, applied by
+    configure_quadrupole_model(edge=`full`) is called. This is now the
+    converter's default (EDGE_MODEL_QUAD=`full` in config.py, applied by
     main.py alongside configure_bend_model).
     """
     lattice_path = write_lattice(
@@ -991,7 +991,7 @@ def test_quad_conversion_matches_sad_tracking_for_large_transverse_offsets(
             ("px", sad_particles["px"][0], xs_particles.px[0])]:
         rel_err_pct = 100 * (xs_val - sad_val) / sad_val
         assert abs(rel_err_pct - expected_pct[coord]) < tol_pct[coord], (
-            f"Quadrupole fringe-enabled tracking '{coord}' residual should "
+            f"Quadrupole fringe-enabled tracking `{coord}` residual should "
             f"stay near the currently-characterised {expected_pct[coord]}% "
             f"(got {rel_err_pct:.4f}%). A residual well outside this band "
             "means Xsuite's native quadrupole fringe implementation has "

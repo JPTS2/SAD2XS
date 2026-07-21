@@ -28,16 +28,8 @@ s2x.set_log_level("info")
 import numpy as np
 import matplotlib.pyplot as plt
 
-from sad2xs.xsuite_helpers import (
-    align_xsuite_twiss_with_sad_twiss,
-    assert_xsuite_matches_sad_twiss,
-    compute_s_sad,
-    plot_xsuite_sad_comparison)
-
-# SAD's coupled beta/alpha (Edwards-Teng convention) map to these Xsuite columns
-EDWARDS_TENG_COLUMNS   = {
-    "betx": "betx_edw_teng", "bety": "bety_edw_teng",
-    "alfx": "alfx_edw_teng", "alfy": "alfy_edw_teng"}
+from sad2xs.xsuite_helpers import align_xsuite_twiss_with_sad_twiss, \
+    assert_xsuite_matches_sad_twiss, compute_s_sad, plot_xsuite_sad_comparison
 
 ################################################################################
 # User Parameters
@@ -45,6 +37,11 @@ EDWARDS_TENG_COLUMNS   = {
 SAD_LATTICE_PATH            = "lattices/fccee_sol.sad"
 REBUILT_SAD_LATTICE_PATH    = "lattices/fccee_sol_rebuilt.sad"
 LINE_NAME                   = "RING"
+
+# SAD's coupled beta/alpha (Edwards-Teng convention) map to these Xsuite columns
+EDWARDS_TENG_COLUMNS   = {
+    "betx": "betx_edw_teng", "bety": "bety_edw_teng",
+    "alfx": "alfx_edw_teng", "alfy": "alfy_edw_teng"}
 
 ################################################################################
 # Load Reference Data

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -91,5 +91,5 @@ def assert_xsuite_matches_sad_twiss(
             atol    = tol["atol"],
             rtol    = tol["rtol"],
             err_msg = (
-                f"Xsuite '{xsuite_column}' disagrees with SAD '{sad_column}' "
+                f"""Xsuite "{xsuite_column}" disagrees with SAD "{sad_column}" """
                 "beyond tolerance."))

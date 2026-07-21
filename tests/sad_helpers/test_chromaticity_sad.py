@@ -68,7 +68,7 @@ def test_generate_off_momentum_tune_function_defines_calculate_off_momentum_tune
 
     assert "CalculateOffMomentumTune[x_]" in result, (
         "generate_off_momentum_tune_function should define "
-        "'CalculateOffMomentumTune[x_]'. "
+        "`CalculateOffMomentumTune[x_]`. "
         f"Got: {result[:200]!r}.")
 
 
@@ -83,7 +83,7 @@ def test_generate_off_momentum_tune_function_includes_tune_phase_advances():
     for key in ("NX", "NY"):
         assert key in result, (
             f"generate_off_momentum_tune_function should reference Twiss key "
-            f"'{key}'. Got: {result[:200]!r}.")
+            f"`{key}`. Got: {result[:200]!r}.")
 
 
 ################################################################################
@@ -111,7 +111,7 @@ def test_chromaticity_sad_returns_expected_keys(tmp_path, monkeypatch):
     for key in ("dp", "qx", "qy", "dqx_linear", "dqy_linear",
                 "higher_order_qx", "higher_order_qy"):
         assert key in result, (
-            f"chromaticity_sad result should contain key '{key}'. "
+            f"chromaticity_sad result should contain key `{key}`. "
             f"Got keys: {list(result.keys())}.")
 
 
@@ -128,11 +128,11 @@ def test_chromaticity_sad_dp_scan_has_correct_length_and_range(
 
     assert len(result["dp"]) == 21, (
         "Default dp scan (-0.01 to +0.01 step 0.001) should give 21 points. "
-        f"Got: {len(result['dp'])}.")
+        f"""Got: {len(result["dp"])}.""")
     assert result["dp"][0] == pytest.approx(-0.01), (
-        f"First dp value should be -0.01. Got: {result['dp'][0]}.")
+        f"""First dp value should be -0.01. Got: {result["dp"][0]}.""")
     assert result["dp"][-1] == pytest.approx(0.01), (
-        f"Last dp value should be +0.01. Got: {result['dp'][-1]}.")
+        f"""Last dp value should be +0.01. Got: {result["dp"][-1]}.""")
 
 
 def test_chromaticity_sad_custom_dp_extent_changes_scan_length(
@@ -148,11 +148,11 @@ def test_chromaticity_sad_custom_dp_extent_changes_scan_length(
 
     assert len(result["dp"]) == 11, (
         "dp scan with extent=0.005 and step=0.001 should give 11 points. "
-        f"Got: {len(result['dp'])}.")
+        f"""Got: {len(result["dp"])}.""")
     assert result["dp"][0] == pytest.approx(-0.005), (
-        f"First dp value should be -0.005. Got: {result['dp'][0]}.")
+        f"""First dp value should be -0.005. Got: {result["dp"][0]}.""")
     assert result["dp"][-1] == pytest.approx(0.005), (
-        f"Last dp value should be +0.005. Got: {result['dp'][-1]}.")
+        f"""Last dp value should be +0.005. Got: {result["dp"][-1]}.""")
 
 
 def test_chromaticity_sad_scan_values_are_finite(tmp_path, monkeypatch):
@@ -165,11 +165,11 @@ def test_chromaticity_sad_scan_values_are_finite(tmp_path, monkeypatch):
 
     for key in ("dp", "qx", "qy"):
         assert np.all(np.isfinite(result[key])), (
-            f"chromaticity_sad result['{key}'] should contain only finite "
+            f"chromaticity_sad result[`{key}`] should contain only finite "
             f"values. Got: {result[key]}.")
     for key in ("dqx_linear", "dqy_linear"):
         assert np.isfinite(result[key]), (
-            f"chromaticity_sad result['{key}'] should be finite. "
+            f"chromaticity_sad result[`{key}`] should be finite. "
             f"Got: {result[key]}.")
 
 
@@ -185,10 +185,10 @@ def test_chromaticity_sad_natural_chromaticity_is_negative(
 
     assert result["dqx_linear"] < 0, (
         "Natural chromaticity dqx_linear should be negative for a bare FODO "
-        f"ring. Got: {result['dqx_linear']}.")
+        f"""ring. Got: {result["dqx_linear"]}.""")
     assert result["dqy_linear"] < 0, (
         "Natural chromaticity dqy_linear should be negative for a bare FODO "
-        f"ring. Got: {result['dqy_linear']}.")
+        f"""ring. Got: {result["dqy_linear"]}.""")
 
 
 def test_chromaticity_sad_higher_order_is_none_by_default(
@@ -202,10 +202,10 @@ def test_chromaticity_sad_higher_order_is_none_by_default(
 
     assert result["higher_order_qx"] is None, (
         "higher_order_qx should be None when compute_higher_orders=False. "
-        f"Got: {result['higher_order_qx']}.")
+        f"""Got: {result["higher_order_qx"]}.""")
     assert result["higher_order_qy"] is None, (
         "higher_order_qy should be None when compute_higher_orders=False. "
-        f"Got: {result['higher_order_qy']}.")
+        f"""Got: {result["higher_order_qy"]}.""")
 
 
 def test_chromaticity_sad_higher_order_computed_when_requested(
@@ -225,13 +225,13 @@ def test_chromaticity_sad_higher_order_computed_when_requested(
         "higher_order_qy should not be None when compute_higher_orders=True.")
     assert len(result["higher_order_qx"]) == 4, (
         "higher_order_qx should have 4 coefficients (degree 3 polynomial). "
-        f"Got length: {len(result['higher_order_qx'])}.")
+        f"""Got length: {len(result["higher_order_qx"])}.""")
     assert len(result["higher_order_qy"]) == 4, (
         "higher_order_qy should have 4 coefficients (degree 3 polynomial). "
-        f"Got length: {len(result['higher_order_qy'])}.")
+        f"""Got length: {len(result["higher_order_qy"])}.""")
     assert np.all(np.isfinite(result["higher_order_qx"])), (
         "higher_order_qx coefficients should all be finite. "
-        f"Got: {result['higher_order_qx']}.")
+        f"""Got: {result["higher_order_qx"]}.""")
     assert np.all(np.isfinite(result["higher_order_qy"])), (
         "higher_order_qy coefficients should all be finite. "
-        f"Got: {result['higher_order_qy']}.")
+        f"""Got: {result["higher_order_qy"]}.""")

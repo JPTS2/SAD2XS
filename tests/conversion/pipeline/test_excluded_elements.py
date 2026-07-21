@@ -47,11 +47,11 @@ def test_pipeline_excluded_elements_none_leaves_elements_unchanged(write_lattice
         _test_mode        = True)
 
     assert "d1" in line.element_names, (
-        "Passing excluded_elements=None should leave 'd1' in the converted line.")
+        "Passing excluded_elements=None should leave `d1` in the converted line.")
     assert "start" in line.element_names, (
-        "Passing excluded_elements=None should leave 'start' in the converted line.")
+        "Passing excluded_elements=None should leave `start` in the converted line.")
     assert "end" in line.element_names, (
-        "Passing excluded_elements=None should leave 'end' in the converted line.")
+        "Passing excluded_elements=None should leave `end` in the converted line.")
 
 
 def test_pipeline_excluded_elements_empty_list_leaves_elements_unchanged(write_lattice):
@@ -79,11 +79,11 @@ def test_pipeline_excluded_elements_empty_list_leaves_elements_unchanged(write_l
         _test_mode        = True)
 
     assert "d1" in line.element_names, (
-        "Passing excluded_elements=[] should leave 'd1' in the converted line.")
+        "Passing excluded_elements=[] should leave `d1` in the converted line.")
     assert "start" in line.element_names, (
-        "Passing excluded_elements=[] should leave 'start' in the converted line.")
+        "Passing excluded_elements=[] should leave `start` in the converted line.")
     assert "end" in line.element_names, (
-        "Passing excluded_elements=[] should leave 'end' in the converted line.")
+        "Passing excluded_elements=[] should leave `end` in the converted line.")
 
 
 ################################################################################
@@ -114,7 +114,7 @@ def test_pipeline_excluded_single_element_is_absent_from_line(write_lattice):
         _test_mode        = True)
 
     assert "d1" not in line.element_names, (
-        "Element 'd1' should be absent from the converted line after being "
+        "Element `d1` should be absent from the converted line after being "
         f"named in excluded_elements. Got: {line.element_names}.")
 
 
@@ -144,16 +144,16 @@ def test_pipeline_excluded_single_element_does_not_affect_other_elements(write_l
         _test_mode        = True)
 
     assert "d1" not in line.element_names, (
-        "Element 'd1' should be absent after exclusion. "
+        "Element `d1` should be absent after exclusion. "
         f"Got: {line.element_names}.")
     assert "d2" in line.element_names, (
-        "Element 'd2' should remain in the converted line when only 'd1' is "
+        "Element `d2` should remain in the converted line when only `d1` is "
         f"excluded. Got: {line.element_names}.")
     assert "start" in line.element_names, (
-        "Marker 'start' should remain in the converted line when only 'd1' is "
+        "Marker `start` should remain in the converted line when only `d1` is "
         f"excluded. Got: {line.element_names}.")
     assert "end" in line.element_names, (
-        "Marker 'end' should remain in the converted line when only 'd1' is "
+        "Marker `end` should remain in the converted line when only `d1` is "
         f"excluded. Got: {line.element_names}.")
 
 
@@ -190,7 +190,7 @@ def test_pipeline_excluded_element_matches_regardless_of_case(write_lattice):
         "just the internal lowercase form. "
         f"Got: {line.element_names}.")
     assert "d1" in line.element_names, (
-        "Unrelated element 'd1' should remain in the converted line. "
+        "Unrelated element `d1` should remain in the converted line. "
         f"Got: {line.element_names}.")
 
 
@@ -225,19 +225,19 @@ def test_pipeline_excluded_multiple_elements_are_all_absent_from_line(write_latt
         _test_mode        = True)
 
     assert "d1" not in line.element_names, (
-        "Element 'd1' should be absent after exclusion. "
+        "Element `d1` should be absent after exclusion. "
         f"Got: {line.element_names}.")
     assert "q1" not in line.element_names, (
-        "Element 'q1' should be absent after exclusion. "
+        "Element `q1` should be absent after exclusion. "
         f"Got: {line.element_names}.")
     assert "d2" in line.element_names, (
-        "Element 'd2' should remain when only 'd1' and 'q1' are excluded. "
+        "Element `d2` should remain when only `d1` and `q1` are excluded. "
         f"Got: {line.element_names}.")
     assert "start" in line.element_names, (
-        "Marker 'start' should remain when only 'd1' and 'q1' are excluded. "
+        "Marker `start` should remain when only `d1` and `q1` are excluded. "
         f"Got: {line.element_names}.")
     assert "end" in line.element_names, (
-        "Marker 'end' should remain when only 'd1' and 'q1' are excluded. "
+        "Marker `end` should remain when only `d1` and `q1` are excluded. "
         f"Got: {line.element_names}.")
 
 
@@ -318,7 +318,7 @@ def test_pipeline_excluded_nonexistent_name_is_silently_ignored(write_lattice):
 def test_pipeline_excluded_forward_name_also_drops_reverse_form_from_line(
         write_lattice):
     """
-    When a forward element name is excluded, its reverse form ('-name') should
+    When a forward element name is excluded, its reverse form (`-name`) should
     also be removed from the converted line. The exclusion stage auto-expands
     the list before filtering line components.
     """
@@ -344,12 +344,12 @@ def test_pipeline_excluded_forward_name_also_drops_reverse_form_from_line(
         _test_mode        = True)
 
     assert "d1" not in line.element_names, (
-        "Forward element 'd1' should be absent after exclusion. "
+        "Forward element `d1` should be absent after exclusion. "
         f"Got: {line.element_names}.")
     assert "-d1" not in line.element_names, (
-        "Reverse form '-d1' should also be absent when 'd1' is excluded — "
+        "Reverse form `-d1` should also be absent when `d1` is excluded — "
         "the exclusion stage auto-expands to cover both forms. "
         f"Got: {line.element_names}.")
     assert "d2" in line.element_names, (
-        "Unrelated element 'd2' should remain in the converted line. "
+        "Unrelated element `d2` should remain in the converted line. "
         f"Got: {line.element_names}.")

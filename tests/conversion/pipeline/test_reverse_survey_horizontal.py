@@ -48,7 +48,7 @@ def test_pipeline_reverse_survey_horizontal_false_preserves_bend_angle(write_lat
 
     assert line["b1"].angle == pytest.approx(0.1), (
         "Without reverse_survey_horizontal, bend angle should retain SAD ANGLE = 0.1 "
-        f"rad. Got: {line['b1'].angle}.")
+        f"""rad. Got: {line["b1"].angle}.""")
 
 
 ################################################################################

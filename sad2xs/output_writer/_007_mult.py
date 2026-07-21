@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -104,7 +104,7 @@ def create_multipole_lattice_file_information(
     for mult_name, mult_length in zip(mult_names, mult_lengths):
         output_string += f"""
 env.new(
-    name                = '{mult_name}',
+    name                = "{mult_name}",
     prototype           = xt.Multipole,
     length              = {mult_length},
     _isthick            = True,
@@ -131,7 +131,7 @@ env.new(
 
             if check_is_simple_unpowered_multipole(line, replica_name):
                 output_string += f"""
-env.new(name = '{replica_name}', prototype = '{mult}')"""
+env.new(name = "{replica_name}", prototype = "{mult}")"""
 
             else:
                 # Get the replica information
@@ -144,8 +144,8 @@ env.new(name = '{replica_name}', prototype = '{mult}')"""
                 # Basic information
                 mult_generation = f"""
 env.new(
-    name        = '{replica_name}',
-    prototype   = '{mult}'"""
+    name        = "{replica_name}",
+    prototype   = "{mult}\""""
 
                 # Strength information                    
                 if knl != "[]":
@@ -153,28 +153,28 @@ env.new(
     {textwrap.fill(
         text                = f"knl         = {knl}",
         width               = config.OUTPUT_STRING_LENGTH,
-        initial_indent      = '    ',
-        subsequent_indent   = '        ',
+        initial_indent      = "    ",
+        subsequent_indent   = "        ",
         break_on_hyphens    = False)}"""
                 if ksl != "[]":
                     mult_generation += f""",
     {textwrap.fill(
         text                = f"ksl         = {ksl}",
         width               = config.OUTPUT_STRING_LENGTH,
-        initial_indent      = '    ',
-        subsequent_indent   = '        ',
+        initial_indent      = "    ",
+        subsequent_indent   = "        ",
         break_on_hyphens    = False)}"""
 
                 # Misalignments
                 if shift_x != 0:
                     mult_generation += f""",
-    shift_x     = '{shift_x}'"""
+    shift_x     = "{shift_x}\""""
                 if shift_y != 0:
                     mult_generation += f""",
-    shift_y     = '{shift_y}'"""
+    shift_y     = "{shift_y}\""""
                 if rot_s_rad != 0:
                     mult_generation += f""",
-    rot_s_rad   = '{rot_s_rad}'"""
+    rot_s_rad   = "{rot_s_rad}\""""
 
                 # Close the element definition
                 mult_generation += """)"""

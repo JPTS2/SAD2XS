@@ -76,3 +76,4 @@ build_instructions
 # Ignore local development
 # ==============================================================================
 /dev
+/graphify-out

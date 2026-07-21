@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -100,7 +100,7 @@ def create_quadrupole_lattice_file_information(
 
     for quad_name, quad_length in zip(quad_names, quad_lengths):
         output_string += f"""
-env.new(name = '{quad_name}', prototype = xt.Quadrupole, length = {quad_length})"""
+env.new(name = "{quad_name}", prototype = xt.Quadrupole, length = {quad_length})"""
 
     output_string += "\n"
 
@@ -125,10 +125,10 @@ env.new(name = '{quad_name}', prototype = xt.Quadrupole, length = {quad_length})
 
                 if not check_is_skew_quad_sext_oct(line, replica_name, "Quadrupole"):
                     output_string += f"""
-env.new(name = '{replica_name}', prototype = '{quad}', k1 = 'k1_{replica_name}')"""
+env.new(name = "{replica_name}", prototype = "{quad}", k1 = "k1_{replica_name}")"""
                 else:
                     output_string += f"""
-env.new(name = '{replica_name}', prototype = '{quad}', k1s = 'k1s_{replica_name}')"""
+env.new(name = "{replica_name}", prototype = "{quad}", k1s = "k1s_{replica_name}")"""
 
             else:
                 # Get the replica information
@@ -143,27 +143,27 @@ env.new(name = '{replica_name}', prototype = '{quad}', k1s = 'k1s_{replica_name}
                 # Basic information
                 quad_generation = f"""
 env.new(
-    name        = '{replica_name}',
-    prototype   = '{quad}'"""
+    name        = "{replica_name}",
+    prototype   = "{quad}\""""
 
                 # Strength information
                 if k1 != 0:
                     quad_generation += f""",
-    k1          = 'k1_{replica_name}'"""
+    k1          = "k1_{replica_name}\""""
                 if k1s != 0:
                     quad_generation += f""",
-    k1s         = 'k1s_{replica_name}'"""
+    k1s         = "k1s_{replica_name}\""""
 
                 # Misalignments
                 if shift_x != 0:
                     quad_generation += f""",
-    shift_x     = '{shift_x}'"""
+    shift_x     = "{shift_x}\""""
                 if shift_y != 0:
                     quad_generation += f""",
-    shift_y     = '{shift_y}'"""
+    shift_y     = "{shift_y}\""""
                 if rot_s_rad != 0:
                     quad_generation += f""",
-    rot_s_rad   = '{rot_s_rad}'"""
+    rot_s_rad   = "{rot_s_rad}\""""
 
                 # Combined multipole components
                 knl_str = get_knl_string(knl)
@@ -276,10 +276,10 @@ def create_quadrupole_optics_file_information(
 
         if k1 is not None:
             output_string += f"""
-    {f'k1_{quad}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1_{quad}') + 4)}{'= '}{k1:.24f},"""
+    {f"k1_{quad}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k1_{quad}") + 4)}{"= "}{k1:.24f},"""
         if k1s is not None:
             output_string += f"""
-    {f'k1s_{quad}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1s_{quad}') + 4)}{'= '}{k1s:.24f},"""
+    {f"k1s_{quad}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k1s_{quad}") + 4)}{"= "}{k1s:.24f},"""
 
     ########################################
     # Return

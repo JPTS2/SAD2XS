@@ -316,9 +316,9 @@ def test_write_launcher_writes_executable_launcher(tmp_path, monkeypatch):
         "write_launcher should create the configured launcher script.")
     assert launcher_path.stat().st_mode & 0o111, (
         "write_launcher should make the launcher executable.")
-    assert f'SAD_DIR="{src_dir}"' in launcher_text, (
+    assert f"""SAD_DIR="{src_dir}\"""" in launcher_text, (
         "Launcher should point at the configured SAD source directory.")
-    assert 'GS_EXEC="$SAD_DIR/bin/gs"' in launcher_text, (
+    assert """GS_EXEC="$SAD_DIR/bin/gs\"""" in launcher_text, (
         "Launcher should execute SAD's gs binary.")
 
 
@@ -329,14 +329,14 @@ def test_append_to_shell_rc_does_not_duplicate_existing_path(
     append_to_shell_rc should not duplicate an existing SAD PATH entry.
     """
     rc_file = tmp_path / ".zshrc"
-    rc_file.write_text('export PATH="$HOME/bin/sad:$PATH"\n')
+    rc_file.write_text("""export PATH="$HOME/bin/sad:$PATH"\n""")
 
     monkeypatch.setenv("SHELL", "/bin/zsh")
     monkeypatch.setattr(installer.Path, "home", classmethod(lambda cls: tmp_path))
 
     installer.append_to_shell_rc()
 
-    assert rc_file.read_text().count('export PATH="$HOME/bin/sad:$PATH"') == 1, (
+    assert rc_file.read_text().count("""export PATH="$HOME/bin/sad:$PATH\"""") == 1, (
         "append_to_shell_rc should not duplicate an existing SAD PATH entry.")
 
 
@@ -355,5 +355,5 @@ def test_append_to_shell_rc_creates_missing_shell_rc(
 
     assert rc_file.exists(), (
         "append_to_shell_rc should create a missing bash rc file.")
-    assert 'export PATH="$HOME/bin/sad:$PATH"' in rc_file.read_text(), (
+    assert """export PATH="$HOME/bin/sad:$PATH\"""" in rc_file.read_text(), (
         "append_to_shell_rc should add SAD to PATH in the created rc file.")

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -47,7 +47,7 @@ def get_parentname(element_name: str) -> str:
         `element_name` with any "::N" suffix removed.
     """
     # Assume to start that the parent name is the element name excluding replica
-    parent_name    = element_name.split('::')[0]
+    parent_name    = element_name.split("::")[0]
 
     return parent_name
 
@@ -56,7 +56,7 @@ def get_variablename(element_name: str) -> str:
     Get the base-element (optics-variable) name for an element.
 
     Strips both the "::N" replica suffix (see `get_parentname`) and
-    any leading '-' reversal marker, since a reversed element shares
+    any leading `-` reversal marker, since a reversed element shares
     its optics variables with the non-reversed original.
 
     Parameters
@@ -73,8 +73,8 @@ def get_variablename(element_name: str) -> str:
     # Get the parent name
     parent_name     = get_parentname(element_name)
 
-    # If the element is inverted, the variable name needs the '-' removed
-    if parent_name.startswith('-'):
+    # If the element is inverted, the variable name needs the `-` removed
+    if parent_name.startswith("-"):
         variable_name   = parent_name[1:]
     else:
         variable_name   = parent_name
@@ -189,7 +189,7 @@ def get_knl_string(knl_array: np.ndarray) -> str:
         if i == 0:
             knl_string += knl_substring
         else:
-            knl_string += f', {knl_substring}'
+            knl_string += f", {knl_substring}"
 
     # Close the string
     knl_string += "]"
@@ -245,7 +245,7 @@ def extract_bend_information(
     unique_bend_names           = []
     unique_bend_variables       = []
 
-    for bend in line_table.rows[line_table.element_type == 'Bend'].name:
+    for bend in line_table.rows[line_table.element_type == "Bend"].name:
         parentname      = get_parentname(bend)
         variablename    = get_variablename(bend)
 
@@ -353,7 +353,7 @@ def extract_corrector_information(
     unique_corr_names           = []
     unique_corr_variables       = []
 
-    for corr in line_table.rows[line_table.element_type == 'Bend'].name:
+    for corr in line_table.rows[line_table.element_type == "Bend"].name:
         parentname      = get_parentname(corr)
         variablename    = get_variablename(corr)
 

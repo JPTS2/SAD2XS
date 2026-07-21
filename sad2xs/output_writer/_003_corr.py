@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -99,15 +99,15 @@ def create_corrector_lattice_file_information(
 
     for hcorr_name, hcorr_length in zip(hcorr_names, hcorr_lengths):
         output_string += f"""
-env.new(name = '{hcorr_name}', prototype = xt.Bend, length = {hcorr_length})"""
+env.new(name = "{hcorr_name}", prototype = xt.Bend, length = {hcorr_length})"""
 
     for vcorr_name, vcorr_length in zip(vcorr_names, vcorr_lengths):
         output_string += f"""
-env.new(name = '{vcorr_name}', prototype = xt.Bend, length = {vcorr_length}, rot_s_rad = +np.pi/2)"""
+env.new(name = "{vcorr_name}", prototype = xt.Bend, length = {vcorr_length}, rot_s_rad = +np.pi/2)"""
 
     for scorr_name, scorr_length in zip(scorr_names, scorr_lengths):
         output_string += f"""
-env.new(name = '{scorr_name}', prototype = xt.Bend, length = {scorr_length})"""
+env.new(name = "{scorr_name}", prototype = xt.Bend, length = {scorr_length})"""
 
     output_string += "\n"
 
@@ -137,18 +137,18 @@ env.new(name = '{scorr_name}', prototype = xt.Bend, length = {scorr_length})"""
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, source_name):
                 corr_generation = f"""
-env.new(name = '{replica_name}', prototype = '{hcorr}', k0 = 'k0_{replica_variable}')"""
+env.new(name = "{replica_name}", prototype = "{hcorr}", k0 = "k0_{replica_variable}")"""
 
             # Otherwise do the full version
             else:
                 corr_generation = f"""
 env.new(
-    name                    = '{replica_name}',
-    prototype               = '{hcorr}',
-    k0                      = 'k0_{replica_variable}'"""
+    name                    = "{replica_name}",
+    prototype               = "{hcorr}",
+    k0                      = "k0_{replica_variable}\""""
                 if corr.k1 != 0:
                     corr_generation += f""",
-    k1                      = 'k1_{replica_variable}'"""
+    k1                      = "k1_{replica_variable}\""""
             # Append edge entry angles
                 if corr.edge_entry_angle != 0:
                     corr_generation += f""",
@@ -177,10 +177,10 @@ env.new(
                 # Append shifts if they exist
                 if corr.shift_x != 0:
                     corr_generation += f""",
-    shift_x                 = '{corr.shift_x}'"""
+    shift_x                 = "{corr.shift_x}\""""
                 if corr.shift_y != 0:
                     corr_generation += f""",
-    shift_y                 = '{corr.shift_y}'"""
+    shift_y                 = "{corr.shift_y}\""""
                 # Combined multipole components
                 knl_str = get_knl_string(np.asarray(corr.knl))
                 ksl_str = get_knl_string(np.asarray(corr.ksl))
@@ -215,18 +215,18 @@ env.new(
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, source_name):
                 corr_generation = f"""
-env.new(name = '{replica_name}', prototype = '{vcorr}', k0 = 'k0_{replica_variable}')"""
+env.new(name = "{replica_name}", prototype = "{vcorr}", k0 = "k0_{replica_variable}")"""
 
             # Otherwise do the full version
             else:
                 corr_generation = f"""
 env.new(
-    name                    = '{replica_name}',
-    prototype               = '{vcorr}',
-    k0                      = 'k0_{replica_variable}'"""
+    name                    = "{replica_name}",
+    prototype               = "{vcorr}",
+    k0                      = "k0_{replica_variable}\""""
                 if corr.k1 != 0:
                     corr_generation += f""",
-    k1                      = 'k1_{replica_variable}'"""
+    k1                      = "k1_{replica_variable}\""""
             # Append edge entry angles
                 if corr.edge_entry_angle != 0:
                     corr_generation += f""",
@@ -255,10 +255,10 @@ env.new(
                 # Append shifts if they exist
                 if corr.shift_x != 0:
                     corr_generation += f""",
-    shift_x                 = '{corr.shift_x}'"""
+    shift_x                 = "{corr.shift_x}\""""
                 if corr.shift_y != 0:
                     corr_generation += f""",
-    shift_y                 = '{corr.shift_y}'"""
+    shift_y                 = "{corr.shift_y}\""""
                 # Combined multipole components
                 knl_str = get_knl_string(np.asarray(corr.knl))
                 ksl_str = get_knl_string(np.asarray(corr.ksl))
@@ -293,18 +293,18 @@ env.new(
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, source_name):
                 corr_generation = f"""
-env.new(name = '{replica_name}', prototype = '{scorr}', k0 = 'k0_{replica_variable}', rot_s_rad = '{rot_s_rad}')"""
+env.new(name = "{replica_name}", prototype = "{scorr}", k0 = "k0_{replica_variable}", rot_s_rad = "{rot_s_rad}")"""
 
             # Otherwise do the full version
             else:
                 corr_generation = f"""
 env.new(
-    name                    = '{replica_name}',
-    prototype               = '{scorr}',
-    k0                      = 'k0_{replica_variable}'"""
+    name                    = "{replica_name}",
+    prototype               = "{scorr}",
+    k0                      = "k0_{replica_variable}\""""
                 if corr.k1 != 0:
                     corr_generation += f""",
-    k1                      = 'k1_{replica_variable}'"""
+    k1                      = "k1_{replica_variable}\""""
             # Append edge entry angles
                 if corr.edge_entry_angle != 0:
                     corr_generation += f""",
@@ -333,13 +333,13 @@ env.new(
                 # Append shifts if they exist
                 if corr.shift_x != 0:
                     corr_generation += f""",
-    shift_x                 = '{corr.shift_x}'"""
+    shift_x                 = "{corr.shift_x}\""""
                 if corr.shift_y != 0:
                     corr_generation += f""",
-    shift_y                 = '{corr.shift_y}'"""
+    shift_y                 = "{corr.shift_y}\""""
             # In the case of a skew corrector, we need to add a rotation
                 corr_generation += f""",
-    rot_s_rad               = '{rot_s_rad}'"""
+    rot_s_rad               = "{rot_s_rad}\""""
                 # Combined multipole components
                 knl_str = get_knl_string(np.asarray(corr.knl))
                 ksl_str = get_knl_string(np.asarray(corr.ksl))
@@ -449,10 +449,10 @@ def create_corrector_optics_file_information(
 
         if k0 is not None:
             output_string += f"""
-    {f'k0_{corr_variable}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k0_{corr_variable}') + 4)}{'= '}{k0:.24f},"""
+    {f"k0_{corr_variable}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k0_{corr_variable}") + 4)}{"= "}{k0:.24f},"""
         if k1 is not None:
             output_string += f"""
-    {f'k1_{corr_variable}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1_{corr_variable}') + 4)}{'= '}{k1:.24f},"""
+    {f"k1_{corr_variable}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k1_{corr_variable}") + 4)}{"= "}{k1:.24f},"""
 
     ########################################
     # Return

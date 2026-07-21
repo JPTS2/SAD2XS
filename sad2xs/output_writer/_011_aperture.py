@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -45,17 +45,17 @@ def _get_unique_aperture_names(line_table: xd.table.Table) -> tuple:
     unique_limitrect_names          = []
     unique_limitrectellipse_names   = []
 
-    for limitellipse in line_table.rows[line_table.element_type == 'LimitEllipse'].name:
+    for limitellipse in line_table.rows[line_table.element_type == "LimitEllipse"].name:
         parentname      = get_parentname(limitellipse)
         if parentname not in unique_limitellipse_names:
             unique_limitellipse_names.append(parentname)
 
-    for limitrect in line_table.rows[line_table.element_type == 'LimitRect'].name:
+    for limitrect in line_table.rows[line_table.element_type == "LimitRect"].name:
         parentname      = get_parentname(limitrect)
         if parentname not in unique_limitrect_names:
             unique_limitrect_names.append(parentname)
 
-    for limitrectellipse in line_table.rows[line_table.element_type == 'LimitRectEllipse'].name:
+    for limitrectellipse in line_table.rows[line_table.element_type == "LimitRectEllipse"].name:
         parentname      = get_parentname(limitrectellipse)
         if parentname not in unique_limitrectellipse_names:
             unique_limitrectellipse_names.append(parentname)
@@ -78,14 +78,14 @@ def _resolve_aperture_name(aperture_name: str, unique_names: list) -> str:
     Parameters
     ----------
     aperture_name : str
-        The aperture element name, possibly '-'-prefixed.
+        The aperture element name, possibly `-`-prefixed.
     unique_names : list of str
         All unique aperture names of this type in the line.
 
     Returns
     -------
     str
-        `aperture_name` with its leading '-' removed, if no
+        `aperture_name` with its leading `-` removed, if no
         non-reversed sibling of the same root name exists in
         `unique_names`; otherwise `aperture_name` unchanged.
     """
@@ -108,16 +108,16 @@ def _optics_variable_line(variable_name: str, value: float, config: ConfigLike) 
         The value to assign.
     config : ConfigLike
         Converter configuration; only `OUTPUT_STRING_SEP` is used, to
-        align the '=' signs.
+        align the `=` signs.
 
     Returns
     -------
     str
         A single, newline-prefixed "    <name>   = <value>," line.
     """
-    padding = ' ' * (config.OUTPUT_STRING_SEP - len(variable_name) + 4)
+    padding = " " * (config.OUTPUT_STRING_SEP - len(variable_name) + 4)
     return f"""
-    {variable_name}{padding}{'= '}{value:.24f},"""
+    {variable_name}{padding}{"= "}{value:.24f},"""
 
 ################################################################################
 # Lattice File
@@ -197,13 +197,13 @@ def create_aperture_lattice_file_information(
 
             # LimitEllipse rejects a/b=0; bootstrap to 1.0 until optics file sets values.
             ellipse_generation = f"""
-env['a_{limitellipse_name}'] = 1.0
-env['b_{limitellipse_name}'] = 1.0
+env["a_{limitellipse_name}"] = 1.0
+env["b_{limitellipse_name}"] = 1.0
 env.new(
-    name        = '{limitellipse_name}',
+    name        = "{limitellipse_name}",
     prototype   = xt.LimitEllipse,
-    a           = 'a_{limitellipse_name}',
-    b           = 'b_{limitellipse_name}',
+    a           = "a_{limitellipse_name}",
+    b           = "b_{limitellipse_name}",
     shift_x     = {shift_x},
     shift_y     = {shift_y}"""
             if rot_s_rad != 0:
@@ -234,17 +234,17 @@ env.new(
                 limitrect_name, unique_limitrect_names)
 
             rect_generation = f"""
-env['min_x_{limitrect_name}'] = -1.0
-env['max_x_{limitrect_name}'] = 1.0
-env['min_y_{limitrect_name}'] = -1.0
-env['max_y_{limitrect_name}'] = 1.0
+env["min_x_{limitrect_name}"] = -1.0
+env["max_x_{limitrect_name}"] = 1.0
+env["min_y_{limitrect_name}"] = -1.0
+env["max_y_{limitrect_name}"] = 1.0
 env.new(
-    name        = '{limitrect_name}',
+    name        = "{limitrect_name}",
     prototype   = xt.LimitRect,
-    min_x       = 'min_x_{limitrect_name}',
-    max_x       = 'max_x_{limitrect_name}',
-    min_y       = 'min_y_{limitrect_name}',
-    max_y       = 'max_y_{limitrect_name}',
+    min_x       = "min_x_{limitrect_name}",
+    max_x       = "max_x_{limitrect_name}",
+    min_y       = "min_y_{limitrect_name}",
+    max_y       = "max_y_{limitrect_name}",
     shift_x     = {shift_x},
     shift_y     = {shift_y}"""
             if rot_s_rad != 0:
@@ -275,17 +275,17 @@ env.new(
                 limitrectellipse_name, unique_limitrectellipse_names)
 
             rectellipse_generation = f"""
-env['max_x_{limitrectellipse_name}'] = 1.0
-env['max_y_{limitrectellipse_name}'] = 1.0
-env['a_{limitrectellipse_name}'] = 1.0
-env['b_{limitrectellipse_name}'] = 1.0
+env["max_x_{limitrectellipse_name}"] = 1.0
+env["max_y_{limitrectellipse_name}"] = 1.0
+env["a_{limitrectellipse_name}"] = 1.0
+env["b_{limitrectellipse_name}"] = 1.0
 env.new(
-    name        = '{limitrectellipse_name}',
+    name        = "{limitrectellipse_name}",
     prototype   = xt.LimitRectEllipse,
-    max_x       = 'max_x_{limitrectellipse_name}',
-    max_y       = 'max_y_{limitrectellipse_name}',
-    a           = 'a_{limitrectellipse_name}',
-    b           = 'b_{limitrectellipse_name}',
+    max_x       = "max_x_{limitrectellipse_name}",
+    max_y       = "max_y_{limitrectellipse_name}",
+    a           = "a_{limitrectellipse_name}",
+    b           = "b_{limitrectellipse_name}",
     shift_x     = {shift_x},
     shift_y     = {shift_y}"""
             if rot_s_rad != 0:

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -68,7 +68,7 @@ def create_offset_marker_lattice_file_information(
     ########################################
     # Set up output string
     ########################################
-    output_string = '''
+    output_string = """
 ################################################################################
 # Offset markers
 ################################################################################
@@ -81,7 +81,7 @@ length   = line.get_length()
 ############################################################
 # Offset marker locations
 ############################################################
-'''
+"""
 
     ########################################
     # Write offset marker locations
@@ -93,23 +93,23 @@ length   = line.get_length()
 
         offset_marker           = get_parentname(offset_marker)
         insert_s_values_string  = "[" + ", ".join([f"{s:.12f}" for s in insert_at_s_values]) + "]"
-        insertion_string        = f"""'{offset_marker}':{' ' * (config.OUTPUT_STRING_SEP - len(offset_marker) + 4)}{insert_s_values_string}"""
+        insertion_string        = f""""{offset_marker}":{" " * (config.OUTPUT_STRING_SEP - len(offset_marker) + 4)}{insert_s_values_string}"""
 
         if i == 0:
             output_string += f"""
 {textwrap.fill(
     text                = insertion_string,
     width               = config.OUTPUT_STRING_LENGTH,
-    initial_indent      = '    ',
-    subsequent_indent   = '        ',
+    initial_indent      = "    ",
+    subsequent_indent   = "        ",
     break_on_hyphens    = False)}"""
         else:
             output_string += f""",
 {textwrap.fill(
     text                = insertion_string,
     width               = config.OUTPUT_STRING_LENGTH,
-    initial_indent      = '    ',
-    subsequent_indent   = '        ',
+    initial_indent      = "    ",
+    subsequent_indent   = "        ",
     break_on_hyphens    = False)}"""
 
     # Close the dictionary

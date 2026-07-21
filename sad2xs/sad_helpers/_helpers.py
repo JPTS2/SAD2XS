@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -133,5 +133,5 @@ def _check_mathematica_output(raw: str) -> None:
             f"SAD output contains Mathematica undefined symbols {found}. "
             f"The lattice configuration is physically degenerate "
             f"(SAD exited 0 but the computation failed). "
-            f"Run with sad2xs.set_log_level('debug') to see the full SAD "
+            f"""Run with sad2xs.set_log_level("debug") to see the full SAD """
             f"terminal output.")

@@ -89,7 +89,7 @@ def test_omitting_groups_defaults_to_all_available():
 def test_show_lattice_true_includes_ribbon_legend_entries():
     """
     With the default show_lattice=True, the overlay legend should include
-    'SAD'/'Xsuite' plus at least one lattice-ribbon element-type entry.
+    `SAD`/`Xsuite` plus at least one lattice-ribbon element-type entry.
     """
     xsuite, sad = _aligned_pair()
 

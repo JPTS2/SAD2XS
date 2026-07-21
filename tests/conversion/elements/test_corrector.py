@@ -357,9 +357,9 @@ def test_corrector_converter_creates_all_correctors(
             element_name    = corr_name,
             element_type    = xt.Bend)
         assert corrector.length == pytest.approx(0.5), (
-            f"Converted corrector '{corr_name}' should preserve length.")
+            f"Converted corrector `{corr_name}` should preserve length.")
         assert corrector.k0 == pytest.approx(expected_k0), (
-            f"Converted corrector '{corr_name}' should preserve integrated "
+            f"Converted corrector `{corr_name}` should preserve integrated "
             "kick divided by length.")
 
 ########################################
@@ -629,11 +629,11 @@ def test_corrector_pipeline_preserves_names_order_lengths_and_kicks(write_lattic
             ("cv", -0.2),
             ("cz", 0.0)]:
         assert isinstance(line[corr_name], xt.Bend), (
-            f"Converted element '{corr_name}' should be an Xsuite Bend.")
+            f"Converted element `{corr_name}` should be an Xsuite Bend.")
         assert line[corr_name].length == pytest.approx(0.5), (
-            f"Converted corrector '{corr_name}' should preserve length.")
+            f"Converted corrector `{corr_name}` should preserve length.")
         assert line[corr_name].k0 == pytest.approx(expected_k0), (
-            f"Converted corrector '{corr_name}' should preserve integrated "
+            f"Converted corrector `{corr_name}` should preserve integrated "
             "kick divided by length.")
 
 def test_corrector_pipeline_canonicalizes_offsets_and_rotation(write_lattice):

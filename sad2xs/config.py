@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -90,10 +90,10 @@ class Config:
     ########################################
     SAD_ALLOWED_ELEMENTS:           set[str]        = field(
         default_factory = lambda: {
-            'drift',
-            'bend', 'quad', 'sext', 'oct', 'mult', 'sol',
-            'cavi', 'apert', 'coord',
-            'mark', 'moni', 'beambeam', 'map'})
+            "drift",
+            "bend", "quad", "sext", "oct", "mult", "sol",
+            "cavi", "apert", "coord",
+            "mark", "moni", "beambeam", "map"})
 
     ########################################
     # Reference Particle Defaults
@@ -107,11 +107,11 @@ class Config:
     ########################################
     COORD_SIGNS:                    dict[str, int]  = field(
         default_factory = lambda: {
-        'dx':         +1,
-        'dy':         +1,
-        'chi1':       -1,
-        'chi2':       +1,
-        'chi3':       -1})
+        "dx":         +1,
+        "dy":         +1,
+        "chi1":       -1,
+        "chi2":       +1,
+        "chi3":       -1})
 
     ########################################
     # Coordinate Transformation Tolerances
@@ -133,20 +133,20 @@ class Config:
     ########################################
     # Element Modelling Constants
     ########################################
-    MODEL_DRIFT:                    str             = 'exact'
-    MODEL_BEND:                     str             = 'bend-kick-bend'
-    MODEL_QUAD:                     str             = 'mat-kick-mat'
-    MODEL_SEXT:                     str             = 'mat-kick-mat'
-    MODEL_OCT:                      str             = 'mat-kick-mat'
-    MODEL_MULT:                     str             = 'mat-kick-mat'
-    MODEL_CAVI:                     str             = 'drift-kick-drift-exact'
+    MODEL_DRIFT:                    str             = "exact"
+    MODEL_BEND:                     str             = "bend-kick-bend"
+    MODEL_QUAD:                     str             = "mat-kick-mat"
+    MODEL_SEXT:                     str             = "mat-kick-mat"
+    MODEL_OCT:                      str             = "mat-kick-mat"
+    MODEL_MULT:                     str             = "mat-kick-mat"
+    MODEL_CAVI:                     str             = "drift-kick-drift-exact"
 
-    INTEGRATOR_BEND:                str             = 'uniform'
-    INTEGRATOR_QUAD:                str             = 'yoshida4'
-    INTEGRATOR_SEXT:                str             = 'yoshida4'
-    INTEGRATOR_OCT:                 str             = 'yoshida4'
-    INTEGRATOR_MULT:                str             = 'yoshida4'
-    INTEGRATOR_CAVI:                str             = 'yoshida4'
+    INTEGRATOR_BEND:                str             = "uniform"
+    INTEGRATOR_QUAD:                str             = "yoshida4"
+    INTEGRATOR_SEXT:                str             = "yoshida4"
+    INTEGRATOR_OCT:                 str             = "yoshida4"
+    INTEGRATOR_MULT:                str             = "yoshida4"
+    INTEGRATOR_CAVI:                str             = "yoshida4"
 
     N_INTEGRATOR_KICKS_BEND:        int             = 20
     N_INTEGRATOR_KICKS_QUAD:        int             = 14
@@ -159,8 +159,8 @@ class Config:
 
     N_SLICES_MULT_RF:               int             = 10
 
-    EDGE_MODEL_BEND:                str             = 'full'
-    EDGE_MODEL_QUAD:                str             = 'full'
+    EDGE_MODEL_BEND:                str             = "full"
+    EDGE_MODEL_QUAD:                str             = "full"
 
     ########################################
     # Output Writer Constants

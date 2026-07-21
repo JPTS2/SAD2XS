@@ -122,7 +122,7 @@ def test_map_pipeline_preserves_map_names(write_lattice):
         "Converted MAP-only line should preserve map order and names.")
     for map_name in ["jbc1p", "jbh0e", "jbhd0"]:
         assert isinstance(line[map_name], xt.Marker), (
-            f"Converted element '{map_name}' should be an Xsuite Marker.")
+            f"Converted element `{map_name}` should be an Xsuite Marker.")
 
 def test_map_pipeline_rejects_parametrised_map(write_lattice):
     """

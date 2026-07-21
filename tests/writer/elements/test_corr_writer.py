@@ -31,14 +31,14 @@ def _write_and_load(line, tmp_path):
 
     Correctors are xt.Bend elements with h = 0 (k0_from_h=False, angle=0,
     k0 set explicitly). The corrector writer outputs:
-      - A base element: env.new(name='hcorr...', prototype=xt.Bend, length=L)
-      - A clone:        env.new(name='c1', prototype='hcorr...', k0='k0_c1')
+      - A base element: env.new(name=`hcorr...`, prototype=xt.Bend, length=L)
+      - A clone:        env.new(name=`c1`, prototype=`hcorr...`, k0=`k0_c1`)
       - Optics file:    k0_c1 = <value>   (24 decimal places)
 
     This differs from the bend writer, which writes a fixed literal angle
     alongside k0 as the deferred expression. For correctors, k0 IS the
-    optics variable directly; modifying env['k0_c1'] immediately updates
-    line['c1'].k0.
+    optics variable directly; modifying env[`k0_c1`] immediately updates
+    line[`c1`].k0.
 
     Vertical correctors (rot_s_rad ≈ π/2) carry the rotation on the shared
     base element. Skew correctors (arbitrary rot_s_rad) carry the rotation on
@@ -77,7 +77,7 @@ def _build_hcorr_line(
     Build a minimal single horizontal-corrector Xsuite line with a reference
     particle. Horizontal correctors are xt.Bend elements with k0_from_h=False
     (so h = angle/length = 0) and k0 set explicitly. The writer classifies them
-    as correctors because line['c1'].h == 0.
+    as correctors because line[`c1`].h == 0.
     """
     corr_kwargs = dict(
         k0                      = k0,
@@ -163,8 +163,8 @@ def test_corr_writer_reloads_as_xsuite_bend(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["c1"], xt.Bend), (
-        "Written corrector element 'c1' should reload as xt.Bend. "
-        f"Got: {type(reloaded_line['c1']).__name__}.")
+        "Written corrector element `c1` should reload as xt.Bend. "
+        f"""Got: {type(reloaded_line["c1"]).__name__}.""")
 
 
 def test_corr_writer_preserves_element_name(tmp_path):
@@ -176,7 +176,7 @@ def test_corr_writer_preserves_element_name(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert "c1" in list(reloaded_line.element_names), (
-        "Reloaded line should contain corrector element 'c1'. "
+        "Reloaded line should contain corrector element `c1`. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
@@ -190,7 +190,7 @@ def test_corr_writer_preserves_length(tmp_path):
 
     assert reloaded_line["c1"].length == pytest.approx(0.45), (
         "Writer roundtrip should preserve corrector length. "
-        f"Original: 0.45, reloaded: {reloaded_line['c1'].length}.")
+        f"""Original: 0.45, reloaded: {reloaded_line["c1"].length}.""")
 
 
 ################################################################################
@@ -207,7 +207,7 @@ def test_corr_writer_preserves_positive_k0(tmp_path):
 
     assert reloaded_line["c1"].k0 == pytest.approx(1.5E-4), (
         "Writer roundtrip should preserve positive corrector k0. "
-        f"Original: 1.5E-4, reloaded: {reloaded_line['c1'].k0}.")
+        f"""Original: 1.5E-4, reloaded: {reloaded_line["c1"].k0}.""")
 
 
 def test_corr_writer_preserves_negative_k0(tmp_path):
@@ -220,7 +220,7 @@ def test_corr_writer_preserves_negative_k0(tmp_path):
 
     assert reloaded_line["c1"].k0 == pytest.approx(-2.0E-4), (
         "Writer roundtrip should preserve negative corrector k0. "
-        f"Original: -2.0E-4, reloaded: {reloaded_line['c1'].k0}.")
+        f"""Original: -2.0E-4, reloaded: {reloaded_line["c1"].k0}.""")
 
 
 def test_corr_writer_k0_is_accessible_as_optics_variable(tmp_path):
@@ -233,8 +233,8 @@ def test_corr_writer_k0_is_accessible_as_optics_variable(tmp_path):
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["k0_c1"] == pytest.approx(1.5E-4), (
-        "Optics variable 'k0_c1' should equal the original k0 after reload. "
-        f"Expected: 1.5E-4, got: {env['k0_c1']}.")
+        "Optics variable `k0_c1` should equal the original k0 after reload. "
+        f"""Expected: 1.5E-4, got: {env["k0_c1"]}.""")
 
 
 def test_corr_writer_k0_is_tunable_via_optics_variable(tmp_path):
@@ -248,8 +248,8 @@ def test_corr_writer_k0_is_tunable_via_optics_variable(tmp_path):
     env["k0_c1"] = 3.0E-4
 
     assert reloaded_line["c1"].k0 == pytest.approx(3.0E-4), (
-        "Modifying optics variable 'k0_c1' should update the corrector k0. "
-        f"Expected: 3.0E-4, got: {reloaded_line['c1'].k0}.")
+        "Modifying optics variable `k0_c1` should update the corrector k0. "
+        f"""Expected: 3.0E-4, got: {reloaded_line["c1"].k0}.""")
 
 
 ################################################################################
@@ -266,7 +266,7 @@ def test_corr_writer_preserves_edge_entry_angle(tmp_path):
 
     assert reloaded_line["c1"].edge_entry_angle == pytest.approx(0.05), (
         "Writer roundtrip should preserve corrector edge_entry_angle. "
-        f"Original: 0.05, reloaded: {reloaded_line['c1'].edge_entry_angle}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["c1"].edge_entry_angle}.""")
 
 
 def test_corr_writer_preserves_edge_exit_angle(tmp_path):
@@ -279,7 +279,7 @@ def test_corr_writer_preserves_edge_exit_angle(tmp_path):
 
     assert reloaded_line["c1"].edge_exit_angle == pytest.approx(0.04), (
         "Writer roundtrip should preserve corrector edge_exit_angle. "
-        f"Original: 0.04, reloaded: {reloaded_line['c1'].edge_exit_angle}.")
+        f"""Original: 0.04, reloaded: {reloaded_line["c1"].edge_exit_angle}.""")
 
 
 def test_corr_writer_preserves_edge_entry_angle_fdown(tmp_path):
@@ -292,7 +292,7 @@ def test_corr_writer_preserves_edge_entry_angle_fdown(tmp_path):
 
     assert reloaded_line["c1"].edge_entry_angle_fdown == pytest.approx(0.03), (
         "Writer roundtrip should preserve corrector edge_entry_angle_fdown. "
-        f"Original: 0.03, reloaded: {reloaded_line['c1'].edge_entry_angle_fdown}.")
+        f"""Original: 0.03, reloaded: {reloaded_line["c1"].edge_entry_angle_fdown}.""")
 
 
 def test_corr_writer_preserves_edge_exit_angle_fdown(tmp_path):
@@ -305,7 +305,7 @@ def test_corr_writer_preserves_edge_exit_angle_fdown(tmp_path):
 
     assert reloaded_line["c1"].edge_exit_angle_fdown == pytest.approx(0.02), (
         "Writer roundtrip should preserve corrector edge_exit_angle_fdown. "
-        f"Original: 0.02, reloaded: {reloaded_line['c1'].edge_exit_angle_fdown}.")
+        f"""Original: 0.02, reloaded: {reloaded_line["c1"].edge_exit_angle_fdown}.""")
 
 
 ################################################################################
@@ -321,7 +321,7 @@ def test_corr_writer_preserves_edge_entry_fint(tmp_path):
 
     assert reloaded_line["c1"].edge_entry_fint == pytest.approx(0.06), (
         "Writer roundtrip should preserve corrector edge_entry_fint. "
-        f"Original: 0.06, reloaded: {reloaded_line['c1'].edge_entry_fint}.")
+        f"""Original: 0.06, reloaded: {reloaded_line["c1"].edge_entry_fint}.""")
 
 
 def test_corr_writer_preserves_edge_entry_hgap(tmp_path):
@@ -334,7 +334,7 @@ def test_corr_writer_preserves_edge_entry_hgap(tmp_path):
 
     assert reloaded_line["c1"].edge_entry_hgap == pytest.approx(0.06), (
         "Writer roundtrip should preserve corrector edge_entry_hgap. "
-        f"Original: 0.06, reloaded: {reloaded_line['c1'].edge_entry_hgap}.")
+        f"""Original: 0.06, reloaded: {reloaded_line["c1"].edge_entry_hgap}.""")
 
 
 def test_corr_writer_preserves_edge_exit_fint(tmp_path):
@@ -347,7 +347,7 @@ def test_corr_writer_preserves_edge_exit_fint(tmp_path):
 
     assert reloaded_line["c1"].edge_exit_fint == pytest.approx(0.05), (
         "Writer roundtrip should preserve corrector edge_exit_fint. "
-        f"Original: 0.05, reloaded: {reloaded_line['c1'].edge_exit_fint}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["c1"].edge_exit_fint}.""")
 
 
 def test_corr_writer_preserves_edge_exit_hgap(tmp_path):
@@ -360,7 +360,7 @@ def test_corr_writer_preserves_edge_exit_hgap(tmp_path):
 
     assert reloaded_line["c1"].edge_exit_hgap == pytest.approx(0.05), (
         "Writer roundtrip should preserve corrector edge_exit_hgap. "
-        f"Original: 0.05, reloaded: {reloaded_line['c1'].edge_exit_hgap}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["c1"].edge_exit_hgap}.""")
 
 
 def test_corr_writer_treats_fringed_corrector_as_non_simple(tmp_path):
@@ -375,8 +375,8 @@ def test_corr_writer_treats_fringed_corrector_as_non_simple(tmp_path):
 
     assert reloaded_line["c1"].edge_entry_fint == pytest.approx(0.06), (
         "A corrector with only fint/hgap set (otherwise default) should not "
-        "be misclassified as 'simple' by the writer -- got edge_entry_fint="
-        f"{reloaded_line['c1'].edge_entry_fint} after roundtrip, expected 0.06.")
+        "be misclassified as `simple` by the writer -- got edge_entry_fint="
+        f"""{reloaded_line["c1"].edge_entry_fint} after roundtrip, expected 0.06.""")
 
 
 ################################################################################
@@ -393,7 +393,7 @@ def test_corr_writer_preserves_positive_shift_x(tmp_path):
 
     assert reloaded_line["c1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve positive corrector shift_x. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['c1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["c1"].shift_x}.""")
 
 
 def test_corr_writer_preserves_negative_shift_y(tmp_path):
@@ -406,7 +406,7 @@ def test_corr_writer_preserves_negative_shift_y(tmp_path):
 
     assert reloaded_line["c1"].shift_y == pytest.approx(-2.0E-3), (
         "Writer roundtrip should preserve negative corrector shift_y. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['c1'].shift_y}.")
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["c1"].shift_y}.""")
 
 
 ################################################################################
@@ -430,21 +430,21 @@ def test_corr_writer_preserves_all_fields_simultaneously(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert reloaded_line["c1"].k0                    == pytest.approx(1.5E-4),  (
-        f"Should preserve k0. Reloaded: {reloaded_line['c1'].k0}.")
+        f"""Should preserve k0. Reloaded: {reloaded_line["c1"].k0}.""")
     assert reloaded_line["c1"].length                == pytest.approx(0.45),    (
-        f"Should preserve length. Reloaded: {reloaded_line['c1'].length}.")
+        f"""Should preserve length. Reloaded: {reloaded_line["c1"].length}.""")
     assert reloaded_line["c1"].edge_entry_angle      == pytest.approx(0.05),    (
-        f"Should preserve edge_entry_angle. Reloaded: {reloaded_line['c1'].edge_entry_angle}.")
+        f"""Should preserve edge_entry_angle. Reloaded: {reloaded_line["c1"].edge_entry_angle}.""")
     assert reloaded_line["c1"].edge_exit_angle       == pytest.approx(0.04),    (
-        f"Should preserve edge_exit_angle. Reloaded: {reloaded_line['c1'].edge_exit_angle}.")
+        f"""Should preserve edge_exit_angle. Reloaded: {reloaded_line["c1"].edge_exit_angle}.""")
     assert reloaded_line["c1"].edge_entry_angle_fdown == pytest.approx(0.03),   (
-        f"Should preserve edge_entry_angle_fdown. Reloaded: {reloaded_line['c1'].edge_entry_angle_fdown}.")
+        f"""Should preserve edge_entry_angle_fdown. Reloaded: {reloaded_line["c1"].edge_entry_angle_fdown}.""")
     assert reloaded_line["c1"].edge_exit_angle_fdown  == pytest.approx(0.02),   (
-        f"Should preserve edge_exit_angle_fdown. Reloaded: {reloaded_line['c1'].edge_exit_angle_fdown}.")
+        f"""Should preserve edge_exit_angle_fdown. Reloaded: {reloaded_line["c1"].edge_exit_angle_fdown}.""")
     assert reloaded_line["c1"].shift_x               == pytest.approx(1.0E-3),  (
-        f"Should preserve shift_x. Reloaded: {reloaded_line['c1'].shift_x}.")
+        f"""Should preserve shift_x. Reloaded: {reloaded_line["c1"].shift_x}.""")
     assert reloaded_line["c1"].shift_y               == pytest.approx(-2.0E-3), (
-        f"Should preserve shift_y. Reloaded: {reloaded_line['c1'].shift_y}.")
+        f"""Should preserve shift_y. Reloaded: {reloaded_line["c1"].shift_y}.""")
 
 
 ################################################################################
@@ -453,15 +453,15 @@ def test_corr_writer_preserves_all_fields_simultaneously(tmp_path):
 def test_corr_writer_vertical_corr_reloads_as_xsuite_bend(tmp_path):
     """
     A vertical corrector (rot_s_rad = π/2) should reload as an xt.Bend. The
-    writer places the rotation on the shared base element ('vcorr...') rather
+    writer places the rotation on the shared base element (`vcorr...`) rather
     than the clone.
     """
     original_line = _build_vcorr_line()
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["vc1"], xt.Bend), (
-        "Written vertical corrector 'vc1' should reload as xt.Bend. "
-        f"Got: {type(reloaded_line['vc1']).__name__}.")
+        "Written vertical corrector `vc1` should reload as xt.Bend. "
+        f"""Got: {type(reloaded_line["vc1"]).__name__}.""")
 
 
 def test_corr_writer_vertical_corr_preserves_k0(tmp_path):
@@ -474,7 +474,7 @@ def test_corr_writer_vertical_corr_preserves_k0(tmp_path):
 
     assert reloaded_line["vc1"].k0 == pytest.approx(1.5E-4), (
         "Writer roundtrip should preserve vertical corrector k0. "
-        f"Original: 1.5E-4, reloaded: {reloaded_line['vc1'].k0}.")
+        f"""Original: 1.5E-4, reloaded: {reloaded_line["vc1"].k0}.""")
 
 
 def test_corr_writer_vertical_corr_preserves_rotation(tmp_path):
@@ -488,7 +488,7 @@ def test_corr_writer_vertical_corr_preserves_rotation(tmp_path):
 
     assert reloaded_line["vc1"].rot_s_rad == pytest.approx(np.pi / 2), (
         "Writer roundtrip should preserve vertical corrector rot_s_rad = π/2. "
-        f"Reloaded: {reloaded_line['vc1'].rot_s_rad}.")
+        f"""Reloaded: {reloaded_line["vc1"].rot_s_rad}.""")
 
 
 ################################################################################
@@ -503,8 +503,8 @@ def test_corr_writer_skew_corr_reloads_as_xsuite_bend(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["sc1"], xt.Bend), (
-        "Written skew corrector 'sc1' should reload as xt.Bend. "
-        f"Got: {type(reloaded_line['sc1']).__name__}.")
+        "Written skew corrector `sc1` should reload as xt.Bend. "
+        f"""Got: {type(reloaded_line["sc1"]).__name__}.""")
 
 
 def test_corr_writer_skew_corr_preserves_k0(tmp_path):
@@ -519,7 +519,7 @@ def test_corr_writer_skew_corr_preserves_k0(tmp_path):
 
     assert reloaded_line["sc1"].k0 == pytest.approx(1.5E-4), (
         "Writer roundtrip should preserve skew corrector k0. "
-        f"Original: 1.5E-4, reloaded: {reloaded_line['sc1'].k0}.")
+        f"""Original: 1.5E-4, reloaded: {reloaded_line["sc1"].k0}.""")
 
 
 def test_corr_writer_skew_corr_preserves_rotation(tmp_path):
@@ -533,7 +533,7 @@ def test_corr_writer_skew_corr_preserves_rotation(tmp_path):
 
     assert reloaded_line["sc1"].rot_s_rad == pytest.approx(rot), (
         "Writer roundtrip should preserve skew corrector rot_s_rad. "
-        f"Original: {rot}, reloaded: {reloaded_line['sc1'].rot_s_rad}.")
+        f"""Original: {rot}, reloaded: {reloaded_line["sc1"].rot_s_rad}.""")
 
 
 @pytest.mark.parametrize("rot_s_rad", [np.pi, -np.pi / 2])
@@ -550,10 +550,10 @@ def test_corr_writer_preserves_explicit_special_rotations(tmp_path, rot_s_rad):
 
     assert reloaded_line["sc1"].k0 == pytest.approx(1.5E-4), (
         "Writer roundtrip should preserve explicit-rotation corrector k0. "
-        f"Original: 1.5E-4, reloaded: {reloaded_line['sc1'].k0}.")
+        f"""Original: 1.5E-4, reloaded: {reloaded_line["sc1"].k0}.""")
     assert reloaded_line["sc1"].rot_s_rad == pytest.approx(rot_s_rad), (
         "Writer roundtrip should preserve explicit corrector rot_s_rad. "
-        f"Original: {rot_s_rad}, reloaded: {reloaded_line['sc1'].rot_s_rad}.")
+        f"""Original: {rot_s_rad}, reloaded: {reloaded_line["sc1"].rot_s_rad}.""")
 
 
 ################################################################################
@@ -579,17 +579,17 @@ def test_corr_writer_preserves_multiple_corrs_independently(tmp_path):
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
     assert reloaded_line["ca"].k0     == pytest.approx(1.5E-4), (
-        "Writer roundtrip should preserve k0 for 'ca'. "
-        f"Original: 1.5E-4, reloaded: {reloaded_line['ca'].k0}.")
+        "Writer roundtrip should preserve k0 for `ca`. "
+        f"""Original: 1.5E-4, reloaded: {reloaded_line["ca"].k0}.""")
     assert reloaded_line["ca"].length == pytest.approx(0.3),    (
-        "Writer roundtrip should preserve length for 'ca'. "
-        f"Original: 0.3, reloaded: {reloaded_line['ca'].length}.")
+        "Writer roundtrip should preserve length for `ca`. "
+        f"""Original: 0.3, reloaded: {reloaded_line["ca"].length}.""")
     assert reloaded_line["cb"].k0     == pytest.approx(2.0E-4), (
-        "Writer roundtrip should preserve k0 for 'cb'. "
-        f"Original: 2.0E-4, reloaded: {reloaded_line['cb'].k0}.")
+        "Writer roundtrip should preserve k0 for `cb`. "
+        f"""Original: 2.0E-4, reloaded: {reloaded_line["cb"].k0}.""")
     assert reloaded_line["cb"].length == pytest.approx(0.4),    (
-        "Writer roundtrip should preserve length for 'cb'. "
-        f"Original: 0.4, reloaded: {reloaded_line['cb'].length}.")
+        "Writer roundtrip should preserve length for `cb`. "
+        f"""Original: 0.4, reloaded: {reloaded_line["cb"].length}.""")
 
 
 def test_corr_writer_corrs_with_same_length_share_base_element(tmp_path):
@@ -612,15 +612,15 @@ def test_corr_writer_corrs_with_same_length_share_base_element(tmp_path):
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 
     assert reloaded_line["ca"].k0 == pytest.approx(1.5E-4), (
-        "Correctors sharing a base element: k0 for 'ca' should be preserved. "
-        f"Original: 1.5E-4, reloaded: {reloaded_line['ca'].k0}.")
+        "Correctors sharing a base element: k0 for `ca` should be preserved. "
+        f"""Original: 1.5E-4, reloaded: {reloaded_line["ca"].k0}.""")
     assert reloaded_line["cb"].k0 == pytest.approx(2.0E-4), (
-        "Correctors sharing a base element: k0 for 'cb' should be preserved. "
-        f"Original: 2.0E-4, reloaded: {reloaded_line['cb'].k0}.")
+        "Correctors sharing a base element: k0 for `cb` should be preserved. "
+        f"""Original: 2.0E-4, reloaded: {reloaded_line["cb"].k0}.""")
     assert env["k0_ca"] == pytest.approx(1.5E-4), (
-        f"'k0_ca' should equal the original k0. Got: {env['k0_ca']}.")
+        f"""`k0_ca` should equal the original k0. Got: {env["k0_ca"]}.""")
     assert env["k0_cb"] == pytest.approx(2.0E-4), (
-        f"'k0_cb' should equal the original k0. Got: {env['k0_cb']}.")
+        f"""`k0_cb` should equal the original k0. Got: {env["k0_cb"]}.""")
 
 
 ################################################################################
@@ -639,8 +639,8 @@ def test_corr_writer_preserves_k0_at_full_double_precision(tmp_path):
 
     assert reloaded_line["c1"].k0 == pytest.approx(k0, rel = 1E-12), (
         "Writer roundtrip should preserve corrector k0 to full double precision. "
-        f"Original: {k0}, reloaded: {reloaded_line['c1'].k0}, "
-        f"diff: {abs(reloaded_line['c1'].k0 - k0)}.")
+        f"""Original: {k0}, reloaded: {reloaded_line["c1"].k0}, """
+        f"""diff: {abs(reloaded_line["c1"].k0 - k0)}.""")
 
 
 ################################################################################

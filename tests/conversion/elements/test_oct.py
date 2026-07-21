@@ -298,9 +298,9 @@ def test_oct_converter_creates_all_octupoles(
             element_name    = oct_name,
             element_type    = xt.Octupole)
         assert octupole.length == pytest.approx(0.5), (
-            f"Converted octupole '{oct_name}' should preserve length.")
+            f"Converted octupole `{oct_name}` should preserve length.")
         assert octupole.k3 == pytest.approx(expected_k3), (
-            f"Converted octupole '{oct_name}' should preserve integrated "
+            f"Converted octupole `{oct_name}` should preserve integrated "
             "strength divided by length.")
 
 ########################################
@@ -692,11 +692,11 @@ def test_oct_pipeline_preserves_names_order_lengths_and_strengths(write_lattice)
             ("od", -0.2),
             ("oz", 0.0)]:
         assert isinstance(line[oct_name], xt.Octupole), (
-            f"Converted element '{oct_name}' should be an Xsuite Octupole.")
+            f"Converted element `{oct_name}` should be an Xsuite Octupole.")
         assert line[oct_name].length == pytest.approx(0.5), (
-            f"Converted octupole '{oct_name}' should preserve length.")
+            f"Converted octupole `{oct_name}` should preserve length.")
         assert line[oct_name].k3 == pytest.approx(expected_k3), (
-            f"Converted octupole '{oct_name}' should preserve integrated "
+            f"Converted octupole `{oct_name}` should preserve integrated "
             "strength divided by length.")
 
 def test_oct_pipeline_preserves_offsets_and_rotation(write_lattice):

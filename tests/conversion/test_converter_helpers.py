@@ -154,17 +154,17 @@ def test_values_provably_opposite_returns_false_for_mixed_types():
 ################################################################################
 def test_get_element_length_returns_parsed_value():
     """
-    When 'l' is present, the parsed length value should be returned.
+    When `l` is present, the parsed length value should be returned.
     """
     assert get_element_length({"l": 2.0}) == pytest.approx(2.0), (
-        "Element length should return the parsed 'l' value.")
+        "Element length should return the parsed `l` value.")
 
 def test_get_element_length_defaults_to_zero():
     """
-    When 'l' is absent, the length should default to 0.0.
+    When `l` is absent, the length should default to 0.0.
     """
     assert get_element_length({}) == pytest.approx(0.0), (
-        "Element length should default to 0.0 when 'l' is absent.")
+        "Element length should default to 0.0 when `l` is absent.")
 
 ################################################################################
 # get_element_integrated_strength
@@ -250,7 +250,7 @@ def test_define_strength_variable_nonzero_float_registers_and_returns_key():
     result = define_strength_variable(env, "qf", "k1", 0.25)
 
     assert result == "k1_qf", (
-        "Returned key should follow the '{k_name}_{ele_name}' convention.")
+        "Returned key should follow the `{k_name}_{ele_name}` convention.")
     assert env["k1_qf"] == pytest.approx(0.25), (
         "Strength value should be stored in the environment under that key.")
 
@@ -265,7 +265,7 @@ def test_define_strength_variable_string_expression_registers_and_returns_key():
     result         = define_strength_variable(env, "qf", "k1", "k1l_var / l_var")
 
     assert result == "k1_qf", (
-        "Returned key should follow the '{k_name}_{ele_name}' convention.")
+        "Returned key should follow the `{k_name}_{ele_name}` convention.")
     assert env["k1_qf"] == pytest.approx(0.25), (
         "The stored string expression should resolve to the correct value.")
 
@@ -369,7 +369,7 @@ def test_get_element_misalignments_negates_simple_string_rotation():
 def test_get_element_misalignments_negates_compound_string_rotation():
     """
     A compound string rotate expression must be fully parenthesised before negation.
-    Without parentheses, '-(a + b)' and '-a + b' differ.
+    Without parentheses, `-(a + b)` and `-a + b` differ.
     """
     _, _, rotation = get_element_misalignments({"rotate": "rot_a + rot_b"})
 
@@ -437,28 +437,28 @@ def test_species_from_mass_and_charge_identifies_electron():
     Electron mass with negative charge should identify as electron.
     """
     assert species_from_mass_and_charge(xt.ELECTRON_MASS_EV, -1.0) == "electron", (
-        "Electron mass and negative charge should identify as 'electron'.")
+        "Electron mass and negative charge should identify as `electron`.")
 
 def test_species_from_mass_and_charge_identifies_positron():
     """
     Electron mass with positive charge should identify as positron.
     """
     assert species_from_mass_and_charge(xt.ELECTRON_MASS_EV, +1.0) == "positron", (
-        "Electron mass and positive charge should identify as 'positron'.")
+        "Electron mass and positive charge should identify as `positron`.")
 
 def test_species_from_mass_and_charge_identifies_proton():
     """
     Proton mass with positive charge should identify as proton.
     """
     assert species_from_mass_and_charge(xt.PROTON_MASS_EV, +1.0) == "proton", (
-        "Proton mass and positive charge should identify as 'proton'.")
+        "Proton mass and positive charge should identify as `proton`.")
 
 def test_species_from_mass_and_charge_identifies_antiproton():
     """
     Proton mass with negative charge should identify as antiproton.
     """
     assert species_from_mass_and_charge(xt.PROTON_MASS_EV, -1.0) == "antiproton", (
-        "Proton mass and negative charge should identify as 'antiproton'.")
+        "Proton mass and negative charge should identify as `antiproton`.")
 
 def test_species_from_mass_and_charge_returns_none_for_unknown_mass():
     """

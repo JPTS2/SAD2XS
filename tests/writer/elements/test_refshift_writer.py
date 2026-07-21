@@ -31,11 +31,11 @@ def _write_and_load(line, tmp_path):
     All five reference shift element types write their parameters as live optics
     expression variables. The variable name is derived from the element name:
 
-        Translation 'rs1' -> dx_rs1, dy_rs1
-        TimeDelay 'rs1' -> dz_rs1
-        Rotation 'rs1' (rot_y_rad) -> chi1_rs1  (SAD CHI1)
-        Rotation 'rs1' (rot_x_rad) -> chi2_rs1  (SAD CHI2)
-        Rotation 'rs1' (rot_s_rad) -> chi3_rs1  (SAD CHI3)
+        Translation `rs1` -> dx_rs1, dy_rs1
+        TimeDelay `rs1` -> dz_rs1
+        Rotation `rs1` (rot_y_rad) -> chi1_rs1  (SAD CHI1)
+        Rotation `rs1` (rot_x_rad) -> chi2_rs1  (SAD CHI2)
+        Rotation `rs1` (rot_s_rad) -> chi3_rs1  (SAD CHI3)
 
     Zero-valued fields are not written to the optics file; the lattice file
     always references the variable, and env.vars.default_to_zero = True returns
@@ -132,8 +132,8 @@ def test_refshift_writer_translation_reloads_as_xsuite_translation(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["rs1"], xt.Translation), (
-        "Written Translation element 'rs1' should reload as xt.Translation. "
-        f"Got: {type(reloaded_line['rs1']).__name__}.")
+        "Written Translation element `rs1` should reload as xt.Translation. "
+        f"""Got: {type(reloaded_line["rs1"]).__name__}.""")
 
 
 def test_refshift_writer_translation_preserves_element_name(tmp_path):
@@ -145,7 +145,7 @@ def test_refshift_writer_translation_preserves_element_name(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert "rs1" in list(reloaded_line.element_names), (
-        "Reloaded line should contain Translation element 'rs1'. "
+        "Reloaded line should contain Translation element `rs1`. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
@@ -162,7 +162,7 @@ def test_refshift_writer_translation_preserves_positive_shift_x(tmp_path):
 
     assert reloaded_line["rs1"].shift_x == pytest.approx(1.5E-3), (
         "Writer roundtrip should preserve positive Translation shift_x. "
-        f"Original: 1.5E-3, reloaded: {reloaded_line['rs1'].shift_x}.")
+        f"""Original: 1.5E-3, reloaded: {reloaded_line["rs1"].shift_x}.""")
 
 
 def test_refshift_writer_translation_preserves_negative_shift_x(tmp_path):
@@ -175,7 +175,7 @@ def test_refshift_writer_translation_preserves_negative_shift_x(tmp_path):
 
     assert reloaded_line["rs1"].shift_x == pytest.approx(-1.5E-3), (
         "Writer roundtrip should preserve negative Translation shift_x. "
-        f"Original: -1.5E-3, reloaded: {reloaded_line['rs1'].shift_x}.")
+        f"""Original: -1.5E-3, reloaded: {reloaded_line["rs1"].shift_x}.""")
 
 
 def test_refshift_writer_translation_shift_x_is_accessible_as_optics_variable(tmp_path):
@@ -187,9 +187,9 @@ def test_refshift_writer_translation_shift_x_is_accessible_as_optics_variable(tm
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["dx_rs1"] == pytest.approx(1.5E-3), (
-        "Optics variable 'dx_rs1' should exist in the environment after reload "
+        "Optics variable `dx_rs1` should exist in the environment after reload "
         "and equal the original shift_x. "
-        f"Got: {env['dx_rs1']}.")
+        f"""Got: {env["dx_rs1"]}.""")
 
 
 def test_refshift_writer_translation_shift_x_is_tunable_via_optics_variable(tmp_path):
@@ -203,8 +203,8 @@ def test_refshift_writer_translation_shift_x_is_tunable_via_optics_variable(tmp_
     env["dx_rs1"] = 3.0E-3
 
     assert reloaded_line["rs1"].shift_x == pytest.approx(3.0E-3), (
-        "Modifying optics variable 'dx_rs1' should update the Translation shift_x. "
-        f"Got: {reloaded_line['rs1'].shift_x}.")
+        "Modifying optics variable `dx_rs1` should update the Translation shift_x. "
+        f"""Got: {reloaded_line["rs1"].shift_x}.""")
 
 
 ########################################
@@ -220,7 +220,7 @@ def test_refshift_writer_translation_preserves_positive_shift_y(tmp_path):
 
     assert reloaded_line["rs1"].shift_y == pytest.approx(2.0E-3), (
         "Writer roundtrip should preserve positive Translation shift_y. "
-        f"Original: 2.0E-3, reloaded: {reloaded_line['rs1'].shift_y}.")
+        f"""Original: 2.0E-3, reloaded: {reloaded_line["rs1"].shift_y}.""")
 
 
 def test_refshift_writer_translation_preserves_negative_shift_y(tmp_path):
@@ -233,7 +233,7 @@ def test_refshift_writer_translation_preserves_negative_shift_y(tmp_path):
 
     assert reloaded_line["rs1"].shift_y == pytest.approx(-2.0E-3), (
         "Writer roundtrip should preserve negative Translation shift_y. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['rs1'].shift_y}.")
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["rs1"].shift_y}.""")
 
 
 def test_refshift_writer_translation_shift_y_is_accessible_as_optics_variable(tmp_path):
@@ -245,9 +245,9 @@ def test_refshift_writer_translation_shift_y_is_accessible_as_optics_variable(tm
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["dy_rs1"] == pytest.approx(2.0E-3), (
-        "Optics variable 'dy_rs1' should exist in the environment after reload "
+        "Optics variable `dy_rs1` should exist in the environment after reload "
         "and equal the original shift_y. "
-        f"Got: {env['dy_rs1']}.")
+        f"""Got: {env["dy_rs1"]}.""")
 
 
 def test_refshift_writer_translation_shift_y_is_tunable_via_optics_variable(tmp_path):
@@ -261,8 +261,8 @@ def test_refshift_writer_translation_shift_y_is_tunable_via_optics_variable(tmp_
     env["dy_rs1"] = 4.0E-3
 
     assert reloaded_line["rs1"].shift_y == pytest.approx(4.0E-3), (
-        "Modifying optics variable 'dy_rs1' should update the Translation shift_y. "
-        f"Got: {reloaded_line['rs1'].shift_y}.")
+        "Modifying optics variable `dy_rs1` should update the Translation shift_y. "
+        f"""Got: {reloaded_line["rs1"].shift_y}.""")
 
 
 ########################################
@@ -279,16 +279,16 @@ def test_refshift_writer_translation_preserves_shift_x_and_shift_y_simultaneousl
 
     assert reloaded_line["rs1"].shift_x == pytest.approx(1.5E-3), (
         "Writer roundtrip should preserve shift_x when shift_y is also non-zero. "
-        f"Original: 1.5E-3, reloaded: {reloaded_line['rs1'].shift_x}.")
+        f"""Original: 1.5E-3, reloaded: {reloaded_line["rs1"].shift_x}.""")
     assert reloaded_line["rs1"].shift_y == pytest.approx(-2.0E-3), (
         "Writer roundtrip should preserve shift_y when shift_x is also non-zero. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['rs1'].shift_y}.")
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["rs1"].shift_y}.""")
     assert env["dx_rs1"] == pytest.approx(1.5E-3), (
-        "Optics variable 'dx_rs1' should be accessible when shift_y is also set. "
-        f"Got: {env['dx_rs1']}.")
+        "Optics variable `dx_rs1` should be accessible when shift_y is also set. "
+        f"""Got: {env["dx_rs1"]}.""")
     assert env["dy_rs1"] == pytest.approx(-2.0E-3), (
-        "Optics variable 'dy_rs1' should be accessible when shift_x is also set. "
-        f"Got: {env['dy_rs1']}.")
+        "Optics variable `dy_rs1` should be accessible when shift_x is also set. "
+        f"""Got: {env["dy_rs1"]}.""")
 
 
 ########################################
@@ -298,7 +298,7 @@ def test_refshift_writer_translation_preserves_zero_shift_x(tmp_path):
     """
     A Translation with shift_x=0 should survive a write and reload cycle with
     shift_x remaining zero. Zero shift_x is not written to the optics file; the
-    lattice file references 'dx_rs1' and env.vars.default_to_zero = True returns
+    lattice file references `dx_rs1` and env.vars.default_to_zero = True returns
     0 for the undefined variable.
     """
     original_line = _build_translation_line(shift_x = 0.0, shift_y = 2.0E-3)
@@ -307,7 +307,7 @@ def test_refshift_writer_translation_preserves_zero_shift_x(tmp_path):
     assert reloaded_line["rs1"].shift_x == pytest.approx(0.0), (
         "Writer roundtrip should preserve zero Translation shift_x (handled by "
         "default_to_zero). "
-        f"Reloaded: {reloaded_line['rs1'].shift_x}.")
+        f"""Reloaded: {reloaded_line["rs1"].shift_x}.""")
 
 
 ########################################
@@ -326,7 +326,7 @@ def test_refshift_writer_translation_shift_x_preserved_at_full_double_precision(
     assert env["dx_rs1"] == pytest.approx(dx_precise, rel = 1E-15), (
         "Writer roundtrip should preserve Translation shift_x at full double "
         "precision. "
-        f"Original: {dx_precise!r}, reloaded env var: {env['dx_rs1']!r}.")
+        f"""Original: {dx_precise!r}, reloaded env var: {env["dx_rs1"]!r}.""")
 
 
 ########################################
@@ -353,22 +353,22 @@ def test_refshift_writer_preserves_multiple_translations_independently(tmp_path)
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 
     assert reloaded_line["rsa"].shift_x == pytest.approx(+1.0E-3), (
-        "Writer roundtrip should preserve shift_x for 'rsa'. "
-        f"Original: +1.0E-3, reloaded: {reloaded_line['rsa'].shift_x}.")
+        "Writer roundtrip should preserve shift_x for `rsa`. "
+        f"""Original: +1.0E-3, reloaded: {reloaded_line["rsa"].shift_x}.""")
     assert reloaded_line["rsb"].shift_y == pytest.approx(-2.0E-3), (
-        "Writer roundtrip should preserve shift_y for 'rsb'. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['rsb'].shift_y}.")
+        "Writer roundtrip should preserve shift_y for `rsb`. "
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["rsb"].shift_y}.""")
     assert reloaded_line["rsc"].shift_x == pytest.approx(+0.5E-3), (
-        "Writer roundtrip should preserve shift_x for 'rsc'. "
-        f"Original: +0.5E-3, reloaded: {reloaded_line['rsc'].shift_x}.")
+        "Writer roundtrip should preserve shift_x for `rsc`. "
+        f"""Original: +0.5E-3, reloaded: {reloaded_line["rsc"].shift_x}.""")
     assert reloaded_line["rsc"].shift_y == pytest.approx(+1.5E-3), (
-        "Writer roundtrip should preserve shift_y for 'rsc'. "
-        f"Original: +1.5E-3, reloaded: {reloaded_line['rsc'].shift_y}.")
+        "Writer roundtrip should preserve shift_y for `rsc`. "
+        f"""Original: +1.5E-3, reloaded: {reloaded_line["rsc"].shift_y}.""")
 
     assert env["dx_rsa"] == pytest.approx(+1.0E-3), (
-        "Optics variable 'dx_rsa' should be accessible and correct.")
+        "Optics variable `dx_rsa` should be accessible and correct.")
     assert env["dy_rsb"] == pytest.approx(-2.0E-3), (
-        "Optics variable 'dy_rsb' should be accessible and correct.")
+        "Optics variable `dy_rsb` should be accessible and correct.")
 
 
 ################################################################################
@@ -386,8 +386,8 @@ def test_refshift_writer_timedelay_reloads_as_xsuite_timedelay(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["rs1"], xt.TimeDelay), (
-        "Written TimeDelay element 'rs1' should reload as xt.TimeDelay. "
-        f"Got: {type(reloaded_line['rs1']).__name__}.")
+        "Written TimeDelay element `rs1` should reload as xt.TimeDelay. "
+        f"""Got: {type(reloaded_line["rs1"]).__name__}.""")
 
 
 ########################################
@@ -403,7 +403,7 @@ def test_refshift_writer_timedelay_preserves_positive_shift_zeta(tmp_path):
 
     assert reloaded_line["rs1"].shift_zeta == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve positive TimeDelay shift_zeta. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['rs1'].shift_zeta}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["rs1"].shift_zeta}.""")
 
 
 def test_refshift_writer_timedelay_preserves_negative_shift_zeta(tmp_path):
@@ -416,7 +416,7 @@ def test_refshift_writer_timedelay_preserves_negative_shift_zeta(tmp_path):
 
     assert reloaded_line["rs1"].shift_zeta == pytest.approx(-1.0E-3), (
         "Writer roundtrip should preserve negative TimeDelay shift_zeta. "
-        f"Original: -1.0E-3, reloaded: {reloaded_line['rs1'].shift_zeta}.")
+        f"""Original: -1.0E-3, reloaded: {reloaded_line["rs1"].shift_zeta}.""")
 
 
 def test_refshift_writer_timedelay_shift_zeta_is_accessible_as_optics_variable(tmp_path):
@@ -428,9 +428,9 @@ def test_refshift_writer_timedelay_shift_zeta_is_accessible_as_optics_variable(t
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["dz_rs1"] == pytest.approx(1.0E-3), (
-        "Optics variable 'dz_rs1' should exist in the environment after reload "
+        "Optics variable `dz_rs1` should exist in the environment after reload "
         "and equal the original shift_zeta. "
-        f"Got: {env['dz_rs1']}.")
+        f"""Got: {env["dz_rs1"]}.""")
 
 
 def test_refshift_writer_timedelay_shift_zeta_is_tunable_via_optics_variable(tmp_path):
@@ -444,8 +444,8 @@ def test_refshift_writer_timedelay_shift_zeta_is_tunable_via_optics_variable(tmp
     env["dz_rs1"] = 2.0E-3
 
     assert reloaded_line["rs1"].shift_zeta == pytest.approx(2.0E-3), (
-        "Modifying optics variable 'dz_rs1' should update the TimeDelay shift_zeta. "
-        f"Got: {reloaded_line['rs1'].shift_zeta}.")
+        "Modifying optics variable `dz_rs1` should update the TimeDelay shift_zeta. "
+        f"""Got: {reloaded_line["rs1"].shift_zeta}.""")
 
 
 def test_refshift_writer_timedelay_shift_zeta_preserved_at_full_double_precision(tmp_path):
@@ -459,7 +459,7 @@ def test_refshift_writer_timedelay_shift_zeta_preserved_at_full_double_precision
 
     assert env["dz_rs1"] == pytest.approx(dz_precise, rel = 1E-15), (
         "Writer roundtrip should preserve TimeDelay shift_zeta at full double precision. "
-        f"Original: {dz_precise!r}, reloaded env var: {env['dz_rs1']!r}.")
+        f"""Original: {dz_precise!r}, reloaded env var: {env["dz_rs1"]!r}.""")
 
 
 ################################################################################
@@ -478,8 +478,8 @@ def test_refshift_writer_rotation_chi1_reloads_as_xsuite_rotation(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["rs1"], xt.Rotation), (
-        "Written Rotation (chi1) element 'rs1' should reload as xt.Rotation. "
-        f"Got: {type(reloaded_line['rs1']).__name__}.")
+        "Written Rotation (chi1) element `rs1` should reload as xt.Rotation. "
+        f"""Got: {type(reloaded_line["rs1"]).__name__}.""")
 
 
 ########################################
@@ -495,7 +495,7 @@ def test_refshift_writer_rotation_chi1_preserves_positive_rot_y_rad(tmp_path):
 
     assert reloaded_line["rs1"].rot_y_rad == pytest.approx(5.0E-3), (
         "Writer roundtrip should preserve positive Rotation rot_y_rad. "
-        f"Original: 5.0E-3, reloaded: {reloaded_line['rs1'].rot_y_rad}.")
+        f"""Original: 5.0E-3, reloaded: {reloaded_line["rs1"].rot_y_rad}.""")
 
 
 def test_refshift_writer_rotation_chi1_preserves_negative_rot_y_rad(tmp_path):
@@ -507,7 +507,7 @@ def test_refshift_writer_rotation_chi1_preserves_negative_rot_y_rad(tmp_path):
 
     assert reloaded_line["rs1"].rot_y_rad == pytest.approx(-5.0E-3), (
         "Writer roundtrip should preserve negative Rotation rot_y_rad. "
-        f"Original: -5.0E-3, reloaded: {reloaded_line['rs1'].rot_y_rad}.")
+        f"""Original: -5.0E-3, reloaded: {reloaded_line["rs1"].rot_y_rad}.""")
 
 
 def test_refshift_writer_rotation_chi1_is_accessible_as_optics_variable(tmp_path):
@@ -519,9 +519,9 @@ def test_refshift_writer_rotation_chi1_is_accessible_as_optics_variable(tmp_path
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["chi1_rs1"] == pytest.approx(5.0E-3), (
-        "Optics variable 'chi1_rs1' should exist in the environment after reload "
+        "Optics variable `chi1_rs1` should exist in the environment after reload "
         "and equal the original rot_y_rad. "
-        f"Got: {env['chi1_rs1']}.")
+        f"""Got: {env["chi1_rs1"]}.""")
 
 
 def test_refshift_writer_rotation_chi1_is_tunable_via_optics_variable(tmp_path):
@@ -535,8 +535,8 @@ def test_refshift_writer_rotation_chi1_is_tunable_via_optics_variable(tmp_path):
     env["chi1_rs1"] = 10.0E-3
 
     assert reloaded_line["rs1"].rot_y_rad == pytest.approx(10.0E-3), (
-        "Modifying optics variable 'chi1_rs1' should update the Rotation rot_y_rad. "
-        f"Got: {reloaded_line['rs1'].rot_y_rad}.")
+        "Modifying optics variable `chi1_rs1` should update the Rotation rot_y_rad. "
+        f"""Got: {reloaded_line["rs1"].rot_y_rad}.""")
 
 
 def test_refshift_writer_rotation_chi1_preserved_at_full_double_precision(tmp_path):
@@ -550,7 +550,7 @@ def test_refshift_writer_rotation_chi1_preserved_at_full_double_precision(tmp_pa
 
     assert env["chi1_rs1"] == pytest.approx(value_precise, rel = 1E-15), (
         "Writer roundtrip should preserve Rotation rot_y_rad at full double precision. "
-        f"Original: {value_precise!r}, reloaded env var: {env['chi1_rs1']!r}.")
+        f"""Original: {value_precise!r}, reloaded env var: {env["chi1_rs1"]!r}.""")
 
 
 ################################################################################
@@ -569,8 +569,8 @@ def test_refshift_writer_rotation_chi2_reloads_as_xsuite_rotation(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["rs1"], xt.Rotation), (
-        "Written Rotation (chi2) element 'rs1' should reload as xt.Rotation. "
-        f"Got: {type(reloaded_line['rs1']).__name__}.")
+        "Written Rotation (chi2) element `rs1` should reload as xt.Rotation. "
+        f"""Got: {type(reloaded_line["rs1"]).__name__}.""")
 
 
 ########################################
@@ -586,7 +586,7 @@ def test_refshift_writer_rotation_chi2_preserves_positive_rot_x_rad(tmp_path):
 
     assert reloaded_line["rs1"].rot_x_rad == pytest.approx(5.0E-3), (
         "Writer roundtrip should preserve positive Rotation rot_x_rad. "
-        f"Original: 5.0E-3, reloaded: {reloaded_line['rs1'].rot_x_rad}.")
+        f"""Original: 5.0E-3, reloaded: {reloaded_line["rs1"].rot_x_rad}.""")
 
 
 def test_refshift_writer_rotation_chi2_preserves_negative_rot_x_rad(tmp_path):
@@ -598,7 +598,7 @@ def test_refshift_writer_rotation_chi2_preserves_negative_rot_x_rad(tmp_path):
 
     assert reloaded_line["rs1"].rot_x_rad == pytest.approx(-5.0E-3), (
         "Writer roundtrip should preserve negative Rotation rot_x_rad. "
-        f"Original: -5.0E-3, reloaded: {reloaded_line['rs1'].rot_x_rad}.")
+        f"""Original: -5.0E-3, reloaded: {reloaded_line["rs1"].rot_x_rad}.""")
 
 
 def test_refshift_writer_rotation_chi2_is_accessible_as_optics_variable(tmp_path):
@@ -610,9 +610,9 @@ def test_refshift_writer_rotation_chi2_is_accessible_as_optics_variable(tmp_path
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["chi2_rs1"] == pytest.approx(5.0E-3), (
-        "Optics variable 'chi2_rs1' should exist in the environment after reload "
+        "Optics variable `chi2_rs1` should exist in the environment after reload "
         "and equal the original rot_x_rad. "
-        f"Got: {env['chi2_rs1']}.")
+        f"""Got: {env["chi2_rs1"]}.""")
 
 
 def test_refshift_writer_rotation_chi2_is_tunable_via_optics_variable(tmp_path):
@@ -626,8 +626,8 @@ def test_refshift_writer_rotation_chi2_is_tunable_via_optics_variable(tmp_path):
     env["chi2_rs1"] = 10.0E-3
 
     assert reloaded_line["rs1"].rot_x_rad == pytest.approx(10.0E-3), (
-        "Modifying optics variable 'chi2_rs1' should update the Rotation rot_x_rad. "
-        f"Got: {reloaded_line['rs1'].rot_x_rad}.")
+        "Modifying optics variable `chi2_rs1` should update the Rotation rot_x_rad. "
+        f"""Got: {reloaded_line["rs1"].rot_x_rad}.""")
 
 
 def test_refshift_writer_rotation_chi2_preserved_at_full_double_precision(tmp_path):
@@ -641,7 +641,7 @@ def test_refshift_writer_rotation_chi2_preserved_at_full_double_precision(tmp_pa
 
     assert env["chi2_rs1"] == pytest.approx(value_precise, rel = 1E-15), (
         "Writer roundtrip should preserve Rotation rot_x_rad at full double precision. "
-        f"Original: {value_precise!r}, reloaded env var: {env['chi2_rs1']!r}.")
+        f"""Original: {value_precise!r}, reloaded env var: {env["chi2_rs1"]!r}.""")
 
 
 ################################################################################
@@ -660,8 +660,8 @@ def test_refshift_writer_rotation_chi3_reloads_as_xsuite_rotation(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["rs1"], xt.Rotation), (
-        "Written Rotation (chi3) element 'rs1' should reload as xt.Rotation. "
-        f"Got: {type(reloaded_line['rs1']).__name__}.")
+        "Written Rotation (chi3) element `rs1` should reload as xt.Rotation. "
+        f"""Got: {type(reloaded_line["rs1"]).__name__}.""")
 
 
 ########################################
@@ -677,7 +677,7 @@ def test_refshift_writer_rotation_chi3_preserves_positive_rot_s_rad(tmp_path):
 
     assert reloaded_line["rs1"].rot_s_rad == pytest.approx(0.05), (
         "Writer roundtrip should preserve positive Rotation rot_s_rad. "
-        f"Original: 0.05, reloaded: {reloaded_line['rs1'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["rs1"].rot_s_rad}.""")
 
 
 def test_refshift_writer_rotation_chi3_preserves_negative_rot_s_rad(tmp_path):
@@ -689,7 +689,7 @@ def test_refshift_writer_rotation_chi3_preserves_negative_rot_s_rad(tmp_path):
 
     assert reloaded_line["rs1"].rot_s_rad == pytest.approx(-0.05), (
         "Writer roundtrip should preserve negative Rotation rot_s_rad. "
-        f"Original: -0.05, reloaded: {reloaded_line['rs1'].rot_s_rad}.")
+        f"""Original: -0.05, reloaded: {reloaded_line["rs1"].rot_s_rad}.""")
 
 
 def test_refshift_writer_rotation_chi3_is_accessible_as_optics_variable(tmp_path):
@@ -701,9 +701,9 @@ def test_refshift_writer_rotation_chi3_is_accessible_as_optics_variable(tmp_path
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["chi3_rs1"] == pytest.approx(0.05), (
-        "Optics variable 'chi3_rs1' should exist in the environment after reload "
+        "Optics variable `chi3_rs1` should exist in the environment after reload "
         "and equal the original rot_s_rad. "
-        f"Got: {env['chi3_rs1']}.")
+        f"""Got: {env["chi3_rs1"]}.""")
 
 
 def test_refshift_writer_rotation_chi3_is_tunable_via_optics_variable(tmp_path):
@@ -717,8 +717,8 @@ def test_refshift_writer_rotation_chi3_is_tunable_via_optics_variable(tmp_path):
     env["chi3_rs1"] = 0.10
 
     assert reloaded_line["rs1"].rot_s_rad == pytest.approx(0.10), (
-        "Modifying optics variable 'chi3_rs1' should update the Rotation rot_s_rad. "
-        f"Got: {reloaded_line['rs1'].rot_s_rad}.")
+        "Modifying optics variable `chi3_rs1` should update the Rotation rot_s_rad. "
+        f"""Got: {reloaded_line["rs1"].rot_s_rad}.""")
 
 
 def test_refshift_writer_rotation_chi3_preserved_at_full_double_precision(tmp_path):
@@ -732,7 +732,7 @@ def test_refshift_writer_rotation_chi3_preserved_at_full_double_precision(tmp_pa
 
     assert env["chi3_rs1"] == pytest.approx(value_precise, rel = 1E-15), (
         "Writer roundtrip should preserve Rotation rot_s_rad at full double precision. "
-        f"Original: {value_precise!r}, reloaded env var: {env['chi3_rs1']!r}.")
+        f"""Original: {value_precise!r}, reloaded env var: {env["chi3_rs1"]!r}.""")
 
 
 ################################################################################
@@ -765,32 +765,32 @@ def test_refshift_writer_preserves_all_five_types_in_one_line(tmp_path):
 
     assert reloaded_line["rsxy"].shift_x == pytest.approx( 1.0E-3), (
         f"Writer roundtrip should preserve Translation shift_x. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['rsxy'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["rsxy"].shift_x}.""")
     assert reloaded_line["rsxy"].shift_y == pytest.approx(-2.0E-3), (
         f"Writer roundtrip should preserve Translation shift_y. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['rsxy'].shift_y}.")
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["rsxy"].shift_y}.""")
     assert reloaded_line["rsdz"].shift_zeta == pytest.approx( 0.5E-3), (
         f"Writer roundtrip should preserve TimeDelay shift_zeta. "
-        f"Original: 0.5E-3, reloaded: {reloaded_line['rsdz'].shift_zeta}.")
+        f"""Original: 0.5E-3, reloaded: {reloaded_line["rsdz"].shift_zeta}.""")
     assert reloaded_line["rsyr"].rot_y_rad == pytest.approx( 3.0E-3), (
         f"Writer roundtrip should preserve Rotation rot_y_rad (chi1). "
-        f"Original: 3.0E-3, reloaded: {reloaded_line['rsyr'].rot_y_rad}.")
+        f"""Original: 3.0E-3, reloaded: {reloaded_line["rsyr"].rot_y_rad}.""")
     assert reloaded_line["rsxr"].rot_x_rad == pytest.approx(-4.0E-3), (
         f"Writer roundtrip should preserve Rotation rot_x_rad (chi2). "
-        f"Original: -4.0E-3, reloaded: {reloaded_line['rsxr'].rot_x_rad}.")
+        f"""Original: -4.0E-3, reloaded: {reloaded_line["rsxr"].rot_x_rad}.""")
     assert reloaded_line["rssr"].rot_s_rad == pytest.approx( 0.05),   (
         f"Writer roundtrip should preserve Rotation rot_s_rad (chi3). "
-        f"Original: 0.05, reloaded: {reloaded_line['rssr'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["rssr"].rot_s_rad}.""")
 
     assert env["dx_rsxy"]    == pytest.approx( 1.0E-3), (
-        "Optics variable 'dx_rsxy' should be accessible and correct.")
+        "Optics variable `dx_rsxy` should be accessible and correct.")
     assert env["dy_rsxy"]    == pytest.approx(-2.0E-3), (
-        "Optics variable 'dy_rsxy' should be accessible and correct.")
+        "Optics variable `dy_rsxy` should be accessible and correct.")
     assert env["dz_rsdz"]    == pytest.approx( 0.5E-3), (
-        "Optics variable 'dz_rsdz' should be accessible and correct.")
+        "Optics variable `dz_rsdz` should be accessible and correct.")
     assert env["chi1_rsyr"]  == pytest.approx( 3.0E-3), (
-        "Optics variable 'chi1_rsyr' should be accessible and correct.")
+        "Optics variable `chi1_rsyr` should be accessible and correct.")
     assert env["chi2_rsxr"]  == pytest.approx(-4.0E-3), (
-        "Optics variable 'chi2_rsxr' should be accessible and correct.")
+        "Optics variable `chi2_rsxr` should be accessible and correct.")
     assert env["chi3_rssr"]  == pytest.approx( 0.05),   (
-        "Optics variable 'chi3_rssr' should be accessible and correct.")
+        "Optics variable `chi3_rssr` should be accessible and correct.")

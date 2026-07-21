@@ -99,9 +99,9 @@ def test_pipeline_offset_marker_mark_moved_to_computed_s_position(write_lattice,
         f"s-position. Got: {list(line.element_names)}.")
     assert tt["s", "m1"] == pytest.approx(3.0), (
         "With OFFSET = 1.5, M1 should be reinserted at s = s(D2) + L(D2) * 0.5 "
-        f"= 2.0 + 1.0 = 3.0. Got: {tt['s', 'm1']:.6f}.")
+        f"""= 2.0 + 1.0 = 3.0. Got: {tt["s", "m1"]:.6f}.""")
     assert "d2..0" in list(line.element_names), (
-        "D2 should be split at the marker insertion point, producing 'd2..0'. "
+        "D2 should be split at the marker insertion point, producing `d2..0`. "
         f"Got: {list(line.element_names)}.")
 
 
@@ -148,7 +148,7 @@ def test_pipeline_offset_marker_fractional_offset_below_one_stays_in_place(
         f"Got: {list(line.element_names)}.")
     assert tt["s", "m1"] == pytest.approx(2.0), (
         "With OFFSET = 0.5 (Case 1), M1 should stay at its own nominal "
-        f"s = 2.0, not move into D2. Got: {tt['s', 'm1']:.6f}.")
+        f"""s = 2.0, not move into D2. Got: {tt["s", "m1"]:.6f}.""")
     assert "d2..0" not in list(line.element_names), (
         "A Case 1 offset marker should never split the following element. "
         f"Got: {list(line.element_names)}.")
@@ -194,7 +194,7 @@ def test_pipeline_offset_marker_offset_exactly_one_stays_in_place(
     assert tt["s", "m1"] == pytest.approx(2.0), (
         "With OFFSET = 1.0 (Case 1's inclusive upper boundary), M1 should "
         "stay at its own nominal s = 2.0, not walk one full element further "
-        f"to s = 5.0. Got: {tt['s', 'm1']:.6f}.")
+        f"""to s = 5.0. Got: {tt["s", "m1"]:.6f}.""")
 
 
 ################################################################################
@@ -238,7 +238,7 @@ def test_pipeline_offset_marker_moni_moved_to_computed_s_position(write_lattice,
         f"s-position. Got: {list(line.element_names)}.")
     assert tt["s", "bpm1"] == pytest.approx(3.0), (
         "With OFFSET = 1.5, BPM1 should be reinserted at s = s(D2) + L(D2) * 0.5 "
-        f"= 2.0 + 1.0 = 3.0. Got: {tt['s', 'bpm1']:.6f}.")
+        f"""= 2.0 + 1.0 = 3.0. Got: {tt["s", "bpm1"]:.6f}.""")
 
 
 ################################################################################
@@ -287,7 +287,7 @@ def test_pipeline_offset_marker_non_offset_marker_preserved_alongside_offset_mar
         f"Got: {list(line.element_names)}.")
     assert tt["s", "m2"] == pytest.approx(4.0), (
         "Non-offset marker M2 should remain at its original s = 4.0. "
-        f"Got: {tt['s', 'm2']:.6f}.")
+        f"""Got: {tt["s", "m2"]:.6f}.""")
 
 
 ################################################################################
@@ -336,10 +336,10 @@ def test_pipeline_offset_marker_multiple_offset_markers_all_moved(write_lattice,
         f"Got: {list(line.element_names)}.")
     assert tt["s", "m1"] == pytest.approx(2.0), (
         "M1 (before D1 of L = 4.0, OFFSET = 1.5) should be reinserted at "
-        f"s = 0.0 + 4.0 * 0.5 = 2.0. Got: {tt['s', 'm1']:.6f}.")
+        f"""s = 0.0 + 4.0 * 0.5 = 2.0. Got: {tt["s", "m1"]:.6f}.""")
     assert tt["s", "m2"] == pytest.approx(6.0), (
         "M2 (before D2 of L = 4.0, OFFSET = 1.5) should be reinserted at "
-        f"s = 4.0 + 4.0 * 0.5 = 6.0. Got: {tt['s', 'm2']:.6f}.")
+        f"""s = 4.0 + 4.0 * 0.5 = 6.0. Got: {tt["s", "m2"]:.6f}.""")
 
 
 ################################################################################
@@ -348,7 +348,7 @@ def test_pipeline_offset_marker_multiple_offset_markers_all_moved(write_lattice,
 def test_pipeline_offset_marker_reversed_reference_moved_to_computed_s_position(
         write_lattice, tmp_path):
     """
-    A SAD MARK with OFFSET = 1.5 (Case 2), referenced with SAD's '-' (reversed)
+    A SAD MARK with OFFSET = 1.5 (Case 2), referenced with SAD's `-` (reversed)
     sign, should be installed 0.5 of the way into the element *preceding* its
     nominal position -- not the element following it. Confirmed against real
     SAD (survey_sad) on this exact lattice: the forward M placement lands at
@@ -384,12 +384,12 @@ def test_pipeline_offset_marker_reversed_reference_moved_to_computed_s_position(
 
     assert tt["s", "m.0"] == pytest.approx(3.0), (
         "The forward M placement should be unaffected by this fix: 0.5 into "
-        f"the following drift, s = 3.0. Got: {tt['s', 'm.0']:.6f}.")
+        f"""the following drift, s = 3.0. Got: {tt["s", "m.0"]:.6f}.""")
     assert tt["s", "m.1"] == pytest.approx(5.0), (
         "The reversed -M placement should be installed 0.5 into the drift "
         "*preceding* its nominal position (s = 5.0), matching real SAD, not "
         "0.5 into the following drift (s = 7.0). "
-        f"Got: {tt['s', 'm.1']:.6f}.")
+        f"""Got: {tt["s", "m.1"]:.6f}.""")
 
 
 ################################################################################
@@ -482,4 +482,4 @@ def test_pipeline_offset_marker_symbolic_expression_resolves_to_computed_s_posit
         "expression context.")
     assert tt["s", "m1"] == pytest.approx(3.0), (
         "With L0 = 1.5, M1 should be reinserted at s = s(D2) + L(D2) * 0.5 "
-        f"= 2.0 + 1.0 = 3.0. Got: {tt['s', 'm1']:.6f}.")
+        f"""= 2.0 + 1.0 = 3.0. Got: {tt["s", "m1"]:.6f}.""")

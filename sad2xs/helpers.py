@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -58,7 +58,7 @@ def species_from_mass_and_charge(mass0_ev: float, q0: float) -> str | None:
 ################################################################################
 # Section Heading Function
 ################################################################################
-def log_section_heading(heading: str, mode: str = 'section') -> None:
+def log_section_heading(heading: str, mode: str = "section") -> None:
     """
     Log a section heading at INFO level, framed by a horizontal rule.
 
@@ -76,9 +76,9 @@ def log_section_heading(heading: str, mode: str = 'section') -> None:
     ValueError
         If `mode` is not "banner" or "section".
     """
-    widths  = {'banner': 80, 'section': 40}
+    widths  = {"banner": 80, "section": 40}
     if mode not in widths:
-        raise ValueError("Invalid mode. Use 'banner' or 'section'.")
+        raise ValueError("""Invalid mode. Use "banner" or "section".""")
     bar     = "#" * widths[mode]
     logger.info("\n" + bar + "\n" + heading + "\n" + bar)
 

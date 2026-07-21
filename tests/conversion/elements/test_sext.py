@@ -294,9 +294,9 @@ def test_sext_converter_creates_all_sextupoles(
             element_name    = sext_name,
             element_type    = xt.Sextupole)
         assert sext.length == pytest.approx(0.5), (
-            f"Converted sextupole '{sext_name}' should preserve length.")
+            f"Converted sextupole `{sext_name}` should preserve length.")
         assert sext.k2 == pytest.approx(expected_k2), (
-            f"Converted sextupole '{sext_name}' should preserve integrated "
+            f"Converted sextupole `{sext_name}` should preserve integrated "
             "strength divided by length.")
 
 ########################################
@@ -668,11 +668,11 @@ def test_sext_pipeline_preserves_names_order_lengths_and_strengths(write_lattice
             ("sd", -0.2),
             ("sz", 0.0)]:
         assert isinstance(line[sext_name], xt.Sextupole), (
-            f"Converted element '{sext_name}' should be an Xsuite Sextupole.")
+            f"Converted element `{sext_name}` should be an Xsuite Sextupole.")
         assert line[sext_name].length == pytest.approx(0.5), (
-            f"Converted sextupole '{sext_name}' should preserve length.")
+            f"Converted sextupole `{sext_name}` should preserve length.")
         assert line[sext_name].k2 == pytest.approx(expected_k2), (
-            f"Converted sextupole '{sext_name}' should preserve integrated "
+            f"Converted sextupole `{sext_name}` should preserve integrated "
             "strength divided by length.")
 
 def test_sext_pipeline_preserves_offsets_and_rotation(write_lattice):

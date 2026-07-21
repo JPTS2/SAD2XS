@@ -105,7 +105,7 @@ def test_generate_survey_print_function_defines_save_survey_file():
     result = generate_survey_print_function()
 
     assert "SaveSurveyFile[filename_]" in result, (
-        "generate_survey_print_function should define 'SaveSurveyFile[filename_]'. "
+        "generate_survey_print_function should define `SaveSurveyFile[filename_]`. "
         f"Got: {result[:200]!r}.")
 
 
@@ -119,7 +119,7 @@ def test_generate_survey_print_function_includes_position_columns():
 
     for column in ("GX", "GY", "GZ"):
         assert column in result, (
-            f"generate_survey_print_function should include column '{column}'. "
+            f"generate_survey_print_function should include column `{column}`. "
             f"Got: {result[:200]!r}.")
 
 
@@ -133,7 +133,7 @@ def test_generate_survey_print_function_includes_rotation_columns():
 
     for column in ("GCHI1", "GCHI2", "GCHI3"):
         assert column in result, (
-            f"generate_survey_print_function should include column '{column}'. "
+            f"generate_survey_print_function should include column `{column}`. "
             f"Got: {result[:200]!r}.")
 
 
@@ -168,7 +168,7 @@ def test_survey_sad_returns_table_with_expected_columns(tmp_path, monkeypatch):
     for column in ("s", "l", "X", "Y", "Z", "theta", "phi", "psi",
                    "name", "element_type"):
         assert column in sv.keys(), (
-            f"survey_sad should return a table with column '{column}'.")
+            f"survey_sad should return a table with column `{column}`.")
 
 
 def test_survey_sad_elements_are_sorted_by_s_position(tmp_path, monkeypatch):
@@ -194,7 +194,7 @@ def test_survey_sad_s_at_start_is_zero(tmp_path, monkeypatch):
 
     assert sv["s", "START"] == pytest.approx(0.0), (
         "START marker should be at s = 0 in a transfer-line survey. "
-        f"Got: s = {sv['s', 'START']}.")
+        f"""Got: s = {sv["s", "START"]}.""")
 
 
 def test_survey_sad_no_nan_in_standard_columns(tmp_path, monkeypatch):
@@ -208,7 +208,7 @@ def test_survey_sad_no_nan_in_standard_columns(tmp_path, monkeypatch):
     for column in ("s", "l", "X", "Y", "Z", "theta", "phi", "psi"):
         values = np.asarray(getattr(sv, column))
         assert np.all(np.isfinite(values)), (
-            f"Column '{column}' should contain only finite values. "
+            f"Column `{column}` should contain only finite values. "
             f"Got: {values}.")
 
 
@@ -240,7 +240,7 @@ def test_survey_sad_z_position_is_lattice_length_at_end_for_straight_lattice(
 
     assert sv["Z", "END"] == pytest.approx(1.0), (
         "Z at END should equal the lattice length (1.0 m) for a straight "
-        f"drift lattice. Got: Z = {sv['Z', 'END']}.")
+        f"""drift lattice. Got: Z = {sv["Z", "END"]}.""")
 
 
 def test_survey_sad_element_length_is_preserved(tmp_path, monkeypatch):
@@ -255,34 +255,34 @@ def test_survey_sad_element_length_is_preserved(tmp_path, monkeypatch):
 
     assert l_arr[names.index("TEST_DRIFT")] == pytest.approx(1.0), (
         "Element length l for TEST_DRIFT should be 1.0 m. "
-        f"Got: {l_arr[names.index('TEST_DRIFT')]}.")
+        f"""Got: {l_arr[names.index("TEST_DRIFT")]}.""")
     assert l_arr[names.index("START")] == pytest.approx(0.0), (
         "Element length l for START (a marker) should be 0.0 m. "
-        f"Got: {l_arr[names.index('START')]}.")
+        f"""Got: {l_arr[names.index("START")]}.""")
     assert l_arr[names.index("END")] == pytest.approx(0.0), (
         "Element length l for END (a marker) should be 0.0 m. "
-        f"Got: {l_arr[names.index('END')]}.")
+        f"""Got: {l_arr[names.index("END")]}.""")
 
 
 def test_survey_sad_maps_known_element_types(tmp_path, monkeypatch):
     """
     survey_sad should translate SAD element type strings to their xtrack
-    equivalents: MARK → 'Marker', DRIFT → 'Drift'. An unknown type maps to
-    'Unknown'.
+    equivalents: MARK → `Marker`, DRIFT → `Drift`. An unknown type maps to
+    `Unknown`.
     """
     sv     = _run_survey(tmp_path, monkeypatch)
     names  = list(sv.name)
     etypes = list(sv.element_type)
 
     assert etypes[names.index("START")] == "Marker", (
-        "SAD MARK elements should map to element_type 'Marker'. "
-        f"Got: {etypes[names.index('START')]}.")
+        "SAD MARK elements should map to element_type `Marker`. "
+        f"""Got: {etypes[names.index("START")]}.""")
     assert etypes[names.index("END")] == "Marker", (
-        "SAD MARK elements should map to element_type 'Marker'. "
-        f"Got: {etypes[names.index('END')]}.")
+        "SAD MARK elements should map to element_type `Marker`. "
+        f"""Got: {etypes[names.index("END")]}.""")
     assert etypes[names.index("TEST_DRIFT")] == "Drift", (
-        "SAD DRIFT elements should map to element_type 'Drift'. "
-        f"Got: {etypes[names.index('TEST_DRIFT')]}.")
+        "SAD DRIFT elements should map to element_type `Drift`. "
+        f"""Got: {etypes[names.index("TEST_DRIFT")]}.""")
 
 
 def test_survey_sad_reverse_element_order_flips_s_axis(
@@ -302,10 +302,10 @@ def test_survey_sad_reverse_element_order_flips_s_axis(
 
     assert s_reversed[names.index("END")] == pytest.approx(0.0), (
         "With reverse_element_order=True, END should be at s = 0. "
-        f"Got s at END: {s_reversed[names.index('END')]}.")
+        f"""Got s at END: {s_reversed[names.index("END")]}.""")
     assert s_reversed[names.index("START")] == pytest.approx(total_length), (
         "With reverse_element_order=True, START should be at s = total_length. "
-        f"Got s at START: {s_reversed[names.index('START')]}; "
+        f"""Got s at START: {s_reversed[names.index("START")]}; """
         f"expected: {total_length}.")
 
 
@@ -350,8 +350,8 @@ def test_survey_sad_reverse_element_order_matches_sad_native_reversed_line(
             native_val   = getattr(sv_native, column)[name_to_idx_native[name]]
             reversed_val = getattr(sv_reversed, column)[name_to_idx_reversed[name]]
             assert reversed_val == pytest.approx(native_val, abs = 1E-9), (
-                f"survey_sad(reverse_element_order=True) column '{column}' "
-                f"at '{name}' should match SAD's native REV line exactly. "
+                f"survey_sad(reverse_element_order=True) column `{column}` "
+                f"at `{name}` should match SAD's native REV line exactly. "
                 f"Native: {native_val}, reversed: {reversed_val}.")
 
 

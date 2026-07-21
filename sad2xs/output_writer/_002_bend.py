@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -99,15 +99,15 @@ def create_bend_lattice_file_information(
 
     for hbend_name, hbend_length in zip(hbend_names, hbend_lengths):
         output_string += f"""
-env.new(name = '{hbend_name}', prototype = xt.Bend, length = {hbend_length})"""
+env.new(name = "{hbend_name}", prototype = xt.Bend, length = {hbend_length})"""
 
     for vbend_name, vbend_length in zip(vbend_names, vbend_lengths):
         output_string += f"""
-env.new(name = '{vbend_name}', prototype = xt.Bend, length = {vbend_length}, rot_s_rad = +np.pi/2)"""
+env.new(name = "{vbend_name}", prototype = xt.Bend, length = {vbend_length}, rot_s_rad = +np.pi/2)"""
 
     for sbend_name, sbend_length in zip(sbend_names, sbend_lengths):
         output_string += f"""
-env.new(name = '{sbend_name}', prototype = xt.Bend, length = {sbend_length})"""
+env.new(name = "{sbend_name}", prototype = xt.Bend, length = {sbend_length})"""
 
     output_string += "\n"
 
@@ -138,19 +138,19 @@ env.new(name = '{sbend_name}', prototype = xt.Bend, length = {sbend_length})"""
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, source_name):
                 bend_generation = f"""
-env.new(name = '{replica_name}', prototype = '{hbend}', angle = {angle:.24f}, k0 = 'k0_{replica_variable}')"""
+env.new(name = "{replica_name}", prototype = "{hbend}", angle = {angle:.24f}, k0 = "k0_{replica_variable}")"""
 
             # Otherwise do the full version
             else:
                 bend_generation = f"""
 env.new(
-    name                    = '{replica_name}',
-    prototype               = '{hbend}',
+    name                    = "{replica_name}",
+    prototype               = "{hbend}",
     angle                   = {angle:.24f},
-    k0                      = 'k0_{replica_variable}'"""
+    k0                      = "k0_{replica_variable}\""""
                 if bend.k1 != 0:
                     bend_generation += f""",
-    k1                      = 'k1_{replica_variable}'"""
+    k1                      = "k1_{replica_variable}\""""
             # Append edge entry angles
                 if bend.edge_entry_angle != 0:
                     bend_generation += f""",
@@ -179,10 +179,10 @@ env.new(
                 # Append shifts if they exist
                 if bend.shift_x != 0:
                     bend_generation += f""",
-    shift_x                 = '{bend.shift_x}'"""
+    shift_x                 = "{bend.shift_x}\""""
                 if bend.shift_y != 0:
                     bend_generation += f""",
-    shift_y                 = '{bend.shift_y}'"""
+    shift_y                 = "{bend.shift_y}\""""
                 # Combined multipole components
                 knl_str = get_knl_string(np.asarray(bend.knl))
                 ksl_str = get_knl_string(np.asarray(bend.ksl))
@@ -218,19 +218,19 @@ env.new(
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, source_name):
                 bend_generation = f"""
-env.new(name = '{replica_name}', prototype = '{vbend}', angle = {angle:.24f}, k0 = 'k0_{replica_variable}')"""
+env.new(name = "{replica_name}", prototype = "{vbend}", angle = {angle:.24f}, k0 = "k0_{replica_variable}")"""
 
             # Otherwise do the full version
             else:
                 bend_generation = f"""
 env.new(
-    name                    = '{replica_name}',
-    prototype               = '{vbend}',
+    name                    = "{replica_name}",
+    prototype               = "{vbend}",
     angle                   = {angle:.24f},
-    k0                      = 'k0_{replica_variable}'"""
+    k0                      = "k0_{replica_variable}\""""
                 if bend.k1 != 0:
                     bend_generation += f""",
-    k1                      = 'k1_{replica_variable}'"""
+    k1                      = "k1_{replica_variable}\""""
             # Append edge entry angles
                 if bend.edge_entry_angle != 0:
                     bend_generation += f""",
@@ -259,10 +259,10 @@ env.new(
                 # Append shifts if they exist
                 if bend.shift_x != 0:
                     bend_generation += f""",
-    shift_x                 = '{bend.shift_x}'"""
+    shift_x                 = "{bend.shift_x}\""""
                 if bend.shift_y != 0:
                     bend_generation += f""",
-    shift_y                 = '{bend.shift_y}'"""
+    shift_y                 = "{bend.shift_y}\""""
                 # Combined multipole components
                 knl_str = get_knl_string(np.asarray(bend.knl))
                 ksl_str = get_knl_string(np.asarray(bend.ksl))
@@ -298,19 +298,19 @@ env.new(
             # If simple try to make it more compact
             if check_is_simple_bend_corr(line, source_name):
                 bend_generation = f"""
-env.new(name = '{replica_name}', prototype = '{sbend}', angle = {angle:.24f}, k0 = 'k0_{replica_variable}', rot_s_rad = '{rot_s_rad}')"""
+env.new(name = "{replica_name}", prototype = "{sbend}", angle = {angle:.24f}, k0 = "k0_{replica_variable}", rot_s_rad = "{rot_s_rad}")"""
 
             # Otherwise do the full version
             else:
                 bend_generation = f"""
 env.new(
-    name                    = '{replica_name}',
-    prototype               = '{sbend}',
+    name                    = "{replica_name}",
+    prototype               = "{sbend}",
     angle                   = {angle:.24f},
-    k0                      = 'k0_{replica_variable}'"""
+    k0                      = "k0_{replica_variable}\""""
                 if bend.k1 != 0:
                     bend_generation += f""",
-    k1                      = 'k1_{replica_variable}'"""
+    k1                      = "k1_{replica_variable}\""""
             # Append edge entry angles
                 if bend.edge_entry_angle != 0:
                     bend_generation += f""",
@@ -339,13 +339,13 @@ env.new(
                 # Append shifts if they exist
                 if bend.shift_x != 0:
                     bend_generation += f""",
-    shift_x                 = '{bend.shift_x}'"""
+    shift_x                 = "{bend.shift_x}\""""
                 if bend.shift_y != 0:
                     bend_generation += f""",
-    shift_y                 = '{bend.shift_y}'"""
+    shift_y                 = "{bend.shift_y}\""""
             # In the case of a skew bend, we need to add a rotation
                 bend_generation += f""",
-    rot_s_rad               = '{rot_s_rad}'"""
+    rot_s_rad               = "{rot_s_rad}\""""
                 # Combined multipole components
                 knl_str = get_knl_string(np.asarray(bend.knl))
                 ksl_str = get_knl_string(np.asarray(bend.ksl))
@@ -458,10 +458,10 @@ def create_bend_optics_file_information(
 
         if k0 is not None:
             output_string += f"""
-    {f'k0_{bend_variable}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k0_{bend_variable}') + 4)}{'= '}{k0:.24f},"""
+    {f"k0_{bend_variable}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k0_{bend_variable}") + 4)}{"= "}{k0:.24f},"""
         if k1 is not None:
             output_string += f"""
-    {f'k1_{bend_variable}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k1_{bend_variable}') + 4)}{'= '}{k1:.24f},"""
+    {f"k1_{bend_variable}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k1_{bend_variable}") + 4)}{"= "}{k1:.24f},"""
 
     ########################################
     # Return

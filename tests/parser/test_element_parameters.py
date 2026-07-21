@@ -50,7 +50,7 @@ def test_split_element_parameters_empty_string_returns_empty_list():
 
 def test_split_element_parameters_missing_value_raises_clear_error():
     """
-    A parameter name followed by '=' should require a value.
+    A parameter name followed by `=` should require a value.
     """
     with pytest.raises(ValueError, match = "Expected a value"):
         split_element_parameters("l=")

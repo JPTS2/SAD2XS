@@ -51,10 +51,10 @@ def _build_marker_line(*names):
     """
     Build a minimal Xsuite line containing one xt.Marker per name provided,
     surrounded by start and end markers. The start and end markers are always
-    named 'start' and 'end'. Additional marker names are passed as positional
+    named `start` and `end`. Additional marker names are passed as positional
     arguments.
 
-    Example: _build_marker_line('m1', 'm2') → ['start', 'm1', 'm2', 'end']
+    Example: _build_marker_line(`m1`, `m2`) → [`start`, `m1`, `m2`, `end`]
     """
     all_names = ["start"] + list(names) + ["end"]
     elements  = [xt.Marker() for _ in all_names]
@@ -78,8 +78,8 @@ def test_marker_writer_reloads_as_xsuite_marker(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["m1"], xt.Marker), (
-        "Written Marker element 'm1' should reload as xt.Marker. "
-        f"Got: {type(reloaded_line['m1']).__name__}.")
+        "Written Marker element `m1` should reload as xt.Marker. "
+        f"""Got: {type(reloaded_line["m1"]).__name__}.""")
 
 
 def test_marker_writer_preserves_element_name(tmp_path):
@@ -91,13 +91,13 @@ def test_marker_writer_preserves_element_name(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert "m1" in list(reloaded_line.element_names), (
-        "Reloaded line should contain Marker element 'm1'. "
+        "Reloaded line should contain Marker element `m1`. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
 def test_marker_writer_preserves_start_and_end_markers(tmp_path):
     """
-    The conventional 'start' and 'end' markers that bracket every line should
+    The conventional `start` and `end` markers that bracket every line should
     both survive the write and reload cycle.
     """
     original_line = _build_marker_line()
@@ -105,10 +105,10 @@ def test_marker_writer_preserves_start_and_end_markers(tmp_path):
 
     names = list(reloaded_line.element_names)
     assert "start" in names, (
-        "Reloaded line should contain 'start' marker. "
+        "Reloaded line should contain `start` marker. "
         f"Got: {names}.")
     assert "end" in names, (
-        "Reloaded line should contain 'end' marker. "
+        "Reloaded line should contain `end` marker. "
         f"Got: {names}.")
 
 
@@ -123,7 +123,7 @@ def test_marker_writer_preserves_multiple_markers(tmp_path):
     names = list(reloaded_line.element_names)
     for name in ("ma", "mb", "mc"):
         assert name in names, (
-            f"Reloaded line should contain marker '{name}'. Got: {names}.")
+            f"Reloaded line should contain marker `{name}`. Got: {names}.")
 
 
 def test_marker_writer_preserves_element_order(tmp_path):
@@ -153,7 +153,7 @@ def test_marker_writer_reloads_all_markers_as_xsuite_marker(tmp_path):
 
     for name in ("start", "ma", "mb", "end"):
         assert isinstance(reloaded_line[name], xt.Marker), (
-            f"Element '{name}' should reload as xt.Marker. "
+            f"Element `{name}` should reload as xt.Marker. "
             f"Got: {type(reloaded_line[name]).__name__}.")
 
 
@@ -202,7 +202,7 @@ def test_marker_writer_offset_marker_is_present_in_reloaded_line(tmp_path):
         offset_marker_locations = {"om1": [0.5]})
 
     assert "om1" in list(reloaded_line.element_names), (
-        "Offset marker 'om1' should appear in the reloaded line element_names. "
+        "Offset marker `om1` should appear in the reloaded line element_names. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
@@ -218,8 +218,8 @@ def test_marker_writer_offset_marker_reloads_as_xsuite_marker(tmp_path):
         offset_marker_locations = {"om1": [0.5]})
 
     assert isinstance(reloaded_line["om1"], xt.Marker), (
-        "Offset marker 'om1' should reload as xt.Marker. "
-        f"Got: {type(reloaded_line['om1']).__name__}.")
+        "Offset marker `om1` should reload as xt.Marker. "
+        f"""Got: {type(reloaded_line["om1"]).__name__}.""")
 
 
 def test_marker_writer_offset_marker_is_inserted_at_correct_s_position(tmp_path):
@@ -235,9 +235,9 @@ def test_marker_writer_offset_marker_is_inserted_at_correct_s_position(tmp_path)
         tmp_path                = tmp_path,
         offset_marker_locations = {"om1": [0.5]})
 
-    s_om1 = reloaded_line.get_table()['s', 'om1']
+    s_om1 = reloaded_line.get_table()["s", "om1"]
     assert s_om1 == pytest.approx(0.5), (
-        "Offset marker 'om1' should be inserted at s = 0.5 m. "
+        "Offset marker `om1` should be inserted at s = 0.5 m. "
         f"Got: s = {s_om1}.")
 
 
@@ -254,13 +254,13 @@ def test_marker_writer_multiple_offset_markers_at_distinct_positions(tmp_path):
 
     names = list(reloaded_line.element_names)
     assert "oma" in names, (
-        f"Offset marker 'oma' should be in the reloaded line. Got: {names}.")
+        f"Offset marker `oma` should be in the reloaded line. Got: {names}.")
     assert "omb" in names, (
-        f"Offset marker 'omb' should be in the reloaded line. Got: {names}.")
+        f"Offset marker `omb` should be in the reloaded line. Got: {names}.")
 
-    s_oma = reloaded_line.get_table()['s', 'oma']
-    s_omb = reloaded_line.get_table()['s', 'omb']
+    s_oma = reloaded_line.get_table()["s", "oma"]
+    s_omb = reloaded_line.get_table()["s", "omb"]
     assert s_oma == pytest.approx(0.3), (
-        f"Offset marker 'oma' should be at s = 0.3. Got: {s_oma}.")
+        f"Offset marker `oma` should be at s = 0.3. Got: {s_oma}.")
     assert s_omb == pytest.approx(0.7), (
-        f"Offset marker 'omb' should be at s = 0.7. Got: {s_omb}.")
+        f"Offset marker `omb` should be at s = 0.7. Got: {s_omb}.")

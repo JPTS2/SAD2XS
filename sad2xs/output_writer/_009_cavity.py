@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -65,7 +65,7 @@ def create_cavity_lattice_file_information(
     ########################################
     unique_cavi_names       = []
     unique_cavi_variables   = []
-    for cavi in line_table.rows[line_table.element_type == 'Cavity'].name:
+    for cavi in line_table.rows[line_table.element_type == "Cavity"].name:
         parentname      = get_parentname(cavi)
         variablename    = get_variablename(cavi)
         if parentname not in unique_cavi_names:
@@ -103,21 +103,21 @@ def create_cavity_lattice_file_information(
 
         cavity_generation   = f"""
 env.new(
-    name        = '{cavi_name}',
+    name        = "{cavi_name}",
     prototype   = xt.Cavity"""
         if length != 0:
             cavity_generation += f""",
     length      = {length}"""
         if harmonic_value != 0:
             cavity_generation += f""",
-    harmonic    = 'harm_{cavi_variable_name}'"""
+    harmonic    = "harm_{cavi_variable_name}\""""
         else:
             cavity_generation += f""",
-    frequency   = 'freq_{cavi_variable_name} * (1 + fshift)'"""
+    frequency   = "freq_{cavi_variable_name} * (1 + fshift)\""""
         cavity_generation += f""",
-    voltage     = 'volt_{cavi_variable_name}'"""
+    voltage     = "volt_{cavi_variable_name}\""""
         cavity_generation += f""",
-    phase       = 'phase_{cavi_variable_name}'"""
+    phase       = "phase_{cavi_variable_name}\""""
 
         # Close the element definition
         cavity_generation += """)"""
@@ -146,7 +146,7 @@ def create_cavity_optics_file_information(
     the cavity has a non-zero harmonic number) or `freq_<name>`
     (otherwise) per distinct cavity, aligned to
     `config.OUTPUT_STRING_SEP`, for use inside the generated
-    `env.vars.update(...)` call. Reversed ('-'-prefixed) cavities are
+    `env.vars.update(...)` call. Reversed (`-`-prefixed) cavities are
     skipped, since they share the same optics variables as their
     non-reversed counterpart.
 
@@ -177,7 +177,7 @@ def create_cavity_optics_file_information(
     ########################################
     unique_cavi_names       = []
     unique_cavi_variables   = []
-    for cavi in line_table.rows[line_table.element_type == 'Cavity'].name:
+    for cavi in line_table.rows[line_table.element_type == "Cavity"].name:
         parentname      = get_parentname(cavi)
         variablename    = get_variablename(cavi)
         if parentname not in unique_cavi_names:
@@ -200,7 +200,7 @@ def create_cavity_optics_file_information(
 
     for cavi, variable_name in zip(unique_cavi_names, unique_cavi_variables):
 
-        if cavi.startswith('-'):
+        if cavi.startswith("-"):
             continue
 
         freq    = 0
@@ -246,14 +246,14 @@ def create_cavity_optics_file_information(
 
         if harmonic != 0:
             output_string += f"""
-    {f'harm_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'harm_{variable_name}') + 4)}{'= '}{harmonic:.24f},"""
+    {f"harm_{variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"harm_{variable_name}") + 4)}{"= "}{harmonic:.24f},"""
         else:
             output_string += f"""
-    {f'freq_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'freq_{variable_name}') + 4)}{'= '}{freq:.24f},"""
+    {f"freq_{variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"freq_{variable_name}") + 4)}{"= "}{freq:.24f},"""
         output_string += f"""
-    {f'volt_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'volt_{variable_name}') + 4)}{'= '}{volt:.24f},"""
+    {f"volt_{variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"volt_{variable_name}") + 4)}{"= "}{volt:.24f},"""
         output_string += f"""
-    {f'phase_{variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'phase_{variable_name}') + 4)}{'= '}{phase:.24f},"""
+    {f"phase_{variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"phase_{variable_name}") + 4)}{"= "}{phase:.24f},"""
 
     ########################################
     # Return

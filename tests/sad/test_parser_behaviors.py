@@ -38,7 +38,7 @@ from sad2xs.sad_helpers import twiss_sad
 def test_global_keyword_prefix_collision_is_accepted_as_variable(
         sad_accepts, name, value):
     """
-    Names that begin with a SAD global keyword followed by '_...' should be
+    Names that begin with a SAD global keyword followed by `_...` should be
     accepted as plain user variables, not absorbed as the special global.
     Covers MOMENTUM, MASS, CHARGE, and FSHIFT prefix collisions.
     """
@@ -144,7 +144,7 @@ def test_fshift_as_element_name_is_rejected_by_sad(sad_rejects):
 def test_element_parameter_with_nested_parentheses_evaluates_correctly(tmp_path):
     """
     SAD accepts nested parentheses in element parameter values.
-    '(L0 + DL) / 2' with L0=2.0, DL=0.5 should give a drift of length 1.25.
+    `(L0 + DL) / 2` with L0=2.0, DL=0.5 should give a drift of length 1.25.
     """
     lattice = tmp_path / "test.sad"
     lattice.write_text(
@@ -166,7 +166,7 @@ def test_element_parameter_with_nested_parentheses_evaluates_correctly(tmp_path)
     finally:
         os.chdir(cwd)
     assert tw["s"][-1] == pytest.approx(1.25), (
-        "Nested parentheses expression '(L0 + DL) / 2' should evaluate to 1.25.")
+        "Nested parentheses expression `(L0 + DL) / 2` should evaluate to 1.25.")
 
 
 @pytest.mark.parametrize("func_expr, expected_length", [
@@ -203,7 +203,7 @@ def test_element_parameter_math_function_evaluates_correctly(tmp_path, func_expr
     finally:
         os.chdir(cwd)
     assert tw["s"][-1] == expected_length, (
-        f"Math function '{func_expr}' should evaluate to {expected_length}.")
+        f"Math function `{func_expr}` should evaluate to {expected_length}.")
 
 
 @pytest.mark.parametrize("func_expr", [
@@ -231,7 +231,7 @@ def test_unsupported_math_function_is_rejected_by_sad(sad_rejects, func_expr):
 
 def test_line_without_equals_produces_correct_length(tmp_path):
     """
-    SAD accepts LINE definitions without '='. Verify that the resulting line
+    SAD accepts LINE definitions without `=`. Verify that the resulting line
     still contains the expected element by checking the total s-coordinate.
     """
     lattice = tmp_path / "test.sad"
@@ -252,7 +252,7 @@ def test_line_without_equals_produces_correct_length(tmp_path):
     finally:
         os.chdir(cwd)
     assert tw["s"][-1] == pytest.approx(1.0), (
-        "LINE without '=' should produce a line with the expected total length.")
+        "LINE without `=` should produce a line with the expected total length.")
 
 
 def test_line_without_parentheses_produces_correct_length(tmp_path):
@@ -297,10 +297,10 @@ def test_malformed_line_extra_closing_parenthesis_is_rejected_by_sad(sad_rejects
 
 def test_trailing_operator_expression_silently_absorbs_next_token(tmp_path):
     """
-    SAD accepts 'A = 1.0 +;' without error but silently absorbs the next
+    SAD accepts `A = 1.0 +;` without error but silently absorbs the next
     available numeric token — in this case the beam momentum (1.0 GeV = 1e9 eV
     in SAD internal units) — giving A = 1e9 rather than 1.0. This is a silent
-    corruption: the trailing '+' is not a syntax error in SAD but the result is
+    corruption: the trailing `+` is not a syntax error in SAD but the result is
     meaningless. SAD2XS should catch this and raise a clear error.
     """
     lattice = tmp_path / "test.sad"
@@ -323,7 +323,7 @@ def test_trailing_operator_expression_silently_absorbs_next_token(tmp_path):
         os.chdir(cwd)
     assert tw["s"][-1] == pytest.approx(1e9), (
         "SAD silently absorbs the momentum value (1e9 eV) into the trailing "
-        "'+', producing A = 1e9 rather than 1.0.")
+        "`+`, producing A = 1e9 rather than 1.0.")
 
 
 ################################################################################

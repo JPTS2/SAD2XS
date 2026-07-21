@@ -192,7 +192,7 @@ def test_track_sad_returns_expected_keys(tmp_path, monkeypatch):
 
     for key in ("x", "px", "y", "py", "zeta", "delta", "state"):
         assert key in result, (
-            f"track_sad result should contain key '{key}'. "
+            f"track_sad result should contain key `{key}`. "
             f"Got keys: {list(result.keys())}.")
 
 
@@ -207,7 +207,7 @@ def test_track_sad_output_shape_matches_n_particles(tmp_path, monkeypatch):
 
     for key in ("x", "px", "y", "py", "zeta", "delta", "state"):
         assert result[key].shape == (n,), (
-            f"track_sad result['{key}'] should have shape ({n},). "
+            f"track_sad result[`{key}`] should have shape ({n},). "
             f"Got: {result[key].shape}.")
 
 
@@ -229,7 +229,7 @@ def test_track_sad_turn_by_turn_shape_matches_particles_and_turns(
 
     for key in ("x", "px", "y", "py", "zeta", "delta", "state"):
         assert result[key].shape == (n_p, n_t + 1), (
-            f"With turn_by_turn_monitor=True, result['{key}'] should have "
+            f"With turn_by_turn_monitor=True, result[`{key}`] should have "
             f"shape ({n_p}, {n_t + 1}). Got: {result[key].shape}.")
 
 
@@ -257,14 +257,14 @@ def test_track_sad_on_axis_particle_stays_on_axis_in_drift(
 def test_track_sad_surviving_particles_have_state_one(tmp_path, monkeypatch):
     """
     Particles that survive tracking through a short drift should have state = 1
-    (alive). SAD's 'alive' flag is 1 for surviving particles and 0 for lost
+    (alive). SAD's `alive` flag is 1 for surviving particles and 0 for lost
     ones.
     """
     result = _run_track(tmp_path, monkeypatch, n_particles = 5)
 
     assert np.all(result["state"] == 1), (
         "All particles should be alive (state = 1) after tracking through a "
-        f"short drift. Got states: {result['state']}.")
+        f"""short drift. Got states: {result["state"]}.""")
 
 
 def test_track_sad_marker_only_line_is_identity(tmp_path, monkeypatch):
@@ -334,6 +334,6 @@ def test_track_sad_drift_applies_correct_transverse_map(tmp_path, monkeypatch):
 
     assert result["x"][0] == pytest.approx(px0 * 1.0, abs = 1E-9), (
         f"After a 1 m drift with px0 = {px0}, x should be px0 × L = {px0 * 1.0} m. "
-        f"Got: {result['x'][0]}.")
+        f"""Got: {result["x"][0]}.""")
     assert result["px"][0] == pytest.approx(px0, abs = 1E-12), (
-        f"After a drift, px should be unchanged. Expected {px0}, got: {result['px'][0]}.")
+        f"""After a drift, px should be unchanged. Expected {px0}, got: {result["px"][0]}.""")

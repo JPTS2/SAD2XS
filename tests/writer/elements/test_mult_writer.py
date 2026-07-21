@@ -91,8 +91,8 @@ def test_mult_writer_reloads_as_xsuite_multipole(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["m1"], xt.Multipole), (
-        "Written multipole element 'm1' should reload as xt.Multipole. "
-        f"Got: {type(reloaded_line['m1']).__name__}.")
+        "Written multipole element `m1` should reload as xt.Multipole. "
+        f"""Got: {type(reloaded_line["m1"]).__name__}.""")
 
 
 def test_mult_writer_preserves_element_name(tmp_path):
@@ -104,7 +104,7 @@ def test_mult_writer_preserves_element_name(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert "m1" in list(reloaded_line.element_names), (
-        "Reloaded line should contain multipole element 'm1'. "
+        "Reloaded line should contain multipole element `m1`. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
@@ -152,7 +152,7 @@ def test_mult_writer_preserves_length(tmp_path):
 
     assert reloaded_line["m1"].length == pytest.approx(0.15), (
         "Writer roundtrip should preserve multipole length. "
-        f"Original: 0.15, reloaded: {reloaded_line['m1'].length}.")
+        f"""Original: 0.15, reloaded: {reloaded_line["m1"].length}.""")
 
 
 ########################################
@@ -162,7 +162,7 @@ def test_mult_writer_preserves_zero_multipole(tmp_path):
     """
     A fully unpowered multipole with all-zero knl and ksl should survive a
     write and reload cycle. This exercises the writer's simple (unpowered) path
-    which writes only env.new(name='m1', prototype=<base element>) with no
+    which writes only env.new(name=`m1`, prototype=<base element>) with no
     strength arguments.
     """
     original_line = _build_mult_line()
@@ -170,10 +170,10 @@ def test_mult_writer_preserves_zero_multipole(tmp_path):
 
     assert isinstance(reloaded_line["m1"], xt.Multipole), (
         "Unpowered multipole should reload as xt.Multipole. "
-        f"Got: {type(reloaded_line['m1']).__name__}.")
+        f"""Got: {type(reloaded_line["m1"]).__name__}.""")
     assert np.all(np.asarray(reloaded_line["m1"].knl) == pytest.approx(0.0)), (
         "Unpowered multipole should have all-zero knl after roundtrip. "
-        f"Reloaded knl: {np.asarray(reloaded_line['m1'].knl).tolist()}.")
+        f"""Reloaded knl: {np.asarray(reloaded_line["m1"].knl).tolist()}.""")
 
 
 ########################################
@@ -190,7 +190,7 @@ def test_mult_writer_preserves_dipole_knl_component(tmp_path):
 
     assert np.asarray(reloaded_line["m1"].knl)[0] == pytest.approx(1.5E-3), (
         "Writer roundtrip should preserve multipole dipole component knl[0]. "
-        f"Original: 1.5E-3, reloaded: {np.asarray(reloaded_line['m1'].knl)[0]}.")
+        f"""Original: 1.5E-3, reloaded: {np.asarray(reloaded_line["m1"].knl)[0]}.""")
 
 
 def test_mult_writer_preserves_quadrupole_knl_component(tmp_path):
@@ -203,7 +203,7 @@ def test_mult_writer_preserves_quadrupole_knl_component(tmp_path):
 
     assert np.asarray(reloaded_line["m1"].knl)[1] == pytest.approx(0.5), (
         "Writer roundtrip should preserve multipole quadrupole component knl[1]. "
-        f"Original: 0.5, reloaded: {np.asarray(reloaded_line['m1'].knl)[1]}.")
+        f"""Original: 0.5, reloaded: {np.asarray(reloaded_line["m1"].knl)[1]}.""")
 
 
 def test_mult_writer_preserves_sextupole_knl_component(tmp_path):
@@ -216,7 +216,7 @@ def test_mult_writer_preserves_sextupole_knl_component(tmp_path):
 
     assert np.asarray(reloaded_line["m1"].knl)[2] == pytest.approx(2.0), (
         "Writer roundtrip should preserve multipole sextupole component knl[2]. "
-        f"Original: 2.0, reloaded: {np.asarray(reloaded_line['m1'].knl)[2]}.")
+        f"""Original: 2.0, reloaded: {np.asarray(reloaded_line["m1"].knl)[2]}.""")
 
 
 def test_mult_writer_preserves_multiple_knl_components_simultaneously(tmp_path):
@@ -250,7 +250,7 @@ def test_mult_writer_preserves_dipole_ksl_component(tmp_path):
 
     assert np.asarray(reloaded_line["m1"].ksl)[0] == pytest.approx(0.8E-3), (
         "Writer roundtrip should preserve multipole skew dipole component ksl[0]. "
-        f"Original: 0.8E-3, reloaded: {np.asarray(reloaded_line['m1'].ksl)[0]}.")
+        f"""Original: 0.8E-3, reloaded: {np.asarray(reloaded_line["m1"].ksl)[0]}.""")
 
 
 def test_mult_writer_preserves_sextupole_ksl_component(tmp_path):
@@ -263,7 +263,7 @@ def test_mult_writer_preserves_sextupole_ksl_component(tmp_path):
 
     assert np.asarray(reloaded_line["m1"].ksl)[2] == pytest.approx(-1.5), (
         "Writer roundtrip should preserve multipole skew sextupole component ksl[2]. "
-        f"Original: -1.5, reloaded: {np.asarray(reloaded_line['m1'].ksl)[2]}.")
+        f"""Original: -1.5, reloaded: {np.asarray(reloaded_line["m1"].ksl)[2]}.""")
 
 
 def test_mult_writer_preserves_knl_and_ksl_simultaneously(tmp_path):
@@ -310,7 +310,7 @@ def test_mult_writer_knl_preserved_at_full_double_precision(tmp_path):
             k1l_precise, rel = 1E-15), (
         "Writer roundtrip should preserve multipole knl at full double precision. "
         f"Original: {k1l_precise!r}, "
-        f"reloaded: {np.asarray(reloaded_line['m1'].knl)[1]!r}.")
+        f"""reloaded: {np.asarray(reloaded_line["m1"].knl)[1]!r}.""")
 
 
 ########################################
@@ -320,7 +320,7 @@ def test_mult_writer_knl_is_not_written_as_optics_variable(tmp_path):
     """
     Unlike quadrupole k1 or sextupole k2, multipole knl values are NOT written
     as live optics expression variables. They are baked into the lattice file as
-    literal arrays. The Xsuite environment should therefore have no 'knl_m1'
+    literal arrays. The Xsuite environment should therefore have no `knl_m1`
     variable after reload.
 
     This is a deliberate writer design choice: multipoles carry thin-element
@@ -352,7 +352,7 @@ def test_mult_writer_preserves_positive_shift_x(tmp_path):
 
     assert reloaded_line["m1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve positive multipole shift_x. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['m1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["m1"].shift_x}.""")
 
 
 def test_mult_writer_preserves_negative_shift_x(tmp_path):
@@ -365,7 +365,7 @@ def test_mult_writer_preserves_negative_shift_x(tmp_path):
 
     assert reloaded_line["m1"].shift_x == pytest.approx(-1.5E-3), (
         "Writer roundtrip should preserve negative multipole shift_x. "
-        f"Original: -1.5E-3, reloaded: {reloaded_line['m1'].shift_x}.")
+        f"""Original: -1.5E-3, reloaded: {reloaded_line["m1"].shift_x}.""")
 
 
 def test_mult_writer_preserves_shift_x_in_scientific_notation(tmp_path):
@@ -378,7 +378,7 @@ def test_mult_writer_preserves_shift_x_in_scientific_notation(tmp_path):
 
     assert reloaded_line["m1"].shift_x == pytest.approx(4.56789012E-6), (
         "Writer roundtrip should preserve a shift_x value in scientific notation. "
-        f"Original: 4.56789012E-6, reloaded: {reloaded_line['m1'].shift_x}.")
+        f"""Original: 4.56789012E-6, reloaded: {reloaded_line["m1"].shift_x}.""")
 
 
 ########################################
@@ -394,7 +394,7 @@ def test_mult_writer_preserves_positive_shift_y(tmp_path):
 
     assert reloaded_line["m1"].shift_y == pytest.approx(2.0E-3), (
         "Writer roundtrip should preserve positive multipole shift_y. "
-        f"Original: 2.0E-3, reloaded: {reloaded_line['m1'].shift_y}.")
+        f"""Original: 2.0E-3, reloaded: {reloaded_line["m1"].shift_y}.""")
 
 
 def test_mult_writer_preserves_negative_shift_y(tmp_path):
@@ -407,7 +407,7 @@ def test_mult_writer_preserves_negative_shift_y(tmp_path):
 
     assert reloaded_line["m1"].shift_y == pytest.approx(-2.5E-3), (
         "Writer roundtrip should preserve negative multipole shift_y. "
-        f"Original: -2.5E-3, reloaded: {reloaded_line['m1'].shift_y}.")
+        f"""Original: -2.5E-3, reloaded: {reloaded_line["m1"].shift_y}.""")
 
 
 def test_mult_writer_preserves_shift_y_in_scientific_notation(tmp_path):
@@ -420,7 +420,7 @@ def test_mult_writer_preserves_shift_y_in_scientific_notation(tmp_path):
 
     assert reloaded_line["m1"].shift_y == pytest.approx(-7.65432109E-7), (
         "Writer roundtrip should preserve a shift_y value in scientific notation. "
-        f"Original: -7.65432109E-7, reloaded: {reloaded_line['m1'].shift_y}.")
+        f"""Original: -7.65432109E-7, reloaded: {reloaded_line["m1"].shift_y}.""")
 
 
 ########################################
@@ -436,7 +436,7 @@ def test_mult_writer_preserves_positive_rot_s_rad(tmp_path):
 
     assert reloaded_line["m1"].rot_s_rad == pytest.approx(0.05), (
         "Writer roundtrip should preserve positive multipole rot_s_rad. "
-        f"Original: 0.05, reloaded: {reloaded_line['m1'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["m1"].rot_s_rad}.""")
 
 
 def test_mult_writer_preserves_negative_rot_s_rad(tmp_path):
@@ -449,7 +449,7 @@ def test_mult_writer_preserves_negative_rot_s_rad(tmp_path):
 
     assert reloaded_line["m1"].rot_s_rad == pytest.approx(-0.05), (
         "Writer roundtrip should preserve negative multipole rot_s_rad. "
-        f"Original: -0.05, reloaded: {reloaded_line['m1'].rot_s_rad}.")
+        f"""Original: -0.05, reloaded: {reloaded_line["m1"].rot_s_rad}.""")
 
 
 ########################################
@@ -470,13 +470,13 @@ def test_mult_writer_preserves_all_misalignments_simultaneously(tmp_path):
 
     assert reloaded_line["m1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve shift_x alongside other misalignments. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['m1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["m1"].shift_x}.""")
     assert reloaded_line["m1"].shift_y == pytest.approx(-2.0E-3), (
         "Writer roundtrip should preserve shift_y alongside other misalignments. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['m1'].shift_y}.")
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["m1"].shift_y}.""")
     assert reloaded_line["m1"].rot_s_rad == pytest.approx(0.05), (
         "Writer roundtrip should preserve rot_s_rad alongside other misalignments. "
-        f"Original: 0.05, reloaded: {reloaded_line['m1'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["m1"].rot_s_rad}.""")
 
 
 ########################################
@@ -501,13 +501,13 @@ def test_mult_writer_preserves_knl_with_all_misalignments(tmp_path):
         f"Original: 0.5, reloaded: {reloaded_knl[1]}.")
     assert reloaded_line["m1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve shift_x alongside knl. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['m1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["m1"].shift_x}.""")
     assert reloaded_line["m1"].shift_y == pytest.approx(-2.0E-3), (
         "Writer roundtrip should preserve shift_y alongside knl. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['m1'].shift_y}.")
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["m1"].shift_y}.""")
     assert reloaded_line["m1"].rot_s_rad == pytest.approx(0.05), (
         "Writer roundtrip should preserve rot_s_rad alongside knl. "
-        f"Original: 0.05, reloaded: {reloaded_line['m1'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["m1"].rot_s_rad}.""")
 
 
 ################################################################################
@@ -536,14 +536,14 @@ def test_mult_writer_preserves_multiple_multipoles_independently(tmp_path):
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
     assert np.asarray(reloaded_line["mq"].knl)[1] == pytest.approx(0.5), (
-        "Writer roundtrip should preserve knl[1] for 'mq'. "
-        f"Original: 0.5, reloaded: {np.asarray(reloaded_line['mq'].knl)[1]}.")
+        "Writer roundtrip should preserve knl[1] for `mq`. "
+        f"""Original: 0.5, reloaded: {np.asarray(reloaded_line["mq"].knl)[1]}.""")
     assert np.asarray(reloaded_line["mqd"].knl)[1] == pytest.approx(-0.5), (
-        "Writer roundtrip should preserve knl[1] for 'mqd'. "
-        f"Original: -0.5, reloaded: {np.asarray(reloaded_line['mqd'].knl)[1]}.")
+        "Writer roundtrip should preserve knl[1] for `mqd`. "
+        f"""Original: -0.5, reloaded: {np.asarray(reloaded_line["mqd"].knl)[1]}.""")
     assert np.asarray(reloaded_line["mcf"].knl)[0] == pytest.approx(1.5E-3), (
-        "Writer roundtrip should preserve knl[0] for combined-function 'mcf'. "
-        f"Original: 1.5E-3, reloaded: {np.asarray(reloaded_line['mcf'].knl)[0]}.")
+        "Writer roundtrip should preserve knl[0] for combined-function `mcf`. "
+        f"""Original: 1.5E-3, reloaded: {np.asarray(reloaded_line["mcf"].knl)[0]}.""")
     assert np.asarray(reloaded_line["mcf"].knl)[2] == pytest.approx(2.0), (
-        "Writer roundtrip should preserve knl[2] for combined-function 'mcf'. "
-        f"Original: 2.0, reloaded: {np.asarray(reloaded_line['mcf'].knl)[2]}.")
+        "Writer roundtrip should preserve knl[2] for combined-function `mcf`. "
+        f"""Original: 2.0, reloaded: {np.asarray(reloaded_line["mcf"].knl)[2]}.""")

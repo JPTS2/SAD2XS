@@ -127,7 +127,7 @@ def test_moni_pipeline_preserves_monitor_names(write_lattice):
         "Converted MONI-only line should preserve monitor order and names.")
     for monitor_name in ["bpm_1", "bpm_2", "bpm_3"]:
         assert isinstance(line[monitor_name], xt.Marker), (
-            f"Converted element '{monitor_name}' should be an Xsuite Marker.")
+            f"Converted element `{monitor_name}` should be an Xsuite Marker.")
 
 ################################################################################
 # Physics Equivalence

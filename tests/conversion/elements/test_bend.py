@@ -490,9 +490,9 @@ def test_bend_converter_creates_all_bends(
             element_name    = bend_name,
             element_type    = xt.Bend)
         assert bend.k0 == pytest.approx(expected_k0), (
-            f"Converted bend '{bend_name}' should preserve angle/length.")
+            f"Converted bend `{bend_name}` should preserve angle/length.")
         assert bend.k1 == pytest.approx(expected_k1), (
-            f"Converted bend '{bend_name}' should preserve integrated K1/length.")
+            f"Converted bend `{bend_name}` should preserve integrated K1/length.")
 
 ########################################
 # Element-Offset Warning
@@ -895,13 +895,13 @@ def test_bend_pipeline_preserves_names_order_lengths_angles_and_strengths(
             ("bd", -0.1, 0.0),
             ("bq", 0.1, 0.1)]:
         assert isinstance(line[bend_name], xt.Bend), (
-            f"Converted element '{bend_name}' should be an Xsuite Bend.")
+            f"Converted element `{bend_name}` should be an Xsuite Bend.")
         assert line[bend_name].length == pytest.approx(0.5), (
-            f"Converted bend '{bend_name}' should preserve length.")
+            f"Converted bend `{bend_name}` should preserve length.")
         assert line[bend_name].angle == pytest.approx(expected_angle), (
-            f"Converted bend '{bend_name}' should preserve angle.")
+            f"Converted bend `{bend_name}` should preserve angle.")
         assert line[bend_name].k1 == pytest.approx(expected_k1), (
-            f"Converted bend '{bend_name}' should preserve integrated K1/length.")
+            f"Converted bend `{bend_name}` should preserve integrated K1/length.")
 
 def test_bend_pipeline_canonicalizes_edges_offsets_and_rotation(write_lattice):
     """
@@ -1719,7 +1719,7 @@ def test_bend_offset_orbit_residual_is_angle_squared_order(
             assert xsuite_values["x"] == pytest.approx(0.0, abs = 1E-8), (
                 "Xsuite should not reproduce any of SAD's offset-bend orbit "
                 f"shift (h stays fixed to the design orbit). Got "
-                f"x={xsuite_values['x']:.3e} at angle={angle}.")
+                f"""x={xsuite_values["x"]:.3e} at angle={angle}.""")
 
             x_diffs.append(sad_values["x"] - xsuite_values["x"])
 
@@ -2895,7 +2895,7 @@ def test_bend_offset_rotated_coupling_is_a_sad_side_artifact(write_lattice, tmp_
                 f"{sad_r1:.6f} at dx={dx:.0e}.")
             assert abs(et_values["r11"]) < 1.0E-2, (
                 "Xsuite's own coupling should stay small and physically "
-                f"continuous, unlike SAD's. Got r11={et_values['r11']:.3e} "
+                f"""continuous, unlike SAD's. Got r11={et_values["r11"]:.3e} """
                 f"at dx={dx:.0e}.")
 
             for name in ("betx", "bety", "alfx", "alfy"):

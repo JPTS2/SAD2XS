@@ -18,8 +18,8 @@ Date:       2026-06-24
 ################################################################################
 def test_line_name_containing_line_substring_is_accepted(sad_accepts):
     """
-    SAD accepts a line whose name contains 'line' as a substring. The word
-    'line' in the identifier must not be treated as the LINE keyword.
+    SAD accepts a line whose name contains `line` as a substring. The word
+    `line` in the identifier must not be treated as the LINE keyword.
     """
     sad_accepts(
         "MARK START = ()\n"
@@ -31,7 +31,7 @@ def test_line_name_containing_line_substring_is_accepted(sad_accepts):
 
 def test_nested_line_reference_containing_line_substring_is_accepted(sad_accepts):
     """
-    SAD accepts a reference to a line whose name contains 'line' as a substring
+    SAD accepts a reference to a line whose name contains `line` as a substring
     when that line is itself nested inside another line definition.
     """
     sad_accepts(

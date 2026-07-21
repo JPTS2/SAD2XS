@@ -50,7 +50,7 @@ def test_sad_function_definition_raises_clear_error(write_lattice):
 def test_sad_function_definition_with_module_body_raises_clear_error(write_lattice):
     """
     A SAD function definition with a Module[] body should also be rejected
-    clearly, even though the body's internal ';' splits it across sections.
+    clearly, even though the body's internal `;` splits it across sections.
     """
     lattice_path = write_lattice(
         """\

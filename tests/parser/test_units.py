@@ -40,7 +40,7 @@ def test_ev_text_to_float_converts_supported_units(value, expected):
     Supported eV text units should convert to numeric eV values.
     """
     assert ev_text_to_float(value) == pytest.approx(expected), (
-        f"Energy text '{value}' should convert to {expected} eV.")
+        f"Energy text `{value}` should convert to {expected} eV.")
 
 def test_ev_text_to_float_returns_none_for_non_numeric_text():
     """
@@ -107,7 +107,7 @@ def test_degree_angle_units_parse_to_radians(write_lattice, unit_text, expected)
         MOMENTUM = 1.0 GEV;
         QUAD Q_ROT = (L = 1.0 ROTATE = {unit_text});
         """,
-        filename = f"units_rotate_{unit_text.replace(' ', '_').lower()}.sad")
+        filename = f"""units_rotate_{unit_text.replace(" ", "_").lower()}.sad""")
 
     parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
 

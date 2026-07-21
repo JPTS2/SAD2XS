@@ -178,7 +178,7 @@ def test_drift_converter_creates_all_drifts(
             element_name    = drift_name,
             element_type    = xt.Drift)
         assert drift.length == pytest.approx(expected_length), (
-            f"Converted drift '{drift_name}' should resolve to the SAD "
+            f"Converted drift `{drift_name}` should resolve to the SAD "
             "length value.")
 
 def test_drift_converter_requires_length(parsed_elements, xsuite_environment):
@@ -267,13 +267,13 @@ def test_drift_pipeline_preserves_names_order_and_lengths(write_lattice):
     assert line.element_names == ["start", "d1", "d2", "end"], (
         "Converted line should preserve SAD element names and order.")
     assert isinstance(line["d1"], xt.Drift), (
-        "Converted element 'd1' should be an Xsuite Drift.")
+        "Converted element `d1` should be an Xsuite Drift.")
     assert isinstance(line["d2"], xt.Drift), (
-        "Converted element 'd2' should be an Xsuite Drift.")
+        "Converted element `d2` should be an Xsuite Drift.")
     assert line["d1"].length == pytest.approx(1.0), (
-        "Converted drift 'd1' should preserve its SAD length.")
+        "Converted drift `d1` should preserve its SAD length.")
     assert line["d2"].length == pytest.approx(2.0), (
-        "Converted drift 'd2' should preserve its SAD length.")
+        "Converted drift `d2` should preserve its SAD length.")
 
 def test_drift_pipeline_preserves_symbolic_length(write_lattice):
     """

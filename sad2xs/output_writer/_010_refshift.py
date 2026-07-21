@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -64,21 +64,21 @@ def create_refshift_lattice_file_information(
     unique_timedelay_variable_names    = []
     unique_rotation_variable_names     = []
 
-    for translation in line_table.rows[line_table.element_type == 'Translation'].name:
+    for translation in line_table.rows[line_table.element_type == "Translation"].name:
         parentname      = get_parentname(translation)
         variablename    = get_variablename(translation)
         if parentname not in unique_translation_names:
             unique_translation_names.append(parentname)
             unique_translation_variable_names.append(variablename)
 
-    for timedelay in line_table.rows[line_table.element_type == 'TimeDelay'].name:
+    for timedelay in line_table.rows[line_table.element_type == "TimeDelay"].name:
         parentname      = get_parentname(timedelay)
         variablename    = get_variablename(timedelay)
         if parentname not in unique_timedelay_names:
             unique_timedelay_names.append(parentname)
             unique_timedelay_variable_names.append(variablename)
 
-    for rotation in line_table.rows[line_table.element_type == 'Rotation'].name:
+    for rotation in line_table.rows[line_table.element_type == "Rotation"].name:
         parentname      = get_parentname(rotation)
         variablename    = get_variablename(rotation)
         if parentname not in unique_rotation_names:
@@ -122,10 +122,10 @@ def create_refshift_lattice_file_information(
 
             output_string += f"""
 env.new(
-    name        = '{translation_name}',
+    name        = "{translation_name}",
     prototype   = xt.Translation,
-    shift_x     = 'dx_{translation_variable_name}',
-    shift_y     = 'dy_{translation_variable_name}')"""
+    shift_x     = "dx_{translation_variable_name}",
+    shift_y     = "dy_{translation_variable_name}")"""
 
         output_string += "\n"
 
@@ -149,9 +149,9 @@ env.new(
 
             output_string += f"""
 env.new(
-    name        = '{timedelay_name}',
+    name        = "{timedelay_name}",
     prototype   = xt.TimeDelay,
-    shift_zeta  = 'dz_{timedelay_variable_name}')"""
+    shift_zeta  = "dz_{timedelay_variable_name}")"""
 
         output_string += "\n"
 
@@ -175,11 +175,11 @@ env.new(
 
             output_string += f"""
 env.new(
-    name        = '{rotation_name}',
+    name        = "{rotation_name}",
     prototype   = xt.Rotation,
-    rot_y_rad   = 'chi1_{rotation_variable_name}',
-    rot_x_rad   = 'chi2_{rotation_variable_name}',
-    rot_s_rad   = 'chi3_{rotation_variable_name}')"""
+    rot_y_rad   = "chi1_{rotation_variable_name}",
+    rot_x_rad   = "chi2_{rotation_variable_name}",
+    rot_s_rad   = "chi3_{rotation_variable_name}")"""
 
     ########################################
     # Return
@@ -232,21 +232,21 @@ def create_refshift_optics_file_information(
     unique_timedelay_variable_names    = []
     unique_rotation_variable_names     = []
 
-    for translation in line_table.rows[line_table.element_type == 'Translation'].name:
+    for translation in line_table.rows[line_table.element_type == "Translation"].name:
         parentname      = get_parentname(translation)
         variablename    = get_variablename(translation)
         if parentname not in unique_translation_names:
             unique_translation_names.append(parentname)
             unique_translation_variable_names.append(variablename)
 
-    for timedelay in line_table.rows[line_table.element_type == 'TimeDelay'].name:
+    for timedelay in line_table.rows[line_table.element_type == "TimeDelay"].name:
         parentname      = get_parentname(timedelay)
         variablename    = get_variablename(timedelay)
         if parentname not in unique_timedelay_names:
             unique_timedelay_names.append(parentname)
             unique_timedelay_variable_names.append(variablename)
 
-    for rotation in line_table.rows[line_table.element_type == 'Rotation'].name:
+    for rotation in line_table.rows[line_table.element_type == "Rotation"].name:
         parentname      = get_parentname(rotation)
         variablename    = get_variablename(rotation)
         if parentname not in unique_rotation_names:
@@ -303,10 +303,10 @@ def create_refshift_optics_file_information(
 
             if dx != 0:
                 output_string += f"""
-    {f'dx_{translation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dx_{translation_variable_name}') + 4)}{'= '}{dx:.24f},"""
+    {f"dx_{translation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"dx_{translation_variable_name}") + 4)}{"= "}{dx:.24f},"""
             if dy != 0:
                 output_string += f"""
-    {f'dy_{translation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dy_{translation_variable_name}') + 4)}{'= '}{dy:.24f},"""
+    {f"dy_{translation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"dy_{translation_variable_name}") + 4)}{"= "}{dy:.24f},"""
 
         output_string += "\n"
 
@@ -326,7 +326,7 @@ def create_refshift_optics_file_information(
 
             if dz != 0:
                 output_string += f"""
-    {f'dz_{timedelay_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'dz_{timedelay_variable_name}') + 4)}{'= '}{dz:.24f},"""
+    {f"dz_{timedelay_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"dz_{timedelay_variable_name}") + 4)}{"= "}{dz:.24f},"""
 
         output_string += "\n"
 
@@ -348,13 +348,13 @@ def create_refshift_optics_file_information(
 
             if chi1 != 0:
                 output_string += f"""
-    {f'chi1_{rotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi1_{rotation_variable_name}') + 4)}{'= '}{chi1:.24f},"""
+    {f"chi1_{rotation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"chi1_{rotation_variable_name}") + 4)}{"= "}{chi1:.24f},"""
             if chi2 != 0:
                 output_string += f"""
-    {f'chi2_{rotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi2_{rotation_variable_name}') + 4)}{'= '}{chi2:.24f},"""
+    {f"chi2_{rotation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"chi2_{rotation_variable_name}") + 4)}{"= "}{chi2:.24f},"""
             if chi3 != 0:
                 output_string += f"""
-    {f'chi3_{rotation_variable_name}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'chi3_{rotation_variable_name}') + 4)}{'= '}{chi3:.24f},"""
+    {f"chi3_{rotation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"chi3_{rotation_variable_name}") + 4)}{"= "}{chi3:.24f},"""
 
     ########################################
     # Return

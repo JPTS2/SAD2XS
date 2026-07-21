@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -67,7 +67,7 @@ def write_lattice(
     finally any resolved offset-marker insertion points. Elements are
     grouped by length (see `sad2xs.output_writer._000_helpers`) so
     identical elements are written once and reused via
-    `env.new(..., mode="clone")`; a '-'-prefixed element is only
+    `env.new(..., mode="clone")`; a `-`-prefixed element is only
     written if no non-reversed sibling of the same root name exists in
     the line.
 
@@ -119,7 +119,7 @@ def write_lattice(
             if line.particle_ref is None:
                 raise ValueError(
                     f"Cannot write lattice without line variable "
-                    f"'{variable_name}' or line.particle_ref.") from None
+                    f"""\"{variable_name}\" or line.particle_ref.""") from None
             value = getattr(line.particle_ref, variable_name)
 
         if hasattr(value, "item"):
@@ -141,18 +141,18 @@ def write_lattice(
         writer_globals["mass0"],
         writer_globals["q0"])
     if species is not None:
-        _particle_ref_line = f'xt.Particles("{species}", p0c=env["p0c"])'
+        _particle_ref_line = f"""xt.Particles("{species}", p0c=env["p0c"])"""
     else:
         _particle_ref_line = (
-            f'xt.Particles(\n'
-            f'    mass0   = env["mass0"],\n'
-            f'    p0c     = env["p0c"],\n'
-            f'    q0      = env["q0"])')
+            "xt.Particles(\n"
+            f"""    mass0   = env["mass0"],\n"""
+            f"""    p0c     = env["p0c"],\n"""
+            f"""    q0      = env["q0"])""")
 
     ########################################
     # Initialise the lattice file
     ########################################
-    lattice_file_string = f'''"""
+    lattice_file_string = f"""\"\"\"
 {output_header}
 ================================================================================
 Converted using the SAD2XS Converter
@@ -160,7 +160,7 @@ Authors:    J. Salvesen
 Contact:    john.salvesen@cern.ch
 ================================================================================
 Conversion Date: {today.strftime("%d/%m/%Y")}
-"""
+\"\"\"
 
 ################################################################################
 # Import Packages
@@ -190,8 +190,8 @@ env.particle_ref    = {_particle_ref_line}
 ################################################################################
 # Import lattice
 ################################################################################
-'''
- 
+"""
+
     ########################################
     # Get the line table
     ########################################

@@ -44,7 +44,7 @@ def test_twiss_sad_has_no_verbose_parameter():
     """
     sig = inspect.signature(twiss_sad)
     assert "_verbose" not in sig.parameters, (
-        "twiss_sad should not have a '_verbose' parameter: helper output is "
+        "twiss_sad should not have a `_verbose` parameter: helper output is "
         "controlled by sad2xs.set_log_level.")
 
 
@@ -54,7 +54,7 @@ def test_survey_sad_has_no_verbose_parameter():
     """
     sig = inspect.signature(survey_sad)
     assert "_verbose" not in sig.parameters, (
-        "survey_sad should not have a '_verbose' parameter: helper output is "
+        "survey_sad should not have a `_verbose` parameter: helper output is "
         "controlled by sad2xs.set_log_level.")
 
 
@@ -64,7 +64,7 @@ def test_emit_sad_has_no_verbose_parameter():
     """
     sig = inspect.signature(emit_sad)
     assert "_verbose" not in sig.parameters, (
-        "emit_sad should not have a '_verbose' parameter: helper output is "
+        "emit_sad should not have a `_verbose` parameter: helper output is "
         "controlled by sad2xs.set_log_level.")
 
 
@@ -74,7 +74,7 @@ def test_chromaticity_sad_has_no_verbose_parameter():
     """
     sig = inspect.signature(chromaticity_sad)
     assert "_verbose" not in sig.parameters, (
-        "chromaticity_sad should not have a '_verbose' parameter: helper "
+        "chromaticity_sad should not have a `_verbose` parameter: helper "
         "output is controlled by sad2xs.set_log_level.")
 
 
@@ -84,7 +84,7 @@ def test_transfer_matrix_sad_has_no_verbose_parameter():
     """
     sig = inspect.signature(transfer_matrix_sad)
     assert "_verbose" not in sig.parameters, (
-        "transfer_matrix_sad should not have a '_verbose' parameter: helper "
+        "transfer_matrix_sad should not have a `_verbose` parameter: helper "
         "output is controlled by sad2xs.set_log_level.")
 
 
@@ -95,7 +95,7 @@ def test_track_sad_has_no_verbose_parameter():
     """
     sig = inspect.signature(track_sad)
     assert "_verbose" not in sig.parameters, (
-        "track_sad should not have a '_verbose' parameter: helper output is "
+        "track_sad should not have a `_verbose` parameter: helper output is "
         "controlled by sad2xs.set_log_level.")
 
 
@@ -105,7 +105,7 @@ def test_rebuild_sad_lattice_has_no_verbose_parameter():
     """
     sig = inspect.signature(rebuild_sad_lattice)
     assert "_verbose" not in sig.parameters, (
-        "rebuild_sad_lattice should not have a '_verbose' parameter: helper "
+        "rebuild_sad_lattice should not have a `_verbose` parameter: helper "
         "output is controlled by sad2xs.set_log_level.")
 
 

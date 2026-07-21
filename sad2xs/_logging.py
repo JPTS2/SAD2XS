@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -93,5 +93,5 @@ def set_log_level(level: str) -> None:
     """
     if level.lower() not in _LEVELS:
         raise ValueError(
-            f"Unknown log level '{level}'. Choose from {sorted(_LEVELS)}.")
+            f"""Unknown log level "{level}". Choose from {sorted(_LEVELS)}.""")
     LOGGER.setLevel(_LEVELS[level.lower()])

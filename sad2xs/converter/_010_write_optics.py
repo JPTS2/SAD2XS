@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -85,7 +85,7 @@ def write_optics(
     ########################################
     # Initialise the lattice file
     ########################################
-    optics_file_string = f'''"""
+    optics_file_string = f"""\"\"\"
 {output_header}
 ================================================================================
 Converted using the SAD2XS Converter
@@ -93,7 +93,7 @@ Authors:    J. Salvesen
 Contact:    john.salvesen@cern.ch
 ================================================================================
 Conversion Date: {today.strftime("%d/%m/%Y")}
-"""
+\"\"\"
 
 ################################################################################
 # Import Packages
@@ -109,7 +109,7 @@ env = xt.get_environment()
 # Update Strengths
 ################################################################################
 env.vars.update(default_to_zero = True,
-'''
+"""
 
     ########################################
     # Get the line table
@@ -183,8 +183,8 @@ env.vars.update(default_to_zero = True,
     ########################################
     # Close the string
     ########################################
-    optics_file_string  += ''')
-'''
+    optics_file_string  += """)
+"""
 
     ########################################
     # Write to file

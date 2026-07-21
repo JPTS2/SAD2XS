@@ -64,7 +64,7 @@ def test_rebuild_sad_lattice_creates_output_file(tmp_path, monkeypatch):
     _run_rebuild(tmp_path, monkeypatch, output_filepath = output)
 
     assert (tmp_path / output).exists(), (
-        f"rebuild_sad_lattice should create the output file '{output}'. "
+        f"rebuild_sad_lattice should create the output file `{output}`. "
         "File was not found after the function returned.")
 
 
@@ -73,14 +73,14 @@ def test_rebuild_sad_lattice_default_output_filepath_creates_rebuilt_file(
         monkeypatch):
     """
     With output_filepath=None, rebuild_sad_lattice should write to
-    '{input}_rebuilt.sad' (replacing '.sad' with '_rebuilt.sad'). This
+    `{input}_rebuilt.sad` (replacing `.sad` with `_rebuilt.sad`). This
     confirms the default path logic is wired into the SAD command correctly.
     """
     _run_rebuild(tmp_path, monkeypatch, output_filepath = None)
 
     assert (tmp_path / "test_lattice_rebuilt.sad").exists(), (
         "rebuild_sad_lattice with output_filepath=None should create "
-        "'test_lattice_rebuilt.sad'. File was not found after the function "
+        "`test_lattice_rebuilt.sad`. File was not found after the function "
         "returned.")
 
 
@@ -104,7 +104,7 @@ def test_rebuild_sad_lattice_output_contains_momentum_declaration(
 
 def test_rebuild_sad_lattice_output_contains_line_name(tmp_path, monkeypatch):
     """
-    The rebuilt lattice file should contain the beamline name 'TEST_LINE', as
+    The rebuilt lattice file should contain the beamline name `TEST_LINE`, as
     written by WriteBeamLine with Name->{"TEST_LINE"}. Its absence indicates
     that WriteBeamLine did not execute or that the Name argument is not
     forwarded.
@@ -115,7 +115,7 @@ def test_rebuild_sad_lattice_output_contains_line_name(tmp_path, monkeypatch):
     content = (tmp_path / output).read_text()
 
     assert "TEST_LINE" in content, (
-        "Rebuilt lattice file should contain the beamline name 'TEST_LINE'. "
+        "Rebuilt lattice file should contain the beamline name `TEST_LINE`. "
         f"File content (first 500 chars): {content[:500]!r}.")
 
 

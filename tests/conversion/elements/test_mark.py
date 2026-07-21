@@ -127,7 +127,7 @@ def test_mark_pipeline_preserves_marker_names(write_lattice):
         "Converted MARK-only line should preserve marker order and names.")
     for marker_name in ["start", "mid", "end"]:
         assert isinstance(line[marker_name], xt.Marker), (
-            f"Converted element '{marker_name}' should be an Xsuite Marker.")
+            f"Converted element `{marker_name}` should be an Xsuite Marker.")
 
 ################################################################################
 # Physics Equivalence

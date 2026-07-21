@@ -768,7 +768,7 @@ def test_sol_pipeline_thin_cavity_between_bound_solenoids_needs_no_conversion(
         if "has not been converted" in record.getMessage()]
     assert warnings == [], (
         "A thin Cavity between bound solenoids needs no solenoid embedding "
-        "and should not trigger the 'has not been converted' warning.")
+        "and should not trigger the `has not been converted` warning.")
 
 def test_sol_pipeline_thick_cavity_between_bound_solenoids_still_warns(
         write_lattice,
@@ -802,7 +802,7 @@ def test_sol_pipeline_thick_cavity_between_bound_solenoids_still_warns(
         if "has not been converted" in record.getMessage()]
     assert len(warnings) == 1, (
         "A thick Cavity between bound solenoids is not yet handled and "
-        "should still trigger the 'has not been converted' warning.")
+        "should still trigger the `has not been converted` warning.")
 
 def test_sol_pipeline_thick_rf_mult_multipole_slices_embed_solenoid_field(
         write_lattice,
@@ -864,7 +864,7 @@ def test_sol_pipeline_thick_rf_mult_multipole_slices_embed_solenoid_field(
     assert warnings == [], (
         "A thick RF-MULT between bound solenoids should convert fully via "
         "the existing Multipole/Cavity embedding paths, with no "
-        "'has not been converted' warning.")
+        "`has not been converted` warning.")
 
 def test_sol_pipeline_requires_geometric_solenoid_in_bound_pair(write_lattice):
     """

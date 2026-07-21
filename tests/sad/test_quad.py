@@ -83,7 +83,7 @@ def test_quad_rejects(sad_rejects, params):
 def test_quad_without_length_is_accepted_by_sad(sad_accepts):
     """
     SAD accepts a QUAD with K1 but no L parameter (thin/integrated quadrupole).
-    The converter handles this via ele_vars.get('l', 0.0) defaulting to zero.
+    The converter handles this via ele_vars.get(`l`, 0.0) defaulting to zero.
     """
     sad_accepts(
         "QUAD Q1 = (K1=0.2);\n"
@@ -183,7 +183,7 @@ def test_quad_disfrin_changes_tracking_at_large_offset(tmp_path):
         lat = tmp_path / name
         lat.write_text(
             "MOMENTUM = 1.0 GEV;\n"
-            f"QUAD Q1 = (L=0.5 K1=0.4{' DISFRIN=1' if disfrin else ''});\n"
+            f"""QUAD Q1 = (L=0.5 K1=0.4{" DISFRIN=1" if disfrin else ""});\n"""
             "MARK START = ()\n     END   = ();\n"
             "LINE TEST = (START Q1 END);\n")
         cwd = os.getcwd()

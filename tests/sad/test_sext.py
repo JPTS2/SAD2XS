@@ -79,7 +79,7 @@ def test_sext_rejects(sad_rejects, params):
 def test_sext_without_length_is_accepted_by_sad(sad_accepts):
     """
     SAD accepts a SEXT with K2 but no L parameter (thin/integrated sextupole).
-    The converter handles this via ele_vars.get('l', 0.0) defaulting to zero.
+    The converter handles this via ele_vars.get(`l`, 0.0) defaulting to zero.
     """
     sad_accepts(
         "SEXT S1 = (K2=0.1);\n"

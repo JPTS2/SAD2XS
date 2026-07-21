@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -92,7 +92,7 @@ def convert_elements(
         convert_drifts(
             parsed_elements = parsed_elements,
             environment     = environment)
-        logger.info(f"Converted {len(parsed_elements['drift'])} drift definitions")
+        logger.info(f"""Converted {len(parsed_elements["drift"])} drift definitions""")
 
     ########################################
     # Bends
@@ -108,7 +108,7 @@ def convert_elements(
             environment     = environment,
             config          = config)
         logger.info(
-            f"Converted {len(parsed_elements['bend'])} bend definitions "
+            f"""Converted {len(parsed_elements["bend"])} bend definitions """
             "(bends and correctors)")
 
     ########################################
@@ -119,7 +119,7 @@ def convert_elements(
         convert_quadrupoles(
             parsed_elements = parsed_elements,
             environment     = environment)
-        logger.info(f"Converted {len(parsed_elements['quad'])} quadrupole definitions")
+        logger.info(f"""Converted {len(parsed_elements["quad"])} quadrupole definitions""")
 
     ########################################
     # Sextupoles
@@ -129,7 +129,7 @@ def convert_elements(
         convert_sextupoles(
             parsed_elements = parsed_elements,
             environment     = environment)
-        logger.info(f"Converted {len(parsed_elements['sext'])} sextupole definitions")
+        logger.info(f"""Converted {len(parsed_elements["sext"])} sextupole definitions""")
 
     ########################################
     # Octupoles
@@ -140,7 +140,7 @@ def convert_elements(
             parsed_elements = parsed_elements,
             environment     = environment,
             config          = config)
-        logger.info(f"Converted {len(parsed_elements['oct'])} octupole definitions")
+        logger.info(f"""Converted {len(parsed_elements["oct"])} octupole definitions""")
 
     ########################################
     # Multipoles
@@ -152,7 +152,7 @@ def convert_elements(
             environment                 = environment,
             user_multipole_replacements = user_multipole_replacements,
             config                      = config)
-        logger.info(f"Converted {len(parsed_elements['mult'])} multipole definitions")
+        logger.info(f"""Converted {len(parsed_elements["mult"])} multipole definitions""")
 
     ########################################
     # Cavities
@@ -163,7 +163,7 @@ def convert_elements(
             parsed_elements = parsed_elements,
             environment     = environment,
             config          = config)
-        logger.info(f"Converted {len(parsed_elements['cavi'])} cavity definitions")
+        logger.info(f"""Converted {len(parsed_elements["cavi"])} cavity definitions""")
 
     ########################################
     # Apertures
@@ -173,7 +173,7 @@ def convert_elements(
         convert_apertures(
             parsed_elements = parsed_elements,
             environment     = environment)
-        logger.info(f"Converted {len(parsed_elements['apert'])} aperture definitions")
+        logger.info(f"""Converted {len(parsed_elements["apert"])} aperture definitions""")
 
     ########################################
     # Solenoids
@@ -184,7 +184,7 @@ def convert_elements(
             parsed_elements = parsed_elements,
             environment     = environment,
             config          = config)
-        logger.info(f"Converted {len(parsed_elements['sol'])} solenoid definitions")
+        logger.info(f"""Converted {len(parsed_elements["sol"])} solenoid definitions""")
 
     ########################################
     # Coordinate Transformations
@@ -196,7 +196,7 @@ def convert_elements(
             environment     = environment,
             config          = config)
         logger.info(
-            f"Converted {len(parsed_elements['coord'])} coordinate "
+            f"""Converted {len(parsed_elements["coord"])} coordinate """
             "transformation definitions")
 
     ########################################
@@ -207,7 +207,7 @@ def convert_elements(
         convert_markers(
             parsed_elements = parsed_elements,
             environment     = environment)
-        logger.info(f"Converted {len(parsed_elements['mark'])} marker definitions")
+        logger.info(f"""Converted {len(parsed_elements["mark"])} marker definitions""")
 
     ########################################
     # Monitors
@@ -217,7 +217,7 @@ def convert_elements(
         convert_monitors(
             parsed_elements = parsed_elements,
             environment     = environment)
-        logger.info(f"Converted {len(parsed_elements['moni'])} monitor definitions")
+        logger.info(f"""Converted {len(parsed_elements["moni"])} monitor definitions""")
 
     ########################################
     # Beam-Beam Interactions
@@ -228,7 +228,7 @@ def convert_elements(
             parsed_elements = parsed_elements,
             environment     = environment)
         logger.info(
-            f"Converted {len(parsed_elements['beambeam'])} beam-beam definitions")
+            f"""Converted {len(parsed_elements["beambeam"])} beam-beam definitions""")
 
     ########################################
     # Maps
@@ -238,7 +238,7 @@ def convert_elements(
         convert_maps(
             parsed_elements = parsed_elements,
             environment     = environment)
-        logger.info(f"Converted {len(parsed_elements['map'])} map definitions")
+        logger.info(f"""Converted {len(parsed_elements["map"])} map definitions""")
 
     ########################################
     # RF Focusing Check
@@ -1252,10 +1252,10 @@ def convert_multipoles(
                     continue
                 else:
                     raise ValueError(
-                        f"Unknown replacement type '{replace_type}' for "
+                        f"""Unknown replacement type "{replace_type}" for """
                         f"multipole {ele_name} in user_multipole_replacements. "
-                        "Supported: 'Bend', 'Quadrupole', 'Sextupole', "
-                        "'Octupole'.")
+                        """Supported: "Bend", "Quadrupole", "Sextupole", """
+                        """"Octupole".""")
 
         ########################################
         # Automatic Simplification
@@ -2136,7 +2136,7 @@ def convert_maps(parsed_elements: dict[str, dict], environment: xt.Environment) 
         ########################################
         if ele_vars:
             raise ValueError(
-                f"MAP element '{ele_name}' has non-empty parameters "
+                f"""MAP element "{ele_name}" has non-empty parameters """
                 f"{ele_vars!r}. SAD2XS only supports MAP elements with no "
                 "parameters (installed as Xsuite Markers); MAP elements "
                 "with parameters are not understood and not supported.")
@@ -2315,7 +2315,7 @@ def convert_coordinate_transformations(
         # Compound Coordinate Transformation Element
         ########################################
         if n_transforms == 0:
-            # In this case, it is some transform, but we don"t know what, so guess this
+            # In this case, it is some transform, but we don't know what, so guess this
             environment.new(
                 name      = ele_name,
                 prototype = xt.Translation)

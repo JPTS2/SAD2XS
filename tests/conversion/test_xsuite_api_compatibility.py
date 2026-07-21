@@ -239,7 +239,7 @@ def test_xsuite_quadrupole_model_configuration_call_used_by_sad2xs():
     """
     Xsuite lines should accept the quadrupole edge (fringe) model
     configuration SAD2XS makes. Unlike Bend's edge_entry_model/
-    edge_exit_model (a string), Quadrupole's edge='full' sets the boolean
+    edge_exit_model (a string), Quadrupole's edge=`full` sets the boolean
     edge_entry_active/edge_exit_active flags -- SAD applies a default
     hard-edge quadrupole fringe kick (verified against real SAD, gated by
     DISFRIN) that Xsuite's Quadrupole already supports natively via these
@@ -254,10 +254,10 @@ def test_xsuite_quadrupole_model_configuration_call_used_by_sad2xs():
 
     assert line["test_quad"].edge_entry_active == True, (
         "Xsuite configure_quadrupole_model should activate the entry edge "
-        "fringe when EDGE_MODEL_QUAD is 'full'.")
+        "fringe when EDGE_MODEL_QUAD is `full`.")
     assert line["test_quad"].edge_exit_active == True, (
         "Xsuite configure_quadrupole_model should activate the exit edge "
-        "fringe when EDGE_MODEL_QUAD is 'full'.")
+        "fringe when EDGE_MODEL_QUAD is `full`.")
 
 def test_xsuite_line_table_exposes_writer_filter_fields_used_by_sad2xs():
     """
@@ -326,12 +326,12 @@ def test_xsuite_line_table_exposes_writer_filter_fields_used_by_sad2xs():
 
     for element_name, element_type in expected_type_by_name.items():
         assert element_name in table_names, (
-            f"Xsuite Line table should include writer-visible name '{element_name}'.")
+            f"Xsuite Line table should include writer-visible name `{element_name}`.")
         row_index = table_names.index(element_name)
         assert table_types[row_index] == element_type, (
-            f"Xsuite Line table should report '{element_type}' for '{element_name}'.")
+            f"Xsuite Line table should report `{element_type}` for `{element_name}`.")
         assert list(table.rows[table.element_type == element_type].name), (
-            f"Xsuite Line table rows should support filtering by '{element_type}'.")
+            f"Xsuite Line table rows should support filtering by `{element_type}`.")
 
 ################################################################################
 # Element API
@@ -404,7 +404,7 @@ def test_xsuite_element_attribute_contracts(
     """
     for field, expected_value in expected_fields.items():
         assert hasattr(element, field), (
-            f"Xsuite {element_name} should expose field '{field}' used by SAD2XS.")
+            f"Xsuite {element_name} should expose field `{field}` used by SAD2XS.")
 
         actual_value = getattr(element, field)
         if isinstance(expected_value, list):
@@ -442,7 +442,7 @@ def test_xsuite_transform_element_contracts(
     """
     for field, expected_value in expected_fields.items():
         assert hasattr(element, field), (
-            f"Xsuite {element_name} should expose field '{field}' used by SAD2XS. "
+            f"Xsuite {element_name} should expose field `{field}` used by SAD2XS. "
             "If this fails because Xsuite moved to a newer transform API, update "
             "the converter compatibility layer and local docs together.")
         assert getattr(element, field) == pytest.approx(expected_value), (

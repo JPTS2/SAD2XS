@@ -67,7 +67,7 @@ def _write_only(line, tmp_path, filename):
 def _assert_file_exists_and_is_executable(output_dir, filename):
     """
     Assert that output_dir/filename.py exists and that calling it in a fresh
-    Xsuite environment registers a line named 'line'. Calling each generated
+    Xsuite environment registers a line named `line`. Calling each generated
     file verifies that the writer output is syntactically valid Python and
     that the element serialisation produces a loadable lattice.
     """
@@ -80,7 +80,7 @@ def _assert_file_exists_and_is_executable(output_dir, filename):
     env.call(str(output_path))
 
     assert "line" in env.lines, (
-        f"Calling {output_path.name} should register a line named 'line' in "
+        f"Calling {output_path.name} should register a line named `line` in "
         "the Xsuite environment. This fails if the serialised element is "
         "syntactically invalid or produces an unloadable lattice.")
 
