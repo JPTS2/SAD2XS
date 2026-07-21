@@ -87,7 +87,7 @@ def _step_by_name(data, job_name, step_name):
 def _triggers(data):
     """
     Return the triggers dict from a workflow, handling PyYAML's treatment of
-    the YAML 1.1 reserved word 'on' as the boolean True rather than a string.
+    the YAML 1.1 reserved word `on` as the boolean True rather than a string.
     """
     return data.get(True) or data.get("on") or {}
 
@@ -103,8 +103,8 @@ def test_ci_template_has_workflow_call_trigger():
     """
     data = _load(TEMPLATE_PATH)
     assert "workflow_call" in _triggers(data), (
-        "_test_template.yml must have a 'workflow_call' trigger so folder "
-        "workflows can invoke it with 'uses:'.")
+        "_test_template.yml must have a `workflow_call` trigger so folder "
+        "workflows can invoke it with `uses:`.")
 
 
 def test_ci_template_requires_test_files_input():
@@ -115,9 +115,9 @@ def test_ci_template_requires_test_files_input():
     data    = _load(TEMPLATE_PATH)
     inputs  = _triggers(data)["workflow_call"]["inputs"]
     assert "test_files" in inputs, (
-        "_test_template.yml must declare a 'test_files' input.")
+        "_test_template.yml must declare a `test_files` input.")
     assert inputs["test_files"].get("required") is True, (
-        "The 'test_files' input in _test_template.yml must be required=true.")
+        "The `test_files` input in _test_template.yml must be required=true.")
 
 
 ################################################################################
@@ -132,9 +132,9 @@ def test_ci_template_discover_job_uses_checkout_v7():
     steps = data["jobs"]["discover"]["steps"]
     step  = _checkout_step(steps)
     assert step is not None, (
-        "The 'discover' job in _test_template.yml should have a checkout step.")
+        "The `discover` job in _test_template.yml should have a checkout step.")
     assert step["uses"] == "actions/checkout@v7", (
-        f"Discover job should use actions/checkout@v7, got: {step['uses']!r}")
+        f"""Discover job should use actions/checkout@v7, got: {step["uses"]!r}""")
 
 
 def test_ci_template_discover_job_does_not_override_checkout_ref():
@@ -142,17 +142,17 @@ def test_ci_template_discover_job_does_not_override_checkout_ref():
     The discover job must not set an explicit ref on the checkout step. Without
     an override, actions/checkout uses the commit that triggered the workflow —
     the required behaviour for PR and branch validation. An explicit ref
-    (e.g. 'main') would cause CI to test a different commit than the one that
+    (e.g. `main`) would cause CI to test a different commit than the one that
     triggered the run.
     """
     data  = _load(TEMPLATE_PATH)
     steps = data["jobs"]["discover"]["steps"]
     step  = _checkout_step(steps)
     assert step is not None, (
-        "The 'discover' job should have a checkout step.")
+        "The `discover` job should have a checkout step.")
     ref = step.get("with", {}).get("ref")
     assert ref is None, (
-        "The 'discover' job checkout should not override the ref. "
+        "The `discover` job checkout should not override the ref. "
         f"Got: {ref!r}")
 
 
@@ -167,9 +167,9 @@ def test_ci_template_run_job_uses_checkout_v7():
     steps = data["jobs"]["run"]["steps"]
     step  = _checkout_step(steps)
     assert step is not None, (
-        "The 'run' job in _test_template.yml should have a checkout step.")
+        "The `run` job in _test_template.yml should have a checkout step.")
     assert step["uses"] == "actions/checkout@v7", (
-        f"Run job should use actions/checkout@v7, got: {step['uses']!r}")
+        f"""Run job should use actions/checkout@v7, got: {step["uses"]!r}""")
 
 
 def test_ci_template_run_job_does_not_override_checkout_ref():
@@ -181,10 +181,10 @@ def test_ci_template_run_job_does_not_override_checkout_ref():
     steps = data["jobs"]["run"]["steps"]
     step  = _checkout_step(steps)
     assert step is not None, (
-        "The 'run' job should have a checkout step.")
+        "The `run` job should have a checkout step.")
     ref = step.get("with", {}).get("ref")
     assert ref is None, (
-        "The 'run' job checkout should not override the ref. "
+        "The `run` job checkout should not override the ref. "
         f"Got: {ref!r}")
 
 
@@ -199,7 +199,7 @@ def test_ci_template_run_job_matrix_does_not_fail_fast():
     data     = _load(TEMPLATE_PATH)
     strategy = data["jobs"]["run"].get("strategy", {})
     assert strategy.get("fail-fast") is False, (
-        "The 'run' job matrix strategy should set fail-fast: false so all "
+        "The `run` job matrix strategy should set fail-fast: false so all "
         "test files run independently.")
 
 
@@ -214,7 +214,7 @@ def test_ci_folder_workflow_has_workflow_dispatch_trigger(workflow_name):
     """
     data = _load(WORKFLOW_DIR / workflow_name)
     assert "workflow_dispatch" in _triggers(data), (
-        f"{workflow_name} should have a 'workflow_dispatch' trigger for "
+        f"{workflow_name} should have a `workflow_dispatch` trigger for "
         f"manual re-runs.")
 
 
@@ -234,7 +234,7 @@ def test_ci_folder_workflow_uses_shared_template(workflow_name):
     uses     = jobs[job_name].get("uses", "")
     assert uses == "./.github/workflows/_test_template.yml", (
         f"{workflow_name} should call the shared template via "
-        f"'uses: ./.github/workflows/_test_template.yml'. Got: {uses!r}")
+        f"`uses: ./.github/workflows/_test_template.yml`. Got: {uses!r}")
 
 
 @pytest.mark.parametrize("workflow_name", FOLDER_WORKFLOW_NAMES)
@@ -248,9 +248,9 @@ def test_ci_folder_workflow_sets_pull_tag(workflow_name):
     job_name = list(jobs.keys())[0]
     with_    = jobs[job_name].get("with", {})
     assert "pull_tag" in with_, (
-        f"{workflow_name} should pass 'pull_tag' to the template.")
+        f"{workflow_name} should pass `pull_tag` to the template.")
     assert with_["pull_tag"], (
-        f"{workflow_name} 'pull_tag' should be a non-empty string.")
+        f"{workflow_name} `pull_tag` should be a non-empty string.")
 
 
 ################################################################################
@@ -263,7 +263,7 @@ def test_ci_run_all_workflow_has_pull_request_trigger():
     """
     data = _load(RUN_ALL_PATH)
     assert "pull_request" in _triggers(data), (
-        "run_tests.yml should have a 'pull_request' trigger.")
+        "run_tests.yml should have a `pull_request` trigger.")
 
 
 def test_ci_run_all_workflow_has_schedule_trigger():
@@ -274,7 +274,7 @@ def test_ci_run_all_workflow_has_schedule_trigger():
     """
     data = _load(RUN_ALL_PATH)
     assert "schedule" in _triggers(data), (
-        "run_tests.yml should have a 'schedule' trigger for weekly runs.")
+        "run_tests.yml should have a `schedule` trigger for weekly runs.")
 
 
 def test_ci_run_all_workflow_has_workflow_dispatch_trigger():
@@ -284,7 +284,7 @@ def test_ci_run_all_workflow_has_workflow_dispatch_trigger():
     """
     data = _load(RUN_ALL_PATH)
     assert "workflow_dispatch" in _triggers(data), (
-        "run_tests.yml should have a 'workflow_dispatch' trigger.")
+        "run_tests.yml should have a `workflow_dispatch` trigger.")
 
 
 ################################################################################
@@ -292,34 +292,34 @@ def test_ci_run_all_workflow_has_workflow_dispatch_trigger():
 ################################################################################
 def test_ci_regression_step_excludes_known_issues():
     """
-    The 'Run regression tests' step must exclude known_issue-marked tests
+    The `Run regression tests` step must exclude known_issue-marked tests
     via a `not known_issue` pytest filter, after (re)installing the
     package in editable mode.
     """
     data = _load(RUN_ALL_PATH)
     step = _step_by_name(data, "run-tests", "Run regression tests")
-    assert step is not None, "run-tests job must have a 'Run regression tests' step."
-    assert 'not known_issue' in step["run"]
-    assert 'pip install --no-cache-dir -e .' in step["run"]
+    assert step is not None, "run-tests job must have a `Run regression tests` step."
+    assert "not known_issue" in step["run"]
+    assert "pip install --no-cache-dir -e ." in step["run"]
 
 
 def test_ci_known_issues_step_selects_only_known_issues():
     """
-    The 'Run known-issue tests' step must select only known_issue-marked
+    The `Run known-issue tests` step must select only known_issue-marked
     tests (not also apply the regression step's `not known_issue`
     exclusion), after (re)installing the package in editable mode.
     """
     data = _load(RUN_ALL_PATH)
     step = _step_by_name(data, "run-tests", "Run known-issue tests")
-    assert step is not None, "run-tests job must have a 'Run known-issue tests' step."
-    assert 'known_issue' in step["run"]
-    assert 'not known_issue' not in step["run"]
-    assert 'pip install --no-cache-dir -e .' in step["run"]
+    assert step is not None, "run-tests job must have a `Run known-issue tests` step."
+    assert "known_issue" in step["run"]
+    assert "not known_issue" not in step["run"]
+    assert "pip install --no-cache-dir -e ." in step["run"]
 
 
 def test_ci_known_issues_step_is_non_blocking():
     """
-    The 'Run known-issue tests' step must set continue-on-error: true
+    The `Run known-issue tests` step must set continue-on-error: true
     (a known failure shouldn't fail the job), while the run-tests job
     itself stays blocking.
     """
@@ -329,7 +329,7 @@ def test_ci_known_issues_step_is_non_blocking():
     step = _step_by_name(data, "run-tests", "Run known-issue tests")
     assert step is not None
     assert step.get("continue-on-error") is True, (
-        "'Run known-issue tests' step must have continue-on-error: true.")
+        "`Run known-issue tests` step must have continue-on-error: true.")
 
 
 def test_ci_regression_job_is_blocking():
@@ -359,15 +359,15 @@ def test_ci_run_all_job_does_not_override_checkout_ref():
 ################################################################################
 def test_ci_docker_build_workflow_name_is_stable():
     """
-    The docker-build workflow's 'name:' field is documented here so that a
+    The docker-build workflow's `name:` field is documented here so that a
     rename is caught immediately. The name is referenced in external contexts
     (issue trackers, team runbooks) and should not change without review.
     """
     data = _load(DOCKER_PATH)
     assert data["name"] == DOCKER_BUILD_WORKFLOW_NAME, (
-        f"docker-build.yml 'name' should be '{DOCKER_BUILD_WORKFLOW_NAME}'. "
+        f"docker-build.yml `name` should be `{DOCKER_BUILD_WORKFLOW_NAME}`. "
         f"Update DOCKER_BUILD_WORKFLOW_NAME in this file if intentionally "
-        f"renamed. Got: {data['name']!r}")
+        f"""renamed. Got: {data["name"]!r}""")
 
 
 def test_ci_docker_build_triggers_on_push_to_main():
@@ -379,7 +379,7 @@ def test_ci_docker_build_triggers_on_push_to_main():
     push_on  = _triggers(data).get("push", {})
     branches = push_on.get("branches", [])
     assert "main" in branches, (
-        f"docker-build.yml should trigger on push to 'main'. "
+        f"docker-build.yml should trigger on push to `main`. "
         f"Got branches: {branches}")
 
 
@@ -390,7 +390,7 @@ def test_ci_docker_build_has_workflow_dispatch_trigger():
     """
     data = _load(DOCKER_PATH)
     assert "workflow_dispatch" in _triggers(data), (
-        "docker-build.yml should have a 'workflow_dispatch' trigger.")
+        "docker-build.yml should have a `workflow_dispatch` trigger.")
 
 
 def test_ci_docker_build_uses_checkout_v7():
@@ -405,4 +405,4 @@ def test_ci_docker_build_uses_checkout_v7():
         "docker-build.yml should have a checkout step.")
     assert step["uses"] == "actions/checkout@v7", (
         f"docker-build.yml checkout should use actions/checkout@v7. "
-        f"Got: {step['uses']!r}")
+        f"""Got: {step["uses"]!r}""")

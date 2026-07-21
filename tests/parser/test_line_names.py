@@ -35,9 +35,9 @@ def test_line_name_containing_line_is_preserved(write_lattice):
     parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
 
     assert "myline" in parsed["lines"], (
-        "Line names containing 'line' should be preserved as dictionary keys.")
+        "Line names containing `line` should be preserved as dictionary keys.")
     assert parsed["lines"]["myline"] == ["a", "b"], (
-        "Line names containing 'line' should preserve their components.")
+        "Line names containing `line` should preserve their components.")
 
 def test_line_reference_containing_line_is_preserved(write_lattice):
     """
@@ -72,5 +72,5 @@ def test_reversed_line_reference_containing_line_is_preserved(write_lattice):
     parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
 
     assert parsed["lines"]["ring"] == ["-myline", "c"], (
-        "Reversed references to names containing 'line' should preserve the "
+        "Reversed references to names containing `line` should preserve the "
         "minus token and full referenced name.")

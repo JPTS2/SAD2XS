@@ -112,8 +112,8 @@ def test_aper_writer_limitellipse_reloads_as_xsuite_limitellipse(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["ap1"], xt.LimitEllipse), (
-        "Written LimitEllipse element 'ap1' should reload as xt.LimitEllipse. "
-        f"Got: {type(reloaded_line['ap1']).__name__}.")
+        "Written LimitEllipse element `ap1` should reload as xt.LimitEllipse. "
+        f"""Got: {type(reloaded_line["ap1"]).__name__}.""")
 
 
 def test_aper_writer_limitellipse_preserves_element_name(tmp_path):
@@ -125,7 +125,7 @@ def test_aper_writer_limitellipse_preserves_element_name(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert "ap1" in list(reloaded_line.element_names), (
-        "Reloaded line should contain LimitEllipse element 'ap1'. "
+        "Reloaded line should contain LimitEllipse element `ap1`. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
@@ -143,7 +143,7 @@ def test_aper_writer_limitellipse_preserves_a(tmp_path):
 
     assert reloaded_line["ap1"].a == pytest.approx(0.025), (
         "Writer roundtrip should preserve LimitEllipse semi-axis a. "
-        f"Original: 0.025, reloaded: {reloaded_line['ap1'].a}.")
+        f"""Original: 0.025, reloaded: {reloaded_line["ap1"].a}.""")
 
 
 def test_aper_writer_limitellipse_preserves_b(tmp_path):
@@ -156,7 +156,7 @@ def test_aper_writer_limitellipse_preserves_b(tmp_path):
 
     assert reloaded_line["ap1"].b == pytest.approx(0.018), (
         "Writer roundtrip should preserve LimitEllipse semi-axis b. "
-        f"Original: 0.018, reloaded: {reloaded_line['ap1'].b}.")
+        f"""Original: 0.018, reloaded: {reloaded_line["ap1"].b}.""")
 
 
 def test_aper_writer_limitellipse_preserves_a_and_b_simultaneously(tmp_path):
@@ -170,10 +170,10 @@ def test_aper_writer_limitellipse_preserves_a_and_b_simultaneously(tmp_path):
 
     assert reloaded_line["ap1"].a == pytest.approx(0.025), (
         "Writer roundtrip should preserve LimitEllipse a alongside b. "
-        f"Original: 0.025, reloaded: {reloaded_line['ap1'].a}.")
+        f"""Original: 0.025, reloaded: {reloaded_line["ap1"].a}.""")
     assert reloaded_line["ap1"].b == pytest.approx(0.018), (
         "Writer roundtrip should preserve LimitEllipse b alongside a. "
-        f"Original: 0.018, reloaded: {reloaded_line['ap1'].b}.")
+        f"""Original: 0.018, reloaded: {reloaded_line["ap1"].b}.""")
 
 
 ########################################
@@ -190,7 +190,7 @@ def test_aper_writer_limitellipse_preserves_positive_shift_x(tmp_path):
 
     assert reloaded_line["ap1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve positive LimitEllipse shift_x. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['ap1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["ap1"].shift_x}.""")
 
 
 def test_aper_writer_limitellipse_preserves_negative_shift_x(tmp_path):
@@ -203,7 +203,7 @@ def test_aper_writer_limitellipse_preserves_negative_shift_x(tmp_path):
 
     assert reloaded_line["ap1"].shift_x == pytest.approx(-1.5E-3), (
         "Writer roundtrip should preserve negative LimitEllipse shift_x. "
-        f"Original: -1.5E-3, reloaded: {reloaded_line['ap1'].shift_x}.")
+        f"""Original: -1.5E-3, reloaded: {reloaded_line["ap1"].shift_x}.""")
 
 
 def test_aper_writer_limitellipse_preserves_positive_shift_y(tmp_path):
@@ -216,7 +216,7 @@ def test_aper_writer_limitellipse_preserves_positive_shift_y(tmp_path):
 
     assert reloaded_line["ap1"].shift_y == pytest.approx(2.0E-3), (
         "Writer roundtrip should preserve positive LimitEllipse shift_y. "
-        f"Original: 2.0E-3, reloaded: {reloaded_line['ap1'].shift_y}.")
+        f"""Original: 2.0E-3, reloaded: {reloaded_line["ap1"].shift_y}.""")
 
 
 def test_aper_writer_limitellipse_preserves_negative_shift_y(tmp_path):
@@ -229,7 +229,7 @@ def test_aper_writer_limitellipse_preserves_negative_shift_y(tmp_path):
 
     assert reloaded_line["ap1"].shift_y == pytest.approx(-2.5E-3), (
         "Writer roundtrip should preserve negative LimitEllipse shift_y. "
-        f"Original: -2.5E-3, reloaded: {reloaded_line['ap1'].shift_y}.")
+        f"""Original: -2.5E-3, reloaded: {reloaded_line["ap1"].shift_y}.""")
 
 
 def test_aper_writer_limitellipse_preserves_all_fields_simultaneously(tmp_path):
@@ -245,13 +245,13 @@ def test_aper_writer_limitellipse_preserves_all_fields_simultaneously(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert reloaded_line["ap1"].a       == pytest.approx(0.025),  (
-        f"Writer roundtrip should preserve a. Reloaded: {reloaded_line['ap1'].a}.")
+        f"""Writer roundtrip should preserve a. Reloaded: {reloaded_line["ap1"].a}.""")
     assert reloaded_line["ap1"].b       == pytest.approx(0.018),  (
-        f"Writer roundtrip should preserve b. Reloaded: {reloaded_line['ap1'].b}.")
+        f"""Writer roundtrip should preserve b. Reloaded: {reloaded_line["ap1"].b}.""")
     assert reloaded_line["ap1"].shift_x == pytest.approx(1.0E-3), (
-        f"Writer roundtrip should preserve shift_x. Reloaded: {reloaded_line['ap1'].shift_x}.")
+        f"""Writer roundtrip should preserve shift_x. Reloaded: {reloaded_line["ap1"].shift_x}.""")
     assert reloaded_line["ap1"].shift_y == pytest.approx(-2.0E-3),(
-        f"Writer roundtrip should preserve shift_y. Reloaded: {reloaded_line['ap1'].shift_y}.")
+        f"""Writer roundtrip should preserve shift_y. Reloaded: {reloaded_line["ap1"].shift_y}.""")
 
 
 ########################################
@@ -269,9 +269,9 @@ def test_aper_writer_limitellipse_a_is_accessible_as_optics_variable(tmp_path):
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["a_ap1"] == pytest.approx(0.025), (
-        "Optics variable 'a_ap1' should exist in the environment after reload "
+        "Optics variable `a_ap1` should exist in the environment after reload "
         "and equal the original semi-axis a. "
-        f"Got: {env['a_ap1']}.")
+        f"""Got: {env["a_ap1"]}.""")
 
 
 def test_aper_writer_limitellipse_b_is_accessible_as_optics_variable(tmp_path):
@@ -286,9 +286,9 @@ def test_aper_writer_limitellipse_b_is_accessible_as_optics_variable(tmp_path):
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["b_ap1"] == pytest.approx(0.018), (
-        "Optics variable 'b_ap1' should exist in the environment after reload "
+        "Optics variable `b_ap1` should exist in the environment after reload "
         "and equal the original semi-axis b. "
-        f"Got: {env['b_ap1']}.")
+        f"""Got: {env["b_ap1"]}.""")
 
 
 def test_aper_writer_limitellipse_a_is_tunable_via_optics_variable(tmp_path):
@@ -304,8 +304,8 @@ def test_aper_writer_limitellipse_a_is_tunable_via_optics_variable(tmp_path):
     env["a_ap1"] = 0.030
 
     assert reloaded_line["ap1"].a == pytest.approx(0.030), (
-        "Modifying optics variable 'a_ap1' should update the LimitEllipse a. "
-        f"Got: {reloaded_line['ap1'].a}.")
+        "Modifying optics variable `a_ap1` should update the LimitEllipse a. "
+        f"""Got: {reloaded_line["ap1"].a}.""")
 
 
 ########################################
@@ -330,17 +330,17 @@ def test_aper_writer_preserves_multiple_limitellipses_independently(tmp_path):
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
     assert reloaded_line["apa"].a == pytest.approx(0.025), (
-        "Writer roundtrip should preserve a for 'apa'. "
-        f"Original: 0.025, reloaded: {reloaded_line['apa'].a}.")
+        "Writer roundtrip should preserve a for `apa`. "
+        f"""Original: 0.025, reloaded: {reloaded_line["apa"].a}.""")
     assert reloaded_line["apa"].b == pytest.approx(0.018), (
-        "Writer roundtrip should preserve b for 'apa'. "
-        f"Original: 0.018, reloaded: {reloaded_line['apa'].b}.")
+        "Writer roundtrip should preserve b for `apa`. "
+        f"""Original: 0.018, reloaded: {reloaded_line["apa"].b}.""")
     assert reloaded_line["apb"].a == pytest.approx(0.020), (
-        "Writer roundtrip should preserve a for 'apb'. "
-        f"Original: 0.020, reloaded: {reloaded_line['apb'].a}.")
+        "Writer roundtrip should preserve a for `apb`. "
+        f"""Original: 0.020, reloaded: {reloaded_line["apb"].a}.""")
     assert reloaded_line["apb"].b == pytest.approx(0.015), (
-        "Writer roundtrip should preserve b for 'apb'. "
-        f"Original: 0.015, reloaded: {reloaded_line['apb'].b}.")
+        "Writer roundtrip should preserve b for `apb`. "
+        f"""Original: 0.015, reloaded: {reloaded_line["apb"].b}.""")
 
 
 ################################################################################
@@ -358,8 +358,8 @@ def test_aper_writer_limitrect_reloads_as_xsuite_limitrect(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["ap1"], xt.LimitRect), (
-        "Written LimitRect element 'ap1' should reload as xt.LimitRect. "
-        f"Got: {type(reloaded_line['ap1']).__name__}.")
+        "Written LimitRect element `ap1` should reload as xt.LimitRect. "
+        f"""Got: {type(reloaded_line["ap1"]).__name__}.""")
 
 
 def test_aper_writer_limitrect_preserves_element_name(tmp_path):
@@ -371,7 +371,7 @@ def test_aper_writer_limitrect_preserves_element_name(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert "ap1" in list(reloaded_line.element_names), (
-        "Reloaded line should contain LimitRect element 'ap1'. "
+        "Reloaded line should contain LimitRect element `ap1`. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
@@ -388,10 +388,10 @@ def test_aper_writer_limitrect_preserves_horizontal_bounds(tmp_path):
 
     assert reloaded_line["ap1"].min_x == pytest.approx(-0.025), (
         "Writer roundtrip should preserve LimitRect min_x. "
-        f"Original: -0.025, reloaded: {reloaded_line['ap1'].min_x}.")
+        f"""Original: -0.025, reloaded: {reloaded_line["ap1"].min_x}.""")
     assert reloaded_line["ap1"].max_x == pytest.approx( 0.025), (
         "Writer roundtrip should preserve LimitRect max_x. "
-        f"Original: 0.025, reloaded: {reloaded_line['ap1'].max_x}.")
+        f"""Original: 0.025, reloaded: {reloaded_line["ap1"].max_x}.""")
 
 
 def test_aper_writer_limitrect_preserves_vertical_bounds(tmp_path):
@@ -404,10 +404,10 @@ def test_aper_writer_limitrect_preserves_vertical_bounds(tmp_path):
 
     assert reloaded_line["ap1"].min_y == pytest.approx(-0.018), (
         "Writer roundtrip should preserve LimitRect min_y. "
-        f"Original: -0.018, reloaded: {reloaded_line['ap1'].min_y}.")
+        f"""Original: -0.018, reloaded: {reloaded_line["ap1"].min_y}.""")
     assert reloaded_line["ap1"].max_y == pytest.approx( 0.018), (
         "Writer roundtrip should preserve LimitRect max_y. "
-        f"Original: 0.018, reloaded: {reloaded_line['ap1'].max_y}.")
+        f"""Original: 0.018, reloaded: {reloaded_line["ap1"].max_y}.""")
 
 
 def test_aper_writer_limitrect_preserves_asymmetric_bounds(tmp_path):
@@ -425,16 +425,16 @@ def test_aper_writer_limitrect_preserves_asymmetric_bounds(tmp_path):
 
     assert reloaded_line["ap1"].min_x == pytest.approx(-0.015), (
         "Writer roundtrip should preserve asymmetric min_x. "
-        f"Original: -0.015, reloaded: {reloaded_line['ap1'].min_x}.")
+        f"""Original: -0.015, reloaded: {reloaded_line["ap1"].min_x}.""")
     assert reloaded_line["ap1"].max_x == pytest.approx( 0.025), (
         "Writer roundtrip should preserve asymmetric max_x. "
-        f"Original: 0.025, reloaded: {reloaded_line['ap1'].max_x}.")
+        f"""Original: 0.025, reloaded: {reloaded_line["ap1"].max_x}.""")
     assert reloaded_line["ap1"].min_y == pytest.approx(-0.010), (
         "Writer roundtrip should preserve asymmetric min_y. "
-        f"Original: -0.010, reloaded: {reloaded_line['ap1'].min_y}.")
+        f"""Original: -0.010, reloaded: {reloaded_line["ap1"].min_y}.""")
     assert reloaded_line["ap1"].max_y == pytest.approx( 0.020), (
         "Writer roundtrip should preserve asymmetric max_y. "
-        f"Original: 0.020, reloaded: {reloaded_line['ap1'].max_y}.")
+        f"""Original: 0.020, reloaded: {reloaded_line["ap1"].max_y}.""")
 
 
 ########################################
@@ -450,7 +450,7 @@ def test_aper_writer_limitrect_preserves_positive_shift_x(tmp_path):
 
     assert reloaded_line["ap1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve positive LimitRect shift_x. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['ap1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["ap1"].shift_x}.""")
 
 
 def test_aper_writer_limitrect_preserves_negative_shift_y(tmp_path):
@@ -463,7 +463,7 @@ def test_aper_writer_limitrect_preserves_negative_shift_y(tmp_path):
 
     assert reloaded_line["ap1"].shift_y == pytest.approx(-2.0E-3), (
         "Writer roundtrip should preserve negative LimitRect shift_y. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['ap1'].shift_y}.")
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["ap1"].shift_y}.""")
 
 
 def test_aper_writer_limitrect_preserves_all_fields_simultaneously(tmp_path):
@@ -481,17 +481,17 @@ def test_aper_writer_limitrect_preserves_all_fields_simultaneously(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert reloaded_line["ap1"].min_x   == pytest.approx(-0.015),  (
-        f"Writer roundtrip should preserve min_x. Reloaded: {reloaded_line['ap1'].min_x}.")
+        f"""Writer roundtrip should preserve min_x. Reloaded: {reloaded_line["ap1"].min_x}.""")
     assert reloaded_line["ap1"].max_x   == pytest.approx( 0.025),  (
-        f"Writer roundtrip should preserve max_x. Reloaded: {reloaded_line['ap1'].max_x}.")
+        f"""Writer roundtrip should preserve max_x. Reloaded: {reloaded_line["ap1"].max_x}.""")
     assert reloaded_line["ap1"].min_y   == pytest.approx(-0.010),  (
-        f"Writer roundtrip should preserve min_y. Reloaded: {reloaded_line['ap1'].min_y}.")
+        f"""Writer roundtrip should preserve min_y. Reloaded: {reloaded_line["ap1"].min_y}.""")
     assert reloaded_line["ap1"].max_y   == pytest.approx( 0.020),  (
-        f"Writer roundtrip should preserve max_y. Reloaded: {reloaded_line['ap1'].max_y}.")
+        f"""Writer roundtrip should preserve max_y. Reloaded: {reloaded_line["ap1"].max_y}.""")
     assert reloaded_line["ap1"].shift_x == pytest.approx( 1.0E-3), (
-        f"Writer roundtrip should preserve shift_x. Reloaded: {reloaded_line['ap1'].shift_x}.")
+        f"""Writer roundtrip should preserve shift_x. Reloaded: {reloaded_line["ap1"].shift_x}.""")
     assert reloaded_line["ap1"].shift_y == pytest.approx(-2.0E-3), (
-        f"Writer roundtrip should preserve shift_y. Reloaded: {reloaded_line['ap1'].shift_y}.")
+        f"""Writer roundtrip should preserve shift_y. Reloaded: {reloaded_line["ap1"].shift_y}.""")
 
 
 ########################################
@@ -509,9 +509,9 @@ def test_aper_writer_limitrect_min_x_is_accessible_as_optics_variable(tmp_path):
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["min_x_ap1"] == pytest.approx(-0.025), (
-        "Optics variable 'min_x_ap1' should exist in the environment after reload "
+        "Optics variable `min_x_ap1` should exist in the environment after reload "
         "and equal the original min_x. "
-        f"Got: {env['min_x_ap1']}.")
+        f"""Got: {env["min_x_ap1"]}.""")
 
 
 def test_aper_writer_limitrect_max_x_is_accessible_as_optics_variable(tmp_path):
@@ -526,9 +526,9 @@ def test_aper_writer_limitrect_max_x_is_accessible_as_optics_variable(tmp_path):
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["max_x_ap1"] == pytest.approx(0.025), (
-        "Optics variable 'max_x_ap1' should exist in the environment after reload "
+        "Optics variable `max_x_ap1` should exist in the environment after reload "
         "and equal the original max_x. "
-        f"Got: {env['max_x_ap1']}.")
+        f"""Got: {env["max_x_ap1"]}.""")
 
 
 def test_aper_writer_limitrect_min_x_is_tunable_via_optics_variable(tmp_path):
@@ -544,8 +544,8 @@ def test_aper_writer_limitrect_min_x_is_tunable_via_optics_variable(tmp_path):
     env["min_x_ap1"] = -0.030
 
     assert reloaded_line["ap1"].min_x == pytest.approx(-0.030), (
-        "Modifying optics variable 'min_x_ap1' should update the LimitRect min_x. "
-        f"Got: {reloaded_line['ap1'].min_x}.")
+        "Modifying optics variable `min_x_ap1` should update the LimitRect min_x. "
+        f"""Got: {reloaded_line["ap1"].min_x}.""")
 
 
 ########################################
@@ -570,17 +570,17 @@ def test_aper_writer_preserves_multiple_limitrects_independently(tmp_path):
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
     assert reloaded_line["apa"].max_x == pytest.approx(0.025), (
-        "Writer roundtrip should preserve max_x for 'apa'. "
-        f"Original: 0.025, reloaded: {reloaded_line['apa'].max_x}.")
+        "Writer roundtrip should preserve max_x for `apa`. "
+        f"""Original: 0.025, reloaded: {reloaded_line["apa"].max_x}.""")
     assert reloaded_line["apa"].max_y == pytest.approx(0.018), (
-        "Writer roundtrip should preserve max_y for 'apa'. "
-        f"Original: 0.018, reloaded: {reloaded_line['apa'].max_y}.")
+        "Writer roundtrip should preserve max_y for `apa`. "
+        f"""Original: 0.018, reloaded: {reloaded_line["apa"].max_y}.""")
     assert reloaded_line["apb"].max_x == pytest.approx(0.020), (
-        "Writer roundtrip should preserve max_x for 'apb'. "
-        f"Original: 0.020, reloaded: {reloaded_line['apb'].max_x}.")
+        "Writer roundtrip should preserve max_x for `apb`. "
+        f"""Original: 0.020, reloaded: {reloaded_line["apb"].max_x}.""")
     assert reloaded_line["apb"].max_y == pytest.approx(0.015), (
-        "Writer roundtrip should preserve max_y for 'apb'. "
-        f"Original: 0.015, reloaded: {reloaded_line['apb'].max_y}.")
+        "Writer roundtrip should preserve max_y for `apb`. "
+        f"""Original: 0.015, reloaded: {reloaded_line["apb"].max_y}.""")
 
 
 def _build_limitrectellipse_line(
@@ -619,8 +619,8 @@ def test_aper_writer_limitrectellipse_reloads_as_xsuite_limitrectellipse(tmp_pat
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["ap1"], xt.LimitRectEllipse), (
-        "Written LimitRectEllipse element 'ap1' should reload as xt.LimitRectEllipse. "
-        f"Got: {type(reloaded_line['ap1']).__name__}.")
+        "Written LimitRectEllipse element `ap1` should reload as xt.LimitRectEllipse. "
+        f"""Got: {type(reloaded_line["ap1"]).__name__}.""")
 
 
 def test_aper_writer_limitrectellipse_preserves_max_x(tmp_path):
@@ -633,7 +633,7 @@ def test_aper_writer_limitrectellipse_preserves_max_x(tmp_path):
 
     assert reloaded_line["ap1"].max_x == pytest.approx(0.020), (
         "Writer roundtrip should preserve LimitRectEllipse max_x. "
-        f"Original: 0.020, reloaded: {reloaded_line['ap1'].max_x}.")
+        f"""Original: 0.020, reloaded: {reloaded_line["ap1"].max_x}.""")
 
 
 def test_aper_writer_limitrectellipse_preserves_max_y(tmp_path):
@@ -646,7 +646,7 @@ def test_aper_writer_limitrectellipse_preserves_max_y(tmp_path):
 
     assert reloaded_line["ap1"].max_y == pytest.approx(0.015), (
         "Writer roundtrip should preserve LimitRectEllipse max_y. "
-        f"Original: 0.015, reloaded: {reloaded_line['ap1'].max_y}.")
+        f"""Original: 0.015, reloaded: {reloaded_line["ap1"].max_y}.""")
 
 
 def test_aper_writer_limitrectellipse_preserves_a(tmp_path):
@@ -659,7 +659,7 @@ def test_aper_writer_limitrectellipse_preserves_a(tmp_path):
 
     assert reloaded_line["ap1"].a == pytest.approx(0.025), (
         "Writer roundtrip should preserve LimitRectEllipse a. "
-        f"Original: 0.025, reloaded: {reloaded_line['ap1'].a}.")
+        f"""Original: 0.025, reloaded: {reloaded_line["ap1"].a}.""")
 
 
 def test_aper_writer_limitrectellipse_preserves_b(tmp_path):
@@ -672,7 +672,7 @@ def test_aper_writer_limitrectellipse_preserves_b(tmp_path):
 
     assert reloaded_line["ap1"].b == pytest.approx(0.018), (
         "Writer roundtrip should preserve LimitRectEllipse b. "
-        f"Original: 0.018, reloaded: {reloaded_line['ap1'].b}.")
+        f"""Original: 0.018, reloaded: {reloaded_line["ap1"].b}.""")
 
 
 def test_aper_writer_limitrectellipse_preserves_all_fields(tmp_path):
@@ -719,21 +719,21 @@ def test_aper_writer_preserves_limitellipse_and_limitrect_in_one_line(tmp_path):
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["apell"], xt.LimitEllipse), (
-        f"'apell' should reload as xt.LimitEllipse. "
-        f"Got: {type(reloaded_line['apell']).__name__}.")
+        f"`apell` should reload as xt.LimitEllipse. "
+        f"""Got: {type(reloaded_line["apell"]).__name__}.""")
     assert isinstance(reloaded_line["aprect"], xt.LimitRect), (
-        f"'aprect' should reload as xt.LimitRect. "
-        f"Got: {type(reloaded_line['aprect']).__name__}.")
+        f"`aprect` should reload as xt.LimitRect. "
+        f"""Got: {type(reloaded_line["aprect"]).__name__}.""")
 
     assert reloaded_line["apell"].a    == pytest.approx(0.025), (
         f"Writer roundtrip should preserve LimitEllipse a. "
-        f"Original: 0.025, reloaded: {reloaded_line['apell'].a}.")
+        f"""Original: 0.025, reloaded: {reloaded_line["apell"].a}.""")
     assert reloaded_line["apell"].b    == pytest.approx(0.018), (
         f"Writer roundtrip should preserve LimitEllipse b. "
-        f"Original: 0.018, reloaded: {reloaded_line['apell'].b}.")
+        f"""Original: 0.018, reloaded: {reloaded_line["apell"].b}.""")
     assert reloaded_line["aprect"].max_x == pytest.approx(0.020), (
         f"Writer roundtrip should preserve LimitRect max_x. "
-        f"Original: 0.020, reloaded: {reloaded_line['aprect'].max_x}.")
+        f"""Original: 0.020, reloaded: {reloaded_line["aprect"].max_x}.""")
     assert reloaded_line["aprect"].max_y == pytest.approx(0.015), (
         f"Writer roundtrip should preserve LimitRect max_y. "
-        f"Original: 0.015, reloaded: {reloaded_line['aprect'].max_y}.")
+        f"""Original: 0.015, reloaded: {reloaded_line["aprect"].max_y}.""")

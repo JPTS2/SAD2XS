@@ -28,7 +28,7 @@ from tests.support.config import PROTECTED_ELEMENT_NAMES
 ################################################################################
 def test_multiple_equals_in_deferred_expression_raises_clear_error(write_lattice):
     """
-    Deferred expressions with multiple '=' characters should fail clearly.
+    Deferred expressions with multiple `=` characters should fail clearly.
     """
     lattice_path = write_lattice(
         """\
@@ -42,7 +42,7 @@ def test_multiple_equals_in_deferred_expression_raises_clear_error(write_lattice
 
 def test_invalid_deferred_expression_syntax_raises_clear_error(write_lattice):
     """
-    A trailing operator ('A = 1.0 +;') is accepted by SAD but silently corrupts
+    A trailing operator (`A = 1.0 +;`) is accepted by SAD but silently corrupts
     the value. SAD2XS should fail clearly and direct the user to their SAD lattice.
     """
     lattice_path = write_lattice(
@@ -124,7 +124,7 @@ def test_unknown_command_with_parentheses_and_commas_is_ignored(write_lattice):
 ################################################################################
 def test_line_without_equals_is_parsed_correctly(write_lattice):
     """
-    SAD accepts LINE definitions without '=' (e.g. 'LINE RING (A B)').
+    SAD accepts LINE definitions without `=` (e.g. `LINE RING (A B)`).
     The converter must handle this and produce the correct element list.
     """
     lattice_path = write_lattice(
@@ -139,11 +139,11 @@ def test_line_without_equals_is_parsed_correctly(write_lattice):
     parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
 
     assert parsed["lines"]["ring"] == ["a", "b"], (
-        "LINE without '=' should parse to the correct element list.")
+        "LINE without `=` should parse to the correct element list.")
 
 def test_line_without_parentheses_is_parsed_correctly(write_lattice):
     """
-    SAD accepts LINE definitions without parentheses (e.g. 'LINE RING = A B').
+    SAD accepts LINE definitions without parentheses (e.g. `LINE RING = A B`).
     The converter must handle this and produce the correct element list.
     """
     lattice_path = write_lattice(
@@ -162,7 +162,7 @@ def test_line_without_parentheses_is_parsed_correctly(write_lattice):
 
 def test_malformed_line_multiple_equals_raises_clear_error(write_lattice):
     """
-    Line definitions with multiple '=' characters should fail clearly.
+    Line definitions with multiple `=` characters should fail clearly.
     """
     lattice_path = write_lattice(
         """\

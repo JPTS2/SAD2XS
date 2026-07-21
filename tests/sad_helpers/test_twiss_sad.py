@@ -144,7 +144,7 @@ def test_generate_twiss_print_function_defines_save_twiss_file():
     result = generate_twiss_print_function()
 
     assert "SaveTwissFile[filename_]" in result, (
-        "generate_twiss_print_function should define 'SaveTwissFile[filename_]'. "
+        "generate_twiss_print_function should define `SaveTwissFile[filename_]`. "
         f"Got: {result[:200]!r}.")
 
 
@@ -158,7 +158,7 @@ def test_generate_twiss_print_function_includes_optics_columns():
 
     for column in ("BETX", "BETY", "ALFX", "ALFY", "MUX", "MUY"):
         assert column in result, (
-            f"generate_twiss_print_function should include column '{column}'. "
+            f"generate_twiss_print_function should include column `{column}`. "
             f"Got: {result[:200]!r}.")
 
 
@@ -171,7 +171,7 @@ def test_generate_twiss_print_function_includes_dispersion_and_coupling_columns(
 
     for column in ("DX", "DY", "DPX", "DPY", "R1", "R2", "R3", "R4"):
         assert column in result, (
-            f"generate_twiss_print_function should include column '{column}'. "
+            f"generate_twiss_print_function should include column `{column}`. "
             f"Got: {result[:200]!r}.")
 
 
@@ -208,7 +208,7 @@ def test_twiss_sad_returns_table_with_expected_optics_columns(
     for column in ("betx", "bety", "alfx", "alfy", "mux", "muy",
                    "dx", "dy", "dpx", "dpy"):
         assert column in twiss.keys(), (
-            f"twiss_sad should return a table with column '{column}'.")
+            f"twiss_sad should return a table with column `{column}`.")
 
 
 def test_twiss_sad_elements_are_sorted_by_s_position(tmp_path, monkeypatch):
@@ -234,7 +234,7 @@ def test_twiss_sad_s_at_start_is_zero(tmp_path, monkeypatch):
 
     assert twiss["s", "START"] == pytest.approx(0.0), (
         "START marker should be at s = 0 in a transfer-line Twiss. "
-        f"Got: s = {twiss['s', 'START']}.")
+        f"""Got: s = {twiss["s", "START"]}.""")
 
 
 def test_twiss_sad_no_nan_in_standard_columns(tmp_path, monkeypatch):
@@ -250,7 +250,7 @@ def test_twiss_sad_no_nan_in_standard_columns(tmp_path, monkeypatch):
                    "x", "y", "px", "py"):
         values = np.asarray(getattr(twiss, column))
         assert np.all(np.isfinite(values)), (
-            f"Column '{column}' should contain only finite values. "
+            f"Column `{column}` should contain only finite values. "
             f"Got: {values}.")
 
 
@@ -374,8 +374,8 @@ def test_twiss_sad_reverse_element_order_matches_sad_native_reversed_line(
             native_val   = tw_native[column][name_to_idx_native[name]]
             reversed_val = tw_reversed[column][name_to_idx_reversed[name]]
             assert reversed_val == pytest.approx(native_val, abs = 1E-9), (
-                f"twiss_sad(reverse_element_order=True) column '{column}' at "
-                f"'{name}' should match SAD's native REV line exactly. "
+                f"twiss_sad(reverse_element_order=True) column `{column}` at "
+                f"`{name}` should match SAD's native REV line exactly. "
                 f"Native: {native_val}, reversed: {reversed_val}.")
 
 
@@ -507,7 +507,7 @@ def test_compute_second_order_dispersions_adds_second_order_fields(
 
     for field in ("ddx", "ddpx", "ddy", "ddpy"):
         assert field in twiss.keys(), (
-            f"compute_second_order_dispersions should add field '{field}' to "
+            f"compute_second_order_dispersions should add field `{field}` to "
             "the returned TwissTable.")
 
 
@@ -524,7 +524,7 @@ def test_compute_second_order_dispersions_fields_are_finite(
     for field in ("ddx", "ddpx", "ddy", "ddpy"):
         values = np.asarray(twiss[field])
         assert np.all(np.isfinite(values)), (
-            f"compute_second_order_dispersions field '{field}' should be "
+            f"compute_second_order_dispersions field `{field}` should be "
             f"finite everywhere. Got: {values}.")
 
 
@@ -541,7 +541,7 @@ def test_compute_second_order_dispersions_is_zero_for_drift_only_lattice(
     for field in ("ddx", "ddpx", "ddy", "ddpy"):
         values = np.asarray(twiss[field])
         assert np.allclose(values, 0.0, atol = 1E-9), (
-            f"Second-order dispersion '{field}' should be 0 everywhere in a "
+            f"Second-order dispersion `{field}` should be 0 everywhere in a "
             f"drift-only lattice. Got: {values}.")
 
 
@@ -561,7 +561,7 @@ def test_compute_chromatic_functions_adds_chromatic_fields(
     for field in ("bx_chrom", "by_chrom", "ax_chrom", "ay_chrom",
                   "wx_chrom", "wy_chrom"):
         assert field in twiss.keys(), (
-            f"compute_chromatic_functions should add field '{field}' to "
+            f"compute_chromatic_functions should add field `{field}` to "
             "the returned TwissTable.")
 
 
@@ -577,7 +577,7 @@ def test_compute_chromatic_functions_fields_are_finite(tmp_path, monkeypatch):
                   "wx_chrom", "wy_chrom"):
         values = np.asarray(twiss[field])
         assert np.all(np.isfinite(values)), (
-            f"compute_chromatic_functions field '{field}' should be finite "
+            f"compute_chromatic_functions field `{field}` should be finite "
             f"everywhere. Got: {values}.")
 
 
@@ -593,7 +593,7 @@ def test_compute_chromatic_functions_w_functions_are_nonnegative(
 
     assert np.all(np.asarray(twiss["wx_chrom"]) >= 0), (
         "wx_chrom should be non-negative everywhere (computed as a norm). "
-        f"Got: {list(twiss['wx_chrom'])}.")
+        f"""Got: {list(twiss["wx_chrom"])}.""")
     assert np.all(np.asarray(twiss["wy_chrom"]) >= 0), (
         "wy_chrom should be non-negative everywhere (computed as a norm). "
-        f"Got: {list(twiss['wy_chrom'])}.")
+        f"""Got: {list(twiss["wy_chrom"])}.""")

@@ -97,8 +97,8 @@ def test_sol_writer_reloads_as_xsuite_uniform_solenoid(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["sol1"], xt.UniformSolenoid), (
-        "Written solenoid element 'sol1' should reload as xt.UniformSolenoid. "
-        f"Got: {type(reloaded_line['sol1']).__name__}.")
+        "Written solenoid element `sol1` should reload as xt.UniformSolenoid. "
+        f"""Got: {type(reloaded_line["sol1"]).__name__}.""")
 
 
 def test_sol_writer_preserves_element_name(tmp_path):
@@ -110,7 +110,7 @@ def test_sol_writer_preserves_element_name(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert "sol1" in list(reloaded_line.element_names), (
-        "Reloaded line should contain solenoid element 'sol1'. "
+        "Reloaded line should contain solenoid element `sol1`. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
@@ -158,7 +158,7 @@ def test_sol_writer_preserves_length(tmp_path):
 
     assert reloaded_line["sol1"].length == pytest.approx(0.75), (
         "Writer roundtrip should preserve solenoid length. "
-        f"Original: 0.75, reloaded: {reloaded_line['sol1'].length}.")
+        f"""Original: 0.75, reloaded: {reloaded_line["sol1"].length}.""")
 
 
 ########################################
@@ -175,7 +175,7 @@ def test_sol_writer_preserves_positive_ks(tmp_path):
 
     assert reloaded_line["sol1"].ks == pytest.approx(0.1), (
         "Writer roundtrip should preserve positive solenoid ks. "
-        f"Original: 0.1, reloaded: {reloaded_line['sol1'].ks}.")
+        f"""Original: 0.1, reloaded: {reloaded_line["sol1"].ks}.""")
 
 
 def test_sol_writer_preserves_negative_ks(tmp_path):
@@ -188,7 +188,7 @@ def test_sol_writer_preserves_negative_ks(tmp_path):
 
     assert reloaded_line["sol1"].ks == pytest.approx(-0.1), (
         "Writer roundtrip should preserve negative solenoid ks. "
-        f"Original: -0.1, reloaded: {reloaded_line['sol1'].ks}.")
+        f"""Original: -0.1, reloaded: {reloaded_line["sol1"].ks}.""")
 
 
 def test_sol_writer_preserves_zero_ks(tmp_path):
@@ -200,7 +200,7 @@ def test_sol_writer_preserves_zero_ks(tmp_path):
 
     assert reloaded_line["sol1"].ks == pytest.approx(0.0), (
         "Writer roundtrip should preserve zero solenoid ks. "
-        f"Reloaded: {reloaded_line['sol1'].ks}.")
+        f"""Reloaded: {reloaded_line["sol1"].ks}.""")
 
 
 def test_sol_writer_preserves_ks_at_full_double_precision(tmp_path):
@@ -214,7 +214,7 @@ def test_sol_writer_preserves_ks_at_full_double_precision(tmp_path):
 
     assert reloaded_line["sol1"].ks == pytest.approx(ks_precise, rel = 1E-15), (
         "Writer roundtrip should preserve solenoid ks at full double precision. "
-        f"Original: {ks_precise!r}, reloaded: {reloaded_line['sol1'].ks!r}.")
+        f"""Original: {ks_precise!r}, reloaded: {reloaded_line["sol1"].ks!r}.""")
 
 
 ########################################
@@ -224,7 +224,7 @@ def test_sol_writer_ks_is_not_written_as_optics_variable(tmp_path):
     """
     Unlike quadrupole k1, solenoid ks is written as a bare literal number in
     the lattice file, not as a deferred optics expression. There is no solenoid
-    optics file function; the Xsuite environment should have no 'ks_sol1'
+    optics file function; the Xsuite environment should have no `ks_sol1`
     variable after reload.
 
     This is a key distinction from the quad/sext/oct writers where strengths
@@ -251,7 +251,7 @@ def test_sol_writer_preserves_knl_component(tmp_path):
 
     assert np.asarray(reloaded_line["sol1"].knl)[1] == pytest.approx(5.0E-3), (
         "Writer roundtrip should preserve solenoid knl[1]. "
-        f"Original: 5.0E-3, reloaded: {np.asarray(reloaded_line['sol1'].knl)[1]}.")
+        f"""Original: 5.0E-3, reloaded: {np.asarray(reloaded_line["sol1"].knl)[1]}.""")
 
 
 def test_sol_writer_preserves_ksl_component(tmp_path):
@@ -265,7 +265,7 @@ def test_sol_writer_preserves_ksl_component(tmp_path):
 
     assert np.asarray(reloaded_line["sol1"].ksl)[1] == pytest.approx(-3.0E-3), (
         "Writer roundtrip should preserve solenoid ksl[1]. "
-        f"Original: -3.0E-3, reloaded: {np.asarray(reloaded_line['sol1'].ksl)[1]}.")
+        f"""Original: -3.0E-3, reloaded: {np.asarray(reloaded_line["sol1"].ksl)[1]}.""")
 
 
 def test_sol_writer_preserves_knl_and_ksl_simultaneously(tmp_path):
@@ -281,10 +281,10 @@ def test_sol_writer_preserves_knl_and_ksl_simultaneously(tmp_path):
 
     assert np.asarray(reloaded_line["sol1"].knl)[1] == pytest.approx(5.0E-3), (
         "Writer roundtrip should preserve solenoid knl[1] when ksl is also set. "
-        f"Original: 5.0E-3, reloaded: {np.asarray(reloaded_line['sol1'].knl)[1]}.")
+        f"""Original: 5.0E-3, reloaded: {np.asarray(reloaded_line["sol1"].knl)[1]}.""")
     assert np.asarray(reloaded_line["sol1"].ksl)[1] == pytest.approx(-3.0E-3), (
         "Writer roundtrip should preserve solenoid ksl[1] when knl is also set. "
-        f"Original: -3.0E-3, reloaded: {np.asarray(reloaded_line['sol1'].ksl)[1]}.")
+        f"""Original: -3.0E-3, reloaded: {np.asarray(reloaded_line["sol1"].ksl)[1]}.""")
 
 
 ################################################################################
@@ -303,7 +303,7 @@ def test_sol_writer_preserves_positive_shift_x(tmp_path):
 
     assert reloaded_line["sol1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve positive solenoid shift_x. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['sol1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["sol1"].shift_x}.""")
 
 
 def test_sol_writer_preserves_negative_shift_x(tmp_path):
@@ -316,7 +316,7 @@ def test_sol_writer_preserves_negative_shift_x(tmp_path):
 
     assert reloaded_line["sol1"].shift_x == pytest.approx(-1.5E-3), (
         "Writer roundtrip should preserve negative solenoid shift_x. "
-        f"Original: -1.5E-3, reloaded: {reloaded_line['sol1'].shift_x}.")
+        f"""Original: -1.5E-3, reloaded: {reloaded_line["sol1"].shift_x}.""")
 
 
 def test_sol_writer_preserves_shift_x_in_scientific_notation(tmp_path):
@@ -329,7 +329,7 @@ def test_sol_writer_preserves_shift_x_in_scientific_notation(tmp_path):
 
     assert reloaded_line["sol1"].shift_x == pytest.approx(5.67890123E-6), (
         "Writer roundtrip should preserve a shift_x value in scientific notation. "
-        f"Original: 5.67890123E-6, reloaded: {reloaded_line['sol1'].shift_x}.")
+        f"""Original: 5.67890123E-6, reloaded: {reloaded_line["sol1"].shift_x}.""")
 
 
 ########################################
@@ -345,7 +345,7 @@ def test_sol_writer_preserves_positive_shift_y(tmp_path):
 
     assert reloaded_line["sol1"].shift_y == pytest.approx(2.0E-3), (
         "Writer roundtrip should preserve positive solenoid shift_y. "
-        f"Original: 2.0E-3, reloaded: {reloaded_line['sol1'].shift_y}.")
+        f"""Original: 2.0E-3, reloaded: {reloaded_line["sol1"].shift_y}.""")
 
 
 def test_sol_writer_preserves_negative_shift_y(tmp_path):
@@ -358,7 +358,7 @@ def test_sol_writer_preserves_negative_shift_y(tmp_path):
 
     assert reloaded_line["sol1"].shift_y == pytest.approx(-2.5E-3), (
         "Writer roundtrip should preserve negative solenoid shift_y. "
-        f"Original: -2.5E-3, reloaded: {reloaded_line['sol1'].shift_y}.")
+        f"""Original: -2.5E-3, reloaded: {reloaded_line["sol1"].shift_y}.""")
 
 
 def test_sol_writer_preserves_shift_y_in_scientific_notation(tmp_path):
@@ -371,7 +371,7 @@ def test_sol_writer_preserves_shift_y_in_scientific_notation(tmp_path):
 
     assert reloaded_line["sol1"].shift_y == pytest.approx(-6.54321098E-7), (
         "Writer roundtrip should preserve a shift_y value in scientific notation. "
-        f"Original: -6.54321098E-7, reloaded: {reloaded_line['sol1'].shift_y}.")
+        f"""Original: -6.54321098E-7, reloaded: {reloaded_line["sol1"].shift_y}.""")
 
 
 ########################################
@@ -387,7 +387,7 @@ def test_sol_writer_preserves_positive_rot_s_rad(tmp_path):
 
     assert reloaded_line["sol1"].rot_s_rad == pytest.approx(0.05), (
         "Writer roundtrip should preserve positive solenoid rot_s_rad. "
-        f"Original: 0.05, reloaded: {reloaded_line['sol1'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["sol1"].rot_s_rad}.""")
 
 
 def test_sol_writer_preserves_negative_rot_s_rad(tmp_path):
@@ -400,7 +400,7 @@ def test_sol_writer_preserves_negative_rot_s_rad(tmp_path):
 
     assert reloaded_line["sol1"].rot_s_rad == pytest.approx(-0.05), (
         "Writer roundtrip should preserve negative solenoid rot_s_rad. "
-        f"Original: -0.05, reloaded: {reloaded_line['sol1'].rot_s_rad}.")
+        f"""Original: -0.05, reloaded: {reloaded_line["sol1"].rot_s_rad}.""")
 
 
 ########################################
@@ -417,7 +417,7 @@ def test_sol_writer_preserves_positive_x0(tmp_path):
 
     assert reloaded_line["sol1"].x0 == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve positive solenoid x0. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['sol1'].x0}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["sol1"].x0}.""")
 
 
 def test_sol_writer_preserves_negative_x0(tmp_path):
@@ -430,7 +430,7 @@ def test_sol_writer_preserves_negative_x0(tmp_path):
 
     assert reloaded_line["sol1"].x0 == pytest.approx(-1.5E-3), (
         "Writer roundtrip should preserve negative solenoid x0. "
-        f"Original: -1.5E-3, reloaded: {reloaded_line['sol1'].x0}.")
+        f"""Original: -1.5E-3, reloaded: {reloaded_line["sol1"].x0}.""")
 
 
 def test_sol_writer_preserves_positive_y0(tmp_path):
@@ -443,7 +443,7 @@ def test_sol_writer_preserves_positive_y0(tmp_path):
 
     assert reloaded_line["sol1"].y0 == pytest.approx(2.0E-3), (
         "Writer roundtrip should preserve positive solenoid y0. "
-        f"Original: 2.0E-3, reloaded: {reloaded_line['sol1'].y0}.")
+        f"""Original: 2.0E-3, reloaded: {reloaded_line["sol1"].y0}.""")
 
 
 def test_sol_writer_preserves_negative_y0(tmp_path):
@@ -456,7 +456,7 @@ def test_sol_writer_preserves_negative_y0(tmp_path):
 
     assert reloaded_line["sol1"].y0 == pytest.approx(-2.5E-3), (
         "Writer roundtrip should preserve negative solenoid y0. "
-        f"Original: -2.5E-3, reloaded: {reloaded_line['sol1'].y0}.")
+        f"""Original: -2.5E-3, reloaded: {reloaded_line["sol1"].y0}.""")
 
 
 ########################################
@@ -477,17 +477,17 @@ def test_sol_writer_preserves_ks_with_all_misalignments(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert reloaded_line["sol1"].ks        == pytest.approx(0.1),    (
-        f"Writer roundtrip should preserve ks. Reloaded: {reloaded_line['sol1'].ks}.")
+        f"""Writer roundtrip should preserve ks. Reloaded: {reloaded_line["sol1"].ks}.""")
     assert reloaded_line["sol1"].shift_x   == pytest.approx(1.0E-3), (
-        f"Writer roundtrip should preserve shift_x. Reloaded: {reloaded_line['sol1'].shift_x}.")
+        f"""Writer roundtrip should preserve shift_x. Reloaded: {reloaded_line["sol1"].shift_x}.""")
     assert reloaded_line["sol1"].shift_y   == pytest.approx(-2.0E-3),(
-        f"Writer roundtrip should preserve shift_y. Reloaded: {reloaded_line['sol1'].shift_y}.")
+        f"""Writer roundtrip should preserve shift_y. Reloaded: {reloaded_line["sol1"].shift_y}.""")
     assert reloaded_line["sol1"].rot_s_rad == pytest.approx(0.05),   (
-        f"Writer roundtrip should preserve rot_s_rad. Reloaded: {reloaded_line['sol1'].rot_s_rad}.")
+        f"""Writer roundtrip should preserve rot_s_rad. Reloaded: {reloaded_line["sol1"].rot_s_rad}.""")
     assert reloaded_line["sol1"].x0        == pytest.approx(0.5E-3), (
-        f"Writer roundtrip should preserve x0. Reloaded: {reloaded_line['sol1'].x0}.")
+        f"""Writer roundtrip should preserve x0. Reloaded: {reloaded_line["sol1"].x0}.""")
     assert reloaded_line["sol1"].y0        == pytest.approx(-0.5E-3),(
-        f"Writer roundtrip should preserve y0. Reloaded: {reloaded_line['sol1'].y0}.")
+        f"""Writer roundtrip should preserve y0. Reloaded: {reloaded_line["sol1"].y0}.""")
 
 
 ################################################################################
@@ -519,5 +519,5 @@ def test_sol_writer_preserves_multiple_solenoids_independently(tmp_path):
 
     for name, expected_ks in expected.items():
         assert reloaded_line[name].ks == pytest.approx(expected_ks), (
-            f"Writer roundtrip should preserve ks for solenoid '{name}'. "
+            f"Writer roundtrip should preserve ks for solenoid `{name}`. "
             f"Expected: {expected_ks}, reloaded: {reloaded_line[name].ks}.")

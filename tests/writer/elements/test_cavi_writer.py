@@ -33,9 +33,9 @@ def _write_and_load(line, tmp_path):
     variables volt_c1, freq_c1, phase_c1 written for the cavity. All three cavity
     parameters are written as live deferred expressions.
 
-    The frequency expression uses the pattern 'freq_c1 * (1 + fshift)' where
+    The frequency expression uses the pattern `freq_c1 * (1 + fshift)` where
     fshift is the global frequency shift variable (default 0.0). This means
-    modifying env['fshift'] updates all cavity frequencies simultaneously.
+    modifying env[`fshift`] updates all cavity frequencies simultaneously.
     """
     return _shared_write_and_load(line, tmp_path, output_header = "Cavity writer test")
 
@@ -86,8 +86,8 @@ def test_cavi_writer_reloads_as_xsuite_cavity(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["c1"], xt.Cavity), (
-        "Written cavity element 'c1' should reload as xt.Cavity. "
-        f"Got: {type(reloaded_line['c1']).__name__}.")
+        "Written cavity element `c1` should reload as xt.Cavity. "
+        f"""Got: {type(reloaded_line["c1"]).__name__}.""")
 
 
 def test_cavi_writer_preserves_element_name(tmp_path):
@@ -99,7 +99,7 @@ def test_cavi_writer_preserves_element_name(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert "c1" in list(reloaded_line.element_names), (
-        "Reloaded line should contain cavity element 'c1'. "
+        "Reloaded line should contain cavity element `c1`. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
@@ -147,7 +147,7 @@ def test_cavi_writer_preserves_zero_length_cavity(tmp_path):
 
     assert reloaded_line["c1"].length == pytest.approx(0.0), (
         "Writer roundtrip should preserve zero cavity length. "
-        f"Reloaded: {reloaded_line['c1'].length}.")
+        f"""Reloaded: {reloaded_line["c1"].length}.""")
 
 
 def test_cavi_writer_preserves_nonzero_length_cavity(tmp_path):
@@ -160,7 +160,7 @@ def test_cavi_writer_preserves_nonzero_length_cavity(tmp_path):
 
     assert reloaded_line["c1"].length == pytest.approx(0.5), (
         "Writer roundtrip should preserve non-zero cavity length. "
-        f"Original: 0.5, reloaded: {reloaded_line['c1'].length}.")
+        f"""Original: 0.5, reloaded: {reloaded_line["c1"].length}.""")
 
 
 ########################################
@@ -177,7 +177,7 @@ def test_cavi_writer_preserves_voltage(tmp_path):
 
     assert reloaded_line["c1"].voltage == pytest.approx(6.0E6), (
         "Writer roundtrip should preserve cavity voltage. "
-        f"Original: 6.0E6, reloaded: {reloaded_line['c1'].voltage}.")
+        f"""Original: 6.0E6, reloaded: {reloaded_line["c1"].voltage}.""")
 
 
 def test_cavi_writer_volt_is_accessible_as_optics_variable(tmp_path):
@@ -189,9 +189,9 @@ def test_cavi_writer_volt_is_accessible_as_optics_variable(tmp_path):
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["volt_c1"] == pytest.approx(6.0E6), (
-        "Optics variable 'volt_c1' should exist in the environment after reload "
+        "Optics variable `volt_c1` should exist in the environment after reload "
         "and equal the original voltage. "
-        f"Got: {env['volt_c1']}.")
+        f"""Got: {env["volt_c1"]}.""")
 
 
 def test_cavi_writer_volt_is_tunable_via_optics_variable(tmp_path):
@@ -205,8 +205,8 @@ def test_cavi_writer_volt_is_tunable_via_optics_variable(tmp_path):
     env["volt_c1"] = 8.0E6
 
     assert reloaded_line["c1"].voltage == pytest.approx(8.0E6), (
-        "Modifying optics variable 'volt_c1' should update the cavity voltage. "
-        f"Got: {reloaded_line['c1'].voltage}.")
+        "Modifying optics variable `volt_c1` should update the cavity voltage. "
+        f"""Got: {reloaded_line["c1"].voltage}.""")
 
 
 ########################################
@@ -215,7 +215,7 @@ def test_cavi_writer_volt_is_tunable_via_optics_variable(tmp_path):
 def test_cavi_writer_preserves_frequency(tmp_path):
     """
     A cavity frequency should be preserved through a write and reload cycle.
-    Frequency is written as 'freq_c1 * (1 + fshift)'. With the default
+    Frequency is written as `freq_c1 * (1 + fshift)`. With the default
     fshift = 0, the reloaded frequency equals the original.
     """
     original_line = _build_cavi_line(frequency = 352.2E6)
@@ -223,7 +223,7 @@ def test_cavi_writer_preserves_frequency(tmp_path):
 
     assert reloaded_line["c1"].frequency == pytest.approx(352.2E6), (
         "Writer roundtrip should preserve cavity frequency (with fshift=0). "
-        f"Original: 352.2E6, reloaded: {reloaded_line['c1'].frequency}.")
+        f"""Original: 352.2E6, reloaded: {reloaded_line["c1"].frequency}.""")
 
 
 def test_cavi_writer_freq_is_accessible_as_optics_variable(tmp_path):
@@ -236,9 +236,9 @@ def test_cavi_writer_freq_is_accessible_as_optics_variable(tmp_path):
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["freq_c1"] == pytest.approx(352.2E6), (
-        "Optics variable 'freq_c1' should exist in the environment after reload "
+        "Optics variable `freq_c1` should exist in the environment after reload "
         "and equal the original frequency. "
-        f"Got: {env['freq_c1']}.")
+        f"""Got: {env["freq_c1"]}.""")
 
 
 def test_cavi_writer_frequency_applies_fshift_factor(tmp_path):
@@ -254,9 +254,9 @@ def test_cavi_writer_frequency_applies_fshift_factor(tmp_path):
     env["fshift"] = 1.0E-3
 
     assert reloaded_line["c1"].frequency == pytest.approx(352.2E6 * (1.0 + 1.0E-3)), (
-        "Modifying 'fshift' should update the cavity frequency via the "
-        "'freq_c1 * (1 + fshift)' expression. "
-        f"Expected: {352.2E6 * 1.001}, got: {reloaded_line['c1'].frequency}.")
+        "Modifying `fshift` should update the cavity frequency via the "
+        "`freq_c1 * (1 + fshift)` expression. "
+        f"""Expected: {352.2E6 * 1.001}, got: {reloaded_line["c1"].frequency}.""")
 
 
 ########################################
@@ -274,7 +274,7 @@ def test_cavi_writer_preserves_phase(tmp_path):
 
     assert reloaded_line["c1"].phase == pytest.approx(np.pi / 2), (
         "Writer roundtrip should preserve cavity phase. "
-        f"Original: np.pi/2, reloaded: {reloaded_line['c1'].phase}.")
+        f"""Original: np.pi/2, reloaded: {reloaded_line["c1"].phase}.""")
 
 
 def test_cavi_writer_phase_is_accessible_as_optics_variable(tmp_path):
@@ -288,9 +288,9 @@ def test_cavi_writer_phase_is_accessible_as_optics_variable(tmp_path):
     env, _ = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["phase_c1"] == pytest.approx(np.pi / 2), (
-        "Optics variable 'phase_c1' should exist in the environment after reload "
+        "Optics variable `phase_c1` should exist in the environment after reload "
         "and equal the original phase. "
-        f"Got: {env['phase_c1']}.")
+        f"""Got: {env["phase_c1"]}.""")
 
 
 def test_cavi_writer_phase_is_tunable_via_optics_variable(tmp_path):
@@ -304,8 +304,8 @@ def test_cavi_writer_phase_is_tunable_via_optics_variable(tmp_path):
     env["phase_c1"] = np.pi / 2
 
     assert reloaded_line["c1"].phase == pytest.approx(np.pi / 2), (
-        "Modifying optics variable 'phase_c1' should update the cavity phase. "
-        f"Got: {reloaded_line['c1'].phase}.")
+        "Modifying optics variable `phase_c1` should update the cavity phase. "
+        f"""Got: {reloaded_line["c1"].phase}.""")
 
 
 ########################################
@@ -324,18 +324,18 @@ def test_cavi_writer_all_three_optics_variables_accessible_simultaneously(tmp_pa
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["volt_c1"] == pytest.approx(6.0E6), (
-        f"Optics variable 'volt_c1' should be accessible. Got: {env['volt_c1']}.")
+        f"""Optics variable `volt_c1` should be accessible. Got: {env["volt_c1"]}.""")
     assert env["freq_c1"] == pytest.approx(352.2E6), (
-        f"Optics variable 'freq_c1' should be accessible. Got: {env['freq_c1']}.")
+        f"""Optics variable `freq_c1` should be accessible. Got: {env["freq_c1"]}.""")
     assert env["phase_c1"] == pytest.approx(np.pi), (
-        f"Optics variable 'phase_c1' should be accessible. Got: {env['phase_c1']}.")
+        f"""Optics variable `phase_c1` should be accessible. Got: {env["phase_c1"]}.""")
 
     assert reloaded_line["c1"].voltage   == pytest.approx(6.0E6),   (
-        f"Reloaded voltage should equal original. Got: {reloaded_line['c1'].voltage}.")
+        f"""Reloaded voltage should equal original. Got: {reloaded_line["c1"].voltage}.""")
     assert reloaded_line["c1"].frequency == pytest.approx(352.2E6), (
-        f"Reloaded frequency should equal original. Got: {reloaded_line['c1'].frequency}.")
+        f"""Reloaded frequency should equal original. Got: {reloaded_line["c1"].frequency}.""")
     assert reloaded_line["c1"].phase     == pytest.approx(np.pi),   (
-        f"Reloaded phase should equal original. Got: {reloaded_line['c1'].phase}.")
+        f"""Reloaded phase should equal original. Got: {reloaded_line["c1"].phase}.""")
 
 
 ########################################
@@ -353,7 +353,7 @@ def test_cavi_writer_preserves_voltage_at_full_double_precision(tmp_path):
 
     assert env["volt_c1"] == pytest.approx(voltage_precise, rel = 1E-15), (
         "Writer roundtrip should preserve cavity voltage at full double precision. "
-        f"Original: {voltage_precise!r}, reloaded env var: {env['volt_c1']!r}.")
+        f"""Original: {voltage_precise!r}, reloaded env var: {env["volt_c1"]!r}.""")
 
 
 def test_cavi_writer_preserves_frequency_at_full_double_precision(tmp_path):
@@ -367,7 +367,7 @@ def test_cavi_writer_preserves_frequency_at_full_double_precision(tmp_path):
 
     assert env["freq_c1"] == pytest.approx(freq_precise, rel = 1E-15), (
         "Writer roundtrip should preserve cavity frequency at full double precision. "
-        f"Original: {freq_precise!r}, reloaded env var: {env['freq_c1']!r}.")
+        f"""Original: {freq_precise!r}, reloaded env var: {env["freq_c1"]!r}.""")
 
 
 def test_cavi_writer_preserves_phase_at_full_double_precision(tmp_path):
@@ -382,7 +382,7 @@ def test_cavi_writer_preserves_phase_at_full_double_precision(tmp_path):
 
     assert env["phase_c1"] == pytest.approx(phase_precise, rel = 1E-15), (
         "Writer roundtrip should preserve cavity phase at full double precision. "
-        f"Original: {phase_precise!r}, reloaded env var: {env['phase_c1']!r}.")
+        f"""Original: {phase_precise!r}, reloaded env var: {env["phase_c1"]!r}.""")
 
 
 ################################################################################
@@ -412,25 +412,25 @@ def test_cavi_writer_preserves_multiple_cavities_independently(tmp_path):
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 
     assert reloaded_line["c1"].voltage   == pytest.approx(6.0E6),   (
-        f"Writer roundtrip should preserve voltage for 'c1'. "
-        f"Original: 6.0E6, reloaded: {reloaded_line['c1'].voltage}.")
+        f"Writer roundtrip should preserve voltage for `c1`. "
+        f"""Original: 6.0E6, reloaded: {reloaded_line["c1"].voltage}.""")
     assert reloaded_line["c1"].frequency == pytest.approx(352.2E6), (
-        f"Writer roundtrip should preserve frequency for 'c1'. "
-        f"Original: 352.2E6, reloaded: {reloaded_line['c1'].frequency}.")
+        f"Writer roundtrip should preserve frequency for `c1`. "
+        f"""Original: 352.2E6, reloaded: {reloaded_line["c1"].frequency}.""")
     assert reloaded_line["c2"].voltage   == pytest.approx(3.0E6),   (
-        f"Writer roundtrip should preserve voltage for 'c2'. "
-        f"Original: 3.0E6, reloaded: {reloaded_line['c2'].voltage}.")
+        f"Writer roundtrip should preserve voltage for `c2`. "
+        f"""Original: 3.0E6, reloaded: {reloaded_line["c2"].voltage}.""")
     assert reloaded_line["c2"].frequency == pytest.approx(704.4E6), (
-        f"Writer roundtrip should preserve frequency for 'c2'. "
-        f"Original: 704.4E6, reloaded: {reloaded_line['c2'].frequency}.")
+        f"Writer roundtrip should preserve frequency for `c2`. "
+        f"""Original: 704.4E6, reloaded: {reloaded_line["c2"].frequency}.""")
     assert env["volt_c1"] == pytest.approx(6.0E6), (
-        "Optics variable 'volt_c1' should be correct after reload.")
+        "Optics variable `volt_c1` should be correct after reload.")
     assert env["volt_c2"] == pytest.approx(3.0E6), (
-        "Optics variable 'volt_c2' should be correct after reload.")
+        "Optics variable `volt_c2` should be correct after reload.")
     assert env["freq_c1"] == pytest.approx(352.2E6), (
-        "Optics variable 'freq_c1' should be correct after reload.")
+        "Optics variable `freq_c1` should be correct after reload.")
     assert env["freq_c2"] == pytest.approx(704.4E6), (
-        "Optics variable 'freq_c2' should be correct after reload.")
+        "Optics variable `freq_c2` should be correct after reload.")
 
 
 ################################################################################
@@ -464,7 +464,7 @@ def test_cavi_writer_preserves_harmonic(tmp_path):
 
     assert reloaded_line["c1"].harmonic == pytest.approx(400.0), (
         f"Writer roundtrip should preserve harmonic. "
-        f"Original: 400, reloaded: {reloaded_line['c1'].harmonic}.")
+        f"""Original: 400, reloaded: {reloaded_line["c1"].harmonic}.""")
 
 
 def test_cavi_writer_harm_is_accessible_as_optics_variable(tmp_path):
@@ -476,9 +476,9 @@ def test_cavi_writer_harm_is_accessible_as_optics_variable(tmp_path):
     env, _         = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert "harm_c1" in env.vars.keys(), (
-        "Optics file should define 'harm_c1' for a harmonic cavity.")
+        "Optics file should define `harm_c1` for a harmonic cavity.")
     assert env["harm_c1"] == pytest.approx(400.0), (
-        f"Optics variable 'harm_c1' should equal 400. Got: {env['harm_c1']}.")
+        f"""Optics variable `harm_c1` should equal 400. Got: {env["harm_c1"]}.""")
 
 
 def test_cavi_writer_harm_is_tunable_via_optics_variable(tmp_path):
@@ -491,8 +491,8 @@ def test_cavi_writer_harm_is_tunable_via_optics_variable(tmp_path):
 
     env["harm_c1"] = 800
     assert reloaded_line["c1"].harmonic == pytest.approx(800.0), (
-        f"Setting env['harm_c1'] = 800 should update the cavity harmonic. "
-        f"Got: {reloaded_line['c1'].harmonic}.")
+        f"Setting env[`harm_c1`] = 800 should update the cavity harmonic. "
+        f"""Got: {reloaded_line["c1"].harmonic}.""")
 
 
 def test_cavi_writer_harmonic_does_not_write_frequency(tmp_path):
@@ -504,7 +504,7 @@ def test_cavi_writer_harmonic_does_not_write_frequency(tmp_path):
     env, _         = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert "freq_c1" not in env.vars.keys(), (
-        "Optics file should NOT define 'freq_c1' for a harmonic cavity. "
+        "Optics file should NOT define `freq_c1` for a harmonic cavity. "
         "harm_c1 should be written instead.")
 
 
@@ -516,4 +516,4 @@ def test_cavi_writer_frequency_does_not_write_harmonic(tmp_path):
     env, _         = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert "harm_c1" not in env.vars.keys(), (
-        "Optics file should NOT define 'harm_c1' for a frequency-driven cavity.")
+        "Optics file should NOT define `harm_c1` for a frequency-driven cavity.")

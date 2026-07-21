@@ -29,7 +29,7 @@ def exclude_elements(
     """
     Remove user-excluded elements from the parsed lattice data, in place.
 
-    Matches both a name and its explicit reversal (a leading '-', SAD's
+    Matches both a name and its explicit reversal (a leading `-`, SAD's
     own reversed-element marker) so an element excluded in one direction
     is also excluded in the other. Removed elements are dropped from
     every element-type dictionary and from every LINE's component list.

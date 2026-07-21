@@ -114,8 +114,8 @@ def test_lattice_writer_output_file_has_correct_name(tmp_path):
     output_dir, _     = _write_lattice_only(line, tmp_path, "my_lattice")
 
     assert (output_dir / "my_lattice.py").exists(), (
-        "write_lattice should create a file named 'my_lattice.py' when "
-        "output_filename='my_lattice'.")
+        "write_lattice should create a file named `my_lattice.py` when "
+        "output_filename=`my_lattice`.")
     assert not (output_dir / "my_lattice").exists(), (
         "write_lattice should not create a file without the .py extension.")
 
@@ -131,7 +131,7 @@ def test_lattice_writer_header_is_written_to_file(tmp_path):
 
     content = output_path.read_text(encoding = "utf-8")
     assert header in content, (
-        f"The output_header '{header}' should appear in the written lattice "
+        f"The output_header `{header}` should appear in the written lattice "
         f"file. File content starts with: {content[:200]!r}.")
 
 
@@ -147,7 +147,7 @@ def test_lattice_writer_output_is_executable_python(tmp_path):
     env.call(str(output_path))
 
     assert "line" in env.lines, (
-        "Calling the lattice file should register a line named 'line' in "
+        "Calling the lattice file should register a line named `line` in "
         "the Xsuite environment.")
 
 
@@ -182,10 +182,10 @@ def test_lattice_writer_output_uses_particle_ref_without_mutating_line(tmp_path)
 
     content = output_path.read_text(encoding = "utf-8")
 
-    assert f'env["p0c"]      = {p0c}' in content
-    assert f'env["mass0"]    = {mass0}' in content
-    assert f'env["q0"]       = {q0}' in content
-    assert 'env["fshift"]   = 0.0' in content
+    assert f"""env["p0c"]      = {p0c}""" in content
+    assert f"""env["mass0"]    = {mass0}""" in content
+    assert f"""env["q0"]       = {q0}""" in content
+    assert """env["fshift"]   = 0.0""" in content
     for variable_name in ("p0c", "mass0", "q0", "fshift"):
         with pytest.raises(KeyError):
             line[variable_name]
@@ -220,7 +220,7 @@ def test_lattice_writer_offset_markers_section_is_written(tmp_path):
         "a MARKER_POSITIONS block. File content starts with: "
         f"{content[:300]!r}.")
     assert "obs0" in content, (
-        "write_lattice should include the marker name 'obs0' inside the "
+        "write_lattice should include the marker name `obs0` inside the "
         "MARKER_POSITIONS block.")
 
 
@@ -276,4 +276,4 @@ def test_lattice_writer_offset_markers_output_is_executable(tmp_path):
 
     assert "line" in env.lines, (
         "Calling a lattice file written with offset_marker_locations should "
-        "still register 'line' in the Xsuite environment.")
+        "still register `line` in the Xsuite environment.")

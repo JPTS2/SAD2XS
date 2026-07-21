@@ -50,7 +50,7 @@ def test_pipeline_mult_without_replacement_produces_multipole(write_lattice):
 
     assert isinstance(line["mele"], xt.Multipole), (
         "A combined SAD MULT with no user replacement should produce an "
-        f"xt.Multipole. Got: {type(line['mele']).__name__}.")
+        f"""xt.Multipole. Got: {type(line["mele"]).__name__}.""")
 
 
 ################################################################################
@@ -97,12 +97,12 @@ def test_pipeline_mult_user_replacement_produces_correct_type_and_strength(
         _test_mode                  = True)
 
     assert isinstance(line["mele"], xsuite_type), (
-        f"SAD MULT with user replacement '{replacement_type}' should produce an "
-        f"xt.{xsuite_type.__name__}. Got: {type(line['mele']).__name__}.")
+        f"SAD MULT with user replacement `{replacement_type}` should produce an "
+        f"""xt.{xsuite_type.__name__}. Got: {type(line["mele"]).__name__}.""")
     assert getattr(line["mele"], xsuite_attr) == pytest.approx(expected_strength), (
         f"Replacement {replacement_type} should divide KnL = 0.1 by L = 0.5 to "
         f"give {xsuite_attr} = {expected_strength}. "
-        f"Got: {getattr(line['mele'], xsuite_attr)}.")
+        f"""Got: {getattr(line["mele"], xsuite_attr)}.""")
 
 
 ################################################################################
@@ -135,11 +135,11 @@ def test_pipeline_mult_replacement_prefix_is_selective(write_lattice):
         _test_mode                  = True)
 
     assert isinstance(line["mx1"], xt.Quadrupole), (
-        "SAD MULT 'mx1' should be replaced with xt.Quadrupole because its name "
-        f"starts with the prefix 'mx'. Got: {type(line['mx1']).__name__}.")
+        "SAD MULT `mx1` should be replaced with xt.Quadrupole because its name "
+        f"""starts with the prefix `mx`. Got: {type(line["mx1"]).__name__}.""")
     assert isinstance(line["my1"], xt.Multipole), (
-        "SAD MULT 'my1' should remain an xt.Multipole because its name does not "
-        f"start with the prefix 'mx'. Got: {type(line['my1']).__name__}.")
+        "SAD MULT `my1` should remain an xt.Multipole because its name does not "
+        f"""start with the prefix `mx`. Got: {type(line["my1"]).__name__}.""")
 
 
 ################################################################################
@@ -172,17 +172,17 @@ def test_pipeline_mult_multiple_replacement_keys_applied_independently(write_lat
         _test_mode                  = True)
 
     assert isinstance(line["mx1"], xt.Quadrupole), (
-        "SAD MULT 'mx1' should become xt.Quadrupole via the 'mx' replacement key. "
-        f"Got: {type(line['mx1']).__name__}.")
+        "SAD MULT `mx1` should become xt.Quadrupole via the `mx` replacement key. "
+        f"""Got: {type(line["mx1"]).__name__}.""")
     assert isinstance(line["my1"], xt.Sextupole), (
-        "SAD MULT 'my1' should become xt.Sextupole via the 'my' replacement key. "
-        f"Got: {type(line['my1']).__name__}.")
+        "SAD MULT `my1` should become xt.Sextupole via the `my` replacement key. "
+        f"""Got: {type(line["my1"]).__name__}.""")
     assert line["mx1"].k1 == pytest.approx(0.2), (
         "Quadrupole replacement should divide K1L = 0.1 by L = 0.5 to give "
-        f"k1 = 0.2. Got: {line['mx1'].k1}.")
+        f"""k1 = 0.2. Got: {line["mx1"].k1}.""")
     assert line["my1"].k2 == pytest.approx(0.2), (
         "Sextupole replacement should divide K2L = 0.1 by L = 0.5 to give "
-        f"k2 = 0.2. Got: {line['my1'].k2}.")
+        f"""k2 = 0.2. Got: {line["my1"].k2}.""")
 
 
 ################################################################################

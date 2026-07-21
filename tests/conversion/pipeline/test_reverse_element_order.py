@@ -157,11 +157,11 @@ def test_pipeline_reverse_element_order_swaps_bend_edge_angles(write_lattice):
     assert line["b1"].edge_entry_angle == pytest.approx(0.025), (
         "After reverse_element_order=True, bend entry edge angle should be the "
         "original exit angle (E2*ANGLE = 0.25*0.1 = 0.025). "
-        f"Got: {line['b1'].edge_entry_angle}.")
+        f"""Got: {line["b1"].edge_entry_angle}.""")
     assert line["b1"].edge_exit_angle == pytest.approx(0.05), (
         "After reverse_element_order=True, bend exit edge angle should be the "
         "original entry angle (E1*ANGLE = 0.5*0.1 = 0.05). "
-        f"Got: {line['b1'].edge_exit_angle}.")
+        f"""Got: {line["b1"].edge_exit_angle}.""")
 
 
 ################################################################################
@@ -204,17 +204,17 @@ def test_pipeline_reverse_element_order_swaps_bend_fint_hgap(write_lattice):
     assert line["b1"].edge_entry_fint == pytest.approx(expected_reversed_entry), (
         "After reverse_element_order=True, bend entry fint should be the "
         "original exit value (F1+FB2 = 0.24). "
-        f"Got: {line['b1'].edge_entry_fint}.")
+        f"""Got: {line["b1"].edge_entry_fint}.""")
     assert line["b1"].edge_entry_hgap == pytest.approx(1 / 12), (
         "Bend entry hgap should stay the fixed 1/12 fringe constant. "
-        f"Got: {line['b1'].edge_entry_hgap}.")
+        f"""Got: {line["b1"].edge_entry_hgap}.""")
     assert line["b1"].edge_exit_fint == pytest.approx(expected_reversed_exit), (
         "After reverse_element_order=True, bend exit fint should be the "
         "original entry value (F1+FB1 = 0.36). "
-        f"Got: {line['b1'].edge_exit_fint}.")
+        f"""Got: {line["b1"].edge_exit_fint}.""")
     assert line["b1"].edge_exit_hgap == pytest.approx(1 / 12), (
         "Bend exit hgap should stay the fixed 1/12 fringe constant. "
-        f"Got: {line['b1'].edge_exit_hgap}.")
+        f"""Got: {line["b1"].edge_exit_hgap}.""")
 
 
 ################################################################################
@@ -366,7 +366,7 @@ def test_pipeline_reverse_element_order_does_not_change_quad_k1(write_lattice):
 
     assert line_reversed["q1"].k1 == pytest.approx(line_forward["q1"].k1), (
         "Quadrupole k1 should be unchanged by reverse_element_order. "
-        f"Forward: {line_forward['q1'].k1}, reversed: {line_reversed['q1'].k1}.")
+        f"""Forward: {line_forward["q1"].k1}, reversed: {line_reversed["q1"].k1}.""")
 
 
 def test_pipeline_reverse_element_order_does_not_change_sext_k2(write_lattice):
@@ -399,7 +399,7 @@ def test_pipeline_reverse_element_order_does_not_change_sext_k2(write_lattice):
 
     assert line_reversed["s1"].k2 == pytest.approx(line_forward["s1"].k2), (
         "Sextupole k2 should be unchanged by reverse_element_order. "
-        f"Forward: {line_forward['s1'].k2}, reversed: {line_reversed['s1'].k2}.")
+        f"""Forward: {line_forward["s1"].k2}, reversed: {line_reversed["s1"].k2}.""")
 
 
 def test_pipeline_reverse_element_order_does_not_change_oct_k3(write_lattice):
@@ -432,7 +432,7 @@ def test_pipeline_reverse_element_order_does_not_change_oct_k3(write_lattice):
 
     assert line_reversed["o1"].k3 == pytest.approx(line_forward["o1"].k3), (
         "Octupole k3 should be unchanged by reverse_element_order. "
-        f"Forward: {line_forward['o1'].k3}, reversed: {line_reversed['o1'].k3}.")
+        f"""Forward: {line_forward["o1"].k3}, reversed: {line_reversed["o1"].k3}.""")
 
 
 ################################################################################
@@ -492,10 +492,10 @@ def test_pipeline_reverse_element_order_tracking_matches_sad_reversed_line(tmp_p
 
     assert p.x[0] == pytest.approx(r_sad["x"][0], rel=1e-3), (
         f"Xsuite reversed line x should match SAD reversed line x. "
-        f"Xsuite: {p.x[0]}, SAD: {r_sad['x'][0]}.")
+        f"""Xsuite: {p.x[0]}, SAD: {r_sad["x"][0]}.""")
     assert p.px[0] == pytest.approx(r_sad["px"][0], rel=1e-3), (
         f"Xsuite reversed line px should match SAD reversed line px. "
-        f"Xsuite: {p.px[0]}, SAD: {r_sad['px'][0]}.")
+        f"""Xsuite: {p.px[0]}, SAD: {r_sad["px"][0]}.""")
 
 
 def test_pipeline_reverse_element_order_bend_poleface_angles_physics_matches_sad(tmp_path):
@@ -547,10 +547,10 @@ def test_pipeline_reverse_element_order_bend_poleface_angles_physics_matches_sad
 
     assert p.y[0] == pytest.approx(r_sad["y"][0], rel=1e-3), (
         f"Xsuite reversed bend py should match SAD reversed line py. "
-        f"Xsuite: {p.y[0]}, SAD: {r_sad['y'][0]}.")
+        f"""Xsuite: {p.y[0]}, SAD: {r_sad["y"][0]}.""")
     assert p.py[0] == pytest.approx(r_sad["py"][0], abs=1e-9), (
         f"Xsuite reversed bend py should match SAD reversed line py. "
-        f"Xsuite: {p.py[0]}, SAD: {r_sad['py'][0]}.")
+        f"""Xsuite: {p.py[0]}, SAD: {r_sad["py"][0]}.""")
 
 
 def test_pipeline_reverse_element_order_corrector_fringe_physics_matches_sad(
@@ -604,10 +604,10 @@ def test_pipeline_reverse_element_order_corrector_fringe_physics_matches_sad(
 
     assert p.y[0] == pytest.approx(r_sad["y"][0], rel=1e-3), (
         f"Xsuite reversed corrector y should match SAD reversed line y. "
-        f"Xsuite: {p.y[0]}, SAD: {r_sad['y'][0]}.")
+        f"""Xsuite: {p.y[0]}, SAD: {r_sad["y"][0]}.""")
     assert p.py[0] == pytest.approx(r_sad["py"][0], rel=1e-3), (
         f"Xsuite reversed corrector py should match SAD reversed line py. "
-        f"Xsuite: {p.py[0]}, SAD: {r_sad['py'][0]}.")
+        f"""Xsuite: {p.py[0]}, SAD: {r_sad["py"][0]}.""")
 
 
 def test_pipeline_reverse_element_order_solenoid_physics_matches_sad(tmp_path):
@@ -680,10 +680,10 @@ LINE        TESTREV     = (-TEST);
 
     assert p.y[0] == pytest.approx(r_sad["y"][0], abs=1e-9), (
         f"Xsuite reversed solenoid y should match SAD reversed line y. "
-        f"Xsuite: {p.y[0]}, SAD: {r_sad['y'][0]}.")
+        f"""Xsuite: {p.y[0]}, SAD: {r_sad["y"][0]}.""")
     assert p.py[0] == pytest.approx(r_sad["py"][0], abs=1e-9), (
         f"Xsuite reversed solenoid py should match SAD reversed line py. "
-        f"Xsuite: {p.py[0]}, SAD: {r_sad['py'][0]}.")
+        f"""Xsuite: {p.py[0]}, SAD: {r_sad["py"][0]}.""")
 
 
 def test_pipeline_reverse_element_order_solenoid_physics_matches_sad_with_charge_minus_one(
@@ -762,10 +762,10 @@ LINE        TESTREV     = (-TEST);
 
     assert p.y[0] == pytest.approx(r_sad["y"][0], abs=1e-9), (
         f"Xsuite reversed solenoid y (CHARGE=-1) should match SAD reversed "
-        f"line y. Xsuite: {p.y[0]}, SAD: {r_sad['y'][0]}.")
+        f"""line y. Xsuite: {p.y[0]}, SAD: {r_sad["y"][0]}.""")
     assert p.py[0] == pytest.approx(r_sad["py"][0], abs=1e-9), (
         f"Xsuite reversed solenoid py (CHARGE=-1) should match SAD reversed "
-        f"line py. Xsuite: {p.py[0]}, SAD: {r_sad['py'][0]}.")
+        f"""line py. Xsuite: {p.py[0]}, SAD: {r_sad["py"][0]}.""")
 
 
 def test_pipeline_reverse_element_order_translation_physics_matches_sad(tmp_path):
@@ -852,8 +852,8 @@ def test_pipeline_reverse_element_order_translation_physics_matches_sad(tmp_path
     assert r_sad_rev["x"][0] == pytest.approx(r_sad_fwd["x"][0], abs=1e-12), (
         "SAD sanity check: COORD(DX=0.001) should give the same final x in the "
         "forward and reversed lines because the beampipe offset does not change "
-        f"sign under reversal. Forward: {r_sad_fwd['x'][0]}, "
-        f"Reversed: {r_sad_rev['x'][0]}.")
+        f"""sign under reversal. Forward: {r_sad_fwd["x"][0]}, """
+        f"""Reversed: {r_sad_rev["x"][0]}.""")
 
     line = s2x.convert_sad_to_xsuite(
         sad_lattice_path      = str(lat_path),
@@ -867,7 +867,7 @@ def test_pipeline_reverse_element_order_translation_physics_matches_sad(tmp_path
 
     assert p.x[0] == pytest.approx(r_sad_rev["x"][0], abs=1e-9), (
         "Xsuite reversed COORD x must match SAD reversed line x. "
-        f"Xsuite: {p.x[0]:.6e}, SAD forward: {r_sad_fwd['x'][0]:.6e}, "
-        f"SAD reversed: {r_sad_rev['x'][0]:.6e}. "
+        f"""Xsuite: {p.x[0]:.6e}, SAD forward: {r_sad_fwd["x"][0]:.6e}, """
+        f"""SAD reversed: {r_sad_rev["x"][0]:.6e}. """
         "Both SAD values are the same; a sign error in shift_x negation "
         "would produce the opposite sign here.")

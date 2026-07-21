@@ -30,7 +30,7 @@ def test_import_boundary_convert_sad_to_xsuite_is_importable():
     importable directly from the top-level sad2xs namespace.
     """
     assert hasattr(sad2xs, "convert_sad_to_xsuite"), (
-        "'convert_sad_to_xsuite' should be accessible at the sad2xs top level.")
+        "`convert_sad_to_xsuite` should be accessible at the sad2xs top level.")
 
 
 def test_import_boundary_write_lattice_is_importable():
@@ -39,7 +39,7 @@ def test_import_boundary_write_lattice_is_importable():
     the top-level namespace so users can call it without importing internals.
     """
     assert hasattr(sad2xs, "write_lattice"), (
-        "'write_lattice' should be accessible at the sad2xs top level.")
+        "`write_lattice` should be accessible at the sad2xs top level.")
 
 
 def test_import_boundary_write_optics_is_importable():
@@ -48,7 +48,7 @@ def test_import_boundary_write_optics_is_importable():
     the top-level namespace.
     """
     assert hasattr(sad2xs, "write_optics"), (
-        "'write_optics' should be accessible at the sad2xs top level.")
+        "`write_optics` should be accessible at the sad2xs top level.")
 
 
 def test_import_boundary_sad_helpers_namespace_is_importable():
@@ -57,7 +57,7 @@ def test_import_boundary_sad_helpers_namespace_is_importable():
     accessible as a sub-namespace from the top-level import.
     """
     assert hasattr(sad2xs, "sad_helpers"), (
-        "'sad_helpers' should be accessible as sad2xs.sad_helpers.")
+        "`sad_helpers` should be accessible as sad2xs.sad_helpers.")
 
 
 ################################################################################
@@ -109,7 +109,7 @@ def test_import_boundary_core_import_does_not_require_tfs():
         "import sys\n"
         "class _BlockTFS:\n"
         "    def find_spec(self, name, path, target=None):\n"
-        "        if name == 'tfs' or name.startswith('tfs.'):\n"
+        """        if name == "tfs" or name.startswith("tfs."):\n"""
         "            raise ModuleNotFoundError(name)\n"
         "        return None\n"
         "sys.meta_path.insert(0, _BlockTFS())\n"

@@ -111,9 +111,9 @@ def test_pipeline_markers_only_lattice_converts(write_lattice):
     assert isinstance(line, xt.Line), (
         "A markers-only SAD lattice should convert to an xt.Line.")
     assert "start" in line.element_names, (
-        "Converted markers-only line should contain the 'start' marker.")
+        "Converted markers-only line should contain the `start` marker.")
     assert "end" in line.element_names, (
-        "Converted markers-only line should contain the 'end' marker.")
+        "Converted markers-only line should contain the `end` marker.")
 
 
 def test_pipeline_mark_drift_mark_lattice_converts(write_lattice):
@@ -228,7 +228,7 @@ def test_pipeline_single_element_type_lattice_converts(
         f"A SAD lattice with a single {element_type} element should convert "
         "to an xt.Line.")
     assert "ele" in line.element_names, (
-        f"The converted line should contain the {element_type} element 'ele'.")
+        f"The converted line should contain the {element_type} element `ele`.")
 
 
 ################################################################################
@@ -278,7 +278,7 @@ def test_pipeline_lattice_with_all_allowed_element_types_converts(write_lattice)
 
     for name in expected_names:
         assert name in line.element_names, (
-            f"Converted all-types lattice should contain element '{name}'.")
+            f"Converted all-types lattice should contain element `{name}`.")
 
 
 ################################################################################
@@ -312,7 +312,7 @@ def test_pipeline_lowercases_sad_element_names(write_lattice):
         f"Found non-lowercase names: "
         f"{[n for n in line.element_names if n != n.lower()]}.")
     assert "upper_drift" in line.element_names, (
-        "SAD name 'UPPER_DRIFT' should appear as 'upper_drift' in the "
+        "SAD name `UPPER_DRIFT` should appear as `upper_drift` in the "
         "converted line.")
 
 
@@ -448,7 +448,7 @@ def test_pipeline_maps_sad_element_to_xsuite_type(
         _test_mode       = True)
 
     assert element_name in line.element_names, (
-        f"Converted line should contain the SAD {sad_keyword} element '{element_name}'.")
+        f"Converted line should contain the SAD {sad_keyword} element `{element_name}`.")
     assert isinstance(line[element_name], expected_type), (
         f"SAD {sad_keyword} should map to Xsuite {expected_type.__name__}. "
         f"Got {type(line[element_name]).__name__} instead.")
@@ -551,11 +551,11 @@ def test_pipeline_individual_element_lengths_are_preserved(write_lattice):
         _test_mode       = True)
 
     assert line["short"].length == pytest.approx(0.25), (
-        "Converted element 'short' should preserve its SAD length of 0.25 m.")
+        "Converted element `short` should preserve its SAD length of 0.25 m.")
     assert line["medium"].length == pytest.approx(1.5), (
-        "Converted element 'medium' should preserve its SAD length of 1.5 m.")
+        "Converted element `medium` should preserve its SAD length of 1.5 m.")
     assert line["long"].length == pytest.approx(3.0), (
-        "Converted element 'long' should preserve its SAD length of 3.0 m.")
+        "Converted element `long` should preserve its SAD length of 3.0 m.")
 
 
 ################################################################################
@@ -619,7 +619,7 @@ def test_pipeline_auto_selects_longest_line_from_multiple_definitions(write_latt
         "The auto-selector should return the longest SAD LINE by total length. "
         "Expected LONG_LINE (5.0 m), not SHORT_LINE (1.0 m).")
     assert "long_drift" in line.element_names, (
-        "The auto-selected line should contain 'long_drift', confirming "
+        "The auto-selected line should contain `long_drift`, confirming "
         "LONG_LINE was chosen over SHORT_LINE.")
 
 
@@ -655,7 +655,7 @@ def test_pipeline_auto_selects_by_element_count_when_all_lines_zero_length(write
         "selected over SHORT_LINE (3 elements). "
         f"Got element names: {line.element_names}.")
     assert "m2" in line.element_names, (
-        "Auto-selected line should contain 'm2', confirming LONG_LINE "
+        "Auto-selected line should contain `m2`, confirming LONG_LINE "
         "was chosen over SHORT_LINE.")
 
 
@@ -687,10 +687,10 @@ def test_pipeline_line_name_selects_requested_line(write_lattice):
         _test_mode       = True)
 
     assert line.get_length() == pytest.approx(1.0), (
-        "line_name='SHORT_LINE' should select SHORT_LINE even though LONG_LINE "
+        "line_name=`SHORT_LINE` should select SHORT_LINE even though LONG_LINE "
         "is longer. Expected length 1.0 m.")
     assert line.element_names == ["start", "short_drift", "end"], (
-        "line_name='SHORT_LINE' should return the explicitly requested line. "
+        "line_name=`SHORT_LINE` should return the explicitly requested line. "
         f"Got element names: {line.element_names}.")
 
 
@@ -785,7 +785,7 @@ def test_pipeline_write_reload_preserves_test_mode_line_contract(
     for element_name in line_test_mode.element_names:
         assert type(line_reloaded[element_name]) is type(line_test_mode[element_name]), (
             "The write/reload path should preserve element classes. "
-            f"Element '{element_name}' was {type(line_test_mode[element_name]).__name__} "
+            f"Element `{element_name}` was {type(line_test_mode[element_name]).__name__} "
             f"in test mode and {type(line_reloaded[element_name]).__name__} "
             "after reload.")
 
@@ -829,7 +829,7 @@ def test_pipeline_write_reload_preserves_combined_apert_line_contract(
 
         LINE        TEST_LINE = (START D1 APT1 END);
         """,
-        filename = f"pipeline_combined_apert_reload_{'_'.join(expected_extra_names)}.sad")
+        filename = f"""pipeline_combined_apert_reload_{"_".join(expected_extra_names)}.sad""")
     output_dir = tmp_path / "output"
     output_dir.mkdir()
 
@@ -853,13 +853,13 @@ def test_pipeline_write_reload_preserves_combined_apert_line_contract(
 
     for name in expected_extra_names:
         assert name in line_reloaded.element_names, (
-            f"Expected combined APERT component '{name}' to survive the "
+            f"Expected combined APERT component `{name}` to survive the "
             "write/reload round trip.")
 
     for element_name in line_test_mode.element_names:
         assert type(line_reloaded[element_name]) is type(line_test_mode[element_name]), (
             "The write/reload path should preserve combined APERT element "
-            f"classes. Element '{element_name}' was "
+            f"classes. Element `{element_name}` was "
             f"{type(line_test_mode[element_name]).__name__} in test mode and "
             f"{type(line_reloaded[element_name]).__name__} after reload.")
 
@@ -898,7 +898,7 @@ def test_pipeline_generated_lattice_file_imports_into_xsuite_environment(
     env.call(str(generated_lattice_path))
 
     assert "line" in env.lines, (
-        "Generated lattice file should define an Xsuite line named 'line'.")
+        "Generated lattice file should define an Xsuite line named `line`.")
     assert env.lines["line"].element_names == ["start", "d1", "q1", "end"], (
         "Generated lattice file should preserve converted line element names "
         "when loaded into a clean Xsuite Environment.")

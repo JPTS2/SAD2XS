@@ -121,7 +121,7 @@ def convert_expressions(
             if var_name not in converted_expressions]
         unresolved_detail = "; ".join(
             f"line {parsed_expression_line_nos[var_name]}: "
-            f"'{var_name} = {parsed_expressions[var_name]}'"
+            f"""\"{var_name} = {parsed_expressions[var_name]}\""""
             for var_name in unresolved)
         raise ValueError(
             "Not all expressions could be evaluated. "

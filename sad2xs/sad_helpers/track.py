@@ -394,7 +394,7 @@ abort;
                 raise RuntimeError(
                     f"SAD tracking died early with code "
                     f"{process.returncode}.\n"
-                    f"--- SAD output ---\n{''.join(stdout_lines)}")
+                    f"""--- SAD output ---\n{"".join(stdout_lines)}""")
 
             if "TRACKING COMPLETE" in line:
                 if with_progress:
@@ -424,9 +424,9 @@ abort;
             raise RuntimeError(
                 f"SAD tracking exited with non-zero status "
                 f"{process.returncode}.\n"
-                f"--- SAD output ---\n{''.join(stdout_lines)}")
+                f"""--- SAD output ---\n{"".join(stdout_lines)}""")
 
-        logger.debug(f"SAD tracking terminal output:\n{''.join(stdout_lines)}")
+        logger.debug(f"""SAD tracking terminal output:\n{"".join(stdout_lines)}""")
 
         ########################################
         # Load the data
@@ -446,7 +446,7 @@ abort;
     ########################################
     logger.debug("Processing outputs")
 
-    # Fix Mathematica"s ".00123" → "0.00123"
+    # Fix Mathematica's ".00123" → "0.00123"
     output  = re.sub(r"(?<![\d])\.(\d+)", r"0.\1", raw_output)
 
     # Extract all floats in a single pass

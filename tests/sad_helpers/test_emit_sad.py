@@ -111,7 +111,7 @@ def test_emit_sad_returns_all_expected_keys(tmp_path, monkeypatch):
 
     for key in _EMIT_KEYS:
         assert key in result, (
-            f"emit_sad result should contain key '{key}'. "
+            f"emit_sad result should contain key `{key}`. "
             f"Got keys: {list(result.keys())}.")
 
 
@@ -124,12 +124,12 @@ def test_emit_sad_scalar_values_are_finite(tmp_path, monkeypatch):
 
     for key in _EMIT_SCALAR_KEYS:
         assert math.isfinite(result[key]), (
-            f"emit_sad result['{key}'] should be finite. Got: {result[key]}.")
+            f"emit_sad result[`{key}`] should be finite. Got: {result[key]}.")
 
     for key in _EMIT_TUPLE_KEYS:
         for i, val in enumerate(result[key]):
             assert math.isfinite(val), (
-                f"emit_sad result['{key}'][{i}] should be finite. "
+                f"emit_sad result[`{key}`][{i}] should be finite. "
                 f"Got: {val}.")
 
 
@@ -145,7 +145,7 @@ def test_emit_sad_design_momentum_is_correct_order_of_magnitude(
 
     assert result["design_momentum"] == pytest.approx(1e9, rel = 1E-3), (
         "design_momentum for a 1.0 GEV ring should be approximately 1e9 eV. "
-        f"Got: {result['design_momentum']}.")
+        f"""Got: {result["design_momentum"]}.""")
 
 
 def test_emit_sad_physical_quantities_have_correct_sign(tmp_path, monkeypatch):
@@ -163,13 +163,13 @@ def test_emit_sad_physical_quantities_have_correct_sign(tmp_path, monkeypatch):
     for key in ("revolution_frequency", "synchrotron_frequency",
                 "eneloss_turn", "gemitt_x", "gemitt_z", "energy_spread"):
         assert result[key] > 0, (
-            f"emit_sad result['{key}'] should be positive. "
+            f"emit_sad result[`{key}`] should be positive. "
             f"Got: {result[key]}.")
 
     assert result["gemitt_y"] >= -1E-30, (
-        "emit_sad result['gemitt_y'] should be zero to numerical precision "
+        "emit_sad result[`gemitt_y`] should be zero to numerical precision "
         "for an uncoupled planar ring. "
-        f"Got: {result['gemitt_y']}.")
+        f"""Got: {result["gemitt_y"]}.""")
 
 
 def test_emit_sad_radcod_flag_runs_and_returns_all_keys(tmp_path, monkeypatch):
@@ -189,5 +189,5 @@ def test_emit_sad_radcod_flag_runs_and_returns_all_keys(tmp_path, monkeypatch):
 
     for key in _EMIT_KEYS:
         assert key in result, (
-            f"emit_sad with radcod=True should return key '{key}'. "
+            f"emit_sad with radcod=True should return key `{key}`. "
             f"Got keys: {list(result.keys())}.")

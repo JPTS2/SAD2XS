@@ -95,8 +95,8 @@ def test_scientific_notation_deferred_expression_parses_as_float(write_lattice):
     Scientific-notation deferred expressions should classify as numeric floats
     at parse time, not fall through to the symbolic-expression string branch.
 
-    A prior narrower numeric fast-path (accepting only digits, '.', and '-')
-    stored values like '1.0e9' as strings. They still resolved correctly one
+    A prior narrower numeric fast-path (accepting only digits, `.`, and `-`)
+    stored values like `1.0e9` as strings. They still resolved correctly one
     stage later via parse_expression()'s float() call, but the parser's own
     classification was wrong — which matters for helpers such as
     is_effectively_zero() that treat any string as unconditionally non-zero.
@@ -150,7 +150,7 @@ def test_deferred_numeric_forms_convert_to_environment(write_lattice):
 
 def test_compact_deferred_expression_assignments_convert(write_lattice):
     """
-    Deferred expressions without spaces around '=' should be supported.
+    Deferred expressions without spaces around `=` should be supported.
     """
     lattice_path = write_lattice(
         """\
@@ -355,7 +355,7 @@ def test_unresolved_deferred_expression_error_cites_line_and_expression(write_la
     parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
     environment = xt.Environment()
 
-    with pytest.raises(ValueError, match = r"line 5: 'a = missing \+ 1\.0'"):
+    with pytest.raises(ValueError, match = r"""line 5: "a = missing \+ 1\.0\""""):
         convert_expressions(
             parsed_lattice_data = parsed,
             environment         = environment)

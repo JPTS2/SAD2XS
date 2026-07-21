@@ -193,7 +193,7 @@ def test_set_log_level_debug_enables_debug_records(caplog, tmp_path):
     debug_records = [
         r for r in caplog.records if r.levelno == logging.DEBUG]
     assert debug_records != [], (
-        "set_log_level('debug') should emit DEBUG records.")
+        "set_log_level(`debug`) should emit DEBUG records.")
 
 
 def test_set_log_level_rejects_unknown_level():

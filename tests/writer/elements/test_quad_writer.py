@@ -94,8 +94,8 @@ def test_quad_writer_reloads_as_xsuite_quadrupole(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["q1"], xt.Quadrupole), (
-        "Written quadrupole element 'q1' should reload as xt.Quadrupole. "
-        f"Got: {type(reloaded_line['q1']).__name__}.")
+        "Written quadrupole element `q1` should reload as xt.Quadrupole. "
+        f"""Got: {type(reloaded_line["q1"]).__name__}.""")
 
 
 def test_quad_writer_preserves_element_name(tmp_path):
@@ -107,7 +107,7 @@ def test_quad_writer_preserves_element_name(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert "q1" in list(reloaded_line.element_names), (
-        "Reloaded line should contain quadrupole element 'q1'. "
+        "Reloaded line should contain quadrupole element `q1`. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
@@ -155,7 +155,7 @@ def test_quad_writer_preserves_length(tmp_path):
 
     assert reloaded_line["q1"].length == pytest.approx(0.75), (
         "Writer roundtrip should preserve quadrupole length. "
-        f"Original: 0.75, reloaded: {reloaded_line['q1'].length}.")
+        f"""Original: 0.75, reloaded: {reloaded_line["q1"].length}.""")
 
 
 ########################################
@@ -172,7 +172,7 @@ def test_quad_writer_preserves_positive_k1(tmp_path):
 
     assert reloaded_line["q1"].k1 == pytest.approx(0.2), (
         "Writer roundtrip should preserve positive quadrupole k1. "
-        f"Original: 0.2, reloaded: {reloaded_line['q1'].k1}.")
+        f"""Original: 0.2, reloaded: {reloaded_line["q1"].k1}.""")
 
 
 def test_quad_writer_preserves_negative_k1(tmp_path):
@@ -185,7 +185,7 @@ def test_quad_writer_preserves_negative_k1(tmp_path):
 
     assert reloaded_line["q1"].k1 == pytest.approx(-0.2), (
         "Writer roundtrip should preserve negative quadrupole k1. "
-        f"Original: -0.2, reloaded: {reloaded_line['q1'].k1}.")
+        f"""Original: -0.2, reloaded: {reloaded_line["q1"].k1}.""")
 
 
 def test_quad_writer_preserves_zero_k1(tmp_path):
@@ -198,7 +198,7 @@ def test_quad_writer_preserves_zero_k1(tmp_path):
 
     assert reloaded_line["q1"].k1 == pytest.approx(0.0), (
         "Writer roundtrip should preserve zero quadrupole k1. "
-        f"Reloaded: {reloaded_line['q1'].k1}.")
+        f"""Reloaded: {reloaded_line["q1"].k1}.""")
 
 
 def test_quad_writer_k1_preserves_full_double_precision(tmp_path):
@@ -214,7 +214,7 @@ def test_quad_writer_k1_preserves_full_double_precision(tmp_path):
 
     assert reloaded_line["q1"].k1 == pytest.approx(k1_precise, rel = 1E-15), (
         "Writer roundtrip should preserve quadrupole k1 at full double "
-        f"precision. Original: {k1_precise!r}, reloaded: {reloaded_line['q1'].k1!r}.")
+        f"""precision. Original: {k1_precise!r}, reloaded: {reloaded_line["q1"].k1!r}.""")
 
 
 ########################################
@@ -231,9 +231,9 @@ def test_quad_writer_k1_is_accessible_as_optics_variable(tmp_path):
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["k1_q1"] == pytest.approx(0.2), (
-        "Optics variable 'k1_q1' should exist in the environment after reload "
+        "Optics variable `k1_q1` should exist in the environment after reload "
         "and equal the original k1 value. "
-        f"Got: {env['k1_q1']}.")
+        f"""Got: {env["k1_q1"]}.""")
 
 
 def test_quad_writer_k1_optics_variable_is_tunable(tmp_path):
@@ -249,9 +249,9 @@ def test_quad_writer_k1_optics_variable_is_tunable(tmp_path):
     env["k1_q1"] = 0.4
 
     assert reloaded_line["q1"].k1 == pytest.approx(0.4), (
-        "Modifying optics variable 'k1_q1' should update the quadrupole's k1 "
+        "Modifying optics variable `k1_q1` should update the quadrupole's k1 "
         "in the reloaded line. The k1 should be a live deferred expression, "
-        f"not a constant. Got: {reloaded_line['q1'].k1}.")
+        f"""not a constant. Got: {reloaded_line["q1"].k1}.""")
 
 
 ########################################
@@ -268,10 +268,10 @@ def test_quad_writer_preserves_positive_k1s(tmp_path):
 
     assert reloaded_line["q1"].k1s == pytest.approx(0.15), (
         "Writer roundtrip should preserve positive skew quadrupole k1s. "
-        f"Original: 0.15, reloaded: {reloaded_line['q1'].k1s}.")
+        f"""Original: 0.15, reloaded: {reloaded_line["q1"].k1s}.""")
     assert reloaded_line["q1"].k1 == pytest.approx(0.0), (
         "Pure skew quadrupole should have zero k1 after roundtrip. "
-        f"Reloaded k1: {reloaded_line['q1'].k1}.")
+        f"""Reloaded k1: {reloaded_line["q1"].k1}.""")
 
 
 def test_quad_writer_preserves_negative_k1s(tmp_path):
@@ -284,7 +284,7 @@ def test_quad_writer_preserves_negative_k1s(tmp_path):
 
     assert reloaded_line["q1"].k1s == pytest.approx(-0.15), (
         "Writer roundtrip should preserve negative skew quadrupole k1s. "
-        f"Original: -0.15, reloaded: {reloaded_line['q1'].k1s}.")
+        f"""Original: -0.15, reloaded: {reloaded_line["q1"].k1s}.""")
 
 
 def test_quad_writer_k1s_is_accessible_as_optics_variable(tmp_path):
@@ -297,9 +297,9 @@ def test_quad_writer_k1s_is_accessible_as_optics_variable(tmp_path):
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["k1s_q1"] == pytest.approx(0.15), (
-        "Optics variable 'k1s_q1' should exist in the environment after reload "
+        "Optics variable `k1s_q1` should exist in the environment after reload "
         "and equal the original k1s value. "
-        f"Got: {env['k1s_q1']}.")
+        f"""Got: {env["k1s_q1"]}.""")
 
 
 def test_quad_writer_k1s_optics_variable_is_tunable(tmp_path):
@@ -313,9 +313,9 @@ def test_quad_writer_k1s_optics_variable_is_tunable(tmp_path):
     env["k1s_q1"] = 0.3
 
     assert reloaded_line["q1"].k1s == pytest.approx(0.3), (
-        "Modifying optics variable 'k1s_q1' should update the quadrupole's "
+        "Modifying optics variable `k1s_q1` should update the quadrupole's "
         "k1s in the reloaded line. "
-        f"Got: {reloaded_line['q1'].k1s}.")
+        f"""Got: {reloaded_line["q1"].k1s}.""")
 
 
 ########################################
@@ -333,15 +333,15 @@ def test_quad_writer_preserves_k1_and_k1s_simultaneously(tmp_path):
 
     assert reloaded_line["q1"].k1 == pytest.approx(0.2), (
         "Writer roundtrip should preserve k1 when both k1 and k1s are set. "
-        f"Original: 0.2, reloaded: {reloaded_line['q1'].k1}.")
+        f"""Original: 0.2, reloaded: {reloaded_line["q1"].k1}.""")
     assert reloaded_line["q1"].k1s == pytest.approx(0.05), (
         "Writer roundtrip should preserve k1s when both k1 and k1s are set. "
-        f"Original: 0.05, reloaded: {reloaded_line['q1'].k1s}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["q1"].k1s}.""")
     assert env["k1_q1"] == pytest.approx(0.2), (
-        "Optics variable 'k1_q1' should be written and accessible when both "
+        "Optics variable `k1_q1` should be written and accessible when both "
         "k1 and k1s are non-zero.")
     assert env["k1s_q1"] == pytest.approx(0.05), (
-        "Optics variable 'k1s_q1' should be written and accessible when both "
+        "Optics variable `k1s_q1` should be written and accessible when both "
         "k1 and k1s are non-zero.")
 
 
@@ -350,7 +350,7 @@ def test_quad_writer_preserves_k1_and_k1s_simultaneously(tmp_path):
 ################################################################################
 # shift_x, shift_y, and rot_s_rad are NOT written as optics variables.
 # They are written as literal numeric strings in the lattice file, e.g.:
-#   env.new(name = 'q1', prototype = 'quad_0.5', shift_x = '0.001')
+#   env.new(name = "q1", prototype = "quad_0.5", shift_x = "0.001")
 # The string is evaluated by Xsuite's expression engine when the file is
 # loaded. The tests below verify that positive, negative, and scientific-
 # notation values all survive this literal-string encoding correctly.
@@ -367,7 +367,7 @@ def test_quad_writer_preserves_positive_shift_x(tmp_path):
 
     assert reloaded_line["q1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve positive quadrupole shift_x. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['q1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["q1"].shift_x}.""")
 
 
 def test_quad_writer_preserves_negative_shift_x(tmp_path):
@@ -381,21 +381,21 @@ def test_quad_writer_preserves_negative_shift_x(tmp_path):
 
     assert reloaded_line["q1"].shift_x == pytest.approx(-1.5E-3), (
         "Writer roundtrip should preserve negative quadrupole shift_x. "
-        f"Original: -1.5E-3, reloaded: {reloaded_line['q1'].shift_x}.")
+        f"""Original: -1.5E-3, reloaded: {reloaded_line["q1"].shift_x}.""")
 
 
 def test_quad_writer_preserves_shift_x_in_scientific_notation(tmp_path):
     """
     A very small shift_x value that Python formats in scientific notation
     should survive a write and reload cycle. The literal string encoding must
-    correctly evaluate scientific notation such as '1.23456789e-06'.
+    correctly evaluate scientific notation such as `1.23456789e-06`.
     """
     original_line = _build_quad_line(k1 = 0.2, shift_x = 1.23456789E-6)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert reloaded_line["q1"].shift_x == pytest.approx(1.23456789E-6), (
         "Writer roundtrip should preserve a shift_x value written in scientific "
-        f"notation. Original: 1.23456789E-6, reloaded: {reloaded_line['q1'].shift_x}.")
+        f"""notation. Original: 1.23456789E-6, reloaded: {reloaded_line["q1"].shift_x}.""")
 
 
 ########################################
@@ -411,7 +411,7 @@ def test_quad_writer_preserves_positive_shift_y(tmp_path):
 
     assert reloaded_line["q1"].shift_y == pytest.approx(2.0E-3), (
         "Writer roundtrip should preserve positive quadrupole shift_y. "
-        f"Original: 2.0E-3, reloaded: {reloaded_line['q1'].shift_y}.")
+        f"""Original: 2.0E-3, reloaded: {reloaded_line["q1"].shift_y}.""")
 
 
 def test_quad_writer_preserves_negative_shift_y(tmp_path):
@@ -424,7 +424,7 @@ def test_quad_writer_preserves_negative_shift_y(tmp_path):
 
     assert reloaded_line["q1"].shift_y == pytest.approx(-2.5E-3), (
         "Writer roundtrip should preserve negative quadrupole shift_y. "
-        f"Original: -2.5E-3, reloaded: {reloaded_line['q1'].shift_y}.")
+        f"""Original: -2.5E-3, reloaded: {reloaded_line["q1"].shift_y}.""")
 
 
 def test_quad_writer_preserves_shift_y_in_scientific_notation(tmp_path):
@@ -437,7 +437,7 @@ def test_quad_writer_preserves_shift_y_in_scientific_notation(tmp_path):
 
     assert reloaded_line["q1"].shift_y == pytest.approx(-9.87654321E-7), (
         "Writer roundtrip should preserve a shift_y value written in scientific "
-        f"notation. Original: -9.87654321E-7, reloaded: {reloaded_line['q1'].shift_y}.")
+        f"""notation. Original: -9.87654321E-7, reloaded: {reloaded_line["q1"].shift_y}.""")
 
 
 ########################################
@@ -454,7 +454,7 @@ def test_quad_writer_preserves_positive_rot_s_rad(tmp_path):
 
     assert reloaded_line["q1"].rot_s_rad == pytest.approx(0.05), (
         "Writer roundtrip should preserve positive quadrupole rot_s_rad. "
-        f"Original: 0.05, reloaded: {reloaded_line['q1'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["q1"].rot_s_rad}.""")
 
 
 def test_quad_writer_preserves_negative_rot_s_rad(tmp_path):
@@ -467,7 +467,7 @@ def test_quad_writer_preserves_negative_rot_s_rad(tmp_path):
 
     assert reloaded_line["q1"].rot_s_rad == pytest.approx(-0.05), (
         "Writer roundtrip should preserve negative quadrupole rot_s_rad. "
-        f"Original: -0.05, reloaded: {reloaded_line['q1'].rot_s_rad}.")
+        f"""Original: -0.05, reloaded: {reloaded_line["q1"].rot_s_rad}.""")
 
 
 ########################################
@@ -486,13 +486,13 @@ def test_quad_writer_preserves_all_misalignments_simultaneously(tmp_path):
 
     assert reloaded_line["q1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve shift_x alongside other misalignments. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['q1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["q1"].shift_x}.""")
     assert reloaded_line["q1"].shift_y == pytest.approx(-2.0E-3), (
         "Writer roundtrip should preserve shift_y alongside other misalignments. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['q1'].shift_y}.")
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["q1"].shift_y}.""")
     assert reloaded_line["q1"].rot_s_rad == pytest.approx(0.05), (
         "Writer roundtrip should preserve rot_s_rad alongside other misalignments. "
-        f"Original: 0.05, reloaded: {reloaded_line['q1'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["q1"].rot_s_rad}.""")
 
 
 def test_quad_writer_preserves_k1_with_all_misalignments(tmp_path):
@@ -510,21 +510,21 @@ def test_quad_writer_preserves_k1_with_all_misalignments(tmp_path):
 
     assert reloaded_line["q1"].k1 == pytest.approx(0.2), (
         "Writer roundtrip should preserve k1 alongside misalignments. "
-        f"Original: 0.2, reloaded: {reloaded_line['q1'].k1}.")
+        f"""Original: 0.2, reloaded: {reloaded_line["q1"].k1}.""")
     assert reloaded_line["q1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve shift_x alongside k1. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['q1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["q1"].shift_x}.""")
     assert reloaded_line["q1"].shift_y == pytest.approx(-2.0E-3), (
         "Writer roundtrip should preserve shift_y alongside k1. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['q1'].shift_y}.")
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["q1"].shift_y}.""")
     assert reloaded_line["q1"].rot_s_rad == pytest.approx(0.05), (
         "Writer roundtrip should preserve rot_s_rad alongside k1. "
-        f"Original: 0.05, reloaded: {reloaded_line['q1'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["q1"].rot_s_rad}.""")
 
     assert env["k1_q1"] == pytest.approx(0.2), (
-        "Optics variable 'k1_q1' should remain accessible alongside hardcoded "
+        "Optics variable `k1_q1` should remain accessible alongside hardcoded "
         "misalignment values. "
-        f"Got: {env['k1_q1']}.")
+        f"""Got: {env["k1_q1"]}.""")
 
 
 ################################################################################
@@ -637,13 +637,13 @@ def test_quad_writer_preserves_multiple_quads_independently(tmp_path):
 
     for name, expected_k1 in expected.items():
         assert reloaded_line[name].k1 == pytest.approx(expected_k1), (
-            f"Writer roundtrip should preserve k1 for quadrupole '{name}'. "
+            f"Writer roundtrip should preserve k1 for quadrupole `{name}`. "
             f"Expected: {expected_k1}, reloaded: {reloaded_line[name].k1}.")
 
     assert env["k1_qf"] == pytest.approx(0.2), (
-        "Optics variable 'k1_qf' should be accessible and correct after reload.")
+        "Optics variable `k1_qf` should be accessible and correct after reload.")
     assert env["k1_qd"] == pytest.approx(-0.2), (
-        "Optics variable 'k1_qd' should be accessible and correct after reload.")
+        "Optics variable `k1_qd` should be accessible and correct after reload.")
 
 
 ########################################
@@ -671,26 +671,26 @@ def test_quad_writer_preserves_mixed_normal_and_skew_quads(tmp_path):
 
     assert reloaded_line["qnorm"].k1 == pytest.approx(0.2), (
         "Writer roundtrip should preserve normal quadrupole k1. "
-        f"Original: 0.2, reloaded: {reloaded_line['qnorm'].k1}.")
+        f"""Original: 0.2, reloaded: {reloaded_line["qnorm"].k1}.""")
     assert reloaded_line["qnorm"].k1s == pytest.approx(0.0), (
         "Normal quadrupole should have zero k1s after roundtrip. "
-        f"Reloaded k1s: {reloaded_line['qnorm'].k1s}.")
+        f"""Reloaded k1s: {reloaded_line["qnorm"].k1s}.""")
 
     assert reloaded_line["qskew"].k1s == pytest.approx(0.15), (
         "Writer roundtrip should preserve skew quadrupole k1s. "
-        f"Original: 0.15, reloaded: {reloaded_line['qskew'].k1s}.")
+        f"""Original: 0.15, reloaded: {reloaded_line["qskew"].k1s}.""")
     assert reloaded_line["qskew"].k1 == pytest.approx(0.0), (
         "Pure skew quadrupole should have zero k1 after roundtrip. "
-        f"Reloaded k1: {reloaded_line['qskew'].k1}.")
+        f"""Reloaded k1: {reloaded_line["qskew"].k1}.""")
 
     assert reloaded_line["qcombined"].k1 == pytest.approx(-0.1), (
         "Writer roundtrip should preserve k1 for a combined-strength quad. "
-        f"Original: -0.1, reloaded: {reloaded_line['qcombined'].k1}.")
+        f"""Original: -0.1, reloaded: {reloaded_line["qcombined"].k1}.""")
     assert reloaded_line["qcombined"].k1s == pytest.approx(0.05), (
         "Writer roundtrip should preserve k1s for a combined-strength quad. "
-        f"Original: 0.05, reloaded: {reloaded_line['qcombined'].k1s}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["qcombined"].k1s}.""")
 
     assert env["k1_qnorm"] == pytest.approx(0.2), (
-        "Optics variable 'k1_qnorm' should be accessible and correct.")
+        "Optics variable `k1_qnorm` should be accessible and correct.")
     assert env["k1s_qskew"] == pytest.approx(0.15), (
-        "Optics variable 'k1s_qskew' should be accessible and correct.")
+        "Optics variable `k1s_qskew` should be accessible and correct.")

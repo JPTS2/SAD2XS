@@ -136,7 +136,7 @@ def test_optics_writer_header_is_written_to_file(tmp_path):
 
     content = optics_path.read_text(encoding = "utf-8")
     assert header in content, (
-        f"The output_header '{header}' should appear in the written optics "
+        f"The output_header `{header}` should appear in the written optics "
         f"file. File content starts with: {content[:200]!r}.")
 
 
@@ -156,7 +156,7 @@ def test_optics_writer_output_is_executable_python(tmp_path):
     env.call(str(optics_path))
 
     assert env["k1_q1"] is not None, (
-        "After calling the optics file, 'k1_q1' should be accessible in "
+        "After calling the optics file, `k1_q1` should be accessible in "
         "the Xsuite environment.")
 
 
@@ -192,20 +192,20 @@ def test_optics_writer_does_not_mutate_input_line(tmp_path):
 def test_optics_writer_writes_k1_variable_for_nonzero_strength_quadrupole(tmp_path):
     """
     For a quadrupole with k1 != 0, write_optics should write a named optics
-    variable 'k1_{element_name}' to the optics file.
+    variable `k1_{element_name}` to the optics file.
     """
     line              = _build_quad_line(k1 = 0.2)
     _, optics_path    = _write_optics_only(line, tmp_path, "test_optics")
 
     content = optics_path.read_text(encoding = "utf-8")
     assert "k1_q1" in content, (
-        "write_optics should write 'k1_q1' to the optics file for a "
+        "write_optics should write `k1_q1` to the optics file for a "
         f"quadrupole with k1 = 0.2. File content: {content!r}.")
 
 
 def test_optics_writer_does_not_write_k1_variable_for_zero_strength_quadrupole(tmp_path):
     """
-    For a quadrupole with k1 == 0, write_optics should not write a 'k1_{name}'
+    For a quadrupole with k1 == 0, write_optics should not write a `k1_{name}`
     variable to the optics file. The variable is skipped; it resolves to 0 via
     the default_to_zero mechanism in the optics file header.
     """
@@ -214,23 +214,23 @@ def test_optics_writer_does_not_write_k1_variable_for_zero_strength_quadrupole(t
 
     content = optics_path.read_text(encoding = "utf-8")
     assert "k1_q1" not in content, (
-        "write_optics should not write 'k1_q1' for a quadrupole with k1 = 0. "
+        "write_optics should not write `k1_q1` for a quadrupole with k1 = 0. "
         f"Found it in file content: {content!r}.")
 
 
 def test_optics_writer_writes_k1s_variable_for_skew_quadrupole(tmp_path):
     """
     For a quadrupole with k1=0 and k1s != 0, write_optics should write a
-    'k1s_{name}' variable and suppress 'k1_{name}'.
+    `k1s_{name}` variable and suppress `k1_{name}`.
     """
     content = _optics_content(
         xt.Quadrupole(length = 0.5, k1 = 0.0, k1s = -0.05), "q1", tmp_path)
 
     assert "k1s_q1" in content, (
-        "write_optics should write 'k1s_q1' for a quadrupole with k1s = -0.05. "
+        "write_optics should write `k1s_q1` for a quadrupole with k1s = -0.05. "
         f"File content: {content!r}.")
     assert "k1_q1" not in content, (
-        "write_optics should not write 'k1_q1' when k1 = 0. "
+        "write_optics should not write `k1_q1` when k1 = 0. "
         f"File content: {content!r}.")
 
 
@@ -240,13 +240,13 @@ def test_optics_writer_writes_k1s_variable_for_skew_quadrupole(tmp_path):
 def test_optics_writer_writes_k0_variable_for_nonzero_bend(tmp_path):
     """
     For a bend with angle != 0 (h != 0), write_optics should write a
-    'k0_{element_name}' variable to the optics file.
+    `k0_{element_name}` variable to the optics file.
     """
     content = _optics_content(
         xt.Bend(length = 1.0, angle = 0.1), "b1", tmp_path)
 
     assert "k0_b1" in content, (
-        "write_optics should write 'k0_b1' for a bend with angle = 0.1. "
+        "write_optics should write `k0_b1` for a bend with angle = 0.1. "
         f"File content: {content!r}.")
 
 
@@ -256,26 +256,26 @@ def test_optics_writer_writes_k0_variable_for_nonzero_bend(tmp_path):
 def test_optics_writer_writes_k0_variable_for_nonzero_corrector(tmp_path):
     """
     For a corrector (Bend with h=0 and k0 != 0), write_optics should write a
-    'k0_{element_name}' variable to the optics file.
+    `k0_{element_name}` variable to the optics file.
     """
     content = _optics_content(
         xt.Bend(length = 0.3, k0 = 1.0E-4), "c1", tmp_path)
 
     assert "k0_c1" in content, (
-        "write_optics should write 'k0_c1' for a corrector with k0 = 1e-4. "
+        "write_optics should write `k0_c1` for a corrector with k0 = 1e-4. "
         f"File content: {content!r}.")
 
 
 def test_optics_writer_does_not_write_k0_for_zero_strength_corrector(tmp_path):
     """
-    For a corrector with k0 == 0, write_optics should not write a 'k0_{name}'
+    For a corrector with k0 == 0, write_optics should not write a `k0_{name}`
     variable. Zero corrector strengths are suppressed in the optics file.
     """
     content = _optics_content(
         xt.Bend(length = 0.3, k0 = 0.0), "c1", tmp_path)
 
     assert "k0_c1" not in content, (
-        "write_optics should not write 'k0_c1' for a corrector with k0 = 0. "
+        "write_optics should not write `k0_c1` for a corrector with k0 = 0. "
         f"File content: {content!r}.")
 
 
@@ -284,43 +284,43 @@ def test_optics_writer_does_not_write_k0_for_zero_strength_corrector(tmp_path):
 ################################################################################
 def test_optics_writer_writes_k2_variable_for_nonzero_sextupole(tmp_path):
     """
-    For a sextupole with k2 != 0, write_optics should write a 'k2_{name}'
+    For a sextupole with k2 != 0, write_optics should write a `k2_{name}`
     variable to the optics file.
     """
     content = _optics_content(
         xt.Sextupole(length = 0.4, k2 = 0.3), "s1", tmp_path)
 
     assert "k2_s1" in content, (
-        "write_optics should write 'k2_s1' for a sextupole with k2 = 0.3. "
+        "write_optics should write `k2_s1` for a sextupole with k2 = 0.3. "
         f"File content: {content!r}.")
 
 
 def test_optics_writer_does_not_write_k2_for_zero_strength_sextupole(tmp_path):
     """
-    For a sextupole with k2 == 0, write_optics should not write a 'k2_{name}'
+    For a sextupole with k2 == 0, write_optics should not write a `k2_{name}`
     variable. Zero sextupole strengths are suppressed in the optics file.
     """
     content = _optics_content(
         xt.Sextupole(length = 0.4, k2 = 0.0), "s1", tmp_path)
 
     assert "k2_s1" not in content, (
-        "write_optics should not write 'k2_s1' for a sextupole with k2 = 0. "
+        "write_optics should not write `k2_s1` for a sextupole with k2 = 0. "
         f"File content: {content!r}.")
 
 
 def test_optics_writer_writes_k2s_variable_for_skew_sextupole(tmp_path):
     """
     For a sextupole with k2=0 and k2s != 0, write_optics should write
-    'k2s_{name}' and suppress 'k2_{name}'.
+    `k2s_{name}` and suppress `k2_{name}`.
     """
     content = _optics_content(
         xt.Sextupole(length = 0.4, k2 = 0.0, k2s = -0.04), "s1", tmp_path)
 
     assert "k2s_s1" in content, (
-        "write_optics should write 'k2s_s1' for a sextupole with k2s = -0.04. "
+        "write_optics should write `k2s_s1` for a sextupole with k2s = -0.04. "
         f"File content: {content!r}.")
     assert "k2_s1" not in content, (
-        "write_optics should not write 'k2_s1' when k2 = 0. "
+        "write_optics should not write `k2_s1` when k2 = 0. "
         f"File content: {content!r}.")
 
 
@@ -329,43 +329,43 @@ def test_optics_writer_writes_k2s_variable_for_skew_sextupole(tmp_path):
 ################################################################################
 def test_optics_writer_writes_k3_variable_for_nonzero_octupole(tmp_path):
     """
-    For an octupole with k3 != 0, write_optics should write a 'k3_{name}'
+    For an octupole with k3 != 0, write_optics should write a `k3_{name}`
     variable to the optics file.
     """
     content = _optics_content(
         xt.Octupole(length = 0.3, k3 = 0.4), "o1", tmp_path)
 
     assert "k3_o1" in content, (
-        "write_optics should write 'k3_o1' for an octupole with k3 = 0.4. "
+        "write_optics should write `k3_o1` for an octupole with k3 = 0.4. "
         f"File content: {content!r}.")
 
 
 def test_optics_writer_does_not_write_k3_for_zero_strength_octupole(tmp_path):
     """
-    For an octupole with k3 == 0, write_optics should not write a 'k3_{name}'
+    For an octupole with k3 == 0, write_optics should not write a `k3_{name}`
     variable. Zero octupole strengths are suppressed in the optics file.
     """
     content = _optics_content(
         xt.Octupole(length = 0.3, k3 = 0.0), "o1", tmp_path)
 
     assert "k3_o1" not in content, (
-        "write_optics should not write 'k3_o1' for an octupole with k3 = 0. "
+        "write_optics should not write `k3_o1` for an octupole with k3 = 0. "
         f"File content: {content!r}.")
 
 
 def test_optics_writer_writes_k3s_variable_for_skew_octupole(tmp_path):
     """
     For an octupole with k3=0 and k3s != 0, write_optics should write
-    'k3s_{name}' and suppress 'k3_{name}'.
+    `k3s_{name}` and suppress `k3_{name}`.
     """
     content = _optics_content(
         xt.Octupole(length = 0.3, k3 = 0.0, k3s = -0.05), "o1", tmp_path)
 
     assert "k3s_o1" in content, (
-        "write_optics should write 'k3s_o1' for an octupole with k3s = -0.05. "
+        "write_optics should write `k3s_o1` for an octupole with k3s = -0.05. "
         f"File content: {content!r}.")
     assert "k3_o1" not in content, (
-        "write_optics should not write 'k3_o1' when k3 = 0. "
+        "write_optics should not write `k3_o1` when k3 = 0. "
         f"File content: {content!r}.")
 
 
@@ -375,7 +375,7 @@ def test_optics_writer_writes_k3s_variable_for_skew_octupole(tmp_path):
 def test_optics_writer_writes_freq_volt_phase_variables_for_cavity(tmp_path):
     """
     For a cavity, write_optics should always write all three optics variables:
-    'freq_{name}', 'volt_{name}', and 'phase_{name}'. Cavity parameters are
+    `freq_{name}`, `volt_{name}`, and `phase_{name}`. Cavity parameters are
     never suppressed even when they take default values.
     """
     content = _optics_content(
@@ -383,7 +383,7 @@ def test_optics_writer_writes_freq_volt_phase_variables_for_cavity(tmp_path):
 
     for var in ("freq_cav1", "volt_cav1", "phase_cav1"):
         assert var in content, (
-            f"write_optics should write '{var}' to the optics file for a "
+            f"write_optics should write `{var}` to the optics file for a "
             f"cavity. File content: {content!r}.")
 
 
@@ -393,32 +393,32 @@ def test_optics_writer_writes_freq_volt_phase_variables_for_cavity(tmp_path):
 def test_optics_writer_writes_dx_and_dy_for_nonzero_translation(tmp_path):
     """
     For a Translation with both shift_x != 0 and shift_y != 0, write_optics
-    should write 'dx_{name}' and 'dy_{name}' to the optics file.
+    should write `dx_{name}` and `dy_{name}` to the optics file.
     """
     content = _optics_content(
         xt.Translation(shift_x = 1.0E-3, shift_y = -2.0E-3), "shift1", tmp_path)
 
     assert "dx_shift1" in content, (
-        "write_optics should write 'dx_shift1' for a Translation with shift_x = 1e-3. "
+        "write_optics should write `dx_shift1` for a Translation with shift_x = 1e-3. "
         f"File content: {content!r}.")
     assert "dy_shift1" in content, (
-        "write_optics should write 'dy_shift1' for a Translation with shift_y = -2e-3. "
+        "write_optics should write `dy_shift1` for a Translation with shift_y = -2e-3. "
         f"File content: {content!r}.")
 
 
 def test_optics_writer_does_not_write_dx_for_zero_shift_x_translation(tmp_path):
     """
-    For a Translation with shift_x=0, write_optics should suppress 'dx_{name}'
-    while still writing 'dy_{name}' when shift_y != 0.
+    For a Translation with shift_x=0, write_optics should suppress `dx_{name}`
+    while still writing `dy_{name}` when shift_y != 0.
     """
     content = _optics_content(
         xt.Translation(shift_x = 0.0, shift_y = -2.0E-3), "shift1", tmp_path)
 
     assert "dx_shift1" not in content, (
-        "write_optics should not write 'dx_shift1' when shift_x = 0. "
+        "write_optics should not write `dx_shift1` when shift_x = 0. "
         f"File content: {content!r}.")
     assert "dy_shift1" in content, (
-        "write_optics should still write 'dy_shift1' when shift_y = -2e-3. "
+        "write_optics should still write `dy_shift1` when shift_y = -2e-3. "
         f"File content: {content!r}.")
 
 
@@ -428,13 +428,13 @@ def test_optics_writer_does_not_write_dx_for_zero_shift_x_translation(tmp_path):
 def test_optics_writer_writes_dz_for_nonzero_timedelay(tmp_path):
     """
     For a TimeDelay with shift_zeta != 0, write_optics should write a
-    'dz_{name}' variable to the optics file.
+    `dz_{name}` variable to the optics file.
     """
     content = _optics_content(
         xt.TimeDelay(shift_zeta = 3.0E-3), "zshift1", tmp_path)
 
     assert "dz_zshift1" in content, (
-        "write_optics should write 'dz_zshift1' for a TimeDelay with "
+        "write_optics should write `dz_zshift1` for a TimeDelay with "
         f"shift_zeta = 3e-3. File content: {content!r}.")
 
 
@@ -444,37 +444,37 @@ def test_optics_writer_writes_dz_for_nonzero_timedelay(tmp_path):
 def test_optics_writer_writes_chi2_for_nonzero_rotation_rot_x_rad(tmp_path):
     """
     For a Rotation with rot_x_rad != 0, write_optics should write a
-    'chi2_{name}' variable to the optics file.
+    `chi2_{name}` variable to the optics file.
     """
     content = _optics_content(
         xt.Rotation(rot_x_rad = 1.25), "rot1", tmp_path)
 
     assert "chi2_rot1" in content, (
-        "write_optics should write 'chi2_rot1' for a Rotation with "
+        "write_optics should write `chi2_rot1` for a Rotation with "
         f"rot_x_rad = 1.25. File content: {content!r}.")
 
 
 def test_optics_writer_writes_chi1_for_nonzero_rotation_rot_y_rad(tmp_path):
     """
     For a Rotation with rot_y_rad != 0, write_optics should write a
-    'chi1_{name}' variable to the optics file.
+    `chi1_{name}` variable to the optics file.
     """
     content = _optics_content(
         xt.Rotation(rot_y_rad = -1.25), "rot1", tmp_path)
 
     assert "chi1_rot1" in content, (
-        "write_optics should write 'chi1_rot1' for a Rotation with "
+        "write_optics should write `chi1_rot1` for a Rotation with "
         f"rot_y_rad = -1.25. File content: {content!r}.")
 
 
 def test_optics_writer_writes_chi3_for_nonzero_rotation_rot_s_rad(tmp_path):
     """
     For a Rotation with rot_s_rad != 0, write_optics should write a
-    'chi3_{name}' variable to the optics file.
+    `chi3_{name}` variable to the optics file.
     """
     content = _optics_content(
         xt.Rotation(rot_s_rad = 0.75), "rot1", tmp_path)
 
     assert "chi3_rot1" in content, (
-        "write_optics should write 'chi3_rot1' for a Rotation with "
+        "write_optics should write `chi3_rot1` for a Rotation with "
         f"rot_s_rad = 0.75. File content: {content!r}.")

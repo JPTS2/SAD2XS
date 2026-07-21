@@ -258,7 +258,7 @@ def define_strength_variable(
     -------
     float or str
         If `k_value` is non-zero: stores it as
-        `environment['{k_name}_{ele_name}']` and returns that key
+        `environment[`{k_name}_{ele_name}`]` and returns that key
         string, so it can be passed to `environment.new()`. If
         `k_value` is zero: returns it unchanged without touching the
         environment.

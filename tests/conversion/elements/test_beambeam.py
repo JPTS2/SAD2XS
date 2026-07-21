@@ -128,7 +128,7 @@ def test_beambeam_pipeline_preserves_beambeam_names(write_lattice):
         "Converted BEAMBEAM-only line should preserve element order and names.")
     for beambeam_name in ["bb_1", "bb_2", "bb_3"]:
         assert isinstance(line[beambeam_name], xt.Marker), (
-            f"Converted element '{beambeam_name}' should be an Xsuite Marker.")
+            f"Converted element `{beambeam_name}` should be an Xsuite Marker.")
 
 ################################################################################
 # Physics Equivalence

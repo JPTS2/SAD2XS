@@ -100,7 +100,7 @@ def create_sextupole_lattice_file_information(
 
     for sext_name, sext_length in zip(sext_names, sext_lengths):
         output_string += f"""
-env.new(name = '{sext_name}', prototype = xt.Sextupole, length = {sext_length})"""
+env.new(name = "{sext_name}", prototype = xt.Sextupole, length = {sext_length})"""
 
     output_string += "\n"
 
@@ -125,10 +125,10 @@ env.new(name = '{sext_name}', prototype = xt.Sextupole, length = {sext_length})"
 
                 if not check_is_skew_quad_sext_oct(line, replica_name, "Sextupole"):
                     output_string += f"""
-env.new(name = '{replica_name}', prototype = '{sext}', k2 = 'k2_{replica_name}')"""
+env.new(name = "{replica_name}", prototype = "{sext}", k2 = "k2_{replica_name}")"""
                 else:
                     output_string += f"""
-env.new(name = '{replica_name}', prototype = '{sext}', k2s = 'k2s_{replica_name}')"""
+env.new(name = "{replica_name}", prototype = "{sext}", k2s = "k2s_{replica_name}")"""
 
             else:
                 # Get the replica information
@@ -143,27 +143,27 @@ env.new(name = '{replica_name}', prototype = '{sext}', k2s = 'k2s_{replica_name}
                 # Basic information
                 sext_generation = f"""
 env.new(
-    name        = '{replica_name}',
-    prototype   = '{sext}'"""
+    name        = "{replica_name}",
+    prototype   = "{sext}\""""
 
                 # Strength information
                 if k2 != 0:
                     sext_generation += f""",
-    k2          = 'k2_{replica_name}'"""
+    k2          = "k2_{replica_name}\""""
                 if k2s != 0:
                     sext_generation += f""",
-    k2s         = 'k2s_{replica_name}'"""
+    k2s         = "k2s_{replica_name}\""""
 
                 # Misalignments
                 if shift_x != 0:
                     sext_generation += f""",
-    shift_x     = '{shift_x}'"""
+    shift_x     = "{shift_x}\""""
                 if shift_y != 0:
                     sext_generation += f""",
-    shift_y     = '{shift_y}'"""
+    shift_y     = "{shift_y}\""""
                 if rot_s_rad != 0:
                     sext_generation += f""",
-    rot_s_rad   = '{rot_s_rad}'"""
+    rot_s_rad   = "{rot_s_rad}\""""
 
                 # Combined multipole components
                 knl_str = get_knl_string(knl)
@@ -277,10 +277,10 @@ def create_sextupole_optics_file_information(
 
         if k2 is not None:
             output_string += f"""
-    {f'k2_{sext}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k2_{sext}') + 4)}{'= '}{k2:.24f},"""
+    {f"k2_{sext}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k2_{sext}") + 4)}{"= "}{k2:.24f},"""
         if k2s is not None:
             output_string += f"""
-    {f'k2s_{sext}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k2s_{sext}') + 4)}{'= '}{k2s:.24f},"""
+    {f"k2s_{sext}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k2s_{sext}") + 4)}{"= "}{k2s:.24f},"""
 
     ########################################
     # Return

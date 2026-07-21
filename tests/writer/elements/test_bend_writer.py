@@ -30,12 +30,12 @@ def _write_and_load(line, tmp_path):
     clean Xsuite environment, and return the environment and reloaded line.
 
     The bend writer outputs:
-      - A base element: env.new(name='hbend...', prototype=xt.Bend, length=L)
-      - A clone:        env.new(name='b1', prototype='hbend...', angle=<literal>, k0='k0_b1')
+      - A base element: env.new(name=`hbend...`, prototype=xt.Bend, length=L)
+      - A clone:        env.new(name=`b1`, prototype=`hbend...`, angle=<literal>, k0=`k0_b1`)
       - Optics file:    k0_b1 = angle/length   (24 decimal places)
 
     The angle itself is a fixed literal; only k0 is a live deferred
-    expression, so modifying env['k0_b1'] changes k0 without moving the
+    expression, so modifying env[`k0_b1`] changes k0 without moving the
     geometric angle. Edge angles (entry/exit/fdown) are written as bare
     literal numbers. shift_x and shift_y are written as literal Python
     string expressions that Xsuite evaluates on load.
@@ -45,7 +45,7 @@ def _write_and_load(line, tmp_path):
     on the clone as a literal string.
 
     For a combined function magnet (k1 != 0), k1 is also written as a live
-    deferred expression 'k1_{name}', alongside k0.
+    deferred expression `k1_{name}`, alongside k0.
     """
     return _shared_write_and_load(line, tmp_path, output_header = "Bend writer test")
 
@@ -162,8 +162,8 @@ def test_bend_writer_reloads_as_xsuite_bend(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["b1"], xt.Bend), (
-        "Written Bend element 'b1' should reload as xt.Bend. "
-        f"Got: {type(reloaded_line['b1']).__name__}.")
+        "Written Bend element `b1` should reload as xt.Bend. "
+        f"""Got: {type(reloaded_line["b1"]).__name__}.""")
 
 
 def test_bend_writer_preserves_element_name(tmp_path):
@@ -175,7 +175,7 @@ def test_bend_writer_preserves_element_name(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert "b1" in list(reloaded_line.element_names), (
-        "Reloaded line should contain Bend element 'b1'. "
+        "Reloaded line should contain Bend element `b1`. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
@@ -189,7 +189,7 @@ def test_bend_writer_preserves_length(tmp_path):
 
     assert reloaded_line["b1"].length == pytest.approx(0.75), (
         "Writer roundtrip should preserve Bend length. "
-        f"Original: 0.75, reloaded: {reloaded_line['b1'].length}.")
+        f"""Original: 0.75, reloaded: {reloaded_line["b1"].length}.""")
 
 
 ################################################################################
@@ -206,7 +206,7 @@ def test_bend_writer_preserves_positive_angle(tmp_path):
 
     assert reloaded_line["b1"].angle == pytest.approx(0.12), (
         "Writer roundtrip should preserve positive Bend angle. "
-        f"Original: 0.12, reloaded: {reloaded_line['b1'].angle}.")
+        f"""Original: 0.12, reloaded: {reloaded_line["b1"].angle}.""")
 
 
 def test_bend_writer_preserves_negative_angle(tmp_path):
@@ -219,7 +219,7 @@ def test_bend_writer_preserves_negative_angle(tmp_path):
 
     assert reloaded_line["b1"].angle == pytest.approx(-0.08), (
         "Writer roundtrip should preserve negative Bend angle. "
-        f"Original: -0.08, reloaded: {reloaded_line['b1'].angle}.")
+        f"""Original: -0.08, reloaded: {reloaded_line["b1"].angle}.""")
 
 
 def test_bend_writer_angle_is_accessible_as_optics_variable(tmp_path):
@@ -234,8 +234,8 @@ def test_bend_writer_angle_is_accessible_as_optics_variable(tmp_path):
 
     expected_k0 = angle / length
     assert env["k0_b1"] == pytest.approx(expected_k0), (
-        "Optics variable 'k0_b1' should equal angle/length after reload. "
-        f"Expected: {expected_k0}, got: {env['k0_b1']}.")
+        "Optics variable `k0_b1` should equal angle/length after reload. "
+        f"""Expected: {expected_k0}, got: {env["k0_b1"]}.""")
 
 
 def test_bend_writer_k0_is_tunable_via_optics_variable(tmp_path):
@@ -251,11 +251,11 @@ def test_bend_writer_k0_is_tunable_via_optics_variable(tmp_path):
     env["k0_b1"] = new_k0
 
     assert reloaded_line["b1"].k0 == pytest.approx(new_k0), (
-        "Modifying optics variable 'k0_b1' should update the Bend k0. "
-        f"Expected: {new_k0}, got: {reloaded_line['b1'].k0}.")
+        "Modifying optics variable `k0_b1` should update the Bend k0. "
+        f"""Expected: {new_k0}, got: {reloaded_line["b1"].k0}.""")
     assert reloaded_line["b1"].angle == pytest.approx(0.12), (
         "The geometric angle should remain fixed when k0 is varied. "
-        f"Expected: 0.12, got: {reloaded_line['b1'].angle}.")
+        f"""Expected: 0.12, got: {reloaded_line["b1"].angle}.""")
 
 
 ################################################################################
@@ -272,7 +272,7 @@ def test_bend_writer_preserves_edge_entry_angle(tmp_path):
 
     assert reloaded_line["b1"].edge_entry_angle == pytest.approx(0.05), (
         "Writer roundtrip should preserve Bend edge_entry_angle. "
-        f"Original: 0.05, reloaded: {reloaded_line['b1'].edge_entry_angle}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["b1"].edge_entry_angle}.""")
 
 
 def test_bend_writer_preserves_edge_exit_angle(tmp_path):
@@ -285,7 +285,7 @@ def test_bend_writer_preserves_edge_exit_angle(tmp_path):
 
     assert reloaded_line["b1"].edge_exit_angle == pytest.approx(0.04), (
         "Writer roundtrip should preserve Bend edge_exit_angle. "
-        f"Original: 0.04, reloaded: {reloaded_line['b1'].edge_exit_angle}.")
+        f"""Original: 0.04, reloaded: {reloaded_line["b1"].edge_exit_angle}.""")
 
 
 def test_bend_writer_preserves_edge_entry_angle_fdown(tmp_path):
@@ -298,7 +298,7 @@ def test_bend_writer_preserves_edge_entry_angle_fdown(tmp_path):
 
     assert reloaded_line["b1"].edge_entry_angle_fdown == pytest.approx(0.03), (
         "Writer roundtrip should preserve Bend edge_entry_angle_fdown. "
-        f"Original: 0.03, reloaded: {reloaded_line['b1'].edge_entry_angle_fdown}.")
+        f"""Original: 0.03, reloaded: {reloaded_line["b1"].edge_entry_angle_fdown}.""")
 
 
 def test_bend_writer_preserves_edge_exit_angle_fdown(tmp_path):
@@ -311,7 +311,7 @@ def test_bend_writer_preserves_edge_exit_angle_fdown(tmp_path):
 
     assert reloaded_line["b1"].edge_exit_angle_fdown == pytest.approx(0.02), (
         "Writer roundtrip should preserve Bend edge_exit_angle_fdown. "
-        f"Original: 0.02, reloaded: {reloaded_line['b1'].edge_exit_angle_fdown}.")
+        f"""Original: 0.02, reloaded: {reloaded_line["b1"].edge_exit_angle_fdown}.""")
 
 
 ################################################################################
@@ -327,7 +327,7 @@ def test_bend_writer_preserves_edge_entry_fint(tmp_path):
 
     assert reloaded_line["b1"].edge_entry_fint == pytest.approx(0.06), (
         "Writer roundtrip should preserve Bend edge_entry_fint. "
-        f"Original: 0.06, reloaded: {reloaded_line['b1'].edge_entry_fint}.")
+        f"""Original: 0.06, reloaded: {reloaded_line["b1"].edge_entry_fint}.""")
 
 
 def test_bend_writer_preserves_edge_entry_hgap(tmp_path):
@@ -340,7 +340,7 @@ def test_bend_writer_preserves_edge_entry_hgap(tmp_path):
 
     assert reloaded_line["b1"].edge_entry_hgap == pytest.approx(0.06), (
         "Writer roundtrip should preserve Bend edge_entry_hgap. "
-        f"Original: 0.06, reloaded: {reloaded_line['b1'].edge_entry_hgap}.")
+        f"""Original: 0.06, reloaded: {reloaded_line["b1"].edge_entry_hgap}.""")
 
 
 def test_bend_writer_preserves_edge_exit_fint(tmp_path):
@@ -353,7 +353,7 @@ def test_bend_writer_preserves_edge_exit_fint(tmp_path):
 
     assert reloaded_line["b1"].edge_exit_fint == pytest.approx(0.05), (
         "Writer roundtrip should preserve Bend edge_exit_fint. "
-        f"Original: 0.05, reloaded: {reloaded_line['b1'].edge_exit_fint}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["b1"].edge_exit_fint}.""")
 
 
 def test_bend_writer_preserves_edge_exit_hgap(tmp_path):
@@ -366,7 +366,7 @@ def test_bend_writer_preserves_edge_exit_hgap(tmp_path):
 
     assert reloaded_line["b1"].edge_exit_hgap == pytest.approx(0.05), (
         "Writer roundtrip should preserve Bend edge_exit_hgap. "
-        f"Original: 0.05, reloaded: {reloaded_line['b1'].edge_exit_hgap}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["b1"].edge_exit_hgap}.""")
 
 
 def test_bend_writer_treats_fringed_bend_as_non_simple(tmp_path):
@@ -381,8 +381,8 @@ def test_bend_writer_treats_fringed_bend_as_non_simple(tmp_path):
 
     assert reloaded_line["b1"].edge_entry_fint == pytest.approx(0.06), (
         "A Bend with only fint/hgap set (otherwise default) should not be "
-        "misclassified as 'simple' by the writer -- got edge_entry_fint="
-        f"{reloaded_line['b1'].edge_entry_fint} after roundtrip, expected 0.06.")
+        "misclassified as `simple` by the writer -- got edge_entry_fint="
+        f"""{reloaded_line["b1"].edge_entry_fint} after roundtrip, expected 0.06.""")
 
 
 ################################################################################
@@ -399,7 +399,7 @@ def test_bend_writer_preserves_positive_shift_x(tmp_path):
 
     assert reloaded_line["b1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve positive Bend shift_x. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['b1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["b1"].shift_x}.""")
 
 
 def test_bend_writer_preserves_negative_shift_y(tmp_path):
@@ -412,7 +412,7 @@ def test_bend_writer_preserves_negative_shift_y(tmp_path):
 
     assert reloaded_line["b1"].shift_y == pytest.approx(-2.0E-3), (
         "Writer roundtrip should preserve negative Bend shift_y. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['b1'].shift_y}.")
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["b1"].shift_y}.""")
 
 
 ################################################################################
@@ -436,21 +436,21 @@ def test_bend_writer_preserves_all_fields_simultaneously(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert reloaded_line["b1"].angle                  == pytest.approx(0.12),   (
-        f"Should preserve angle. Reloaded: {reloaded_line['b1'].angle}.")
+        f"""Should preserve angle. Reloaded: {reloaded_line["b1"].angle}.""")
     assert reloaded_line["b1"].length                 == pytest.approx(0.6),    (
-        f"Should preserve length. Reloaded: {reloaded_line['b1'].length}.")
+        f"""Should preserve length. Reloaded: {reloaded_line["b1"].length}.""")
     assert reloaded_line["b1"].edge_entry_angle       == pytest.approx(0.05),   (
-        f"Should preserve edge_entry_angle. Reloaded: {reloaded_line['b1'].edge_entry_angle}.")
+        f"""Should preserve edge_entry_angle. Reloaded: {reloaded_line["b1"].edge_entry_angle}.""")
     assert reloaded_line["b1"].edge_exit_angle        == pytest.approx(0.04),   (
-        f"Should preserve edge_exit_angle. Reloaded: {reloaded_line['b1'].edge_exit_angle}.")
+        f"""Should preserve edge_exit_angle. Reloaded: {reloaded_line["b1"].edge_exit_angle}.""")
     assert reloaded_line["b1"].edge_entry_angle_fdown == pytest.approx(0.03),   (
-        f"Should preserve edge_entry_angle_fdown. Reloaded: {reloaded_line['b1'].edge_entry_angle_fdown}.")
+        f"""Should preserve edge_entry_angle_fdown. Reloaded: {reloaded_line["b1"].edge_entry_angle_fdown}.""")
     assert reloaded_line["b1"].edge_exit_angle_fdown  == pytest.approx(0.02),   (
-        f"Should preserve edge_exit_angle_fdown. Reloaded: {reloaded_line['b1'].edge_exit_angle_fdown}.")
+        f"""Should preserve edge_exit_angle_fdown. Reloaded: {reloaded_line["b1"].edge_exit_angle_fdown}.""")
     assert reloaded_line["b1"].shift_x                == pytest.approx(1.0E-3), (
-        f"Should preserve shift_x. Reloaded: {reloaded_line['b1'].shift_x}.")
+        f"""Should preserve shift_x. Reloaded: {reloaded_line["b1"].shift_x}.""")
     assert reloaded_line["b1"].shift_y                == pytest.approx(-2.0E-3),(
-        f"Should preserve shift_y. Reloaded: {reloaded_line['b1'].shift_y}.")
+        f"""Should preserve shift_y. Reloaded: {reloaded_line["b1"].shift_y}.""")
 
 
 ################################################################################
@@ -459,15 +459,15 @@ def test_bend_writer_preserves_all_fields_simultaneously(tmp_path):
 def test_bend_writer_vertical_bend_reloads_as_xsuite_bend(tmp_path):
     """
     A vertical Bend (rot_s_rad = π/2) should reload as an xt.Bend. The writer
-    places the rotation on the shared base element ('vbend...') rather than the
+    places the rotation on the shared base element (`vbend...`) rather than the
     clone, so the clone inherits it.
     """
     original_line = _build_vbend_line()
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["vb1"], xt.Bend), (
-        "Written vertical Bend 'vb1' should reload as xt.Bend. "
-        f"Got: {type(reloaded_line['vb1']).__name__}.")
+        "Written vertical Bend `vb1` should reload as xt.Bend. "
+        f"""Got: {type(reloaded_line["vb1"]).__name__}.""")
 
 
 def test_bend_writer_vertical_bend_preserves_angle(tmp_path):
@@ -480,7 +480,7 @@ def test_bend_writer_vertical_bend_preserves_angle(tmp_path):
 
     assert reloaded_line["vb1"].angle == pytest.approx(0.05), (
         "Writer roundtrip should preserve vertical Bend angle. "
-        f"Original: 0.05, reloaded: {reloaded_line['vb1'].angle}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["vb1"].angle}.""")
 
 
 def test_bend_writer_vertical_bend_preserves_rotation(tmp_path):
@@ -494,7 +494,7 @@ def test_bend_writer_vertical_bend_preserves_rotation(tmp_path):
 
     assert reloaded_line["vb1"].rot_s_rad == pytest.approx(np.pi / 2), (
         "Writer roundtrip should preserve vertical Bend rot_s_rad = π/2. "
-        f"Reloaded: {reloaded_line['vb1'].rot_s_rad}.")
+        f"""Reloaded: {reloaded_line["vb1"].rot_s_rad}.""")
 
 
 ################################################################################
@@ -509,8 +509,8 @@ def test_bend_writer_skew_bend_reloads_as_xsuite_bend(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["sb1"], xt.Bend), (
-        "Written skew Bend 'sb1' should reload as xt.Bend. "
-        f"Got: {type(reloaded_line['sb1']).__name__}.")
+        "Written skew Bend `sb1` should reload as xt.Bend. "
+        f"""Got: {type(reloaded_line["sb1"]).__name__}.""")
 
 
 def test_bend_writer_skew_bend_preserves_rotation(tmp_path):
@@ -524,7 +524,7 @@ def test_bend_writer_skew_bend_preserves_rotation(tmp_path):
 
     assert reloaded_line["sb1"].rot_s_rad == pytest.approx(rot), (
         "Writer roundtrip should preserve skew Bend rot_s_rad. "
-        f"Original: {rot}, reloaded: {reloaded_line['sb1'].rot_s_rad}.")
+        f"""Original: {rot}, reloaded: {reloaded_line["sb1"].rot_s_rad}.""")
 
 
 def test_bend_writer_skew_bend_preserves_angle(tmp_path):
@@ -539,7 +539,7 @@ def test_bend_writer_skew_bend_preserves_angle(tmp_path):
 
     assert reloaded_line["sb1"].angle == pytest.approx(0.08), (
         "Writer roundtrip should preserve skew Bend angle. "
-        f"Original: 0.08, reloaded: {reloaded_line['sb1'].angle}.")
+        f"""Original: 0.08, reloaded: {reloaded_line["sb1"].angle}.""")
 
 
 @pytest.mark.parametrize("rot_s_rad", [np.pi, -np.pi / 2])
@@ -556,10 +556,10 @@ def test_bend_writer_preserves_explicit_special_rotations(tmp_path, rot_s_rad):
 
     assert reloaded_line["sb1"].angle == pytest.approx(0.08), (
         "Writer roundtrip should preserve explicit-rotation Bend angle. "
-        f"Original: 0.08, reloaded: {reloaded_line['sb1'].angle}.")
+        f"""Original: 0.08, reloaded: {reloaded_line["sb1"].angle}.""")
     assert reloaded_line["sb1"].rot_s_rad == pytest.approx(rot_s_rad), (
         "Writer roundtrip should preserve explicit Bend rot_s_rad. "
-        f"Original: {rot_s_rad}, reloaded: {reloaded_line['sb1'].rot_s_rad}.")
+        f"""Original: {rot_s_rad}, reloaded: {reloaded_line["sb1"].rot_s_rad}.""")
 
 
 ################################################################################
@@ -585,17 +585,17 @@ def test_bend_writer_preserves_multiple_bends_independently(tmp_path):
     reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
 
     assert reloaded_line["ba"].angle  == pytest.approx(0.10), (
-        "Writer roundtrip should preserve angle for 'ba'. "
-        f"Original: 0.10, reloaded: {reloaded_line['ba'].angle}.")
+        "Writer roundtrip should preserve angle for `ba`. "
+        f"""Original: 0.10, reloaded: {reloaded_line["ba"].angle}.""")
     assert reloaded_line["ba"].length == pytest.approx(0.5),  (
-        "Writer roundtrip should preserve length for 'ba'. "
-        f"Original: 0.5, reloaded: {reloaded_line['ba'].length}.")
+        "Writer roundtrip should preserve length for `ba`. "
+        f"""Original: 0.5, reloaded: {reloaded_line["ba"].length}.""")
     assert reloaded_line["bb"].angle  == pytest.approx(0.06), (
-        "Writer roundtrip should preserve angle for 'bb'. "
-        f"Original: 0.06, reloaded: {reloaded_line['bb'].angle}.")
+        "Writer roundtrip should preserve angle for `bb`. "
+        f"""Original: 0.06, reloaded: {reloaded_line["bb"].angle}.""")
     assert reloaded_line["bb"].length == pytest.approx(0.4),  (
-        "Writer roundtrip should preserve length for 'bb'. "
-        f"Original: 0.4, reloaded: {reloaded_line['bb'].length}.")
+        "Writer roundtrip should preserve length for `bb`. "
+        f"""Original: 0.4, reloaded: {reloaded_line["bb"].length}.""")
 
 
 def test_bend_writer_bends_with_same_length_share_base_element(tmp_path):
@@ -618,15 +618,15 @@ def test_bend_writer_bends_with_same_length_share_base_element(tmp_path):
     env, reloaded_line = _write_and_load(line = line, tmp_path = tmp_path)
 
     assert reloaded_line["ba"].angle == pytest.approx(0.10), (
-        "Bends sharing a base element: angle for 'ba' should be preserved. "
-        f"Original: 0.10, reloaded: {reloaded_line['ba'].angle}.")
+        "Bends sharing a base element: angle for `ba` should be preserved. "
+        f"""Original: 0.10, reloaded: {reloaded_line["ba"].angle}.""")
     assert reloaded_line["bb"].angle == pytest.approx(0.08), (
-        "Bends sharing a base element: angle for 'bb' should be preserved. "
-        f"Original: 0.08, reloaded: {reloaded_line['bb'].angle}.")
+        "Bends sharing a base element: angle for `bb` should be preserved. "
+        f"""Original: 0.08, reloaded: {reloaded_line["bb"].angle}.""")
     assert env["k0_ba"] == pytest.approx(0.10 / 0.5), (
-        f"'k0_ba' should equal angle/length. Reloaded: {env['k0_ba']}.")
+        f"""`k0_ba` should equal angle/length. Reloaded: {env["k0_ba"]}.""")
     assert env["k0_bb"] == pytest.approx(0.08 / 0.5), (
-        f"'k0_bb' should equal angle/length. Reloaded: {env['k0_bb']}.")
+        f"""`k0_bb` should equal angle/length. Reloaded: {env["k0_bb"]}.""")
 
 
 ################################################################################
@@ -646,8 +646,8 @@ def test_bend_writer_preserves_angle_at_full_double_precision(tmp_path):
 
     assert reloaded_line["b1"].angle == pytest.approx(angle, rel = 1E-12), (
         "Writer roundtrip should preserve Bend angle to full double precision. "
-        f"Original: {angle}, reloaded: {reloaded_line['b1'].angle}, "
-        f"diff: {abs(reloaded_line['b1'].angle - angle)}.")
+        f"""Original: {angle}, reloaded: {reloaded_line["b1"].angle}, """
+        f"""diff: {abs(reloaded_line["b1"].angle - angle)}.""")
 
 
 ################################################################################
@@ -668,7 +668,7 @@ def test_bend_writer_k1_is_preserved_for_combined_function_magnet(tmp_path):
 
     assert reloaded_line["b1"].k1 == pytest.approx(0.5), (
         "Writer roundtrip should preserve combined function Bend k1. "
-        f"Original: 0.5, reloaded: {reloaded_line['b1'].k1}.")
+        f"""Original: 0.5, reloaded: {reloaded_line["b1"].k1}.""")
 
 
 ################################################################################

@@ -60,8 +60,8 @@ def test_drift_writer_reloads_as_xsuite_drift(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["d1"], xt.Drift), (
-        "Written drift element 'd1' should reload as xt.Drift. "
-        f"Got: {type(reloaded_line['d1']).__name__}.")
+        "Written drift element `d1` should reload as xt.Drift. "
+        f"""Got: {type(reloaded_line["d1"]).__name__}.""")
 
 
 def test_drift_writer_preserves_element_name(tmp_path):
@@ -73,7 +73,7 @@ def test_drift_writer_preserves_element_name(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert "d1" in list(reloaded_line.element_names), (
-        "Reloaded line should contain drift element 'd1'. "
+        "Reloaded line should contain drift element `d1`. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
@@ -121,7 +121,7 @@ def test_drift_writer_preserves_length(tmp_path):
 
     assert reloaded_line["d1"].length == pytest.approx(1.5), (
         "Writer roundtrip should preserve drift length. "
-        f"Original: 1.5, reloaded: {reloaded_line['d1'].length}.")
+        f"""Original: 1.5, reloaded: {reloaded_line["d1"].length}.""")
 
 
 def test_drift_writer_preserves_zero_length(tmp_path):
@@ -135,7 +135,7 @@ def test_drift_writer_preserves_zero_length(tmp_path):
 
     assert reloaded_line["d1"].length == pytest.approx(0.0), (
         "Writer roundtrip should preserve zero drift length. "
-        f"Reloaded: {reloaded_line['d1'].length}.")
+        f"""Reloaded: {reloaded_line["d1"].length}.""")
 
 
 def test_drift_writer_preserves_short_length(tmp_path):
@@ -148,7 +148,7 @@ def test_drift_writer_preserves_short_length(tmp_path):
 
     assert reloaded_line["d1"].length == pytest.approx(1.0E-6), (
         "Writer roundtrip should preserve very short drift length. "
-        f"Original: 1.0E-6, reloaded: {reloaded_line['d1'].length}.")
+        f"""Original: 1.0E-6, reloaded: {reloaded_line["d1"].length}.""")
 
 
 def test_drift_writer_preserves_large_length(tmp_path):
@@ -160,7 +160,7 @@ def test_drift_writer_preserves_large_length(tmp_path):
 
     assert reloaded_line["d1"].length == pytest.approx(100.0), (
         "Writer roundtrip should preserve large drift length. "
-        f"Original: 100.0, reloaded: {reloaded_line['d1'].length}.")
+        f"""Original: 100.0, reloaded: {reloaded_line["d1"].length}.""")
 
 
 ################################################################################
@@ -192,5 +192,5 @@ def test_drift_writer_preserves_multiple_drifts_independently(tmp_path):
 
     for name, expected_length in expected.items():
         assert reloaded_line[name].length == pytest.approx(expected_length), (
-            f"Writer roundtrip should preserve length for drift '{name}'. "
+            f"Writer roundtrip should preserve length for drift `{name}`. "
             f"Expected: {expected_length}, reloaded: {reloaded_line[name].length}.")

@@ -94,8 +94,8 @@ def test_oct_writer_reloads_as_xsuite_octupole(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["o1"], xt.Octupole), (
-        "Written octupole element 'o1' should reload as xt.Octupole. "
-        f"Got: {type(reloaded_line['o1']).__name__}.")
+        "Written octupole element `o1` should reload as xt.Octupole. "
+        f"""Got: {type(reloaded_line["o1"]).__name__}.""")
 
 
 def test_oct_writer_preserves_element_name(tmp_path):
@@ -107,7 +107,7 @@ def test_oct_writer_preserves_element_name(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert "o1" in list(reloaded_line.element_names), (
-        "Reloaded line should contain octupole element 'o1'. "
+        "Reloaded line should contain octupole element `o1`. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
@@ -155,7 +155,7 @@ def test_oct_writer_preserves_length(tmp_path):
 
     assert reloaded_line["o1"].length == pytest.approx(0.35), (
         "Writer roundtrip should preserve octupole length. "
-        f"Original: 0.35, reloaded: {reloaded_line['o1'].length}.")
+        f"""Original: 0.35, reloaded: {reloaded_line["o1"].length}.""")
 
 
 ########################################
@@ -172,7 +172,7 @@ def test_oct_writer_preserves_positive_k3(tmp_path):
 
     assert reloaded_line["o1"].k3 == pytest.approx(50.0), (
         "Writer roundtrip should preserve positive octupole k3. "
-        f"Original: 50.0, reloaded: {reloaded_line['o1'].k3}.")
+        f"""Original: 50.0, reloaded: {reloaded_line["o1"].k3}.""")
 
 
 def test_oct_writer_preserves_negative_k3(tmp_path):
@@ -185,7 +185,7 @@ def test_oct_writer_preserves_negative_k3(tmp_path):
 
     assert reloaded_line["o1"].k3 == pytest.approx(-50.0), (
         "Writer roundtrip should preserve negative octupole k3. "
-        f"Original: -50.0, reloaded: {reloaded_line['o1'].k3}.")
+        f"""Original: -50.0, reloaded: {reloaded_line["o1"].k3}.""")
 
 
 def test_oct_writer_preserves_zero_k3(tmp_path):
@@ -198,7 +198,7 @@ def test_oct_writer_preserves_zero_k3(tmp_path):
 
     assert reloaded_line["o1"].k3 == pytest.approx(0.0), (
         "Writer roundtrip should preserve zero octupole k3. "
-        f"Reloaded: {reloaded_line['o1'].k3}.")
+        f"""Reloaded: {reloaded_line["o1"].k3}.""")
 
 
 def test_oct_writer_k3_preserves_full_double_precision(tmp_path):
@@ -214,7 +214,7 @@ def test_oct_writer_k3_preserves_full_double_precision(tmp_path):
 
     assert reloaded_line["o1"].k3 == pytest.approx(k3_precise, rel = 1E-15), (
         "Writer roundtrip should preserve octupole k3 at full double "
-        f"precision. Original: {k3_precise!r}, reloaded: {reloaded_line['o1'].k3!r}.")
+        f"""precision. Original: {k3_precise!r}, reloaded: {reloaded_line["o1"].k3!r}.""")
 
 
 ########################################
@@ -231,9 +231,9 @@ def test_oct_writer_k3_is_accessible_as_optics_variable(tmp_path):
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["k3_o1"] == pytest.approx(50.0), (
-        "Optics variable 'k3_o1' should exist in the environment after reload "
+        "Optics variable `k3_o1` should exist in the environment after reload "
         "and equal the original k3 value. "
-        f"Got: {env['k3_o1']}.")
+        f"""Got: {env["k3_o1"]}.""")
 
 
 def test_oct_writer_k3_optics_variable_is_tunable(tmp_path):
@@ -249,9 +249,9 @@ def test_oct_writer_k3_optics_variable_is_tunable(tmp_path):
     env["k3_o1"] = 100.0
 
     assert reloaded_line["o1"].k3 == pytest.approx(100.0), (
-        "Modifying optics variable 'k3_o1' should update the octupole's k3 "
+        "Modifying optics variable `k3_o1` should update the octupole's k3 "
         "in the reloaded line. The k3 should be a live deferred expression, "
-        f"not a constant. Got: {reloaded_line['o1'].k3}.")
+        f"""not a constant. Got: {reloaded_line["o1"].k3}.""")
 
 
 ########################################
@@ -268,10 +268,10 @@ def test_oct_writer_preserves_positive_k3s(tmp_path):
 
     assert reloaded_line["o1"].k3s == pytest.approx(15.0), (
         "Writer roundtrip should preserve positive skew octupole k3s. "
-        f"Original: 15.0, reloaded: {reloaded_line['o1'].k3s}.")
+        f"""Original: 15.0, reloaded: {reloaded_line["o1"].k3s}.""")
     assert reloaded_line["o1"].k3 == pytest.approx(0.0), (
         "Pure skew octupole should have zero k3 after roundtrip. "
-        f"Reloaded k3: {reloaded_line['o1'].k3}.")
+        f"""Reloaded k3: {reloaded_line["o1"].k3}.""")
 
 
 def test_oct_writer_preserves_negative_k3s(tmp_path):
@@ -284,7 +284,7 @@ def test_oct_writer_preserves_negative_k3s(tmp_path):
 
     assert reloaded_line["o1"].k3s == pytest.approx(-15.0), (
         "Writer roundtrip should preserve negative skew octupole k3s. "
-        f"Original: -15.0, reloaded: {reloaded_line['o1'].k3s}.")
+        f"""Original: -15.0, reloaded: {reloaded_line["o1"].k3s}.""")
 
 
 def test_oct_writer_k3s_is_accessible_as_optics_variable(tmp_path):
@@ -297,9 +297,9 @@ def test_oct_writer_k3s_is_accessible_as_optics_variable(tmp_path):
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["k3s_o1"] == pytest.approx(15.0), (
-        "Optics variable 'k3s_o1' should exist in the environment after reload "
+        "Optics variable `k3s_o1` should exist in the environment after reload "
         "and equal the original k3s value. "
-        f"Got: {env['k3s_o1']}.")
+        f"""Got: {env["k3s_o1"]}.""")
 
 
 def test_oct_writer_k3s_optics_variable_is_tunable(tmp_path):
@@ -313,9 +313,9 @@ def test_oct_writer_k3s_optics_variable_is_tunable(tmp_path):
     env["k3s_o1"] = 30.0
 
     assert reloaded_line["o1"].k3s == pytest.approx(30.0), (
-        "Modifying optics variable 'k3s_o1' should update the octupole's "
+        "Modifying optics variable `k3s_o1` should update the octupole's "
         "k3s in the reloaded line. "
-        f"Got: {reloaded_line['o1'].k3s}.")
+        f"""Got: {reloaded_line["o1"].k3s}.""")
 
 
 ########################################
@@ -333,15 +333,15 @@ def test_oct_writer_preserves_k3_and_k3s_simultaneously(tmp_path):
 
     assert reloaded_line["o1"].k3 == pytest.approx(50.0), (
         "Writer roundtrip should preserve k3 when both k3 and k3s are set. "
-        f"Original: 50.0, reloaded: {reloaded_line['o1'].k3}.")
+        f"""Original: 50.0, reloaded: {reloaded_line["o1"].k3}.""")
     assert reloaded_line["o1"].k3s == pytest.approx(5.0), (
         "Writer roundtrip should preserve k3s when both k3 and k3s are set. "
-        f"Original: 5.0, reloaded: {reloaded_line['o1'].k3s}.")
+        f"""Original: 5.0, reloaded: {reloaded_line["o1"].k3s}.""")
     assert env["k3_o1"] == pytest.approx(50.0), (
-        "Optics variable 'k3_o1' should be written and accessible when both "
+        "Optics variable `k3_o1` should be written and accessible when both "
         "k3 and k3s are non-zero.")
     assert env["k3s_o1"] == pytest.approx(5.0), (
-        "Optics variable 'k3s_o1' should be written and accessible when both "
+        "Optics variable `k3s_o1` should be written and accessible when both "
         "k3 and k3s are non-zero.")
 
 
@@ -350,7 +350,7 @@ def test_oct_writer_preserves_k3_and_k3s_simultaneously(tmp_path):
 ################################################################################
 # shift_x, shift_y, and rot_s_rad are NOT written as optics variables.
 # They are written as literal numeric strings in the lattice file, e.g.:
-#   env.new(name = 'o1', prototype = 'oct_0.2', shift_x = '0.001')
+#   env.new(name = "o1", prototype = "oct_0.2", shift_x = "0.001")
 # The string is evaluated by Xsuite's expression engine when the file is
 # loaded. The tests below verify that positive, negative, and scientific-
 # notation values all survive this literal-string encoding correctly.
@@ -367,7 +367,7 @@ def test_oct_writer_preserves_positive_shift_x(tmp_path):
 
     assert reloaded_line["o1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve positive octupole shift_x. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['o1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["o1"].shift_x}.""")
 
 
 def test_oct_writer_preserves_negative_shift_x(tmp_path):
@@ -381,7 +381,7 @@ def test_oct_writer_preserves_negative_shift_x(tmp_path):
 
     assert reloaded_line["o1"].shift_x == pytest.approx(-1.5E-3), (
         "Writer roundtrip should preserve negative octupole shift_x. "
-        f"Original: -1.5E-3, reloaded: {reloaded_line['o1'].shift_x}.")
+        f"""Original: -1.5E-3, reloaded: {reloaded_line["o1"].shift_x}.""")
 
 
 def test_oct_writer_preserves_shift_x_in_scientific_notation(tmp_path):
@@ -394,7 +394,7 @@ def test_oct_writer_preserves_shift_x_in_scientific_notation(tmp_path):
 
     assert reloaded_line["o1"].shift_x == pytest.approx(3.45678912E-6), (
         "Writer roundtrip should preserve a shift_x value written in scientific "
-        f"notation. Original: 3.45678912E-6, reloaded: {reloaded_line['o1'].shift_x}.")
+        f"""notation. Original: 3.45678912E-6, reloaded: {reloaded_line["o1"].shift_x}.""")
 
 
 ########################################
@@ -410,7 +410,7 @@ def test_oct_writer_preserves_positive_shift_y(tmp_path):
 
     assert reloaded_line["o1"].shift_y == pytest.approx(2.0E-3), (
         "Writer roundtrip should preserve positive octupole shift_y. "
-        f"Original: 2.0E-3, reloaded: {reloaded_line['o1'].shift_y}.")
+        f"""Original: 2.0E-3, reloaded: {reloaded_line["o1"].shift_y}.""")
 
 
 def test_oct_writer_preserves_negative_shift_y(tmp_path):
@@ -423,7 +423,7 @@ def test_oct_writer_preserves_negative_shift_y(tmp_path):
 
     assert reloaded_line["o1"].shift_y == pytest.approx(-2.5E-3), (
         "Writer roundtrip should preserve negative octupole shift_y. "
-        f"Original: -2.5E-3, reloaded: {reloaded_line['o1'].shift_y}.")
+        f"""Original: -2.5E-3, reloaded: {reloaded_line["o1"].shift_y}.""")
 
 
 def test_oct_writer_preserves_shift_y_in_scientific_notation(tmp_path):
@@ -436,7 +436,7 @@ def test_oct_writer_preserves_shift_y_in_scientific_notation(tmp_path):
 
     assert reloaded_line["o1"].shift_y == pytest.approx(-8.76543219E-7), (
         "Writer roundtrip should preserve a shift_y value written in scientific "
-        f"notation. Original: -8.76543219E-7, reloaded: {reloaded_line['o1'].shift_y}.")
+        f"""notation. Original: -8.76543219E-7, reloaded: {reloaded_line["o1"].shift_y}.""")
 
 
 ########################################
@@ -452,7 +452,7 @@ def test_oct_writer_preserves_positive_rot_s_rad(tmp_path):
 
     assert reloaded_line["o1"].rot_s_rad == pytest.approx(0.05), (
         "Writer roundtrip should preserve positive octupole rot_s_rad. "
-        f"Original: 0.05, reloaded: {reloaded_line['o1'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["o1"].rot_s_rad}.""")
 
 
 def test_oct_writer_preserves_negative_rot_s_rad(tmp_path):
@@ -465,7 +465,7 @@ def test_oct_writer_preserves_negative_rot_s_rad(tmp_path):
 
     assert reloaded_line["o1"].rot_s_rad == pytest.approx(-0.05), (
         "Writer roundtrip should preserve negative octupole rot_s_rad. "
-        f"Original: -0.05, reloaded: {reloaded_line['o1'].rot_s_rad}.")
+        f"""Original: -0.05, reloaded: {reloaded_line["o1"].rot_s_rad}.""")
 
 
 ########################################
@@ -484,13 +484,13 @@ def test_oct_writer_preserves_all_misalignments_simultaneously(tmp_path):
 
     assert reloaded_line["o1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve shift_x alongside other misalignments. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['o1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["o1"].shift_x}.""")
     assert reloaded_line["o1"].shift_y == pytest.approx(-2.0E-3), (
         "Writer roundtrip should preserve shift_y alongside other misalignments. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['o1'].shift_y}.")
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["o1"].shift_y}.""")
     assert reloaded_line["o1"].rot_s_rad == pytest.approx(0.05), (
         "Writer roundtrip should preserve rot_s_rad alongside other misalignments. "
-        f"Original: 0.05, reloaded: {reloaded_line['o1'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["o1"].rot_s_rad}.""")
 
 
 def test_oct_writer_preserves_k3_with_all_misalignments(tmp_path):
@@ -508,20 +508,20 @@ def test_oct_writer_preserves_k3_with_all_misalignments(tmp_path):
 
     assert reloaded_line["o1"].k3 == pytest.approx(50.0), (
         "Writer roundtrip should preserve k3 alongside misalignments. "
-        f"Original: 50.0, reloaded: {reloaded_line['o1'].k3}.")
+        f"""Original: 50.0, reloaded: {reloaded_line["o1"].k3}.""")
     assert reloaded_line["o1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve shift_x alongside k3. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['o1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["o1"].shift_x}.""")
     assert reloaded_line["o1"].shift_y == pytest.approx(-2.0E-3), (
         "Writer roundtrip should preserve shift_y alongside k3. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['o1'].shift_y}.")
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["o1"].shift_y}.""")
     assert reloaded_line["o1"].rot_s_rad == pytest.approx(0.05), (
         "Writer roundtrip should preserve rot_s_rad alongside k3. "
-        f"Original: 0.05, reloaded: {reloaded_line['o1'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["o1"].rot_s_rad}.""")
     assert env["k3_o1"] == pytest.approx(50.0), (
-        "Optics variable 'k3_o1' should remain accessible alongside hardcoded "
+        "Optics variable `k3_o1` should remain accessible alongside hardcoded "
         "misalignment values. "
-        f"Got: {env['k3_o1']}.")
+        f"""Got: {env["k3_o1"]}.""")
 
 
 ################################################################################
@@ -634,13 +634,13 @@ def test_oct_writer_preserves_multiple_octs_independently(tmp_path):
 
     for name, expected_k3 in expected.items():
         assert reloaded_line[name].k3 == pytest.approx(expected_k3), (
-            f"Writer roundtrip should preserve k3 for octupole '{name}'. "
+            f"Writer roundtrip should preserve k3 for octupole `{name}`. "
             f"Expected: {expected_k3}, reloaded: {reloaded_line[name].k3}.")
 
     assert env["k3_of"] == pytest.approx(50.0), (
-        "Optics variable 'k3_of' should be accessible and correct after reload.")
+        "Optics variable `k3_of` should be accessible and correct after reload.")
     assert env["k3_od"] == pytest.approx(-50.0), (
-        "Optics variable 'k3_od' should be accessible and correct after reload.")
+        "Optics variable `k3_od` should be accessible and correct after reload.")
 
 
 ########################################
@@ -668,26 +668,26 @@ def test_oct_writer_preserves_mixed_normal_and_skew_octs(tmp_path):
 
     assert reloaded_line["onorm"].k3 == pytest.approx(50.0), (
         "Writer roundtrip should preserve normal octupole k3. "
-        f"Original: 50.0, reloaded: {reloaded_line['onorm'].k3}.")
+        f"""Original: 50.0, reloaded: {reloaded_line["onorm"].k3}.""")
     assert reloaded_line["onorm"].k3s == pytest.approx(0.0), (
         "Normal octupole should have zero k3s after roundtrip. "
-        f"Reloaded k3s: {reloaded_line['onorm'].k3s}.")
+        f"""Reloaded k3s: {reloaded_line["onorm"].k3s}.""")
 
     assert reloaded_line["oskew"].k3s == pytest.approx(15.0), (
         "Writer roundtrip should preserve skew octupole k3s. "
-        f"Original: 15.0, reloaded: {reloaded_line['oskew'].k3s}.")
+        f"""Original: 15.0, reloaded: {reloaded_line["oskew"].k3s}.""")
     assert reloaded_line["oskew"].k3 == pytest.approx(0.0), (
         "Pure skew octupole should have zero k3 after roundtrip. "
-        f"Reloaded k3: {reloaded_line['oskew'].k3}.")
+        f"""Reloaded k3: {reloaded_line["oskew"].k3}.""")
 
     assert reloaded_line["ocombined"].k3 == pytest.approx(-30.0), (
         "Writer roundtrip should preserve k3 for a combined-strength oct. "
-        f"Original: -30.0, reloaded: {reloaded_line['ocombined'].k3}.")
+        f"""Original: -30.0, reloaded: {reloaded_line["ocombined"].k3}.""")
     assert reloaded_line["ocombined"].k3s == pytest.approx(5.0), (
         "Writer roundtrip should preserve k3s for a combined-strength oct. "
-        f"Original: 5.0, reloaded: {reloaded_line['ocombined'].k3s}.")
+        f"""Original: 5.0, reloaded: {reloaded_line["ocombined"].k3s}.""")
 
     assert env["k3_onorm"] == pytest.approx(50.0), (
-        "Optics variable 'k3_onorm' should be accessible and correct.")
+        "Optics variable `k3_onorm` should be accessible and correct.")
     assert env["k3s_oskew"] == pytest.approx(15.0), (
-        "Optics variable 'k3s_oskew' should be accessible and correct.")
+        "Optics variable `k3s_oskew` should be accessible and correct.")

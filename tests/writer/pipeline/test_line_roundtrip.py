@@ -64,7 +64,7 @@ def _assert_scalar_field_preserved(original, reloaded, element_name, field_name)
 
     assert reloaded_value == pytest.approx(original_value), (
         f"Writer roundtrip should preserve {field_name} for element "
-        f"'{element_name}'. Original: {original_value}, reloaded: "
+        f"`{element_name}`. Original: {original_value}, reloaded: "
         f"{reloaded_value}.")
 
 
@@ -84,7 +84,7 @@ def _assert_array_field_preserved(original, reloaded, element_name, field_name):
 
     assert reloaded_padded.tolist() == pytest.approx(original_padded.tolist()), (
         f"Writer roundtrip should preserve {field_name} for element "
-        f"'{element_name}'. Original: {original_value.tolist()}, reloaded: "
+        f"`{element_name}`. Original: {original_value.tolist()}, reloaded: "
         f"{reloaded_value.tolist()}.")
 
 

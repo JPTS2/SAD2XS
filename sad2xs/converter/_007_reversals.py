@@ -24,7 +24,7 @@ import xtrack as xt
 ################################################################################
 def reverse_line_element_order(line: xt.Line) -> xt.Line:
     """
-    Reverse a line's element order (SAD's '-LINE' operator).
+    Reverse a line's element order (SAD's `-LINE` operator).
 
     Mirrors the line (via `xt.Line.mirror`) and then fixes up the
     physics quantities that a plain element-order reversal gets wrong:

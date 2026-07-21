@@ -34,7 +34,7 @@ def test_release_metadata_package_name_is_a_non_empty_string():
     """
     name = _META["Name"]
     assert isinstance(name, str) and len(name) > 0, (
-        "Package 'Name' metadata field should be a non-empty string.")
+        "Package `Name` metadata field should be a non-empty string.")
 
 
 ################################################################################
@@ -47,8 +47,8 @@ def test_release_metadata_version_follows_semver_format():
     upload validation.
     """
     version = _META["Version"]
-    assert re.match(r'^\d+\.\d+\.\d+', version), (
-        f"Package version '{version}' should follow MAJOR.MINOR.PATCH semver "
+    assert re.match(r"^\d+\.\d+\.\d+", version), (
+        f"Package version `{version}` should follow MAJOR.MINOR.PATCH semver "
         "format.")
 
 
@@ -61,17 +61,17 @@ def test_release_metadata_author_field_is_a_non_empty_string():
     """
     author = _META["Author"]
     assert isinstance(author, str) and len(author) > 0, (
-        "Package 'Author' metadata field should be a non-empty string.")
+        "Package `Author` metadata field should be a non-empty string.")
 
 
 def test_release_metadata_author_email_contains_at_symbol():
     """
-    The Author-email field should contain an '@' character, which is the
+    The Author-email field should contain an `@` character, which is the
     minimal structural requirement for a valid email address.
     """
     email = _META["Author-email"]
     assert "@" in email, (
-        f"Package 'Author-email' field '{email}' should contain '@'.")
+        f"Package `Author-email` field `{email}` should contain `@`.")
 
 
 ################################################################################
@@ -85,7 +85,7 @@ def test_release_metadata_license_field_is_a_non_empty_string():
     """
     license_field = _META["License"]
     assert isinstance(license_field, str) and len(license_field) > 0, (
-        "Package 'License' metadata field should be a non-empty string.")
+        "Package `License` metadata field should be a non-empty string.")
 
 
 ################################################################################
@@ -107,7 +107,7 @@ def test_release_metadata_numpy_is_listed_as_a_dependency():
     It must appear in install_requires.
     """
     assert any("numpy" in req for req in _REQUIRES), (
-        "Package install_requires should list 'numpy'. "
+        "Package install_requires should list `numpy`. "
         f"Current requires: {_REQUIRES}")
 
 
@@ -119,7 +119,7 @@ def test_release_metadata_tfs_is_an_optional_extra_not_a_hard_dependency():
     """
     tfs_requires = [req for req in _REQUIRES if "tfs" in req]
     assert tfs_requires, (
-        f"Expected a 'tfs-pandas' entry in package metadata. Current "
+        f"Expected a `tfs-pandas` entry in package metadata. Current "
         f"requires: {_REQUIRES}")
     assert all("extra ==" in req for req in tfs_requires), (
         "tfs-pandas should only be required under an extra, not "

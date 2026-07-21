@@ -517,7 +517,7 @@ def solenoid_reference_shift_corrections(
         The Xsuite environment containing `line`'s elements.
     reverse_line : bool
         Not used directly by this function -- reversal is instead
-        detected per solenoid from its own name (a leading '-').
+        detected per solenoid from its own name (a leading `-`).
         Accepted for interface consistency with the conversion
         pipeline's other line-level correction calls.
     config : ConfigLike

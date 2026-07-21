@@ -42,12 +42,12 @@ def test_momentum_energy_units_parse_to_ev(write_lattice, unit, expected):
         f"""\
         MOMENTUM = 1.0 {unit};
         """,
-        filename = f"globals_momentum_{unit.lower() or 'unitless'}.sad")
+        filename = f"""globals_momentum_{unit.lower() or "unitless"}.sad""")
 
     parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
 
     assert parsed["globals"]["p0c"] == pytest.approx(expected), (
-        f"MOMENTUM with unit '{unit or 'unitless'}' should parse to eV.")
+        f"""MOMENTUM with unit `{unit or "unitless"}` should parse to eV.""")
 
 @pytest.mark.parametrize(
     "unit, expected",
@@ -68,12 +68,12 @@ def test_mass_energy_units_parse_to_ev(write_lattice, unit, expected):
         MOMENTUM = 1.0 GEV;
         MASS = 0.511 {unit};
         """,
-        filename = f"globals_mass_{unit.lower() or 'unitless'}.sad")
+        filename = f"""globals_mass_{unit.lower() or "unitless"}.sad""")
 
     parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
 
     assert parsed["globals"]["mass0"] == pytest.approx(expected), (
-        f"MASS with unit '{unit or 'unitless'}' should parse to eV.")
+        f"""MASS with unit `{unit or "unitless"}` should parse to eV.""")
 
 ################################################################################
 # Explicit Globals

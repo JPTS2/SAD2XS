@@ -32,7 +32,7 @@ def create_reversed_component(
     """
     Create (or identify) the reversed counterpart of one line component.
 
-    A reversed component name always starts with '-'. For element
+    A reversed component name always starts with `-`. For element
     types whose physics genuinely differs under reversal (Bend:
     entry/exit edge angles swapped; UniformSolenoid: ks negated;
     Translation/TimeDelay/Rotation: cloned so the reversed line gets
@@ -41,13 +41,13 @@ def create_reversed_component(
     still find them by name), a genuinely reversed clone is created.
     Every other element type (Drift, Quadrupole, Sextupole, Octupole,
     Multipole, Cavity, plain Marker, Aperture) is direction-symmetric,
-    so the '-' prefix is simply dropped and the original element
+    so the `-` prefix is simply dropped and the original element
     reused.
 
     Parameters
     ----------
     component : str
-        The reversed component name, e.g. "-QF1" (must start with '-').
+        The reversed component name, e.g. "-QF1" (must start with `-`).
     environment : xt.Environment
         The Xsuite environment containing `component[1:]`.
     offset_marker_names : frozenset of str, optional
@@ -65,7 +65,7 @@ def create_reversed_component(
         is direction-symmetric).
     """
 
-    assert component.startswith("-"), "Component must start with '-' to be reversed"
+    assert component.startswith("-"), """Component must start with "-" to be reversed"""
 
     # Cannot overwrite elements, so must remove and recreate
     if component in environment.element_dict:
@@ -149,7 +149,7 @@ def convert_lines(
     """
     Build every parsed SAD LINE as an Xsuite line, handling reversals.
 
-    Reversed line references ('-LINENAME') are resolved in three
+    Reversed line references (`-LINENAME`) are resolved in three
     passes: (1) reversed real (imported) sublines have their element
     order reversed and every component negated; (2) reversed generated
     sublines (e.g. solenoid/reference-shift/thick-cavity sub-lines,
@@ -239,7 +239,7 @@ def convert_lines(
 
                 reversed_line_name      = component[1:] + "_reversed"
 
-                # Check if the line hasn"t already been reversed (duplicate element)
+                # Check if the line hasn't already been reversed (duplicate element)
                 if reversed_line_name in environment.lines:
                     components[i] = reversed_line_name
                     continue
@@ -273,7 +273,7 @@ def convert_lines(
                 # replacement logic missed a case.
                 if component[1:] in environment.lines:
                     raise ValueError(
-                        f"Reversed subline '{component}' in line '{line}' "
+                        f"""Reversed subline "{component}" in line "{line}" """
                         "survived the subline reversal passes. This is a "
                         "SAD2XS internal error: please report it with the "
                         "lattice file.")

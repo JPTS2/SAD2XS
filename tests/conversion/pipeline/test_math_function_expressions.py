@@ -34,7 +34,7 @@ from sad2xs.converter._003_expression_converter import convert_expressions
 #   SAD LN(x)   = natural log  — Python has no ln() — must remap
 #
 # Lattice uses a single MARK so we only need expression conversion, not element
-# conversion. The environment value for 'a' is checked directly.
+# conversion. The environment value for `a` is checked directly.
 ################################################################################
 
 @pytest.mark.parametrize("sad_func, argument, expected", [

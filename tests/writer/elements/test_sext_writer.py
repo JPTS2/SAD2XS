@@ -94,8 +94,8 @@ def test_sext_writer_reloads_as_xsuite_sextupole(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert isinstance(reloaded_line["s1"], xt.Sextupole), (
-        "Written sextupole element 's1' should reload as xt.Sextupole. "
-        f"Got: {type(reloaded_line['s1']).__name__}.")
+        "Written sextupole element `s1` should reload as xt.Sextupole. "
+        f"""Got: {type(reloaded_line["s1"]).__name__}.""")
 
 
 def test_sext_writer_preserves_element_name(tmp_path):
@@ -107,7 +107,7 @@ def test_sext_writer_preserves_element_name(tmp_path):
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     assert "s1" in list(reloaded_line.element_names), (
-        "Reloaded line should contain sextupole element 's1'. "
+        "Reloaded line should contain sextupole element `s1`. "
         f"Got: {list(reloaded_line.element_names)}.")
 
 
@@ -155,7 +155,7 @@ def test_sext_writer_preserves_length(tmp_path):
 
     assert reloaded_line["s1"].length == pytest.approx(0.45), (
         "Writer roundtrip should preserve sextupole length. "
-        f"Original: 0.45, reloaded: {reloaded_line['s1'].length}.")
+        f"""Original: 0.45, reloaded: {reloaded_line["s1"].length}.""")
 
 
 ########################################
@@ -172,7 +172,7 @@ def test_sext_writer_preserves_positive_k2(tmp_path):
 
     assert reloaded_line["s1"].k2 == pytest.approx(0.5), (
         "Writer roundtrip should preserve positive sextupole k2. "
-        f"Original: 0.5, reloaded: {reloaded_line['s1'].k2}.")
+        f"""Original: 0.5, reloaded: {reloaded_line["s1"].k2}.""")
 
 
 def test_sext_writer_preserves_negative_k2(tmp_path):
@@ -185,7 +185,7 @@ def test_sext_writer_preserves_negative_k2(tmp_path):
 
     assert reloaded_line["s1"].k2 == pytest.approx(-0.5), (
         "Writer roundtrip should preserve negative sextupole k2. "
-        f"Original: -0.5, reloaded: {reloaded_line['s1'].k2}.")
+        f"""Original: -0.5, reloaded: {reloaded_line["s1"].k2}.""")
 
 
 def test_sext_writer_preserves_zero_k2(tmp_path):
@@ -198,7 +198,7 @@ def test_sext_writer_preserves_zero_k2(tmp_path):
 
     assert reloaded_line["s1"].k2 == pytest.approx(0.0), (
         "Writer roundtrip should preserve zero sextupole k2. "
-        f"Reloaded: {reloaded_line['s1'].k2}.")
+        f"""Reloaded: {reloaded_line["s1"].k2}.""")
 
 
 def test_sext_writer_k2_preserves_full_double_precision(tmp_path):
@@ -214,7 +214,7 @@ def test_sext_writer_k2_preserves_full_double_precision(tmp_path):
 
     assert reloaded_line["s1"].k2 == pytest.approx(k2_precise, rel = 1E-15), (
         "Writer roundtrip should preserve sextupole k2 at full double "
-        f"precision. Original: {k2_precise!r}, reloaded: {reloaded_line['s1'].k2!r}.")
+        f"""precision. Original: {k2_precise!r}, reloaded: {reloaded_line["s1"].k2!r}.""")
 
 
 ########################################
@@ -231,9 +231,9 @@ def test_sext_writer_k2_is_accessible_as_optics_variable(tmp_path):
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["k2_s1"] == pytest.approx(0.5), (
-        "Optics variable 'k2_s1' should exist in the environment after reload "
+        "Optics variable `k2_s1` should exist in the environment after reload "
         "and equal the original k2 value. "
-        f"Got: {env['k2_s1']}.")
+        f"""Got: {env["k2_s1"]}.""")
 
 
 def test_sext_writer_k2_optics_variable_is_tunable(tmp_path):
@@ -249,9 +249,9 @@ def test_sext_writer_k2_optics_variable_is_tunable(tmp_path):
     env["k2_s1"] = 1.0
 
     assert reloaded_line["s1"].k2 == pytest.approx(1.0), (
-        "Modifying optics variable 'k2_s1' should update the sextupole's k2 "
+        "Modifying optics variable `k2_s1` should update the sextupole's k2 "
         "in the reloaded line. The k2 should be a live deferred expression, "
-        f"not a constant. Got: {reloaded_line['s1'].k2}.")
+        f"""not a constant. Got: {reloaded_line["s1"].k2}.""")
 
 
 ########################################
@@ -268,10 +268,10 @@ def test_sext_writer_preserves_positive_k2s(tmp_path):
 
     assert reloaded_line["s1"].k2s == pytest.approx(0.15), (
         "Writer roundtrip should preserve positive skew sextupole k2s. "
-        f"Original: 0.15, reloaded: {reloaded_line['s1'].k2s}.")
+        f"""Original: 0.15, reloaded: {reloaded_line["s1"].k2s}.""")
     assert reloaded_line["s1"].k2 == pytest.approx(0.0), (
         "Pure skew sextupole should have zero k2 after roundtrip. "
-        f"Reloaded k2: {reloaded_line['s1'].k2}.")
+        f"""Reloaded k2: {reloaded_line["s1"].k2}.""")
 
 
 def test_sext_writer_preserves_negative_k2s(tmp_path):
@@ -284,7 +284,7 @@ def test_sext_writer_preserves_negative_k2s(tmp_path):
 
     assert reloaded_line["s1"].k2s == pytest.approx(-0.15), (
         "Writer roundtrip should preserve negative skew sextupole k2s. "
-        f"Original: -0.15, reloaded: {reloaded_line['s1'].k2s}.")
+        f"""Original: -0.15, reloaded: {reloaded_line["s1"].k2s}.""")
 
 
 def test_sext_writer_k2s_is_accessible_as_optics_variable(tmp_path):
@@ -297,9 +297,9 @@ def test_sext_writer_k2s_is_accessible_as_optics_variable(tmp_path):
     env, reloaded_line = _write_and_load(line = original_line, tmp_path = tmp_path)
 
     assert env["k2s_s1"] == pytest.approx(0.15), (
-        "Optics variable 'k2s_s1' should exist in the environment after reload "
+        "Optics variable `k2s_s1` should exist in the environment after reload "
         "and equal the original k2s value. "
-        f"Got: {env['k2s_s1']}.")
+        f"""Got: {env["k2s_s1"]}.""")
 
 
 def test_sext_writer_k2s_optics_variable_is_tunable(tmp_path):
@@ -313,9 +313,9 @@ def test_sext_writer_k2s_optics_variable_is_tunable(tmp_path):
     env["k2s_s1"] = 0.3
 
     assert reloaded_line["s1"].k2s == pytest.approx(0.3), (
-        "Modifying optics variable 'k2s_s1' should update the sextupole's "
+        "Modifying optics variable `k2s_s1` should update the sextupole's "
         "k2s in the reloaded line. "
-        f"Got: {reloaded_line['s1'].k2s}.")
+        f"""Got: {reloaded_line["s1"].k2s}.""")
 
 
 ########################################
@@ -333,15 +333,15 @@ def test_sext_writer_preserves_k2_and_k2s_simultaneously(tmp_path):
 
     assert reloaded_line["s1"].k2 == pytest.approx(0.5), (
         "Writer roundtrip should preserve k2 when both k2 and k2s are set. "
-        f"Original: 0.5, reloaded: {reloaded_line['s1'].k2}.")
+        f"""Original: 0.5, reloaded: {reloaded_line["s1"].k2}.""")
     assert reloaded_line["s1"].k2s == pytest.approx(0.05), (
         "Writer roundtrip should preserve k2s when both k2 and k2s are set. "
-        f"Original: 0.05, reloaded: {reloaded_line['s1'].k2s}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["s1"].k2s}.""")
     assert env["k2_s1"] == pytest.approx(0.5), (
-        "Optics variable 'k2_s1' should be written and accessible when both "
+        "Optics variable `k2_s1` should be written and accessible when both "
         "k2 and k2s are non-zero.")
     assert env["k2s_s1"] == pytest.approx(0.05), (
-        "Optics variable 'k2s_s1' should be written and accessible when both "
+        "Optics variable `k2s_s1` should be written and accessible when both "
         "k2 and k2s are non-zero.")
 
 
@@ -350,7 +350,7 @@ def test_sext_writer_preserves_k2_and_k2s_simultaneously(tmp_path):
 ################################################################################
 # shift_x, shift_y, and rot_s_rad are NOT written as optics variables.
 # They are written as literal numeric strings in the lattice file, e.g.:
-#   env.new(name = 's1', prototype = 'sext_0.3', shift_x = '0.001')
+#   env.new(name = "s1", prototype = "sext_0.3", shift_x = "0.001")
 # The string is evaluated by Xsuite's expression engine when the file is
 # loaded. The tests below verify that positive, negative, and scientific-
 # notation values all survive this literal-string encoding correctly.
@@ -367,7 +367,7 @@ def test_sext_writer_preserves_positive_shift_x(tmp_path):
 
     assert reloaded_line["s1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve positive sextupole shift_x. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['s1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["s1"].shift_x}.""")
 
 
 def test_sext_writer_preserves_negative_shift_x(tmp_path):
@@ -381,7 +381,7 @@ def test_sext_writer_preserves_negative_shift_x(tmp_path):
 
     assert reloaded_line["s1"].shift_x == pytest.approx(-1.5E-3), (
         "Writer roundtrip should preserve negative sextupole shift_x. "
-        f"Original: -1.5E-3, reloaded: {reloaded_line['s1'].shift_x}.")
+        f"""Original: -1.5E-3, reloaded: {reloaded_line["s1"].shift_x}.""")
 
 
 def test_sext_writer_preserves_shift_x_in_scientific_notation(tmp_path):
@@ -394,7 +394,7 @@ def test_sext_writer_preserves_shift_x_in_scientific_notation(tmp_path):
 
     assert reloaded_line["s1"].shift_x == pytest.approx(2.34567891E-6), (
         "Writer roundtrip should preserve a shift_x value written in scientific "
-        f"notation. Original: 2.34567891E-6, reloaded: {reloaded_line['s1'].shift_x}.")
+        f"""notation. Original: 2.34567891E-6, reloaded: {reloaded_line["s1"].shift_x}.""")
 
 
 ########################################
@@ -410,7 +410,7 @@ def test_sext_writer_preserves_positive_shift_y(tmp_path):
 
     assert reloaded_line["s1"].shift_y == pytest.approx(2.0E-3), (
         "Writer roundtrip should preserve positive sextupole shift_y. "
-        f"Original: 2.0E-3, reloaded: {reloaded_line['s1'].shift_y}.")
+        f"""Original: 2.0E-3, reloaded: {reloaded_line["s1"].shift_y}.""")
 
 
 def test_sext_writer_preserves_negative_shift_y(tmp_path):
@@ -423,7 +423,7 @@ def test_sext_writer_preserves_negative_shift_y(tmp_path):
 
     assert reloaded_line["s1"].shift_y == pytest.approx(-2.5E-3), (
         "Writer roundtrip should preserve negative sextupole shift_y. "
-        f"Original: -2.5E-3, reloaded: {reloaded_line['s1'].shift_y}.")
+        f"""Original: -2.5E-3, reloaded: {reloaded_line["s1"].shift_y}.""")
 
 
 def test_sext_writer_preserves_shift_y_in_scientific_notation(tmp_path):
@@ -436,7 +436,7 @@ def test_sext_writer_preserves_shift_y_in_scientific_notation(tmp_path):
 
     assert reloaded_line["s1"].shift_y == pytest.approx(-9.87654321E-7), (
         "Writer roundtrip should preserve a shift_y value written in scientific "
-        f"notation. Original: -9.87654321E-7, reloaded: {reloaded_line['s1'].shift_y}.")
+        f"""notation. Original: -9.87654321E-7, reloaded: {reloaded_line["s1"].shift_y}.""")
 
 
 ########################################
@@ -452,7 +452,7 @@ def test_sext_writer_preserves_positive_rot_s_rad(tmp_path):
 
     assert reloaded_line["s1"].rot_s_rad == pytest.approx(0.05), (
         "Writer roundtrip should preserve positive sextupole rot_s_rad. "
-        f"Original: 0.05, reloaded: {reloaded_line['s1'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["s1"].rot_s_rad}.""")
 
 
 def test_sext_writer_preserves_negative_rot_s_rad(tmp_path):
@@ -465,7 +465,7 @@ def test_sext_writer_preserves_negative_rot_s_rad(tmp_path):
 
     assert reloaded_line["s1"].rot_s_rad == pytest.approx(-0.05), (
         "Writer roundtrip should preserve negative sextupole rot_s_rad. "
-        f"Original: -0.05, reloaded: {reloaded_line['s1'].rot_s_rad}.")
+        f"""Original: -0.05, reloaded: {reloaded_line["s1"].rot_s_rad}.""")
 
 
 ########################################
@@ -484,13 +484,13 @@ def test_sext_writer_preserves_all_misalignments_simultaneously(tmp_path):
 
     assert reloaded_line["s1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve shift_x alongside other misalignments. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['s1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["s1"].shift_x}.""")
     assert reloaded_line["s1"].shift_y == pytest.approx(-2.0E-3), (
         "Writer roundtrip should preserve shift_y alongside other misalignments. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['s1'].shift_y}.")
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["s1"].shift_y}.""")
     assert reloaded_line["s1"].rot_s_rad == pytest.approx(0.05), (
         "Writer roundtrip should preserve rot_s_rad alongside other misalignments. "
-        f"Original: 0.05, reloaded: {reloaded_line['s1'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["s1"].rot_s_rad}.""")
 
 
 def test_sext_writer_preserves_k2_with_all_misalignments(tmp_path):
@@ -508,20 +508,20 @@ def test_sext_writer_preserves_k2_with_all_misalignments(tmp_path):
 
     assert reloaded_line["s1"].k2 == pytest.approx(0.5), (
         "Writer roundtrip should preserve k2 alongside misalignments. "
-        f"Original: 0.5, reloaded: {reloaded_line['s1'].k2}.")
+        f"""Original: 0.5, reloaded: {reloaded_line["s1"].k2}.""")
     assert reloaded_line["s1"].shift_x == pytest.approx(1.0E-3), (
         "Writer roundtrip should preserve shift_x alongside k2. "
-        f"Original: 1.0E-3, reloaded: {reloaded_line['s1'].shift_x}.")
+        f"""Original: 1.0E-3, reloaded: {reloaded_line["s1"].shift_x}.""")
     assert reloaded_line["s1"].shift_y == pytest.approx(-2.0E-3), (
         "Writer roundtrip should preserve shift_y alongside k2. "
-        f"Original: -2.0E-3, reloaded: {reloaded_line['s1'].shift_y}.")
+        f"""Original: -2.0E-3, reloaded: {reloaded_line["s1"].shift_y}.""")
     assert reloaded_line["s1"].rot_s_rad == pytest.approx(0.05), (
         "Writer roundtrip should preserve rot_s_rad alongside k2. "
-        f"Original: 0.05, reloaded: {reloaded_line['s1'].rot_s_rad}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["s1"].rot_s_rad}.""")
     assert env["k2_s1"] == pytest.approx(0.5), (
-        "Optics variable 'k2_s1' should remain accessible alongside hardcoded "
+        "Optics variable `k2_s1` should remain accessible alongside hardcoded "
         "misalignment values. "
-        f"Got: {env['k2_s1']}.")
+        f"""Got: {env["k2_s1"]}.""")
 
 
 ################################################################################
@@ -634,13 +634,13 @@ def test_sext_writer_preserves_multiple_sexts_independently(tmp_path):
 
     for name, expected_k2 in expected.items():
         assert reloaded_line[name].k2 == pytest.approx(expected_k2), (
-            f"Writer roundtrip should preserve k2 for sextupole '{name}'. "
+            f"Writer roundtrip should preserve k2 for sextupole `{name}`. "
             f"Expected: {expected_k2}, reloaded: {reloaded_line[name].k2}.")
 
     assert env["k2_sf"] == pytest.approx(0.5), (
-        "Optics variable 'k2_sf' should be accessible and correct after reload.")
+        "Optics variable `k2_sf` should be accessible and correct after reload.")
     assert env["k2_sd"] == pytest.approx(-0.5), (
-        "Optics variable 'k2_sd' should be accessible and correct after reload.")
+        "Optics variable `k2_sd` should be accessible and correct after reload.")
 
 
 ########################################
@@ -668,26 +668,26 @@ def test_sext_writer_preserves_mixed_normal_and_skew_sexts(tmp_path):
 
     assert reloaded_line["snorm"].k2 == pytest.approx(0.5), (
         "Writer roundtrip should preserve normal sextupole k2. "
-        f"Original: 0.5, reloaded: {reloaded_line['snorm'].k2}.")
+        f"""Original: 0.5, reloaded: {reloaded_line["snorm"].k2}.""")
     assert reloaded_line["snorm"].k2s == pytest.approx(0.0), (
         "Normal sextupole should have zero k2s after roundtrip. "
-        f"Reloaded k2s: {reloaded_line['snorm'].k2s}.")
+        f"""Reloaded k2s: {reloaded_line["snorm"].k2s}.""")
 
     assert reloaded_line["sskew"].k2s == pytest.approx(0.15), (
         "Writer roundtrip should preserve skew sextupole k2s. "
-        f"Original: 0.15, reloaded: {reloaded_line['sskew'].k2s}.")
+        f"""Original: 0.15, reloaded: {reloaded_line["sskew"].k2s}.""")
     assert reloaded_line["sskew"].k2 == pytest.approx(0.0), (
         "Pure skew sextupole should have zero k2 after roundtrip. "
-        f"Reloaded k2: {reloaded_line['sskew'].k2}.")
+        f"""Reloaded k2: {reloaded_line["sskew"].k2}.""")
 
     assert reloaded_line["scombined"].k2 == pytest.approx(-0.3), (
         "Writer roundtrip should preserve k2 for a combined-strength sext. "
-        f"Original: -0.3, reloaded: {reloaded_line['scombined'].k2}.")
+        f"""Original: -0.3, reloaded: {reloaded_line["scombined"].k2}.""")
     assert reloaded_line["scombined"].k2s == pytest.approx(0.05), (
         "Writer roundtrip should preserve k2s for a combined-strength sext. "
-        f"Original: 0.05, reloaded: {reloaded_line['scombined'].k2s}.")
+        f"""Original: 0.05, reloaded: {reloaded_line["scombined"].k2s}.""")
 
     assert env["k2_snorm"] == pytest.approx(0.5), (
-        "Optics variable 'k2_snorm' should be accessible and correct.")
+        "Optics variable `k2_snorm` should be accessible and correct.")
     assert env["k2s_sskew"] == pytest.approx(0.15), (
-        "Optics variable 'k2s_sskew' should be accessible and correct.")
+        "Optics variable `k2s_sskew` should be accessible and correct.")

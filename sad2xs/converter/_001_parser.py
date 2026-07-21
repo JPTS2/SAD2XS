@@ -37,10 +37,10 @@ def _split_element_bodies(element_section: str, line_no: int | None = None) -> l
     Split a raw element section into individual element definition strings.
 
     Correctly handles nested parentheses in parameter values. Each
-    element definition has the form 'NAME=(param1 param2 ...)'. A naive
-    split on ')' breaks when a parameter value itself contains
-    parentheses -- e.g. 'SQRT(L0)' or '(L0 + DL) / 2'. This function
-    tracks parenthesis depth and only treats a ')' as a definition
+    element definition has the form `NAME=(param1 param2 ...)`. A naive
+    split on `)` breaks when a parameter value itself contains
+    parentheses -- e.g. `SQRT(L0)` or `(L0 + DL) / 2`. This function
+    tracks parenthesis depth and only treats a `)` as a definition
     boundary when it closes the outermost wrapper, i.e. when depth
     returns to zero.
 
@@ -57,13 +57,13 @@ def _split_element_bodies(element_section: str, line_no: int | None = None) -> l
     -------
     list of str
         One string per element definition, e.g.
-        ``['d1=(l=sqrt(l0))', 'd2=(l=1.0)']`` for the input
-        ``' d1=(l=sqrt(l0)) d2=(l=1.0)'``.
+        ``[`d1=(l=sqrt(l0))`, `d2=(l=1.0)`]`` for the input
+        ``` d1=(l=sqrt(l0)) d2=(l=1.0)```.
 
     Raises
     ------
     ValueError
-        If a closing ')' has no matching '('.
+        If a closing `)` has no matching `(`.
     """
     element_definitions = []
     current_definition  = []
@@ -77,8 +77,8 @@ def _split_element_bodies(element_section: str, line_no: int | None = None) -> l
             paren_depth -= 1
             if paren_depth < 0:
                 raise ValueError(
-                    f"{line_prefix}Malformed element definition — closing ')' has "
-                    f"no matching '(': '{element_section.strip()}'")
+                    f"""{line_prefix}Malformed element definition — closing ")" has """
+                    f"""no matching "(": "{element_section.strip()}\"""")
             if paren_depth == 0:
                 current_definition.append(char)
                 element_definitions.append("".join(current_definition).strip())
@@ -92,8 +92,8 @@ def _split_element_bodies(element_section: str, line_no: int | None = None) -> l
 ################################################################################
 # Deferred Expression Numeric Literal Detection
 ################################################################################
-# Matches plain decimal/exponential numeric literals only (e.g. '1.0', '-.5',
-# '1.0e9'), never bare words like 'inf'/'nan' that Python's float() would
+# Matches plain decimal/exponential numeric literals only (e.g. "1.0", "-.5",
+# "1.0e9"), never bare words like "inf"/"nan" that Python's float() would
 # otherwise silently accept as floating-point special values.
 NUMERIC_LITERAL_PATTERN = re.compile(r"[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?")
 
@@ -109,7 +109,7 @@ def split_element_parameters(ele_vars: str) -> list[tuple[str, str]]:
     SAD element values can be arithmetic expressions containing spaces.
     Splitting the whole parameter string on whitespace would break
     expressions such as ``l=l0 + dl``. This function instead splits at
-    parameter assignments (an identifier followed by '=').
+    parameter assignments (an identifier followed by `=`).
 
     Parameters
     ----------
@@ -125,7 +125,7 @@ def split_element_parameters(ele_vars: str) -> list[tuple[str, str]]:
     ------
     ValueError
         If `ele_vars` is non-empty but contains no `name = value`
-        assignment, or if a parameter has no value after its '='.
+        assignment, or if a parameter has no value after its `=`.
     """
     parameters = []
     matches = list(ELEMENT_PARAMETER_PATTERN.finditer(ele_vars))
@@ -134,7 +134,7 @@ def split_element_parameters(ele_vars: str) -> list[tuple[str, str]]:
         if ele_vars.strip():
             raise ValueError(
                 f"Error parsing element variables: {ele_vars}. "
-                "Expected one or more 'name = value' assignments.")
+                """Expected one or more "name = value" assignments.""")
         return parameters
 
     for index, match in enumerate(matches):
@@ -149,7 +149,7 @@ def split_element_parameters(ele_vars: str) -> list[tuple[str, str]]:
         if len(var_value) == 0:
             raise ValueError(
                 f"Error parsing element variable: {var_name}. "
-                "Expected a value after '='.")
+                """Expected a value after "=".""")
 
         parameters.append((var_name, var_value))
 
@@ -163,8 +163,8 @@ def _extract_scalar_global(section: str, keyword: str) -> str:
     Strip a scalar global's keyword and formatting from its section.
 
     Removes `keyword` and all whitespace/assignment characters, leaving
-    the bare value text (e.g. 'momentum = 1.0 gev' with keyword
-    'momentum' -> '1.0gev').
+    the bare value text (e.g. `momentum = 1.0 gev` with keyword
+    `momentum` -> `1.0gev`).
 
     Parameters
     ----------
@@ -176,7 +176,7 @@ def _extract_scalar_global(section: str, keyword: str) -> str:
     Returns
     -------
     str
-        The bare value text, with `keyword` and all whitespace/'='
+        The bare value text, with `keyword` and all whitespace/`=`
         characters removed.
     """
     value = section
@@ -233,7 +233,7 @@ def strip_sad_comments(content: str) -> str:
     """
     Remove full-line and inline SAD comments before section splitting.
 
-    SAD comments begin with '!'. Removing comments before splitting
+    SAD comments begin with `!`. Removing comments before splitting
     sections matters because comment text can itself contain semicolons,
     which would otherwise be mistaken for section separators.
 
@@ -245,7 +245,7 @@ def strip_sad_comments(content: str) -> str:
     Returns
     -------
     str
-        `content` with everything from '!' to the end of each line
+        `content` with everything from `!` to the end of each line
         removed.
     """
     cleaned_lines = []
@@ -280,12 +280,12 @@ def _split_sections_with_line_numbers(content: str) -> list[tuple[int, str]]:
         ----------
         text : str
             The section's raw text, possibly starting with newline(s)
-            left over from the previous section's ';' terminator.
+            left over from the previous section's `;` terminator.
         first_line_no : int
-            The line number of the ';' (or file start) that began this
+            The line number of the `;` (or file start) that began this
             section.
         """
-        # 'text' may begin with newlines carried over from the previous
+        # `text` may begin with newlines carried over from the previous
         # section's terminator — count them so the reported line matches
         # where the section's own text actually begins, not one line early.
         leading_newlines = len(text) - len(text.lstrip("\n"))
@@ -315,7 +315,7 @@ def load_and_clean_whitespace(sad_lattice_path: str) -> list[tuple[int, str]]:
     Load a SAD file and normalise it into semicolon-delimited sections.
 
     Strips comments, lowercases all text, collapses redundant whitespace
-    around '=', '(', ')', and unit suffixes ("rad"/"deg"), then splits
+    around `=`, `(`, `)`, and unit suffixes ("rad"/"deg"), then splits
     the result into sections, one per semicolon-terminated statement.
 
     Parameters
@@ -372,8 +372,8 @@ def load_and_clean_whitespace(sad_lattice_path: str) -> list[tuple[int, str]]:
     # when the next character is NOT a letter — i.e. only at end-of-token.
     # A plain str.replace(" rad", "rad") would corrupt "3 radius" → "3radius",
     # which the element splitter then fails to parse correctly.
-    content     = re.sub(r' deg(?![a-z])', 'deg', content)
-    content     = re.sub(r' rad(?![a-z])', 'rad', content)
+    content     = re.sub(r" deg(?![a-z])", "deg", content)
+    content     = re.sub(r" rad(?![a-z])", "rad", content)
 
     ########################################
     # Split the file into sections
@@ -434,7 +434,7 @@ def parse_sad_file(
     Raises
     ------
     ValueError
-        If a SAD function definition (':=') is found, a LINE or element
+        If a SAD function definition (`:=`) is found, a LINE or element
         definition is malformed, an element name collides with a
         protected name or a different element type, or no momentum is
         available from either the file or `config`.
@@ -516,8 +516,8 @@ def parse_sad_file(
         # FFS is SAD's own interactive command interpreter (USE, CALCULATE,
         # GO, etc.) — sad2xs already knows which line to convert from its own
         # explicit line_name argument, so any FFS command is simulation-only
-        # and safe to drop. Matches bare 'ffs;', 'ffs use = ring', and the
-        # bracketed 'ffs[...]' command-string form.
+        # and safe to drop. Matches bare `ffs;`, `ffs use = ring`, and the
+        # bracketed `ffs[...]` command-string form.
         if section_command == "ffs" or section_command.startswith("ffs["):
             parsed_sections.remove((line_no, section))
             continue
@@ -589,7 +589,7 @@ def parse_sad_file(
                 raise ValueError(
                     f"line {line_no}: Malformed LINE definition — unmatched "
                     f"parentheses ({open_count} opening, {close_count} closing): "
-                    f"'{line_section.strip()}'")
+                    f"""\"{line_section.strip()}\"""")
 
             ########################################
             # Split into lines by closing bracket
@@ -612,7 +612,7 @@ def parse_sad_file(
                     if "=" in line_content:
                         raise ValueError(
                             f"line {line_no}: Malformed LINE definition — "
-                            f"multiple '=' found: '{line.strip()}'")
+                            f"""multiple "=" found: "{line.strip()}\"""")
                 elif "(" in line:
                     line_name, line_content = line.split("(", 1)
                 else:
@@ -684,14 +684,14 @@ def parse_sad_file(
 
                 if ele_name in PROTECTED_ELEMENT_NAMES:
                     raise ValueError(
-                        f"line {line_no}: Element name '{ele_name}' collides with "
+                        f"""line {line_no}: Element name "{ele_name}" collides with """
                         f"a protected SAD2XS reserved name. Choose a different "
                         f"element name.")
 
                 ########################################
                 # Handle the element variables
                 # The depth-aware split guarantees the body ends with the outer
-                # closing ')' — strip exactly that one character.
+                # closing `)` — strip exactly that one character.
                 ########################################
                 ele_vars    = ele_vars[:-1]
                 ele_vars    = ele_vars.replace("\n", "")
@@ -733,8 +733,8 @@ def parse_sad_file(
                                 and {other_type, section_command} == {"apert", "mark"}):
                             continue
                         raise ValueError(
-                            f"line {line_no}: Element name '{ele_name}' is "
-                            f"already defined as a '{other_type}' element. SAD "
+                            f"""line {line_no}: Element name "{ele_name}" is """
+                            f"""already defined as a "{other_type}" element. SAD """
                             f"does not allow reusing element names across "
                             f"different element types.")
 
@@ -778,13 +778,13 @@ def parse_sad_file(
             continue
 
         ########################################
-        # Reject SAD function definitions explicitly (':=') instead of
+        # Reject SAD function definitions explicitly (`:=`) instead of
         # silently misparsing them as a garbage deferred expression.
         ########################################
         if ":=" in section:
             raise ValueError(
-                f"line {line_no}: SAD function definitions ('name[args] := "
-                f"expression') are not supported: '{section.strip()}'.")
+                f"""line {line_no}: SAD function definitions ("name[args] := """
+                f"""expression") are not supported: "{section.strip()}\".""")
 
         ########################################
         # Split information based on the equals sign
@@ -795,13 +795,13 @@ def parse_sad_file(
         except ValueError:
             raise ValueError(
                 f"line {line_no}: Error parsing section: {section}. "
-                "Expected format 'name = expression'.")
+                """Expected format "name = expression".""")
 
         ########################################
         # Convert to Float if Possible
         ########################################
         # A strict numeric-literal regex (not bare float()) so that variable
-        # references such as 'INF' or 'NAN' are never mistaken for the
+        # references such as "INF" or "NAN" are never mistaken for the
         # floating-point special values Python's float() would parse them as.
         if NUMERIC_LITERAL_PATTERN.fullmatch(expression):
             cleaned_expressions[variable] = float(expression)

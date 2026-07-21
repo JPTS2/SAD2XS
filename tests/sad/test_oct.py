@@ -79,7 +79,7 @@ def test_oct_rejects(sad_rejects, params):
 def test_oct_without_length_is_accepted_by_sad(sad_accepts):
     """
     SAD accepts an OCT with K3 but no L parameter (thin/integrated octupole).
-    The converter handles this via ele_vars.get('l', 0.0) defaulting to zero.
+    The converter handles this via ele_vars.get(`l`, 0.0) defaulting to zero.
     """
     sad_accepts(
         "OCT O1 = (K3=0.05);\n"

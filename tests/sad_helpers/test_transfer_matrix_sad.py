@@ -149,7 +149,7 @@ def test_transfer_matrix_sad_explicit_start_and_end_elements(
         tmp_path,
         monkeypatch):
     """
-    Passing start_element='START' and end_element='END' should produce the same
+    Passing start_element=`START` and end_element=`END` should produce the same
     analytic 1 m drift matrix as the default index-based path, confirming that
     the named-element TransferMatrix["START", "END"] code path is wired correctly
     and covers the same lattice extent.

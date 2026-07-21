@@ -48,7 +48,7 @@ setup(
         "sad_helpers": ["tfs-pandas", "tqdm"],
         # Required for sad2xs.xsuite_helpers.plot_xsuite_sad_comparison
         "plotting": ["matplotlib"]},
-    license                         = 'Apache 2.0',
+    license                         = "Apache 2.0",
     download_url                    = "https://pypi.python.org/pypi/sad2xs",
     project_urls                    = {
         "Bug Tracker":      "https://github.com/JPTS2/SAD2XS/issues",

@@ -66,7 +66,7 @@ def create_marker_lattice_file_information(
     ########################################
     unique_marker_names    = []
 
-    for marker in line_table.rows[line_table.element_type == 'Marker'].name:
+    for marker in line_table.rows[line_table.element_type == "Marker"].name:
         parentname  = get_parentname(marker)
         if parentname not in unique_marker_names:
             unique_marker_names.append(parentname)
@@ -105,10 +105,10 @@ def create_marker_lattice_file_information(
     output_string   += f"""
 ALL_MARKERS = [
 {textwrap.fill(
-        text                = str(unique_marker_names)[1:-1],
+        text                = ", ".join(f"\"{name}\"" for name in unique_marker_names),
         width               = config.OUTPUT_STRING_LENGTH,
-        initial_indent      = '    ',
-        subsequent_indent   = '    ',
+        initial_indent      = "    ",
+        subsequent_indent   = "    ",
         break_on_hyphens    = False)}]
 for marker in ALL_MARKERS:
     env.new(name = marker, prototype = xt.Marker)"""

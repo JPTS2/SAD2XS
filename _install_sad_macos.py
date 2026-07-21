@@ -67,7 +67,7 @@ class CommandError(RuntimeError):
         self.returncode = returncode
         self.log_path   = log_path
 
-        msg = f"Command failed ({returncode}): {' '.join(self.cmd)}"
+        msg = f"""Command failed ({returncode}): {" ".join(self.cmd)}"""
         if log_path:
             msg += f"\nLog: {log_path}"
         super().__init__(msg)
@@ -134,7 +134,7 @@ def run(
     subprocess.CompletedProcess if log_path is None, else return code (int)
     --------------------------------
     """
-    print(f"▶ Running: {' '.join(cmd)}")
+    print(f"""▶ Running: {" ".join(cmd)}""")
     if cwd:
         print(f"  cwd: {cwd}")
 
@@ -153,7 +153,7 @@ def run(
 
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("a") as f:
-        f.write(f"\n\n$ {' '.join(cmd)}\n")
+        f.write(f"""\n\n$ {" ".join(cmd)}\n""")
         f.flush()
 
         proc = subprocess.Popen(
@@ -424,7 +424,7 @@ def append_to_shell_rc():
     elif "bash" in shell:
         rc_file = Path.home() / ".bashrc"
 
-    export_line = 'export PATH="$HOME/bin/sad:$PATH"\n'
+    export_line = """export PATH="$HOME/bin/sad:$PATH"\n"""
 
     if rc_file and rc_file.exists():
         with rc_file.open("r") as f:
