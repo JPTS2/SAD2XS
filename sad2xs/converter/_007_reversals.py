@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -417,6 +417,261 @@ def reverse_line_survey_horizontal(line: xt.Line) -> xt.Line:
                 continue
             env[rot].rot_y_rad *= -1
             env[rot].rot_x_rad *= +1
+            env[rot].rot_s_rad *= -1
+
+    return line
+
+################################################################################
+# Line Bend Direction Reversal (Vertical)
+################################################################################
+def reverse_line_survey_vertical(line: xt.Line) -> xt.Line:
+    """
+    Flip a line's vertical bend direction (mirror the survey through
+    the horizontal plane), without reversing element order.
+
+    The vertical counterpart of `reverse_line_survey_horizontal`:
+    every element keeps its position in the line, but each bending/
+    field-carrying element has its vertical-plane quantities negated
+    and horizontal-plane quantities left alone. Unlike the horizontal
+    mirror, the multipole parity rule here is uniform across order —
+    normal (knl) components are always unchanged and skew (ksl)
+    components always negate, regardless of order — so a plain
+    unrotated bend's angle/k0/edge angles are untouched. A rotated
+    bend (e.g. a SAD ROTATE=+-pi/2 "vertical" bend, canonicalised by
+    the element converter to a fixed rot_s_rad=+pi/2 with direction
+    carried by angle's sign) still has its direction correctly
+    flipped, via rot_s_rad negating rather than angle. Every element's
+    shift_y/rot_s_rad negate while shift_x stays unchanged (the
+    opposite offset pattern from the horizontal mirror). Solenoids
+    additionally get their x0/y0 recomputed from the new shift/
+    rotation. Standalone Translation/Rotation reference-shift elements
+    follow the same pattern: Translation's shift_y negates and
+    shift_x is unchanged; Rotation's rot_x_rad and rot_s_rad negate
+    and rot_y_rad is unchanged.
+
+    This sign convention was verified against real xtrack tracking
+    (not just derived algebraically): for each element type, an
+    asymmetric test particle tracked through the transformed element
+    with y/py-mirrored initial coordinates reproduces the y/py-mirror
+    of tracking the original element with the original coordinates,
+    across bend rotations of 0, pi/2, and a generic non-canonicalised
+    angle, plus quad/sext/oct/mult/solenoid/Translation/Rotation.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The original line whose vertical bend direction should be
+        flipped.
+
+    Returns
+    -------
+    xt.Line
+        The same line object, with reflection-sensitive parameters
+        corrected in place.
+    """
+
+    ########################################
+    # Copy the line for changes
+    ########################################
+    env             = line.env
+    env_elements    = list(set(env.elements.keys()))
+
+    ########################################
+    # Get tables
+    ########################################
+    tt      = line.get_table(attr = True)
+    tt_bend = tt.rows[
+        (tt.element_type == "Bend") | (tt.element_type == "RBend")]
+    tt_quad = tt.rows[tt.element_type == "Quadrupole"]
+    tt_sext = tt.rows[tt.element_type == "Sextupole"]
+    tt_oct  = tt.rows[tt.element_type == "Octupole"]
+    tt_mult = tt.rows[tt.element_type == "Multipole"]
+    tt_sol  = tt.rows[tt.element_type == "UniformSolenoid"]
+    tt_dxy  = tt.rows[tt.element_type == "Translation"]
+    tt_rot  = tt.rows[tt.element_type == "Rotation"]
+
+    ########################################
+    # Get unique elements
+    ########################################
+    unique_bends    = list(set([name.split("::")[0] for name in tt_bend.name]))
+    unique_quads    = list(set([name.split("::")[0] for name in tt_quad.name]))
+    unique_sexts    = list(set([name.split("::")[0] for name in tt_sext.name]))
+    unique_octs     = list(set([name.split("::")[0] for name in tt_oct.name]))
+    unique_mults    = list(set([name.split("::")[0] for name in tt_mult.name]))
+    unique_sols     = list(set([name.split("::")[0] for name in tt_sol.name]))
+    unique_dxys     = list(set([name.split("::")[0] for name in tt_dxy.name]))
+    unique_rots     = list(set([name.split("::")[0] for name in tt_rot.name]))
+
+    ########################################
+    # Get only the non-reversed and handle reverse later
+    ########################################
+    # This only applies to the elements that can keep the minus sign
+    unique_bends    = list(set(
+        [name[1:] if name.startswith("-") else name for name in unique_bends]))
+    unique_sols     = list(set(
+        [name[1:] if name.startswith("-") else name for name in unique_sols]))
+    unique_dxys     = list(set(
+        [name[1:] if name.startswith("-") else name for name in unique_dxys]))
+    unique_rots     = list(set(
+        [name[1:] if name.startswith("-") else name for name in unique_rots]))
+
+    ########################################
+    # Bend Adjustments
+    ########################################
+    for bend in unique_bends:
+
+        # Handling trying forward and reverse
+        for bend in [bend, "-" + bend]:
+
+            if bend not in env_elements:
+                continue
+
+            env[bend].angle *= +1
+            env[bend].k0    *= +1
+            env[bend].k1    *= +1
+
+            # Edge angles unchanged (in-frame geometry)
+            env[bend].edge_entry_angle  *= +1
+            env[bend].edge_exit_angle   *= +1
+
+            # knl ksl Adjustments
+            order   = env[bend]._order
+            for this_order in np.arange(0, order + 1):
+                env[bend].knl[this_order] *= +1
+                env[bend].ksl[this_order] *= -1
+
+            # Offset adjustments
+            env[bend].shift_x   *= +1
+            env[bend].shift_y   *= -1
+            env[bend].rot_s_rad *= -1
+
+    ########################################
+    # Quadrupole Adjustments
+    ########################################
+    for quad in unique_quads:
+
+        env[quad].k1  *= +1
+        env[quad].k1s *= -1
+
+        # knl ksl Adjustments
+        order   = env[quad]._order
+        for this_order in np.arange(0, order + 1):
+            env[quad].knl[this_order] *= +1
+            env[quad].ksl[this_order] *= -1
+
+        # Offset adjustments
+        env[quad].shift_x   *= +1
+        env[quad].shift_y   *= -1
+        env[quad].rot_s_rad *= -1
+
+    ########################################
+    # Sextupole Adjustments
+    ########################################
+    for sext in unique_sexts:
+
+        env[sext].k2  *= +1
+        env[sext].k2s *= -1
+
+        # knl ksl Adjustments
+        order   = env[sext]._order
+        for this_order in np.arange(0, order + 1):
+            env[sext].knl[this_order] *= +1
+            env[sext].ksl[this_order] *= -1
+
+        # Offset adjustments
+        env[sext].shift_x   *= +1
+        env[sext].shift_y   *= -1
+        env[sext].rot_s_rad *= -1
+
+    ########################################
+    # Octupole Adjustments
+    ########################################
+    for oct in unique_octs:
+
+        env[oct].k3     *= +1
+        env[oct].k3s    *= -1
+
+        # knl ksl Adjustments
+        order   = env[oct]._order
+        for this_order in np.arange(0, order + 1):
+            env[oct].knl[this_order]  *= +1
+            env[oct].ksl[this_order]  *= -1
+
+        # Offset adjustments
+        env[oct].shift_x    *= +1
+        env[oct].shift_y    *= -1
+        env[oct].rot_s_rad  *= -1
+
+    ########################################
+    # Multipole Adjustments
+    ########################################
+    for mult in unique_mults:
+
+        # knl ksl Adjustments
+        order   = env[mult]._order
+        for this_order in np.arange(0, order + 1):
+            env[mult].knl[this_order] *= +1
+            env[mult].ksl[this_order] *= -1
+
+        # Offset adjustments
+        env[mult].shift_x   *= +1
+        env[mult].shift_y   *= -1
+        env[mult].rot_s_rad *= -1
+
+    ########################################
+    # Solenoid Adjustments
+    ########################################
+    for sol in unique_sols:
+
+        # Handling trying forward and reverse
+        for sol in [sol, "-" + sol]:
+
+            if sol not in env_elements:
+                continue
+
+            # Solenoid strength
+            env[sol].ks *= -1
+
+            # knl ksl Adjustments
+            order   = env[sol]._order
+            for this_order in np.arange(0, order + 1):
+                env[sol].knl[this_order]  *= +1
+                env[sol].ksl[this_order]  *= -1
+
+            # Offset adjustments
+            env[sol].shift_x    *= +1
+            env[sol].shift_y    *= -1
+            env[sol].rot_s_rad  *= -1
+
+            x0          = -1 * (env[sol].shift_x * np.cos(env[sol].rot_s_rad) + \
+                env[sol].shift_y * np.sin(env[sol].rot_s_rad))
+            y0          = -1 * (env[sol].shift_y * np.cos(env[sol].rot_s_rad) - \
+                env[sol].shift_x * np.sin(env[sol].rot_s_rad))
+            env[sol].x0         = x0
+            env[sol].y0         = y0
+
+    ########################################
+    # Reference Shifts
+    ########################################
+    for dxy in unique_dxys:
+
+        # Handling trying forward and reverse
+        for dxy in [dxy, "-" + dxy]:
+
+            if dxy not in env_elements:
+                continue
+            env[dxy].shift_x *= +1
+            env[dxy].shift_y *= -1
+
+    for rot in unique_rots:
+
+        # Handling trying forward and reverse
+        for rot in [rot, "-" + rot]:
+
+            if rot not in env_elements:
+                continue
+            env[rot].rot_y_rad *= +1
+            env[rot].rot_x_rad *= -1
             env[rot].rot_s_rad *= -1
 
     return line

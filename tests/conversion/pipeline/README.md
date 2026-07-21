@@ -6,7 +6,8 @@ owned by one SAD element family.
 Use this folder for options and line-level behaviour: the public
 `convert_sad_to_xsuite` entry point, explicit line selection, write/reload
 behaviour, excluded elements, offset markers, reference-particle setup,
-multipole replacements, reverse charge sign, reverse element order, and reverse survey horizontal.
+multipole replacements, reverse charge sign, reverse element order, reverse
+survey horizontal, and reverse survey vertical.
 
 Element-family physics belongs in `tests/conversion/elements/`. This folder
 should stay focused on pipeline orchestration and public user options.
@@ -21,6 +22,7 @@ should stay focused on pipeline orchestration and public user options.
 | `test_offset_markers.py` | 7 | 0 | — |
 | `test_reference_particle.py` | 10 | 0 | — |
 | `test_reverse_survey_horizontal.py` | 12 | 0 | — |
+| `test_reverse_survey_vertical.py` | 13 | 0 | — |
 | `test_reverse_charge_sign.py` | 6 | 0 | — |
 | `test_reverse_element_order.py` | 16 | 0 | — |
 

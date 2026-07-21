@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -180,6 +180,7 @@ def twiss_sad(
         line_name:                  str,
         reverse_element_order:      bool    = False,
         reverse_survey_horizontal:  bool    = False,
+        reverse_survey_vertical:    bool    = False,
         closed:                     bool    = True,
         calc6d:                     bool    = False,
         trpt:                       bool    = False,
@@ -216,6 +217,10 @@ def twiss_sad(
         Flip the sign of the horizontal-plane columns in the returned
         Twiss (mirrors `reverse_line_survey_horizontal`'s
         convention). Defaults to False.
+    reverse_survey_vertical : bool, optional
+        Flip the sign of the vertical-plane columns in the returned
+        Twiss (mirrors `reverse_line_survey_vertical`'s convention).
+        Defaults to False.
     closed : bool, optional
         If True, treat the lattice as a closed ring (SAD's CELL); if
         False, as a transfer line (SAD's INS). Defaults to True.
@@ -423,6 +428,31 @@ abort;
         tw_sad.R4       *= +1
 
     ########################################
+    # Bend Direction Reversal (Vertical)
+    ########################################
+    if reverse_survey_vertical:
+        tw_sad.x        *= +1
+        tw_sad.px       *= +1
+        tw_sad.y        *= -1
+        tw_sad.py       *= -1
+        tw_sad.zeta     *= +1
+        tw_sad.delta    *= +1
+        tw_sad.betx     *= +1
+        tw_sad.bety     *= +1
+        tw_sad.alfx     *= +1
+        tw_sad.alfy     *= +1
+        tw_sad.dx       *= +1
+        tw_sad.dpx      *= +1
+        tw_sad.dy       *= -1
+        tw_sad.dpy      *= -1
+        tw_sad.mux      *= +1
+        tw_sad.muy      *= +1
+        tw_sad.R1       *= +1
+        tw_sad.R2       *= +1
+        tw_sad.R3       *= +1
+        tw_sad.R4       *= +1
+
+    ########################################
     # Return the TwissTable
     ########################################
     return tw_sad
@@ -436,6 +466,7 @@ def compute_second_order_dispersions(
         sad_twiss:                  xt.TwissTable | None    = None,
         reverse_element_order:      bool                    = False,
         reverse_survey_horizontal:  bool                    = False,
+        reverse_survey_vertical:    bool                    = False,
         closed:                     bool                    = True,
         calc6d:                     bool                    = False,
         rfsw:                       bool                    = True,
@@ -469,7 +500,8 @@ def compute_second_order_dispersions(
         An existing Twiss table to add the second-order-dispersion
         columns to. If None, the on-momentum Twiss computed here is
         used and returned. Defaults to None.
-    reverse_element_order, reverse_survey_horizontal, closed, calc6d : bool
+    reverse_element_order, reverse_survey_horizontal,
+    reverse_survey_vertical, closed, calc6d : bool
         Forwarded to `twiss_sad` for both the on- and off-momentum
         Twiss calls.
     rfsw, rad, radcod, radtaper : bool
@@ -513,6 +545,7 @@ def compute_second_order_dispersions(
         line_name               = line_name,
         reverse_element_order   = reverse_element_order,
         reverse_survey_horizontal  = reverse_survey_horizontal,
+        reverse_survey_vertical    = reverse_survey_vertical,
         closed                  = closed,
         calc6d                  = calc6d,
         rfsw                    = rfsw,
@@ -549,6 +582,7 @@ def compute_second_order_dispersions(
         line_name               = line_name,
         reverse_element_order   = reverse_element_order,
         reverse_survey_horizontal  = reverse_survey_horizontal,
+        reverse_survey_vertical    = reverse_survey_vertical,
         closed                  = closed,
         calc6d                  = calc6d,
         rfsw                    = rfsw,
@@ -612,6 +646,7 @@ def compute_chromatic_functions(
         sad_twiss:                  xt.TwissTable | None    = None,
         reverse_element_order:      bool                    = False,
         reverse_survey_horizontal:  bool                    = False,
+        reverse_survey_vertical:    bool                    = False,
         closed:                     bool                    = True,
         calc6d:                     bool                    = False,
         rfsw:                       bool                    = True,
@@ -646,7 +681,8 @@ def compute_chromatic_functions(
         An existing Twiss table to add the chromatic-function columns
         to. If None, the on-momentum Twiss computed here is used and
         returned. Defaults to None.
-    reverse_element_order, reverse_survey_horizontal, closed, calc6d : bool
+    reverse_element_order, reverse_survey_horizontal,
+    reverse_survey_vertical, closed, calc6d : bool
         Forwarded to `twiss_sad` for all three Twiss calls.
     rfsw, rad, radcod, radtaper : bool
         Forwarded to `twiss_sad` for all three Twiss calls.
@@ -684,6 +720,7 @@ def compute_chromatic_functions(
         line_name               = line_name,
         reverse_element_order   = reverse_element_order,
         reverse_survey_horizontal  = reverse_survey_horizontal,
+        reverse_survey_vertical    = reverse_survey_vertical,
         closed                  = closed,
         calc6d                  = calc6d,
         rfsw                    = rfsw,
@@ -720,6 +757,7 @@ def compute_chromatic_functions(
         line_name               = line_name,
         reverse_element_order   = reverse_element_order,
         reverse_survey_horizontal  = reverse_survey_horizontal,
+        reverse_survey_vertical    = reverse_survey_vertical,
         closed                  = closed,
         calc6d                  = calc6d,
         rfsw                    = rfsw,
@@ -739,6 +777,7 @@ def compute_chromatic_functions(
         line_name               = line_name,
         reverse_element_order   = reverse_element_order,
         reverse_survey_horizontal  = reverse_survey_horizontal,
+        reverse_survey_vertical    = reverse_survey_vertical,
         closed                  = closed,
         calc6d                  = calc6d,
         rfsw                    = rfsw,

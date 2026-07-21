@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-14
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -20,7 +20,7 @@ import pytest
 
 from tests.support.lattices import (
     write_asymmetric_closed_ring, write_minimal_bend_lattice,
-    write_minimal_transfer_lattice)
+    write_minimal_transfer_lattice, write_minimal_vertical_bend_lattice)
 from sad2xs.sad_helpers import (
     compute_chromatic_functions,
     compute_second_order_dispersions,
@@ -56,6 +56,24 @@ def _run_twiss_on_bend_lattice(tmp_path, monkeypatch, **kwargs):
     arguments are forwarded to twiss_sad.
     """
     filename, line_name = write_minimal_bend_lattice(tmp_path)
+    monkeypatch.chdir(tmp_path)
+
+    return twiss_sad(
+        lattice_filepath = filename,
+        line_name        = line_name,
+        closed           = False,
+        calc6d           = False,
+        wall_time        = 30,
+        **kwargs)
+
+
+def _run_twiss_on_vertical_bend_lattice(tmp_path, monkeypatch, **kwargs):
+    """
+    Write the minimal vertical-bend transfer-line lattice, change to its
+    directory, and run twiss_sad with closed=False, calc6d=False,
+    wall_time=30. Extra keyword arguments are forwarded to twiss_sad.
+    """
+    filename, line_name = write_minimal_vertical_bend_lattice(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     return twiss_sad(
@@ -392,6 +410,39 @@ def test_twiss_sad_reverse_survey_horizontal_flips_x_plane_dispersion(
     assert np.allclose(dpx_reversed, -dpx_forward, atol = 1E-12), (
         "reverse_survey_horizontal=True should negate dpx everywhere. "
         f"dpx_forward: {list(dpx_forward)}; dpx_reversed: {list(dpx_reversed)}.")
+
+
+def test_twiss_sad_reverse_survey_vertical_flips_y_plane_dispersion(
+        tmp_path,
+        monkeypatch):
+    """
+    reverse_survey_vertical=True should negate the vertical dispersion (dy,
+    dpy) everywhere, leaving dx/dpx unchanged. Requires a vertical bend
+    (ROTATE = pi/2) so that dy != 0 at the END marker -- the plain
+    horizontal bend lattice used for the horizontal test has zero vertical
+    dispersion.
+    """
+    twiss_forward  = _run_twiss_on_vertical_bend_lattice(
+        tmp_path, monkeypatch, reverse_survey_vertical = False)
+    twiss_reversed = _run_twiss_on_vertical_bend_lattice(
+        tmp_path, monkeypatch, reverse_survey_vertical = True)
+
+    dy_forward  = np.asarray(twiss_forward.dy)
+    dy_reversed = np.asarray(twiss_reversed.dy)
+
+    assert not np.allclose(dy_forward, 0.0, atol = 1E-6), (
+        "The vertical bend lattice should produce non-zero dispersion dy so "
+        f"that the sign-flip can be verified. Got dy_forward: {list(dy_forward)}.")
+    assert np.allclose(dy_reversed, -dy_forward, atol = 1E-12), (
+        "reverse_survey_vertical=True should negate dy everywhere. "
+        f"dy_forward: {list(dy_forward)}; dy_reversed: {list(dy_reversed)}.")
+
+    dpy_forward  = np.asarray(twiss_forward.dpy)
+    dpy_reversed = np.asarray(twiss_reversed.dpy)
+
+    assert np.allclose(dpy_reversed, -dpy_forward, atol = 1E-12), (
+        "reverse_survey_vertical=True should negate dpy everywhere. "
+        f"dpy_forward: {list(dpy_forward)}; dpy_reversed: {list(dpy_reversed)}.")
 
 
 def test_twiss_sad_trpt_carries_reference_momentum_through_acceleration(

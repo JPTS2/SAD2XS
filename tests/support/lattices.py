@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-12
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -54,6 +54,32 @@ def write_minimal_bend_lattice(tmp_path):
         MOMENTUM    = 1.0 GEV;
 
         BEND        TEST_BEND   = (L = 1.0 ANGLE = 0.1);
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START TEST_BEND END);
+        """))
+
+    return lattice_path.name, "TEST_LINE"
+
+
+def write_minimal_vertical_bend_lattice(tmp_path):
+    """
+    Write a minimal SAD transfer-line lattice: a 1 m bend (ANGLE = 0.1 rad,
+    ROTATE = pi/2) between a START and END marker. The ROTATE = pi/2 makes
+    this a vertical bend, producing non-zero vertical dispersion, used to
+    test reverse_survey_vertical sign-flip behaviour (the plain horizontal
+    bend from write_minimal_bend_lattice has zero vertical content, so it
+    cannot exercise this flag).
+    Returns (filename, line_name) for direct use as sad_helpers arguments after
+    monkeypatch.chdir(tmp_path).
+    """
+    lattice_path = tmp_path / "test_vertical_bend_lattice.sad"
+    lattice_path.write_text(textwrap.dedent("""\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND        TEST_BEND   = (L = 1.0 ANGLE = 0.1 ROTATE = 1.570796);
 
         MARK        START       = ()
                     END         = ();

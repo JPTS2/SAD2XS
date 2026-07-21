@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -127,6 +127,7 @@ def survey_sad(
         closed:                     bool    = True,
         reverse_element_order:      bool    = False,
         reverse_survey_horizontal:  bool    = False,
+        reverse_survey_vertical:    bool    = False,
         additional_commands:        str     = "",
         wall_time:                  int     = 30,
         sad_path:                   str     = "sad") -> xt.survey.SurveyTable:
@@ -160,6 +161,10 @@ def survey_sad(
     reverse_survey_horizontal : bool, optional
         Flip the sign of X/theta/psi in the returned survey (mirrors
         `reverse_line_survey_horizontal`'s convention). Defaults to
+        False.
+    reverse_survey_vertical : bool, optional
+        Flip the sign of Y/phi/psi in the returned survey (mirrors
+        `reverse_line_survey_vertical`'s convention). Defaults to
         False.
     additional_commands : str, optional
         Extra SAD commands run after loading the line and before the
@@ -319,6 +324,17 @@ abort;
         sv_sad.Z        *= +1                       # pylint: disable=no-member
         sv_sad.theta    *= -1                       # pylint: disable=no-member
         sv_sad.phi      *= +1                       # pylint: disable=no-member
+        sv_sad.psi      *= -1                       # pylint: disable=no-member
+
+    ########################################
+    # Bend Direction Reversal (Vertical)
+    ########################################
+    if reverse_survey_vertical:
+        sv_sad.X        *= +1                       # pylint: disable=no-member
+        sv_sad.Y        *= -1                       # pylint: disable=no-member
+        sv_sad.Z        *= +1                       # pylint: disable=no-member
+        sv_sad.theta    *= +1                       # pylint: disable=no-member
+        sv_sad.phi      *= -1                       # pylint: disable=no-member
         sv_sad.psi      *= -1                       # pylint: disable=no-member
 
     ########################################
