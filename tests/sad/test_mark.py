@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-17
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -28,6 +28,9 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 # accepted — likely recorded as field/offset annotations rather than physics.
 ################################################################################
 def test_mark_bare_accepts(sad_accepts):
+    """
+    SAD's MARK element should accept a bare definition with no parameters.
+    """
     sad_accepts(
         "MARK MK1 = ();\n"
         "MARK START = ()\n     END   = ();\n"
@@ -41,6 +44,10 @@ ACCEPTED_PARAMS = [
 
 @pytest.mark.parametrize("params", ACCEPTED_PARAMS)
 def test_mark_accepts(sad_accepts, params):
+    """
+    SAD's MARK element should accept BZ, DX, and DY (recorded as
+    annotations, not physics -- see the effect-on-Twiss tests below).
+    """
     sad_accepts(
         f"MARK MK1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
@@ -71,6 +78,10 @@ REJECTED_PARAMS = [
 
 @pytest.mark.parametrize("params", REJECTED_PARAMS)
 def test_mark_rejects(sad_rejects, params):
+    """
+    SAD's MARK element should reject field (K0-K4/SK0-SK4), bending,
+    rotation, and RF parameters.
+    """
     sad_rejects(
         f"MARK MK1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-17
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -52,6 +52,10 @@ ACCEPTED_PARAMS = [
 
 @pytest.mark.parametrize("params", ACCEPTED_PARAMS)
 def test_mult_accepts(sad_accepts, params):
+    """
+    SAD's MULT element is the general multipole and should accept every
+    Kn/SKn order, geometry, and RF parameter.
+    """
     sad_accepts(
         f"MULT M1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
@@ -61,6 +65,10 @@ def test_mult_accepts(sad_accepts, params):
 # Rejected parameters
 ################################################################################
 def test_mult_rejects_bz(sad_rejects):
+    """
+    SAD's MULT element should reject BZ -- solenoid field is SOL's own
+    parameter, not part of MULT's general multipole/RF set.
+    """
     sad_rejects(
         "MULT M1 = (L=1.0 BZ=0.1);\n"
         "MARK START = ()\n     END   = ();\n"
@@ -323,6 +331,10 @@ RF_FOCUS_FREQ           = 2.856E9
 RF_FOCUS_X_TEST         = 1.0E-3
 
 def _mult_rf_focus_kick(tmp_path, phi: float, x: float, name: str) -> dict:
+    """
+    Track a single on-axis-px particle with transverse offset `x` through
+    a VOLT-carrying MULT at RF phase `phi`, with RFSW on.
+    """
     lat = tmp_path / name
     lat.write_text(
         f"MOMENTUM = {RF_FOCUS_MOMENTUM_GEV} GEV;\n"

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-29
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -79,37 +79,74 @@ def test_is_effectively_zero_respects_custom_tolerance():
 # values_provably_equal
 ################################################################################
 def test_values_provably_equal_returns_true_for_equal_numbers():
+    """
+    Two numeric values equal within tolerance should be provably equal.
+    """
     assert values_provably_equal(0.01, 0.01)
 
 def test_values_provably_equal_returns_false_for_different_numbers():
+    """
+    Two numeric values differing by more than tolerance should not be
+    provably equal.
+    """
     assert not values_provably_equal(0.01, 0.02)
 
 def test_values_provably_equal_returns_true_for_identical_expressions():
+    """
+    Two identical deferred expression strings should be provably equal.
+    """
     assert values_provably_equal("w", "w")
 
 def test_values_provably_equal_returns_false_for_different_expressions():
+    """
+    Two different deferred expression strings should not be provably equal,
+    even though they cannot be numerically evaluated to disprove it either.
+    """
     assert not values_provably_equal("w", "v")
 
 def test_values_provably_equal_returns_false_for_mixed_types():
+    """
+    A numeric value and a deferred expression string should never be
+    provably equal, regardless of value.
+    """
     assert not values_provably_equal(0.01, "w")
 
 ################################################################################
 # values_provably_opposite
 ################################################################################
 def test_values_provably_opposite_returns_true_for_opposite_numbers():
+    """
+    Two numeric values summing to ~0 within tolerance should be provably
+    opposite.
+    """
     assert values_provably_opposite(0.01, -0.01)
 
 def test_values_provably_opposite_returns_false_for_equal_numbers():
+    """
+    Two equal (non-opposite) numeric values should not be provably opposite.
+    """
     assert not values_provably_opposite(0.01, 0.01)
 
 def test_values_provably_opposite_returns_true_for_negated_expression():
+    """
+    A deferred expression string and its literal "-" prefixed form should be
+    provably opposite in either argument order.
+    """
     assert values_provably_opposite("w", "-w")
     assert values_provably_opposite("-w", "w")
 
 def test_values_provably_opposite_returns_false_for_unrelated_expressions():
+    """
+    Two unrelated deferred expression strings should not be provably
+    opposite.
+    """
     assert not values_provably_opposite("w", "v")
 
 def test_values_provably_opposite_returns_false_for_mixed_types():
+    """
+    A numeric value and a deferred expression string should never be
+    provably opposite, regardless of value.
+    """
     assert not values_provably_opposite(0.01, "w")
 
 ################################################################################

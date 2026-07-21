@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-17
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -37,6 +37,10 @@ ACCEPTED_PARAMS = [
 
 @pytest.mark.parametrize("params", ACCEPTED_PARAMS)
 def test_sext_accepts(sad_accepts, params):
+    """
+    SAD's SEXT element should accept K2 and the standard
+    misalignment/rotation parameters.
+    """
     sad_accepts(
         f"SEXT S1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
@@ -60,6 +64,10 @@ REJECTED_PARAMS = [
 
 @pytest.mark.parametrize("params", REJECTED_PARAMS)
 def test_sext_rejects(sad_rejects, params):
+    """
+    SAD's SEXT element should reject bending (ANGLE), other-order field
+    (K0/K1/K3/K4/SK0-SK4), solenoid (BZ), and RF parameters.
+    """
     sad_rejects(
         f"SEXT S1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"

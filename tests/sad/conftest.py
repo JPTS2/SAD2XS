@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-24
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -38,6 +38,10 @@ PROTON_MASS_MEV         = 938.27208816  # proton mass
 # Helpers
 ################################################################################
 def _run_sad_twiss(lattice_body: str, tmp_path) -> None:
+    """
+    Write a SAD lattice from `lattice_body` under a fixed MOMENTUM and run
+    twiss_sad on it, to provoke SAD's own accept/reject verdict.
+    """
     lattice = tmp_path / "test.sad"
     lattice.write_text(f"MOMENTUM = {DEFAULT_MOMENTUM_GEV} GEV;\n{lattice_body}\n")
     twiss_sad(
@@ -70,6 +74,10 @@ def assert_particle_survived(result: dict, particle_index: int = 0) -> None:
 ################################################################################
 @pytest.fixture
 def sad_accepts(tmp_path):
+    """
+    Fixture returning a callable that asserts real SAD parses and twisses
+    the given lattice body without error.
+    """
     def _accepts(lattice_body: str):
         cwd = os.getcwd()
         os.chdir(tmp_path)
@@ -86,6 +94,10 @@ def sad_accepts(tmp_path):
 
 @pytest.fixture
 def sad_rejects(tmp_path):
+    """
+    Fixture returning a callable that asserts real SAD rejects the given
+    lattice body (raises RuntimeError or ValueError).
+    """
     def _rejects(lattice_body: str):
         cwd = os.getcwd()
         os.chdir(tmp_path)

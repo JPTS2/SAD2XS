@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-17
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -51,7 +51,8 @@ PUBLIC_EXAMPLE_SCRIPTS = sorted(
 @pytest.mark.parametrize("lattice_filename", PUBLIC_EXAMPLE_LATTICES)
 def test_public_example_lattice_converts_in_test_mode(lattice_filename):
     """
-    Public committed example lattices should remain loadable by the converter.
+    Public committed example lattices should convert to a non-empty Xsuite
+    Line with a reference particle attached.
     """
     lattice_path = PUBLIC_EXAMPLE_LATTICE_DIR / lattice_filename
 

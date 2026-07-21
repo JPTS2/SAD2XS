@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-17
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -40,6 +40,10 @@ ACCEPTED_PARAMS = [
 
 @pytest.mark.parametrize("params", ACCEPTED_PARAMS)
 def test_cavi_accepts(sad_accepts, params):
+    """
+    SAD's CAVI element should accept VOLT, FREQ, HARM, PHI, and the
+    standard misalignment/rotation parameters.
+    """
     sad_accepts(
         f"CAVI C1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
@@ -62,6 +66,10 @@ REJECTED_PARAMS = [
 
 @pytest.mark.parametrize("params", REJECTED_PARAMS)
 def test_cavi_rejects(sad_rejects, params):
+    """
+    SAD's CAVI element should reject bending (ANGLE) and multipole
+    (K0-K4/SK0-SK4/BZ) field parameters.
+    """
     sad_rejects(
         f"CAVI C1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -39,8 +39,9 @@ SYNTHETIC_FCC_LATTICES = [
 @pytest.mark.parametrize("lattice_filename", SYNTHETIC_FCC_LATTICES)
 def test_synthetic_fcc_style_lattice_converts(lattice_filename):
     """
-    Synthetic FCC-style lattices should convert without relying on generated
-    temporary files, plots, or legacy test helpers.
+    Synthetic FCC-style lattices should convert cleanly (via `_test_mode`, no
+    generated files or plots) to an Xsuite Line that preserves the START/END
+    markers and gets a reference particle attached.
     """
     lattice_path = EXAMPLE_LATTICE_DIR / lattice_filename
 

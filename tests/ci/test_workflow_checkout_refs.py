@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-17
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -48,12 +48,17 @@ DOCKER_BUILD_WORKFLOW_NAME = "SAD Docker Build"
 # Helpers
 ################################################################################
 def _load(path):
+    """
+    Parse a YAML workflow file into a dict.
+    """
     with open(path, encoding = "utf-8") as fh:
         return yaml.safe_load(fh)
 
 
 def _checkout_step(steps):
-    """Return the first checkout step in a list of job steps, or None."""
+    """
+    Return the first checkout step in a list of job steps, or None.
+    """
     for step in steps:
         if step.get("uses", "").startswith("actions/checkout"):
             return step
@@ -61,14 +66,18 @@ def _checkout_step(steps):
 
 
 def _job_run_text(data, job_name):
-    """Return all shell commands configured for a workflow job."""
+    """
+    Return all shell commands configured for a workflow job.
+    """
     job = data.get("jobs", {}).get(job_name, {})
     return "\n".join(
         step["run"] for step in job.get("steps", []) if "run" in step)
 
 
 def _step_by_name(data, job_name, step_name):
-    """Return a named workflow step, or None when it is absent."""
+    """
+    Return a named workflow step, or None when it is absent.
+    """
     for step in data.get("jobs", {}).get(job_name, {}).get("steps", []):
         if step.get("name") == step_name:
             return step
@@ -282,6 +291,11 @@ def test_ci_run_all_workflow_has_workflow_dispatch_trigger():
 # Run-all workflow — regression gate and known issues
 ################################################################################
 def test_ci_regression_step_excludes_known_issues():
+    """
+    The 'Run regression tests' step must exclude known_issue-marked tests
+    via a `not known_issue` pytest filter, after (re)installing the
+    package in editable mode.
+    """
     data = _load(RUN_ALL_PATH)
     step = _step_by_name(data, "run-tests", "Run regression tests")
     assert step is not None, "run-tests job must have a 'Run regression tests' step."
@@ -290,6 +304,11 @@ def test_ci_regression_step_excludes_known_issues():
 
 
 def test_ci_known_issues_step_selects_only_known_issues():
+    """
+    The 'Run known-issue tests' step must select only known_issue-marked
+    tests (not also apply the regression step's `not known_issue`
+    exclusion), after (re)installing the package in editable mode.
+    """
     data = _load(RUN_ALL_PATH)
     step = _step_by_name(data, "run-tests", "Run known-issue tests")
     assert step is not None, "run-tests job must have a 'Run known-issue tests' step."
@@ -299,6 +318,11 @@ def test_ci_known_issues_step_selects_only_known_issues():
 
 
 def test_ci_known_issues_step_is_non_blocking():
+    """
+    The 'Run known-issue tests' step must set continue-on-error: true
+    (a known failure shouldn't fail the job), while the run-tests job
+    itself stays blocking.
+    """
     data = _load(RUN_ALL_PATH)
     assert not data["jobs"]["run-tests"].get("continue-on-error", False), (
         "The run-tests job itself must not be continue-on-error.")
@@ -309,12 +333,21 @@ def test_ci_known_issues_step_is_non_blocking():
 
 
 def test_ci_regression_job_is_blocking():
+    """
+    The run-tests job itself must not be continue-on-error, so a genuine
+    regression still fails the CI run.
+    """
     data = _load(RUN_ALL_PATH)
     assert not data["jobs"]["run-tests"].get("continue-on-error", False), (
         "run-tests job must be blocking (no continue-on-error on the job).")
 
 
 def test_ci_run_all_job_does_not_override_checkout_ref():
+    """
+    The run-tests job's checkout step must not override ref, for the same
+    reason as the per-folder template jobs: CI should test the commit
+    that triggered the run.
+    """
     data = _load(RUN_ALL_PATH)
     step = _checkout_step(data["jobs"]["run-tests"]["steps"])
     assert step is not None

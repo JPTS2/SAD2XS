@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 
 See tests/observability/README.md ("Output Policy") for the policy this
@@ -198,7 +198,8 @@ def test_set_log_level_debug_enables_debug_records(caplog, tmp_path):
 
 def test_set_log_level_rejects_unknown_level():
     """
-    set_log_level validates its argument.
+    set_log_level should raise ValueError for a level name it doesn't
+    recognise, rather than silently accepting it.
     """
     with pytest.raises(ValueError, match = "Unknown log level"):
         s2x.set_log_level("loud")

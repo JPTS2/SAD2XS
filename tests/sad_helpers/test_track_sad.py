@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -30,7 +30,9 @@ _N_TURNS_SMOKE = 10
 
 
 def _zero_particles(n):
-    """Return n on-axis particles with all phase-space coordinates zero."""
+    """
+    Return n on-axis particles with all phase-space coordinates zero.
+    """
     return (
         np.zeros(n),  # x
         np.zeros(n),  # px

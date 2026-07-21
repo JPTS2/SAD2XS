@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -31,19 +31,21 @@ def _write_and_load(line, tmp_path):
 
     The bend writer outputs:
       - A base element: env.new(name='hbend...', prototype=xt.Bend, length=L)
-      - A clone:        env.new(name='b1', prototype='hbend...', angle='k0_b1 * L')
+      - A clone:        env.new(name='b1', prototype='hbend...', angle=<literal>, k0='k0_b1')
       - Optics file:    k0_b1 = angle/length   (24 decimal places)
 
-    The angle is therefore a live deferred expression: modifying env['k0_b1']
-    immediately changes the bend angle. Edge angles (entry/exit/fdown) are
-    written as bare literal numbers. shift_x and shift_y are written as literal
-    Python string expressions that Xsuite evaluates on load.
+    The angle itself is a fixed literal; only k0 is a live deferred
+    expression, so modifying env['k0_b1'] changes k0 without moving the
+    geometric angle. Edge angles (entry/exit/fdown) are written as bare
+    literal numbers. shift_x and shift_y are written as literal Python
+    string expressions that Xsuite evaluates on load.
 
     Vertical bends (rot_s_rad ≈ π/2) carry the rotation on the base element;
     the clone inherits it. Skew bends (arbitrary rot_s_rad) carry the rotation
     on the clone as a literal string.
 
-    k1 for combined function magnets is NOT written by the bend writer.
+    For a combined function magnet (k1 != 0), k1 is also written as a live
+    deferred expression 'k1_{name}', alongside k0.
     """
     return _shared_write_and_load(line, tmp_path, output_header = "Bend writer test")
 
@@ -196,8 +198,8 @@ def test_bend_writer_preserves_length(tmp_path):
 def test_bend_writer_preserves_positive_angle(tmp_path):
     """
     A positive bending angle should be preserved through a write and reload
-    cycle. The angle is written as the deferred expression
-    'k0_{name} * length', where k0 = angle/length is stored in the optics file.
+    cycle. The angle is written as a fixed literal on the clone; k0 =
+    angle/length is written separately as a deferred expression.
     """
     original_line = _build_hbend_line(angle = 0.12, length = 0.6)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
@@ -666,7 +668,6 @@ def test_bend_writer_k1_is_preserved_for_combined_function_magnet(tmp_path):
 
     assert reloaded_line["b1"].k1 == pytest.approx(0.5), (
         "Writer roundtrip should preserve combined function Bend k1. "
-        "The bend writer does not write k1, so it reloads as 0.0. "
         f"Original: 0.5, reloaded: {reloaded_line['b1'].k1}.")
 
 

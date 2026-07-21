@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-24
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -43,6 +43,9 @@ FOLDER_WORKFLOW_NAMES = [
 # Helpers
 ################################################################################
 def _load(path):
+    """
+    Parse a YAML workflow file into a dict.
+    """
     with open(path, encoding = "utf-8") as fh:
         return yaml.safe_load(fh)
 

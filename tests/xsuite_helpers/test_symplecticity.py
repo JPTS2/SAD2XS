@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-17
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -23,7 +23,9 @@ from sad2xs.xsuite_helpers import check_symplecticity
 # Helpers
 ################################################################################
 def _build_fodo_line():
-    """A small, linear (no radiation) FODO cell -- stable, genuinely symplectic."""
+    """
+    A small, linear (no radiation) FODO cell -- stable, genuinely symplectic.
+    """
     env = xt.Environment()
     env.particle_ref = xt.Particles(p0c = 1.0E9)
     line = env.new_line(components = [
@@ -49,6 +51,10 @@ def test_linear_fodo_is_symplectic():
     assert max_deviation < 1.0E-6
 
 def test_returns_bool_and_float():
+    """
+    check_symplecticity should return (is_symplectic, max_deviation) as a
+    bool (or numpy's bool_ subtype) and a float.
+    """
     line    = _build_fodo_line()
     twiss   = line.twiss4d()
 
@@ -71,8 +77,9 @@ def test_element_by_element_fallback_runs_without_error():
     assert max_deviation >= 0.0
 
 def test_accepts_precomputed_table():
-    """`tt` (line.get_table(attr=True)), if already available, is reused
-    rather than recomputed."""
+    """A precomputed `tt` (line.get_table(attr=True)) is accepted and
+    produces the same result as when check_symplecticity computes it
+    internally."""
     line    = _build_fodo_line()
     twiss   = line.twiss4d()
     tt      = line.get_table(attr = True)

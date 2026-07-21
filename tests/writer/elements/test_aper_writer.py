@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -28,14 +28,15 @@ def _write_and_load(line, tmp_path):
     Write a line using the public SAD2XS writer entry points, reload it in a
     clean Xsuite environment, and return the environment and reloaded line.
 
-    The environment is returned so tests can verify that aperture dimensions are
-    NOT currently written as live optics expression variables. The aperture
-    writer writes all fields (a, b, min_x, max_x, min_y, max_y, shift_x,
-    shift_y) as bare literal numbers in the lattice file — no optics file
-    function exists for apertures.
+    The environment is returned so tests can verify that aperture dimensions
+    (a, b, min_x, max_x, min_y, max_y) are written as live optics expression
+    variables, bootstrapped to a safe non-zero placeholder in the lattice
+    file and set to their real value by the optics file. shift_x and shift_y
+    are written as bare literal numbers, not optics variables and not string
+    expressions.
 
-    This differs from magnets where shift_x/shift_y are literal strings and
-    k1/k2/k3 are optics expression variables.
+    This differs from magnets, where shift_x/shift_y are literal strings
+    (not bare numbers) while k1/k2/k3 are optics expression variables.
     """
     return _shared_write_and_load(line, tmp_path, output_header = "Aperture writer test")
 
@@ -269,9 +270,8 @@ def test_aper_writer_limitellipse_a_is_accessible_as_optics_variable(tmp_path):
 
     assert env["a_ap1"] == pytest.approx(0.025), (
         "Optics variable 'a_ap1' should exist in the environment after reload "
-        "and equal the original semi-axis a. The aperture writer writes a as a "
-        "literal number instead of a deferred expression. "
-        f"Got: KeyError (variable not written).")
+        "and equal the original semi-axis a. "
+        f"Got: {env['a_ap1']}.")
 
 
 def test_aper_writer_limitellipse_b_is_accessible_as_optics_variable(tmp_path):
@@ -287,9 +287,8 @@ def test_aper_writer_limitellipse_b_is_accessible_as_optics_variable(tmp_path):
 
     assert env["b_ap1"] == pytest.approx(0.018), (
         "Optics variable 'b_ap1' should exist in the environment after reload "
-        "and equal the original semi-axis b. The aperture writer writes b as a "
-        "literal number instead of a deferred expression. "
-        f"Got: KeyError (variable not written).")
+        "and equal the original semi-axis b. "
+        f"Got: {env['b_ap1']}.")
 
 
 def test_aper_writer_limitellipse_a_is_tunable_via_optics_variable(tmp_path):
@@ -306,8 +305,6 @@ def test_aper_writer_limitellipse_a_is_tunable_via_optics_variable(tmp_path):
 
     assert reloaded_line["ap1"].a == pytest.approx(0.030), (
         "Modifying optics variable 'a_ap1' should update the LimitEllipse a. "
-        "The aperture writer writes a as a literal number so no such variable "
-        "exists. "
         f"Got: {reloaded_line['ap1'].a}.")
 
 
@@ -513,9 +510,8 @@ def test_aper_writer_limitrect_min_x_is_accessible_as_optics_variable(tmp_path):
 
     assert env["min_x_ap1"] == pytest.approx(-0.025), (
         "Optics variable 'min_x_ap1' should exist in the environment after reload "
-        "and equal the original min_x. The aperture writer writes min_x as a "
-        "literal number instead of a deferred expression. "
-        f"Got: KeyError (variable not written).")
+        "and equal the original min_x. "
+        f"Got: {env['min_x_ap1']}.")
 
 
 def test_aper_writer_limitrect_max_x_is_accessible_as_optics_variable(tmp_path):
@@ -531,9 +527,8 @@ def test_aper_writer_limitrect_max_x_is_accessible_as_optics_variable(tmp_path):
 
     assert env["max_x_ap1"] == pytest.approx(0.025), (
         "Optics variable 'max_x_ap1' should exist in the environment after reload "
-        "and equal the original max_x. The aperture writer writes max_x as a "
-        "literal number instead of a deferred expression. "
-        f"Got: KeyError (variable not written).")
+        "and equal the original max_x. "
+        f"Got: {env['max_x_ap1']}.")
 
 
 def test_aper_writer_limitrect_min_x_is_tunable_via_optics_variable(tmp_path):
@@ -550,8 +545,6 @@ def test_aper_writer_limitrect_min_x_is_tunable_via_optics_variable(tmp_path):
 
     assert reloaded_line["ap1"].min_x == pytest.approx(-0.030), (
         "Modifying optics variable 'min_x_ap1' should update the LimitRect min_x. "
-        "The aperture writer writes min_x as a literal number so no such variable "
-        "exists. "
         f"Got: {reloaded_line['ap1'].min_x}.")
 
 

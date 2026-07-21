@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -35,9 +35,10 @@ def _write_and_load(line, tmp_path):
       - A clone:        env.new(name='c1', prototype='hcorr...', k0='k0_c1')
       - Optics file:    k0_c1 = <value>   (24 decimal places)
 
-    This differs from the bend writer, which encodes the angle as a deferred
-    product 'k0_{name} * length'. For correctors, k0 IS the optics variable
-    directly; modifying env['k0_c1'] immediately updates line['c1'].k0.
+    This differs from the bend writer, which writes a fixed literal angle
+    alongside k0 as the deferred expression. For correctors, k0 IS the
+    optics variable directly; modifying env['k0_c1'] immediately updates
+    line['c1'].k0.
 
     Vertical correctors (rot_s_rad ≈ π/2) carry the rotation on the shared
     base element. Skew correctors (arbitrary rot_s_rad) carry the rotation on
@@ -198,8 +199,8 @@ def test_corr_writer_preserves_length(tmp_path):
 def test_corr_writer_preserves_positive_k0(tmp_path):
     """
     A positive dipole field strength k0 should be preserved through a write and
-    reload cycle. Unlike bends, the corrector writer encodes k0 directly as the
-    optics expression, not as k0 * length via an angle.
+    reload cycle. Unlike bends, correctors carry no separate literal angle on
+    the clone -- k0 is the only field strength written.
     """
     original_line = _build_hcorr_line(k0 = 1.5E-4)
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)

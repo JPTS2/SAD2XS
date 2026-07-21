@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-17
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -37,6 +37,10 @@ ACCEPTED_PARAMS = [
 
 @pytest.mark.parametrize("params", ACCEPTED_PARAMS)
 def test_quad_accepts(sad_accepts, params):
+    """
+    SAD's QUAD element should accept K1 and the standard
+    misalignment/rotation parameters.
+    """
     sad_accepts(
         f"QUAD Q1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
@@ -60,6 +64,10 @@ REJECTED_PARAMS = [
 
 @pytest.mark.parametrize("params", REJECTED_PARAMS)
 def test_quad_rejects(sad_rejects, params):
+    """
+    SAD's QUAD element should reject bending (ANGLE), other-order field
+    (K0/K2-K4/SK0-SK4), solenoid (BZ), and RF parameters.
+    """
     sad_rejects(
         f"QUAD Q1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
