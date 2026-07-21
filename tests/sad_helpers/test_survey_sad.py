@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-14
+Date:       2026-07-21
 ================================================================================
 """
 ################################################################################
@@ -20,7 +20,7 @@ import pytest
 
 from tests.support.lattices import (
     write_asymmetric_closed_ring, write_minimal_bend_lattice,
-    write_minimal_transfer_lattice)
+    write_minimal_transfer_lattice, write_minimal_vertical_bend_lattice)
 from sad2xs.sad_helpers import survey_sad
 from sad2xs.sad_helpers.survey import generate_survey_print_function
 
@@ -52,6 +52,23 @@ def _run_survey_on_bend_lattice(tmp_path, monkeypatch, **kwargs):
     forwarded to survey_sad.
     """
     filename, line_name = write_minimal_bend_lattice(tmp_path)
+    monkeypatch.chdir(tmp_path)
+
+    return survey_sad(
+        lattice_filepath = filename,
+        line_name        = line_name,
+        closed           = False,
+        wall_time        = 30,
+        **kwargs)
+
+
+def _run_survey_on_vertical_bend_lattice(tmp_path, monkeypatch, **kwargs):
+    """
+    Write the minimal vertical-bend transfer-line lattice, change to its
+    directory, and run survey_sad with closed=False, wall_time=30. Extra
+    keyword arguments are forwarded to survey_sad.
+    """
+    filename, line_name = write_minimal_vertical_bend_lattice(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     return survey_sad(
@@ -379,4 +396,49 @@ def test_survey_sad_reverse_survey_horizontal_flips_x_plane_coordinates(
         rev = np.asarray(getattr(sv_reversed, column))
         assert np.allclose(rev, fwd, atol = 1E-12), (
             f"reverse_survey_horizontal=True should leave {column} unchanged. "
+            f"{column}_forward: {list(fwd)}; {column}_reversed: {list(rev)}.")
+
+
+def test_survey_sad_reverse_survey_vertical_flips_y_plane_coordinates(
+        tmp_path,
+        monkeypatch):
+    """
+    reverse_survey_vertical=True should negate Y, phi, and psi everywhere
+    (the y-plane geometry is reflected), leaving X, Z, and theta unchanged.
+    Requires a vertical bend (ROTATE = pi/2) so that Y != 0 and the
+    sign-flip is meaningful -- the plain horizontal bend lattice used for
+    the horizontal test has zero vertical content.
+    """
+    sv_forward  = _run_survey_on_vertical_bend_lattice(
+        tmp_path, monkeypatch, reverse_survey_vertical = False)
+    sv_reversed = _run_survey_on_vertical_bend_lattice(
+        tmp_path, monkeypatch, reverse_survey_vertical = True)
+
+    Y_fwd = np.asarray(sv_forward.Y)
+    Y_rev = np.asarray(sv_reversed.Y)
+
+    assert not np.allclose(Y_fwd, 0.0, atol = 1E-6), (
+        "The vertical bend lattice should produce non-zero Y so that the "
+        f"sign-flip can be verified. Got Y_forward: {list(Y_fwd)}.")
+    assert np.allclose(Y_rev, -Y_fwd, atol = 1E-12), (
+        "reverse_survey_vertical=True should negate Y everywhere. "
+        f"Y_forward: {list(Y_fwd)}; Y_reversed: {list(Y_rev)}.")
+
+    phi_fwd = np.asarray(sv_forward.phi)
+    phi_rev = np.asarray(sv_reversed.phi)
+    assert np.allclose(phi_rev, -phi_fwd, atol = 1E-12), (
+        "reverse_survey_vertical=True should negate phi everywhere. "
+        f"phi_forward: {list(phi_fwd)}; phi_reversed: {list(phi_rev)}.")
+
+    psi_fwd = np.asarray(sv_forward.psi)
+    psi_rev = np.asarray(sv_reversed.psi)
+    assert np.allclose(psi_rev, -psi_fwd, atol = 1E-12), (
+        "reverse_survey_vertical=True should negate psi everywhere. "
+        f"psi_forward: {list(psi_fwd)}; psi_reversed: {list(psi_rev)}.")
+
+    for column in ("X", "Z", "theta"):
+        fwd = np.asarray(getattr(sv_forward, column))
+        rev = np.asarray(getattr(sv_reversed, column))
+        assert np.allclose(rev, fwd, atol = 1E-12), (
+            f"reverse_survey_vertical=True should leave {column} unchanged. "
             f"{column}_forward: {list(fwd)}; {column}_reversed: {list(rev)}.")

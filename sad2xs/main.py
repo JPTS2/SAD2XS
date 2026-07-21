@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-21
 ================================================================================
 """
 
@@ -35,7 +35,7 @@ from .converter._003_expression_converter import convert_expressions
 from .converter._004_element_converter import convert_elements
 from .converter._005_line_converter import convert_lines
 from .converter._006_solenoid_converter import convert_solenoids, solenoid_reference_shift_corrections
-from .converter._007_reversals import reverse_line_survey_horizontal, reverse_line_element_order
+from .converter._007_reversals import reverse_line_survey_horizontal, reverse_line_survey_vertical, reverse_line_element_order
 from .converter._008_offset_markers import convert_offset_markers
 from .converter._009_write_lattice import write_lattice
 from .converter._010_write_optics import write_optics
@@ -56,6 +56,7 @@ def convert_sad_to_xsuite(
         user_multipole_replacements:    dict[str, str] | None   = None,
         reverse_element_order:          bool                    = False,
         reverse_survey_horizontal:      bool                    = False,
+        reverse_survey_vertical:        bool                    = False,
         reverse_charge_sign:            bool                    = False,
         install_apertures_as_markers:   bool                    = False,
         **kwargs: Any) -> xt.Line:
@@ -97,6 +98,9 @@ def convert_sad_to_xsuite(
         Reverse the element order of the selected line.
     reverse_survey_horizontal : bool, optional
         Reverse the bend directions of the selected line (horizontal
+        survey mirroring).
+    reverse_survey_vertical : bool, optional
+        Reverse the bend directions of the selected line (vertical
         survey mirroring).
     reverse_charge_sign : bool, optional
         Flip the sign of the reference particle's charge.
@@ -355,6 +359,10 @@ def convert_sad_to_xsuite(
     if reverse_survey_horizontal:
         log_section_heading("Reversing Bend Directions of Line", mode = 'section')
         line = reverse_line_survey_horizontal(line)
+
+    if reverse_survey_vertical:
+        log_section_heading("Reversing Bend Directions of Line (Vertical)", mode = 'section')
+        line = reverse_line_survey_vertical(line)
 
     ############################################################################
     # Handle Offset Markers

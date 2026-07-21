@@ -1,13 +1,14 @@
 # Line reversals and charge conventions
 
 This document records the sign conventions, empirical verifications, and design
-decisions behind the three line-transformation flags in `convert_sad_to_xsuite`:
+decisions behind the line-transformation flags in `convert_sad_to_xsuite`:
 
 - `reverse_element_order`
 - `reverse_charge_sign`
 - `reverse_survey_horizontal`
+- `reverse_survey_vertical`
 
-and the reference-particle `CHARGE` handling that interacts with all three.
+and the reference-particle `CHARGE` handling that interacts with all of them.
 
 ---
 
@@ -299,6 +300,94 @@ noted as a known open item, not resolved here.
 
 ---
 
+## `reverse_survey_vertical`
+
+### What it does
+
+Applies a vertical mirror to the full lattice geometry — the counterpart of
+`reverse_survey_horizontal`, mirrored through the x-z (horizontal) plane
+instead of the y-z (vertical) plane. This models a lattice built as the
+vertical mirror image of the original: any vertical bend or skew element
+points the opposite way, as if the whole beamline had been flipped upside
+down. "Vertical" here means the y-plane. All element parameters are
+transformed to be consistent with a lattice mirrored in the x-z plane.
+
+### Parameter transformations applied
+
+Unlike `reverse_survey_horizontal`'s even/odd-by-order alternation, the
+multipole parity rule here is **uniform across order**: normal (`knl`)
+components are always unchanged and skew (`ksl`) components always negate,
+regardless of order. A direct consequence: a plain, unrotated BEND's
+`angle`/`k0`/edge angles are untouched by this flag, as are a plain QUAD's
+`k1` and a plain OCT's `k3` (their order happens to be odd, which coincides
+with `reverse_survey_horizontal`'s rule too). A plain SEXT's `k2` is *also*
+untouched here — the case that differs from `reverse_survey_horizontal`,
+which negates it (order 2 is even).
+
+| Element | Parameters changed |
+|---|---|
+| Bend | `angle`, `k0`, `edge_entry_angle`, `edge_exit_angle` unchanged; `knl` unchanged, `ksl` negates (all orders); `shift_y` negates, `rot_s_rad` negates, `shift_x` unchanged |
+| Quadrupole | `k1` unchanged, `k1s` negates; knl/ksl uniform pattern; `shift_y` negates, `rot_s_rad` negates |
+| Sextupole | `k2` unchanged, `k2s` negates; knl/ksl uniform pattern; offsets as above |
+| Octupole | `k3` unchanged, `k3s` negates; knl/ksl uniform pattern; offsets as above |
+| Multipole | knl/ksl uniform pattern; offsets as above |
+| Solenoid | `ks` negates (on top of the charge-dependent base value, same composition as `reverse_survey_horizontal` above); knl/ksl uniform pattern; offsets as above |
+| Translation | `shift_y` negates, `shift_x` unchanged |
+| Rotation | `rot_x_rad` negates, `rot_s_rad` negates, `rot_y_rad` unchanged |
+
+### Vertical bends (`ROTATE = pi/2`)
+
+A `BEND` with `ROTATE = +-pi/2` — a genuine vertical bend — does **not** get
+its direction flipped via `angle`/`k0`: those stay in the element's own
+frame and are unaffected by this flag (see table above). SAD2XS's element
+converter (`_canonicalize_dipole_rotation` in
+`sad2xs/converter/_004_element_converter.py`) canonicalises any SAD
+`ROTATE = +-pi/2` on a `BEND` to a fixed `rot_s_rad = +pi/2`, carrying the
+bend's up/down direction in the sign of `angle`/`k0` instead. The direction
+flip this flag applies to a vertical bend therefore happens entirely through
+`rot_s_rad` negating (`+pi/2 -> -pi/2`), not through `angle`. This is easy to
+misread as "vertical bends aren't handled" from the table alone — they are,
+just on a different parameter than a horizontal-plane bend's direction flip
+uses.
+
+**Verified against real xtrack tracking, not just algebra**: for each
+element type (including a `Bend` at `rot_s_rad` of `0`, `+pi/2`, and a
+generic non-canonicalised angle, all with asymmetric edge angles/offsets), a
+test particle tracked through the transformed element with y/py-mirrored
+initial coordinates reproduces the y/py-mirror of tracking the original
+element with the original coordinates, to `1e-11`. This check is committed as
+`test_pipeline_reverse_survey_vertical_rotated_bend_direction_and_tracking`
+in `tests/conversion/pipeline/test_reverse_survey_vertical.py`, which goes a
+step further than `reverse_survey_horizontal`'s own tests (parameter-sign
+checks only) by tracking through the actual converted line rather than only
+checking parameter signs.
+
+### Twiss invariance
+
+Verified: 4D Twiss `betx` and `bety` are identical before and after
+`reverse_survey_vertical=True` for a lattice containing a skew QUAD
+(`ROTATE=pi/4`) and skew SEXT (`ROTATE=pi/6`). A plain BEND+QUAD+SEXT+DRIFT
+lattice (as used for the horizontal invariance test) would be a trivial
+no-op here, since none of those elements' relevant parameters change unless
+something is rotated — the skew lattice is needed so `k1s`/`k2s` genuinely
+flip and the invariance check is meaningful.
+
+### Independence from `reverse_charge_sign`
+
+`reverse_survey_vertical` and `reverse_charge_sign` are fully independent flags.
+They address different physical questions and can be combined freely.
+
+### Composability with a genuine non-unity CHARGE — internal consistency only
+
+`test_pipeline_reverse_survey_vertical_negates_solenoid_ks_with_charge_minus_one`
+in `tests/conversion/pipeline/test_reverse_survey_vertical.py` confirms the two
+`ks` negations (charge-dependent base value, then geometric-mirror) compose
+arithmetically in the converter code. **This is not verified against real SAD**,
+for the same reason as `reverse_survey_horizontal`: a whole-lattice geometric
+mirror has no single native SAD operator to run for comparison.
+
+---
+
 ## SAD empirical verifications
 
 The following SAD behaviours were verified by running lattices through the SAD
@@ -326,6 +415,7 @@ executable and inspecting output, to confirm assumptions used in the converter:
 | `reverse_element_order` | No | Yes (negate, composes with charge-dependent base) | No | Yes (mirror) |
 | `reverse_charge_sign` | Yes | Yes (negate, since ks depends on q0) | No | No |
 | `reverse_survey_horizontal` | No | Yes (negate, composes with charge-dependent base) | Partial (see table) | No |
+| `reverse_survey_vertical` | No | Yes (negate, composes with charge-dependent base) | No (k0/k1 unchanged; direction of a rotated bend flips via rot_s_rad instead) | No |
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
