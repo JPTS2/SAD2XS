@@ -65,6 +65,9 @@ def _write_and_load(line, tmp_path):
 
 
 def _build_quad_pair_line(offset):
+    """
+    Build a line with two quadrupoles of length 0.4 +/- offset.
+    """
     line = xt.Line(
         elements      = [
             xt.Marker(),
@@ -79,6 +82,9 @@ def _build_quad_pair_line(offset):
 
 
 def _build_bend_pair_line(offset):
+    """
+    Build a line with two bends of length 0.6 +/- offset.
+    """
     line = xt.Line(
         elements      = [
             xt.Marker(),
@@ -93,7 +99,10 @@ def _build_bend_pair_line(offset):
 
 
 def _build_corrector_pair_line(offset):
-    # Correctors are Bend elements with angle = 0 (see extract_corrector_information)
+    """
+    Build a line with two correctors (Bend elements with angle = 0, see
+    extract_corrector_information) of length 0.3 +/- offset.
+    """
     line = xt.Line(
         elements      = [
             xt.Marker(),

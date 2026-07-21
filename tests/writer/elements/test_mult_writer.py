@@ -162,8 +162,8 @@ def test_mult_writer_preserves_zero_multipole(tmp_path):
     """
     A fully unpowered multipole with all-zero knl and ksl should survive a
     write and reload cycle. This exercises the writer's simple (unpowered) path
-    which writes only env.new(name='m1', prototype='mult_base') with no strength
-    arguments.
+    which writes only env.new(name='m1', prototype=<base element>) with no
+    strength arguments.
     """
     original_line = _build_mult_line()
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)

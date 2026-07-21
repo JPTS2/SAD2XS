@@ -25,6 +25,10 @@ from sad2xs.xsuite_helpers import assert_xsuite_matches_sad_twiss
 # Helpers
 ################################################################################
 def _table(**columns):
+    """
+    Build a minimal xt.Table with auto-generated names (e0, e1, ...) and
+    the given columns.
+    """
     n   = len(next(iter(columns.values())))
     return xt.Table({"name": np.array([f"e{i}" for i in range(n)]), **columns})
 
@@ -32,6 +36,10 @@ def _table(**columns):
 # assert_xsuite_matches_sad_twiss
 ################################################################################
 def test_matching_values_pass():
+    """
+    Identical values on both sides, within the given tolerance, should
+    pass without raising.
+    """
     sad     = _table(betx = np.array([1.0, 2.0, 3.0]))
     xsuite  = _table(betx = np.array([1.0, 2.0, 3.0]))
 
@@ -39,6 +47,10 @@ def test_matching_values_pass():
         xsuite, sad, tolerances = {"betx": dict(atol = 1E-9, rtol = 1E-9)})
 
 def test_out_of_tolerance_raises():
+    """
+    A value difference beyond the given tolerance should raise
+    AssertionError.
+    """
     sad     = _table(betx = np.array([1.0, 2.0, 3.0]))
     xsuite  = _table(betx = np.array([1.0, 2.0, 3.5]))
 

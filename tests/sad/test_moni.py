@@ -28,6 +28,9 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 # misalignment parameters. These tests verify that assumption.
 ################################################################################
 def test_moni_bare_accepts(sad_accepts):
+    """
+    SAD's MONI element should accept a bare definition with no parameters.
+    """
     sad_accepts(
         "MONI MN1 = ();\n"
         "MARK START = ()\n     END   = ();\n"
@@ -41,6 +44,11 @@ ACCEPTED_PARAMS = [
 
 @pytest.mark.parametrize("params", ACCEPTED_PARAMS)
 def test_moni_accepts(sad_accepts, params):
+    """
+    SAD's MONI element should accept DX, DY, and ROTATE misalignment
+    parameters, despite being a passive monitor (see the effect-on-Twiss
+    tests below).
+    """
     sad_accepts(
         f"MONI MN1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
@@ -71,6 +79,10 @@ REJECTED_PARAMS = [
 
 @pytest.mark.parametrize("params", REJECTED_PARAMS)
 def test_moni_rejects(sad_rejects, params):
+    """
+    SAD's MONI element should reject field (K0-K4/SK0-SK4), bending, and
+    RF parameters.
+    """
     sad_rejects(
         f"MONI MN1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"

@@ -43,6 +43,11 @@ ACCEPTED_PARAMS = [
 
 @pytest.mark.parametrize("params", ACCEPTED_PARAMS)
 def test_bend_accepts(sad_accepts, params):
+    """
+    SAD's BEND element should accept ANGLE, K0, K1, the standard
+    misalignment/rotation parameters, and the F1/FRINGE/FB1/FB2 fringe
+    parameters.
+    """
     sad_accepts(
         f"BEND B1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
@@ -64,6 +69,10 @@ REJECTED_PARAMS = [
 
 @pytest.mark.parametrize("params", REJECTED_PARAMS)
 def test_bend_rejects(sad_rejects, params):
+    """
+    SAD's BEND element should reject skew/higher-order field
+    (SK0/SK1/K2-K4/SK2-SK4), solenoid (BZ), and RF parameters.
+    """
     sad_rejects(
         f"BEND B1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
@@ -257,6 +266,10 @@ def test_corrector_without_length_k0_gives_orbit_kick(tmp_path):
 # F1/FRINGE soft-edge fringe (ground truth) -- see docs/sad-behaviour.md
 ################################################################################
 def _track_bend_probe(tmp_path, lattice_body, name, y_vals, delta_vals):
+    """
+    Track a grid of particles (given y/delta, other coordinates zero)
+    through a lattice body and return the track_sad result.
+    """
     lat = tmp_path / name
     lat.write_text(f"MOMENTUM = 1.0 GEV;\n{lattice_body}\n")
     n = len(y_vals)

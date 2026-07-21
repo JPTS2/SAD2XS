@@ -670,11 +670,7 @@ def test_coord_conversion_matches_sad_twiss(
         sad_values    = sad_values,
         xsuite_values = xsuite_values,
         parameters    = parameters,
-        notes         = [
-            "COORD tests intentionally assert the current Xsuite reference "
-            "element API. Migration to xt.Translation/xt.Rotation should update "
-            "the converter compatibility notes and these tests together.",
-        ])
+        notes         = [])
 
 ########################################
 # Coordinate Transform Tracking
@@ -773,8 +769,4 @@ def test_coord_conversion_matches_sad_tracking(
         sad_coordinates     = _coord_sad_coordinates(sad_particles),
         xsuite_coordinates  = _coord_xsuite_coordinates(xs_particles),
         parameters          = parameters,
-        notes               = [
-            "COORD tests intentionally assert the current Xsuite reference "
-            "element API. Migration to xt.Translation/xt.Rotation should update "
-            "the converter compatibility notes and these tests together.",
-        ])
+        notes               = [])

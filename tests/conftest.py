@@ -46,7 +46,9 @@ def _restore_sad2xs_log_level():
 
 
 def pytest_itemcollected(item):
-    """Mark known-failure tests before pytest evaluates marker selections."""
+    """
+    Mark known-failure tests before pytest evaluates marker selections.
+    """
     tracker_id = known_issue_for(item.nodeid)
     if tracker_id is not None:
         item.add_marker(pytest.mark.known_issue(tracker_id))

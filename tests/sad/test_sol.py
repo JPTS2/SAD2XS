@@ -29,6 +29,10 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 # pairing/BOUND/GEO rules these probes check.
 ################################################################################
 def test_sol_single_no_bound_rejects(sad_rejects):
+    """
+    A SOL with BZ but no BOUND is not part of a bound pair and should be
+    rejected.
+    """
     sad_rejects(
         "SOL SL1 = (BZ=0.1);\n"
         "DRIFT D0 = (L=1.0);\n"
@@ -37,12 +41,20 @@ def test_sol_single_no_bound_rejects(sad_rejects):
         "LINE TEST = (START SL1 D0 SL2 END);")
 
 def test_sol_single_element_rejects(sad_rejects):
+    """
+    A single BOUND SOL with no matching partner (unpaired) should be
+    rejected.
+    """
     sad_rejects(
         "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1);\n"
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START SL1 END);")
 
 def test_sol_pair_no_drift_accepts(sad_accepts):
+    """
+    A BOUND SOL pair with no elements between them (zero-length solenoid
+    region) should be accepted.
+    """
     sad_accepts(
         "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1);\n"
         "SOL SL2 = (BZ=0.0 BOUND=1);\n"
@@ -50,9 +62,12 @@ def test_sol_pair_no_drift_accepts(sad_accepts):
         "LINE TEST = (START SL1 SL2 END);")
 
 def test_sol_pair_no_geo_rejects(sad_rejects):
-    # SAD exits 0 but the Twiss output contains Mathematica undefined symbols
-    # (e.g. `medium`, `$DefaultFontWeight`) when GEO is absent — a physics-level
-    # failure that twiss_sad now detects and raises as ValueError.
+    """
+    A BOUND SOL pair with no GEO=1 on the entrance solenoid should be
+    rejected: SAD exits 0, but the Twiss output contains Mathematica
+    undefined symbols (e.g. `medium`, `$DefaultFontWeight`) -- a
+    physics-level failure that twiss_sad detects and raises as ValueError.
+    """
     sad_rejects(
         "SOL SL1 = (BZ=0.1 BOUND=1);\n"
         "DRIFT D0 = (L=1.0);\n"
@@ -61,6 +76,10 @@ def test_sol_pair_no_geo_rejects(sad_rejects):
         "LINE TEST = (START SL1 D0 SL2 END);")
 
 def test_sol_pair_with_drift_and_geo_accepts(sad_accepts):
+    """
+    A BOUND SOL pair with a drift between them and GEO=1 on the entrance
+    should be accepted.
+    """
     sad_accepts(
         "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1);\n"
         "DRIFT D0 = (L=1.0);\n"
@@ -69,6 +88,10 @@ def test_sol_pair_with_drift_and_geo_accepts(sad_accepts):
         "LINE TEST = (START SL1 D0 SL2 END);")
 
 def test_sol_three_element_inner_no_bound_accepts(sad_accepts):
+    """
+    A BOUND SOL pair with a third, un-BOUND SOL nested between them (an
+    interior field-only solenoid) should be accepted.
+    """
     sad_accepts(
         "SOL SL1 = (BZ=0.1 BOUND=1 GEO=1);\n"
         "DRIFT D0 = (L=0.5);\n"
@@ -94,6 +117,10 @@ ACCEPTED_PARAMS = [
 
 @pytest.mark.parametrize("sl1_extra,sl2_extra", ACCEPTED_PARAMS)
 def test_sol_accepts(sad_accepts, sl1_extra, sl2_extra):
+    """
+    SAD's SOL element should accept BZ, DX, DY, and DISFRIN in a valid
+    BOUND pair.
+    """
     sad_accepts(
         f"SOL SL1 = (BZ=0.1 BOUND=1 GEO=1{sl1_extra});\n"
         "DRIFT D0 = (L=1.0);\n"
@@ -120,6 +147,10 @@ REJECTED_PARAMS = [
 
 @pytest.mark.parametrize("param", REJECTED_PARAMS)
 def test_sol_rejects(sad_rejects, param):
+    """
+    SAD's SOL element should reject bending (ANGLE), field-order
+    (K0-K4/SK0-SK4), rotation, and RF parameters.
+    """
     sad_rejects(
         f"SOL SL1 = (BZ=0.1 BOUND=1 GEO=1 {param});\n"
         "DRIFT D0 = (L=1.0);\n"

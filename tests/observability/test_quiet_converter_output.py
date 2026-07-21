@@ -198,7 +198,8 @@ def test_set_log_level_debug_enables_debug_records(caplog, tmp_path):
 
 def test_set_log_level_rejects_unknown_level():
     """
-    set_log_level validates its argument.
+    set_log_level should raise ValueError for a level name it doesn't
+    recognise, rather than silently accepting it.
     """
     with pytest.raises(ValueError, match = "Unknown log level"):
         s2x.set_log_level("loud")

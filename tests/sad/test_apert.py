@@ -39,6 +39,10 @@ ACCEPTED_PARAMS = [
 
 @pytest.mark.parametrize("params", ACCEPTED_PARAMS)
 def test_apert_accepts(sad_accepts, params):
+    """
+    SAD's APERT element should accept AX/AY (ellipse), DX1-DY2
+    (rectangle), and the DX/DY/ROTATE geometry parameters.
+    """
     sad_accepts(
         f"APERT A1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
@@ -131,7 +135,9 @@ def _track_apert_grid(tmp_path, name, apert_params, x_grid, y_grid):
 
 
 def _ellipse_grid(a, b, shift_x = 0.0, shift_y = 0.0):
-    """Deterministic ellipse-focused test particles (mirrors the converter-level helper)."""
+    """
+    Deterministic ellipse-focused test particles (mirrors the converter-level helper).
+    """
     angles = np.linspace(0.0, 2.0 * np.pi, 16, endpoint = False)
     radii = np.array([0.25, 0.75, 0.99, 1.01, 1.25])
     x_values, y_values = [], []
@@ -141,13 +147,17 @@ def _ellipse_grid(a, b, shift_x = 0.0, shift_y = 0.0):
     return np.array(x_values), np.array(y_values)
 
 def _ellipse_alive(x_values, y_values, a, b, shift_x = 0.0, shift_y = 0.0):
-    """Analytic ellipse alive mask (mirrors the converter-level helper)."""
+    """
+    Analytic ellipse alive mask (mirrors the converter-level helper).
+    """
     x_local = x_values - shift_x
     y_local = y_values - shift_y
     return (x_local / a) ** 2 + (y_local / b) ** 2 < 1.0
 
 def _rectangle_grid(min_x, max_x, min_y, max_y, shift_x = 0.0, shift_y = 0.0):
-    """Deterministic rectangle-focused test particles (mirrors the converter-level helper)."""
+    """
+    Deterministic rectangle-focused test particles (mirrors the converter-level helper).
+    """
     x_edges = shift_x + np.array([
         1.25 * min_x, 1.01 * min_x, 0.99 * min_x, 0.0,
         0.99 * max_x, 1.01 * max_x, 1.25 * max_x])
@@ -159,14 +169,18 @@ def _rectangle_grid(min_x, max_x, min_y, max_y, shift_x = 0.0, shift_y = 0.0):
 
 def _rectangle_alive(x_values, y_values, min_x, max_x, min_y, max_y,
                       shift_x = 0.0, shift_y = 0.0):
-    """Analytic rectangle alive mask (mirrors the converter-level helper)."""
+    """
+    Analytic rectangle alive mask (mirrors the converter-level helper).
+    """
     x_local = x_values - shift_x
     y_local = y_values - shift_y
     return (min_x < x_local) & (x_local < max_x) & (min_y < y_local) & (y_local < max_y)
 
 def _rotated_rectangle_alive(x_values, y_values, min_x, max_x, min_y, max_y,
                               rotation, shift_x = 0.0, shift_y = 0.0):
-    """Analytic rotated-rectangle alive mask (mirrors the converter-level helper)."""
+    """
+    Analytic rotated-rectangle alive mask (mirrors the converter-level helper).
+    """
     x_shifted = x_values - shift_x
     y_shifted = y_values - shift_y
     x_local =  x_shifted * np.cos(rotation) + y_shifted * np.sin(rotation)
@@ -347,6 +361,10 @@ REJECTED_PARAMS = [
 
 @pytest.mark.parametrize("params", REJECTED_PARAMS)
 def test_apert_rejects(sad_rejects, params):
+    """
+    SAD's APERT element is pure geometry and should reject every magnetic
+    field, solenoid, and RF parameter.
+    """
     sad_rejects(
         f"APERT A1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"

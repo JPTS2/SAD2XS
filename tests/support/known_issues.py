@@ -1,4 +1,6 @@
-"""Central mapping of tests that document open GitHub issues."""
+"""
+Central mapping of tests that document open GitHub issues.
+"""
 
 KNOWN_ISSUES = (
     # (test node prefix, parameter-id fragment, issue number)
@@ -8,7 +10,9 @@ KNOWN_ISSUES = (
 
 
 def known_issue_for(nodeid):
-    """Return the linked issue number for a collected node, if any."""
+    """
+    Return the linked issue number for a collected node, if any.
+    """
     for node_prefix, parameter_fragment, issue in KNOWN_ISSUES:
         if nodeid.startswith(node_prefix) and parameter_fragment in nodeid:
             return issue

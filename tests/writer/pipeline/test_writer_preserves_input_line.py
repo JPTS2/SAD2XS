@@ -148,6 +148,10 @@ def _build_writer_preservation_line():
 
 
 def _normalise(value):
+    """
+    Recursively convert dicts/arrays/tuples/numpy scalars into
+    hashable, order-independent Python values for equality comparison.
+    """
     if isinstance(value, dict):
         return tuple(sorted((key, _normalise(item)) for key, item in value.items()))
     if isinstance(value, np.ndarray):
@@ -161,6 +165,10 @@ def _normalise(value):
 
 
 def _line_variable_snapshot(line, variable_name):
+    """
+    Return (present, normalised_value) for a line-level variable, or
+    (False, None) if it is not defined on the line.
+    """
     try:
         value = line[variable_name]
     except KeyError:
@@ -201,12 +209,18 @@ def _assert_lines_match(line_before, line_after):
 
 
 def _output_dir(tmp_path):
+    """
+    Create and return the "writer_output" subdirectory under tmp_path.
+    """
     output_dir = tmp_path / "writer_output"
     output_dir.mkdir()
     return output_dir
 
 
 def _write_lattice(line, output_dir, output_filename):
+    """
+    Write the lattice file for line and return its output path.
+    """
     s2x.write_lattice(
         line                    = line,
         output_filename         = output_filename,

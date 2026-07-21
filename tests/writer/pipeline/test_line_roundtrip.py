@@ -56,6 +56,9 @@ def _writer_roundtrip(line, tmp_path):
 
 
 def _assert_scalar_field_preserved(original, reloaded, element_name, field_name):
+    """
+    Assert a scalar element field survives the writer roundtrip unchanged.
+    """
     original_value = getattr(original[element_name], field_name)
     reloaded_value = getattr(reloaded[element_name], field_name)
 
@@ -66,6 +69,10 @@ def _assert_scalar_field_preserved(original, reloaded, element_name, field_name)
 
 
 def _assert_array_field_preserved(original, reloaded, element_name, field_name):
+    """
+    Assert an array element field survives the writer roundtrip unchanged,
+    zero-padding both arrays to a common length before comparing.
+    """
     original_value = np.asarray(getattr(original[element_name], field_name))
     reloaded_value = np.asarray(getattr(reloaded[element_name], field_name))
 
@@ -82,6 +89,10 @@ def _assert_array_field_preserved(original, reloaded, element_name, field_name):
 
 
 def _assert_supported_fields_preserved(original, reloaded):
+    """
+    Assert every writer-supported field on every element built by
+    _build_supported_writer_line survives the writer roundtrip unchanged.
+    """
     expected_scalar_fields = {
         "d1":       ["length"],
         "b1":       [
@@ -130,6 +141,10 @@ def _assert_supported_fields_preserved(original, reloaded):
 
 
 def _build_supported_writer_line():
+    """
+    Build a line covering every writer-supported element type, so a single
+    roundtrip exercises all of them at once.
+    """
     line = xt.Line(
         elements = [
             xt.Marker(),

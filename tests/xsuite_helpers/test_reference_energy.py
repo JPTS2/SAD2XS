@@ -143,6 +143,10 @@ def test_install_raises_for_repeated_element_placements():
         "cavities once repeated elements are resolved.")
 
 def _build_repeated_sliced_cavity_line():
+    """
+    Build a line with one Cavity element definition placed twice
+    (unresolved repeat), ready for the caller to slice and/or resolve.
+    """
     env = xt.Environment()
     env.particle_ref = xt.Particles(
         mass0 = MASS_MEV * 1.0E6, q0 = 1, p0c = MOMENTUM_GEV * 1.0E9)

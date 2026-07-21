@@ -58,6 +58,11 @@ def _aligned_pair():
 # plot_xsuite_sad_comparison
 ################################################################################
 def test_returns_one_figure_per_requested_group():
+    """
+    Requesting a single group should return exactly one figure, keyed by
+    that group name, with one overlay+diff axis pair per quantity in the
+    group.
+    """
     xsuite, sad = _aligned_pair()
 
     figures = plot_xsuite_sad_comparison(xsuite, sad, groups = ["beta"])
@@ -68,6 +73,11 @@ def test_returns_one_figure_per_requested_group():
     assert len(axs) == 4  # 2 quantities x (overlay + diff)
 
 def test_omitting_groups_defaults_to_all_available():
+    """
+    Omitting `groups` should plot every group in AVAILABLE_GROUPS;
+    `include_diff=False` should drop the difference row, leaving only
+    the overlay axis per quantity.
+    """
     xsuite, sad = _aligned_pair()
 
     figures = plot_xsuite_sad_comparison(xsuite, sad, include_diff = False)
@@ -77,6 +87,10 @@ def test_omitting_groups_defaults_to_all_available():
     assert len(axs) == 2  # 2 quantities, no diff row
 
 def test_show_lattice_true_includes_ribbon_legend_entries():
+    """
+    With the default show_lattice=True, the overlay legend should include
+    'SAD'/'Xsuite' plus at least one lattice-ribbon element-type entry.
+    """
     xsuite, sad = _aligned_pair()
 
     fig, axs    = plot_xsuite_sad_comparison(
@@ -87,6 +101,10 @@ def test_show_lattice_true_includes_ribbon_legend_entries():
     assert len(labels) > 2  # at least one element-type entry alongside SAD/Xsuite
 
 def test_show_lattice_false_does_not_raise():
+    """
+    show_lattice=False should skip the lattice ribbon without raising,
+    still returning the requested group's figure.
+    """
     xsuite, sad = _aligned_pair()
 
     figures = plot_xsuite_sad_comparison(
@@ -95,6 +113,10 @@ def test_show_lattice_false_does_not_raise():
     assert "beta" in figures
 
 def test_ele_start_ele_stop_narrows_plotted_rows():
+    """
+    Passing ele_start/ele_stop should narrow the plotted row range
+    compared to the unwindowed default.
+    """
     xsuite, sad = _aligned_pair()
 
     fig, axs    = plot_xsuite_sad_comparison(

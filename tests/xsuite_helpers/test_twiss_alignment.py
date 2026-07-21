@@ -25,12 +25,19 @@ from sad2xs.xsuite_helpers import align_xsuite_twiss_with_sad_twiss, compute_s_s
 # Helpers
 ################################################################################
 def _table(names, s):
+    """
+    Build a minimal xt.Table with just name/s columns, for alignment tests.
+    """
     return xt.Table({"name": np.array(names), "s": np.array(s, dtype = float)})
 
 ################################################################################
 # align_xsuite_twiss_with_sad_twiss -- pass 1: exact name match
 ################################################################################
 def test_exact_name_match():
+    """
+    An identical name/s on both sides should match directly via pass 1
+    (exact name), with no fallback needed.
+    """
     sad     = _table(["m1", "q1", "m2"], [0.0, 1.0, 2.0])
     xsuite  = _table(["m1", "q1", "m2"], [0.0, 1.0, 2.0])
 
@@ -62,6 +69,11 @@ def test_dot_suffixed_family_match():
 # Pass 3: solenoid-interior rename
 ################################################################################
 def test_solenoid_interior_rename_match():
+    """
+    A SAD element renamed on the Xsuite side with a `_{neighbour}` suffix
+    (solenoid-interior rename) should still match, via pass 3's
+    string-prefix search.
+    """
     sad     = _table(["es1"], [3.0])
     xsuite  = _table(["es1_esr0"], [3.0])
 
@@ -75,6 +87,10 @@ def test_solenoid_interior_rename_match():
 # Failure modes
 ################################################################################
 def test_unmatched_sad_element_raises():
+    """
+    A SAD element with no Xsuite counterpart at all should raise
+    AssertionError naming it, not silently drop it.
+    """
     sad     = _table(["ghost"], [9.0])
     xsuite  = _table(["other"], [9.0])
 
@@ -95,6 +111,10 @@ def test_s_tol_rejection_raises():
 # excluded_elements
 ################################################################################
 def test_excluded_elements_drops_unmatched_sad_element():
+    """
+    A SAD element with no Xsuite match raises by default, but is dropped
+    from the comparison instead once listed in excluded_elements.
+    """
     sad     = _table(["keep", "drop"], [0.0, 1.0])
     xsuite  = _table(["keep"], [0.0])
 
@@ -126,6 +146,10 @@ def test_compute_s_sad_adds_back_timedelay_jump_only():
     np.testing.assert_allclose(s_sad, [0.0, 1.0, 1.5])
 
 def test_compute_s_sad_none_without_zeta_column():
+    """
+    compute_s_sad should return None when the Xsuite twiss table has no
+    zeta column (e.g. an open-line 4D twiss without a real 6D/RF setup).
+    """
     xsuite  = xt.TwissTable({
         "name": np.array(["a", "b"]),
         "s":    np.array([0.0, 1.0])})
@@ -133,6 +157,10 @@ def test_compute_s_sad_none_without_zeta_column():
     assert compute_s_sad(xsuite) is None
 
 def test_compute_s_sad_none_with_non_finite_zeta():
+    """
+    compute_s_sad should return None when the zeta column contains a
+    non-finite value (e.g. NaN).
+    """
     xsuite  = xt.TwissTable({
         "name": np.array(["a", "b"]),
         "s":    np.array([0.0, 1.0]),

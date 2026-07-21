@@ -37,6 +37,10 @@ ACCEPTED_PARAMS = [
 
 @pytest.mark.parametrize("params", ACCEPTED_PARAMS)
 def test_oct_accepts(sad_accepts, params):
+    """
+    SAD's OCT element should accept K3 and the standard
+    misalignment/rotation parameters.
+    """
     sad_accepts(
         f"OCT O1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"
@@ -60,6 +64,10 @@ REJECTED_PARAMS = [
 
 @pytest.mark.parametrize("params", REJECTED_PARAMS)
 def test_oct_rejects(sad_rejects, params):
+    """
+    SAD's OCT element should reject bending (ANGLE), other-order field
+    (K0-K2/SK0-SK4), solenoid (BZ), and RF parameters.
+    """
     sad_rejects(
         f"OCT O1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"

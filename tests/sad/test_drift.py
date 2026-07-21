@@ -50,6 +50,9 @@ REJECTED_PARAMS = [
 
 @pytest.mark.parametrize("params", REJECTED_PARAMS)
 def test_drift_rejects(sad_rejects, params):
+    """
+    SAD's DRIFT element should reject every parameter except L.
+    """
     sad_rejects(
         f"DRIFT D1 = ({params});\n"
         "MARK START = ()\n     END   = ();\n"

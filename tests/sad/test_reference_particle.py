@@ -113,11 +113,16 @@ def _solenoid_lattice(momentum_gev, extra_globals=""):
 
 
 def _sol_orbit_values(twiss_table, marker):
-    """Return (y, py) at a named marker from a SAD Twiss table."""
+    """
+    Return (y, py) at a named marker from a SAD Twiss table.
+    """
     return twiss_table["y", marker], twiss_table["py", marker]
 
 
 def _run_twiss(tmp_path, lattice_text, name="test.sad"):
+    """
+    Write `lattice_text` and run twiss_sad on it in 4D open-line mode.
+    """
     lattice = tmp_path / name
     lattice.write_text(lattice_text)
     cwd = os.getcwd()
@@ -342,7 +347,9 @@ RF_VOLT_V       = 1e5   # 100 kV; small enough not to violate the thin-kick appr
 
 
 def _rf_lattice(momentum_gev, extra_globals="", volt=RF_VOLT_V):
-    """Cavity + bend + drift open lattice for RF dispersion orbit tests."""
+    """
+    Cavity + bend + drift open lattice for RF dispersion orbit tests.
+    """
     return (
         f"MOMENTUM = {momentum_gev} GEV;\n"
         f"{extra_globals}"
@@ -355,6 +362,9 @@ def _rf_lattice(momentum_gev, extra_globals="", volt=RF_VOLT_V):
 
 
 def _run_twiss_6d(tmp_path, lattice_text, name="test_rf.sad"):
+    """
+    Write `lattice_text` and run twiss_sad on it in 6D open-line mode.
+    """
     lattice = tmp_path / name
     lattice.write_text(lattice_text)
     cwd = os.getcwd()
@@ -371,6 +381,9 @@ def _run_twiss_6d(tmp_path, lattice_text, name="test_rf.sad"):
 
 
 def _run_twiss_4d(tmp_path, lattice_text, name="test_rf.sad"):
+    """
+    Write `lattice_text` and run twiss_sad on it in 4D open-line mode.
+    """
     lattice = tmp_path / name
     lattice.write_text(lattice_text)
     cwd = os.getcwd()
@@ -472,7 +485,9 @@ RF_PHI_RAD = np.pi / 4   # 45 degrees — neither on-crest nor zero-crossing
 
 def _rf_track_lattice(momentum_gev, extra_globals="",
                       volt=RF_VOLT_V, phi=RF_PHI_RAD):
-    """Cavity-only open lattice for single-pass energy tracking tests."""
+    """
+    Cavity-only open lattice for single-pass energy tracking tests.
+    """
     return (
         f"MOMENTUM = {momentum_gev} GEV;\n"
         f"{extra_globals}"
@@ -483,7 +498,9 @@ def _rf_track_lattice(momentum_gev, extra_globals="",
 
 
 def _run_track(tmp_path, lattice_text, name="test_track.sad"):
-    """Single-pass tracking of the on-axis reference particle. Returns delta."""
+    """
+    Single-pass tracking of the on-axis reference particle. Returns delta.
+    """
     lattice = tmp_path / name
     lattice.write_text(lattice_text)
     cwd = os.getcwd()
