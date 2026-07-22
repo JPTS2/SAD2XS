@@ -58,15 +58,18 @@ Reference: [SAD FFS command documentation](https://acc-physics.kek.jp/SAD/how-to
 ## pytest Configuration
 
 `pytest.ini` at the repository root sets `testpaths` as an explicit ordered
-list (installation → sad\_helpers → sad → parser → conversion → writer →
-examples → packaging → observability → ci). The order ensures SAD installation
-is verified before SAD-dependent tests run.
+list (ci → installation → sad\_helpers → sad → xsuite\_helpers → xtrack →
+parser → conversion → writer → examples → packaging → observability). `ci`
+runs first so a misconfigured `testpaths` list is itself caught immediately
+(see `tests/ci/test_pytest_ini_testpaths.py`); after that, `installation` is
+verified before SAD-dependent tests run.
 
 `--import-mode=importlib` is also set in `pytest.ini`. It is required because
 `tests/sad/` and `tests/conversion/elements/` share basenames (e.g.
 `test_bend.py`). Without importlib mode pytest uses flat module names and
 collects with errors. Any new test directory added to the suite must also be
-added to `testpaths` in `pytest.ini`.
+added to `testpaths` in `pytest.ini` -- `tests/ci/test_pytest_ini_testpaths.py`
+now fails the run if one is missed.
 
 Large end-to-end lattice tests are useful, but they should not be the only
 protection. Small, targeted regression tests make failures easier to understand
@@ -171,8 +174,9 @@ packaging, CI, and converter quiet-mode tests do not invoke the SAD executable.
 
 CI runs the whole suite as a single job with two sequential steps (blocking
 regression, then non-blocking known-issue) rather than separate jobs — see
-CI below. `pytest.ini`'s `testpaths` order, not job structure, is what
-guarantees SAD installation tests run before other tests.
+CI below. Locally, a bare `pytest` run honours `pytest.ini`'s `testpaths`
+order, so installation is verified before other tests; CI's own invocation
+does not (see the CI section's note below).
 
 ## Temporary Files
 
@@ -199,10 +203,14 @@ breakage independent of any SAD2XS change). One job (`run-tests`), two
 sequential steps: step 1 runs `pytest -m "not known_issue" tests/` and
 blocks the PR on failure; step 2 runs `pytest -m "known_issue" tests/` with
 `continue-on-error: true`, so known-bug failures stay visible without
-blocking a merge. A single job (rather than separate SAD-free/SAD-required
-jobs) keeps `pytest.ini`'s `testpaths` order intact, so `tests/sad/` always
-runs before `tests/conversion/`. Both steps pull the SAD Docker image and
-run pytest inside it.
+blocking a merge. Both steps pull the SAD Docker image and run pytest
+inside it.
+
+Note: passing `tests/` explicitly makes pytest ignore `testpaths` entirely,
+including its order (pytest only applies `testpaths` when invoked with no
+path argument) — so CI collects in plain filesystem order, not the
+`testpaths` order described above. This doesn't affect pass/fail, only which
+order failures are reported in.
 
 **Per-folder workflows** (`test_parser.yml`, `test_conversion.yml`, etc.) —
 one workflow per test folder, all manually triggerable via `workflow_dispatch`.
