@@ -62,8 +62,10 @@ as small isolated tests.
 
 `conftest.py` provides conversion-wide fixtures:
 
-- `write_lattice`: writes a dedented temporary SAD lattice;
 - `sad2xs_config`: quiet config for deterministic conversion tests.
+
+`write_lattice` (writes a dedented temporary SAD lattice) is provided by the
+top-level `tests/conftest.py`, shared across the whole suite.
 
 `elements/conftest.py` provides element-converter fixtures:
 

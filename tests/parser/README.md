@@ -78,10 +78,9 @@ over.
 
 ## Shared Fixtures
 
-`conftest.py` provides `write_lattice`, which writes a temporary SAD file from
-a dedented string and changes the working directory to the file's parent so
-the parser can find it by name. All parser tests should use this fixture
-rather than defining local file-writing helpers.
+The top-level `tests/conftest.py` provides `write_lattice`, which writes a
+temporary SAD file from a dedented string. All parser tests should use this
+fixture rather than defining local file-writing helpers.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
