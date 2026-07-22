@@ -1,12 +1,17 @@
 # CI Tests
 
-This folder contains tests for the repository's GitHub Actions workflow
-configuration.
+This folder contains tests for the repository's test-running configuration:
+the GitHub Actions workflows and `pytest.ini`.
 
-These tests parse the YAML workflow files directly and assert on their
-structural and behavioural contracts. They are the canary for CI
-misconfigurations: a broken checkout ref, a missing trigger, or a stale test
-path will be caught here before it silently affects a real CI run.
+Most of these tests parse the YAML workflow files directly and assert on
+their structural and behavioural contracts; one parses `pytest.ini` and
+cross-checks it against a real collection of `tests/`. They are the canary
+for test-configuration misconfigurations: a broken checkout ref, a missing
+trigger, a stale test path, or a test directory silently absent from
+`testpaths` will be caught here before it silently affects a real run.
+
+This folder runs first (see `pytest.ini`'s `testpaths`), so a misconfigured
+`testpaths` list is caught before anything else runs, not after.
 
 ## What Belongs Here
 
@@ -18,12 +23,15 @@ path will be caught here before it silently affects a real CI run.
   for `run_tests.yml`).
 - Test path validation (paths listed in per-folder workflows exist in the repo).
 - Docker build workflow trigger and naming contracts.
+- `pytest.ini`'s `testpaths` completeness (every test collected by a full
+  scan of `tests/` is also collected via `testpaths`, and vice versa).
 
 ## What Does Not Belong Here
 
 - Converter physics, parser rules, or writer correctness.
 - Installation or package metadata.
-- Anything that requires running a workflow — these tests are pure YAML analysis.
+- Anything that requires actually running a workflow or the full test suite
+  for its own sake — these are static configuration checks.
 
 ## Notes
 
@@ -82,6 +90,17 @@ template's own normalisation logic).
 | `test_ci_folder_workflow_lists_at_least_one_test_target` | 9 PASS | Each workflow has a non-empty `test_files:` block |
 | `test_ci_folder_workflow_test_targets_all_exist` | 9 PASS | Each listed path (`tests/<folder>`) exists as a directory |
 | `test_ci_folder_workflow_test_targets_are_under_tests_directory` | 9 PASS | All paths start with `tests/` |
+
+### `test_pytest_ini_testpaths.py` — 2 test functions, all expected to pass
+
+Runs `pytest --collect-only` as a subprocess twice (once bare, using
+`pytest.ini`'s `testpaths`; once against `tests/` directly) and compares the
+collected test node ID sets.
+
+| Test | Expected result | What it checks |
+|------|----------------|----------------|
+| `test_testpaths_collects_every_test_under_the_tests_directory` | PASS | Every test found by a full scan of `tests/` is also collected via `testpaths` |
+| `test_testpaths_does_not_reference_stale_paths` | PASS | `testpaths` does not list a directory contributing no test a full scan finds |
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
