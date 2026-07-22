@@ -15,26 +15,9 @@ Date:       2026-06-21
 ################################################################################
 # Required Packages
 ################################################################################
-import textwrap
-
 import pytest
 
 from sad2xs.config import Config
-
-################################################################################
-# File Fixtures
-################################################################################
-@pytest.fixture
-def write_lattice(tmp_path):
-    """
-    Write a temporary SAD lattice file for conversion tests.
-    """
-    def _write_lattice(content, filename = "test_lattice.sad"):
-        lattice_path = tmp_path / filename
-        lattice_path.write_text(textwrap.dedent(content))
-        return lattice_path
-
-    return _write_lattice
 
 ################################################################################
 # Converter Fixtures

@@ -17,6 +17,7 @@ Date:       2026-07-21
 ################################################################################
 import logging
 import sys
+import textwrap
 from pathlib import Path
 
 import pytest
@@ -30,6 +31,21 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tests.support.known_issues import KNOWN_ISSUES, known_issue_for
+
+################################################################################
+# File Fixtures
+################################################################################
+@pytest.fixture
+def write_lattice(tmp_path):
+    """
+    Write a temporary SAD lattice file for tests.
+    """
+    def _write_lattice(content, filename = "test_lattice.sad"):
+        lattice_path = tmp_path / filename
+        lattice_path.write_text(textwrap.dedent(content))
+        return lattice_path
+
+    return _write_lattice
 
 
 @pytest.fixture(autouse = True)
