@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-23
 ================================================================================
 """
 ################################################################################
@@ -2995,13 +2995,22 @@ def test_bend_fringe_import_explicit_off(write_lattice, tmp_path):
         "explicitly disabled -- edge_entry_fint/hgap should stay at "
         "Xsuite's own defaults, not be populated from F1.")
 
-@pytest.mark.parametrize("fringe, entry_active, exit_active", [(-1, True, False), (-2, False, True)])
+@pytest.mark.parametrize("fringe, entry_active, exit_active", [
+    (0, False, False),
+    (-1, True, False),
+    (-2, False, True),
+    (-3, False, False),
+    (-4, False, False),
+    (1, True, True),
+    (2, True, True),
+    (3, True, True),
+    (4, True, True),
+    (5, True, True)])
 def test_bend_fringe_import_fringe_gates_single_edge(
         write_lattice, tmp_path, fringe, entry_active, exit_active):
     """
-    FRINGE=-1/-2 should gate the fringe import to a single edge (entry-only/
-    exit-only respectively) -- the other edge should stay at Xsuite's own
-    defaults, not be populated from F1.
+    FRINGE gates entry/exit fringe import per the FRMD_BEND grid in
+    docs/sad-behaviour.md.
     """
     lattice_text = f"""\
     MOMENTUM    = 1.0 GEV;

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-23
 ================================================================================
 """
 
@@ -395,11 +395,11 @@ def _bend_fringe_edge_kwargs(ele_vars: dict[str, SadValue], config: ConfigLike) 
 
     Returns {} if fringe import is disabled
     (`config._import_sad_bend_fringes`) or the SAD FRINGE flag gates
-    both edges off. FRINGE = -1 disables the exit edge only (entrance
-    stays active), FRINGE = -2 disables the entry edge only (exit stays
-    active). The closed form (edge_*_fint = F1 + FB1/FB2, edge_*_hgap =
-    1/12) and the FRINGE gating convention are documented in
-    docs/sad-behaviour.md.
+    both edges off (FRINGE = 0 or FRINGE <= -3). FRINGE = -1 is
+    entrance-only, FRINGE = -2 is exit-only, any positive value enables
+    both edges unconditionally. The closed form (edge_*_fint = F1 +
+    FB1/FB2, edge_*_hgap = 1/12) and the full FRINGE gating grid are
+    documented in docs/sad-behaviour.md.
 
     Parameters
     ----------
@@ -433,8 +433,18 @@ def _bend_fringe_edge_kwargs(ele_vars: dict[str, SadValue], config: ConfigLike) 
             f"FRINGE must be a concrete number to import fringe fields, "
             f"got a deferred expression: {fringe!r}.")
 
-    entry_active = fringe != -2.0
-    exit_active  = fringe != -1.0
+    if fringe > 0.0:
+        entry_active = True
+        exit_active  = True
+    elif fringe == -1.0:
+        entry_active = True
+        exit_active  = False
+    elif fringe == -2.0:
+        entry_active = False
+        exit_active  = True
+    else:   # fringe <= -3.0
+        entry_active = False
+        exit_active  = False
 
     f1  = parse_expression(ele_vars.get("f1", 0.0))
     fb1 = parse_expression(ele_vars.get("fb1", 0.0))

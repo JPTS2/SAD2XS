@@ -70,10 +70,14 @@ motivated.
 A SAD `BEND` applies a linear-plus-cubic-in-`y` fringe kick at each edge,
 sized by `F1` (symmetric) or `FB1`/`FB2` (per-edge, additive on top of
 `F1` — the effective entrance/exit fringe length is `F1+FB1`/`F1+FB2`)
-and gated by `FRINGE` (its internal name is `FRMD`; unrelated to
-`DISFRIN`, which is a separate hard-edge term): `0`/unset = off at both
-edges, `-1` = entrance only, `-2` = exit only, any other nonzero = both
-edges. `F1` has no effect unless `FRINGE` is also set — confirmed
+and gated by `FRINGE` (its internal name is `FRMD_BEND`; unrelated to
+`DISFRIN`, which is a separate hard-edge term): `0` or any value `<= -3`
+disables both edges, `-1` is entrance-only, `-2` is exit-only, and any
+positive value enables both edges unconditionally — confirmed against
+the real binary across this full grid (`tests/sad/test_bend.py`,
+`test_bend_fringe_mode_gates_entrance_exit`/
+`test_bend_corrector_fringe_mode_gates_entrance_exit`), not read off the
+manual alone. `F1` has no effect unless `FRINGE` is also set — confirmed
 empirically (`tests/sad/test_bend.py`,
 `test_bend_f1_is_inert_without_fringe`), not assumed from the manual.
 This applies identically on the two SAD code paths that carry it: the

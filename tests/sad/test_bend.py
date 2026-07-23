@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-23
 ================================================================================
 """
 ################################################################################
@@ -322,6 +322,89 @@ def test_bend_fringe_1_activates_f1(tmp_path):
     assert r_on["py"][0] != pytest.approx(r_off["py"][0]), (
         "FRINGE=1 on an ANGLE!=0 BEND with F1 set should change the "
         "vertical kick relative to FRINGE unset.")
+
+def test_bend_fringe_mode_gates_entrance_exit(tmp_path):
+    """
+    FRMD_BEND gating grid against real SAD -- see docs/sad-behaviour.md
+    ("BEND F1/FRINGE soft-edge fringe") for the semantic. FB1 != FB2
+    makes entrance-only/exit-only/both/neither all numerically distinct.
+    """
+    y_vals = np.array([0.003])
+    delta_vals = np.zeros(1)
+
+    def run(fringe):
+        body = (
+            f"BEND B = (L=2.0 ANGLE=0.2 FB1=0.15 FB2=0.08 FRINGE={fringe});\n"
+            "MARK START=()\n END=();\nLINE TEST=(START B END);")
+        return _track_bend_probe(
+            tmp_path, body, f"bend_frmd_mode_{fringe}.sad", y_vals, delta_vals)["py"][0]
+
+    neither = run(0)
+    entry   = run(-1)
+    exit_   = run(-2)
+    both    = run(1)
+
+    assert entry != pytest.approx(neither) and entry != pytest.approx(both), (
+        "FRINGE=-1 (entrance-only) should differ from both the "
+        "both-active and neither-active cases.")
+    assert exit_ != pytest.approx(neither) and exit_ != pytest.approx(both), (
+        "FRINGE=-2 (exit-only) should differ from both the both-active "
+        "and neither-active cases.")
+    assert entry != pytest.approx(exit_), (
+        "FRINGE=-1 (entrance-only) and FRINGE=-2 (exit-only) should give "
+        "different kicks for an asymmetric FB1 != FB2 bend.")
+
+    for fringe in (-3, -4):
+        assert run(fringe) == pytest.approx(neither, abs=1e-15), (
+            f"FRINGE={fringe} should disable both edges, identically to "
+            "FRINGE=0 -- SAD zeroes both fb1 and fb2 for any FRMD_BEND "
+            "value <= 0 other than -1/-2.")
+
+    for fringe in (2, 3, 4, 5):
+        assert run(fringe) == pytest.approx(both, abs=1e-15), (
+            f"FRINGE={fringe} should enable both edges, identically to "
+            "FRINGE=1 -- SAD enables both unconditionally for any "
+            "positive FRMD_BEND value.")
+
+def test_bend_corrector_fringe_mode_gates_entrance_exit(tmp_path):
+    """
+    Same grid as test_bend_fringe_mode_gates_entrance_exit, confirmed on
+    the K0-only corrector code path (no ANGLE) too, not assumed.
+    """
+    y_vals = np.array([0.003])
+    delta_vals = np.zeros(1)
+
+    def run(fringe):
+        body = (
+            f"BEND C = (L=0.5 K0=0.05 FB1=0.15 FB2=0.08 FRINGE={fringe});\n"
+            "MARK START=()\n END=();\nLINE TEST=(START C END);")
+        return _track_bend_probe(
+            tmp_path, body, f"corr_frmd_mode_{fringe}.sad", y_vals, delta_vals)["py"][0]
+
+    neither = run(0)
+    entry   = run(-1)
+    exit_   = run(-2)
+    both    = run(1)
+
+    assert entry != pytest.approx(neither) and entry != pytest.approx(both), (
+        "FRINGE=-1 (entrance-only) should differ from both the "
+        "both-active and neither-active cases.")
+    assert exit_ != pytest.approx(neither) and exit_ != pytest.approx(both), (
+        "FRINGE=-2 (exit-only) should differ from both the both-active "
+        "and neither-active cases.")
+    assert entry != pytest.approx(exit_), (
+        "FRINGE=-1 (entrance-only) and FRINGE=-2 (exit-only) should give "
+        "different kicks for an asymmetric FB1 != FB2 corrector.")
+
+    for fringe in (-3, -4):
+        assert run(fringe) == pytest.approx(neither, abs=1e-15), (
+            f"FRINGE={fringe} should disable both edges, identically to "
+            "FRINGE=0.")
+
+    for fringe in (2, 3):
+        assert run(fringe) == pytest.approx(both, abs=1e-15), (
+            f"FRINGE={fringe} should enable both edges, identically to "
+            "FRINGE=1.")
 
 def test_bend_angle_nonzero_f1_fringe_matches_sad_reference_values(tmp_path):
     """

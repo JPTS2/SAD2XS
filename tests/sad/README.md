@@ -36,7 +36,7 @@ filename; SAD's shell wrapper requires a relative path in the working directory.
 
 ## Coverage
 
-307 tests across 16 files. All require the SAD binary.
+309 tests across 16 files. All require the SAD binary.
 
 ### Parameter matrix (accept/reject)
 
@@ -87,11 +87,14 @@ happened to work:
   MULT's fringe treatment is out of scope for the BEND fringe import below.
 - **BEND's F1/FRINGE soft-edge fringe (`test_bend.py`)**: a linear-plus-cubic-in-`y`
   kick at each edge, sized by `F1` (symmetric) or `FB1`/`FB2` (per-edge, additive
-  on top of `F1`), gated by `FRINGE` (0/unset = off, nonzero = on) — confirmed
-  inert without `FRINGE` (`test_bend_f1_is_inert_without_fringe`) and active with
-  it (`test_bend_fringe_1_activates_f1`). Applies identically to the `ANGLE != 0`
-  sector-bend path and the `ANGLE == 0`, K0-only corrector path (a BEND with no
-  ANGLE) — both pinned against real SAD binary output
+  on top of `F1`), gated by `FRINGE` (full grid: 0 or <= -3 = off at both edges,
+  -1 = entrance-only, -2 = exit-only, any positive value = both) — confirmed
+  inert without `FRINGE` (`test_bend_f1_is_inert_without_fringe`), active with
+  it (`test_bend_fringe_1_activates_f1`), and the full gating grid confirmed
+  against the real binary (`test_bend_fringe_mode_gates_entrance_exit`,
+  `test_bend_corrector_fringe_mode_gates_entrance_exit`). Applies identically to
+  the `ANGLE != 0` sector-bend path and the `ANGLE == 0`, K0-only corrector path
+  (a BEND with no ANGLE) — both pinned against real SAD binary output
   (`test_bend_angle_nonzero_f1_fringe_matches_sad_reference_values`,
   `test_corrector_fringe_matches_sad_reference_values`). See
   `docs/sad-behaviour.md` for the closed-form mapping onto Xsuite's native edge
