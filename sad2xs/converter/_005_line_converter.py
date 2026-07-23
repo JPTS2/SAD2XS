@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-23
 ================================================================================
 """
 
@@ -34,11 +34,12 @@ def create_reversed_component(
 
     A reversed component name always starts with `-`. For element
     types whose physics genuinely differs under reversal (Bend:
-    entry/exit edge angles swapped; UniformSolenoid: ks negated;
-    Translation/TimeDelay/Rotation: cloned so the reversed line gets
-    its own copy; Marker elements that are SAD OFFSET markers:
-    identified rather than cloned, so later offset-marker handling can
-    still find them by name), a genuinely reversed clone is created.
+    entry/exit edge angles AND fringe fields (fint/hgap) swapped;
+    UniformSolenoid: ks negated; Translation/TimeDelay/Rotation: cloned
+    so the reversed line gets its own copy; Marker elements that are
+    SAD OFFSET markers: identified rather than cloned, so later
+    offset-marker handling can still find them by name), a genuinely
+    reversed clone is created.
     Every other element type (Drift, Quadrupole, Sextupole, Octupole,
     Multipole, Cavity, plain Marker, Aperture) is direction-symmetric,
     so the `-` prefix is simply dropped and the original element
@@ -83,6 +84,14 @@ def create_reversed_component(
             environment[component[1:]].edge_exit_angle
         environment[component].edge_exit_angle   =\
             environment[component[1:]].edge_entry_angle
+        environment[component].edge_entry_fint   =\
+            environment[component[1:]].edge_exit_fint
+        environment[component].edge_exit_fint    =\
+            environment[component[1:]].edge_entry_fint
+        environment[component].edge_entry_hgap   =\
+            environment[component[1:]].edge_exit_hgap
+        environment[component].edge_exit_hgap    =\
+            environment[component[1:]].edge_entry_hgap
 
     ########################################
     # Solenoid

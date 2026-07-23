@@ -7,7 +7,8 @@ Use this folder for options and line-level behaviour: the public
 `convert_sad_to_xsuite` entry point, explicit line selection, write/reload
 behaviour, excluded elements, offset markers, reference-particle setup,
 multipole replacements, reverse charge sign, reverse element order, reverse
-survey horizontal, and reverse survey vertical.
+survey horizontal, reverse survey vertical, and the per-element `-NAME`
+reversal syntax.
 
 Element-family physics belongs in `tests/conversion/elements/`. This folder
 should stay focused on pipeline orchestration and public user options.
@@ -25,6 +26,7 @@ should stay focused on pipeline orchestration and public user options.
 | `test_reverse_survey_vertical.py` | 13 | 0 | — |
 | `test_reverse_charge_sign.py` | 6 | 0 | — |
 | `test_reverse_element_order.py` | 16 | 0 | — |
+| `test_reversed_component_syntax.py` | 7 | 0 | — |
 
 ### `test_convert_sad_to_xsuite.py` note
 
@@ -45,6 +47,16 @@ Covers `reverse_charge_sign=True` and species-aware reference particle setup.
 Tests: default positron species, proton mass → proton species, charge sign
 reversal (positron → electron, proton → antiproton), p0c/mass0 isolation, and
 UserWarning emission when `CHARGE != 1` is found in the SAD file. All 6 pass.
+
+### `test_reversed_component_syntax.py` note
+
+Covers SAD's per-element `-NAME` reversal syntax (`create_reversed_component`,
+distinct from the whole-line `-LINE`/`reverse_element_order` path covered by
+`test_reverse_element_order.py`): direction-symmetric reuse (drift, quad),
+solenoid ks negation, bend edge-angle swap, bend fringe-field (fint/hgap)
+swap, and two tracking comparisons against real SAD's own per-element-reversed
+line (poleface angle and soft-edge fringe, isolated from each other). All 7
+pass.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
