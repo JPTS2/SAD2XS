@@ -1318,10 +1318,11 @@ def test_quad_fringe_import_builds_subline_with_both_sides(write_lattice):
         "The entrance fringe element should be a SecondOrderTaylorMap.")
     assert isinstance(line["test_quad_fringe_out"], xt.SecondOrderTaylorMap), (
         "The exit fringe element should be a SecondOrderTaylorMap.")
-    assert isinstance(line["test_quad_quad"], xt.Quadrupole), (
-        "The quadrupole body should still be a native Xsuite Quadrupole.")
+    assert isinstance(line["test_quad"], xt.Quadrupole), (
+        "The quadrupole body should still be a native Xsuite Quadrupole, "
+        "keeping the original SAD element name.")
     in_idx  = line.element_names.index("test_quad_fringe_in")
-    body_idx = line.element_names.index("test_quad_quad")
+    body_idx = line.element_names.index("test_quad")
     out_idx = line.element_names.index("test_quad_fringe_out")
     assert in_idx < body_idx < out_idx, (
         "The fringe subline should be ordered entrance, body, exit.")

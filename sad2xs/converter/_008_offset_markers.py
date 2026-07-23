@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-24
 ================================================================================
 """
 
@@ -26,32 +26,133 @@ from ._000_helpers import parse_expression
 logger  = logging.getLogger(__name__)
 
 ################################################################################
+# SAD-native line flattening
+#
+# "floor(OFFSET) positions forward" must be counted on SAD's own element
+# sequence, not the post-conversion Xsuite table: one SAD element can
+# become several Xsuite ones (quad fringe, RF-carrying MULT slices),
+# which would silently count sub-pieces instead of real SAD elements.
+################################################################################
+def _flatten_sad_line_elements(
+        line_name:      str,
+        parsed_lines:   dict[str, list[str]]) -> list[str]:
+    """
+    Expand a parsed SAD LINE into its flat, ordered leaf-element
+    sequence -- SAD's own element numbering.
+
+    Resolves nested LINE-of-LINEs recursively; "-SUBLINE" reverses both
+    the order and the sign of every leaf in its expansion. A leaf's own
+    "-" sign is otherwise kept, not dropped: `create_reversed_component`
+    names a reversed clone "-name" (not a "::N" replica), so the sign
+    must survive to tell a forward and reversed reference apart.
+
+    Assumes `parsed_lines` is unmutated by `convert_lines`
+    (`_005_line_converter.py` works on a local copy) -- so this never
+    sees the generated quad-fringe/solenoid sub-lines it builds.
+
+    Parameters
+    ----------
+    line_name : str
+        The (lowercase) name of the line to expand.
+    parsed_lines : dict
+        `parsed_lattice_data["lines"]`: line name -> ordered component
+        list, as returned by `parse_sad_file`.
+
+    Returns
+    -------
+    list of str
+        The flat, ordered sequence of leaf element names, each
+        optionally "-"-prefixed.
+    """
+    flat_names = []
+    for token in parsed_lines[line_name]:
+        is_reversed_ref = token.startswith("-")
+        base_name       = token[1:] if is_reversed_ref else token
+
+        if base_name in parsed_lines:
+            sub_names = _flatten_sad_line_elements(base_name, parsed_lines)
+            if is_reversed_ref:
+                sub_names = [
+                    name[1:] if name.startswith("-") else f"-{name}"
+                    for name in reversed(sub_names)]
+            flat_names.extend(sub_names)
+        else:
+            flat_names.append(token)
+
+    return flat_names
+
+def _element_length(name: str, parsed_elements: dict, line: xt.Line) -> float:
+    """
+    Look up a SAD element's own declared length ("L"), resolved the
+    same way OFFSET is resolved elsewhere in this file. Elements with
+    no "l" parameter (markers, thin correctors, ...) are zero-length.
+
+    Parameters
+    ----------
+    name : str
+        The (lowercase) SAD element name, optionally "-"-prefixed
+        (from `_flatten_sad_line_elements`) -- a reversed clone has
+        the same length as the element it was cloned from.
+    parsed_elements : dict
+        `parsed_lattice_data["elements"]`.
+    line : xt.Line
+        Only used to resolve a length given as a SAD variable
+        expression, via `line.env.eval(...)`.
+
+    Returns
+    -------
+    float
+        The element's length, in metres.
+    """
+    name = name[1:] if name.startswith("-") else name
+    for elements_of_type in parsed_elements.values():
+        if name in elements_of_type:
+            ele_vars = elements_of_type[name]
+            if "l" not in ele_vars:
+                return 0.0
+            length = parse_expression(ele_vars["l"])
+            if isinstance(length, str):
+                length = line.env.eval(length)
+            return length
+    return 0.0
+
+################################################################################
 # Conversion Function
 ################################################################################
 def convert_offset_markers(
         line:                   xt.Line,
-        parsed_lattice_data:    dict) -> tuple[xt.Line, dict[str, list[float]]]:
+        parsed_lattice_data:    dict,
+        line_name:              str,
+        reverse_element_order:  bool            = False) -> tuple[xt.Line, dict[str, list[float]]]:
     """
     Resolve SAD MARK/MONI/BEAMBEAM OFFSET positions into insertion
     points.
 
-    SAD's OFFSET parameter places a marker at a fractional position
-    relative to its own nominal location: 0 <= OFFSET <= 1 leaves it
-    in place (a no-op, confirmed against real SAD); any other value
-    moves it into a neighbouring element, at
-    s = (that element's start) + (that element's length) *
-    (OFFSET mod 1), where the neighbouring element is floor(OFFSET)
-    positions away. A reversed reference walks OFFSET in the opposite
-    direction (1 - OFFSET). Offset markers whose target element is a
-    UniformSolenoid are permanently excluded, with a warning, since
-    slicing a solenoid is not supported: the marker is removed from
-    `line` like any moved marker, but never re-inserted anywhere (see
-    `test_pipeline_offset_marker_solenoid_exclusion_removes_marker_permanently`).
-    Every other offset marker that does move is
-    removed from `line` here -- the moved positions are only
-    re-inserted later, when the lattice file is generated (see
-    `sad2xs.output_writer._015_offset_markers`); `line` itself never
-    gets them back.
+    SAD's OFFSET places a marker at a fractional position relative to
+    its own nominal location: 0 <= OFFSET <= 1 is a no-op (confirmed
+    against real SAD); otherwise it moves floor(OFFSET) positions
+    forward (SAD's own declared sequence, from `_flatten_sad_line_elements`,
+    not the post-conversion Xsuite table -- one SAD element can become
+    several Xsuite ones) and lands at (OFFSET mod 1) through that
+    element. A reversed reference (`-NAME`) walks OFFSET in the
+    opposite direction (1 - OFFSET).
+
+    `reverse_element_order=True` mirrors `line` before this function
+    runs (`reverse_line_element_order`) but never touches
+    `parsed_lattice_data`, so the target is still found by walking
+    SAD's forward-declared sequence (OFFSET's "N positions forward" is
+    physical adjacency in the declared lattice, not travel direction);
+    the resulting s is then mirrored the same way `line.mirror()`
+    mirrors everything else: s -> (total length) - s. Cross-checked
+    against SAD's native `-LINE` reversal, which gives an identical
+    offset-marker s.
+
+    A marker whose target is a UniformSolenoid is permanently excluded
+    (warning logged), since slicing a solenoid is not supported. Every
+    moved marker (excluded or not) is removed from `line` here; a
+    surviving one is only re-inserted later, when the lattice file is
+    generated (`sad2xs.output_writer._016_offset_markers`) -- `line`
+    itself never gets it back.
 
     Parameters
     ----------
@@ -59,6 +160,13 @@ def convert_offset_markers(
         The converted line to resolve and remove offset markers from.
     parsed_lattice_data : dict
         Parsed lattice data, as returned by `parse_sad_file`.
+    line_name : str
+        The (lowercase) name of the line being converted, as selected
+        in `main.py` (explicit `line_name` or the auto-selected
+        longest line) -- the line `_flatten_sad_line_elements` expands.
+    reverse_element_order : bool, optional
+        Whether `line`'s element order has already been mirrored (see
+        `reverse_line_element_order`). Defaults to False.
 
     Returns
     -------
@@ -98,7 +206,18 @@ def convert_offset_markers(
         return line, {}
 
     ########################################
-    # Get line table
+    # SAD's own flat element sequence, and cumulative length along it
+    # -- the ground truth for "floor(OFFSET) positions forward", fully
+    # independent of how any element is represented in Xsuite.
+    ########################################
+    sad_sequence    = _flatten_sad_line_elements(line_name, parsed_lattice_data["lines"])
+    sad_lengths     = [_element_length(name, parsed_elements, line) for name in sad_sequence]
+    cumulative_s    = np.concatenate(([0.0], np.cumsum(sad_lengths)))
+
+    ########################################
+    # Get line table -- for the literal Xsuite marker names (with any
+    # "::N" replica or "-" reversal sign) so the right ones get removed
+    # from `line` at the end; not used for the position calculation.
     ########################################
     logger.debug("Getting line table")
 
@@ -110,7 +229,6 @@ def convert_offset_markers(
     # Get the names of the inserted markers in the line
     ########################################
     inserted_markers    = list(tt.rows[tt.element_type == "Marker"].name)
-    element_names       = list(tt.name)
 
     ########################################
     # Calculate intended marker locations
@@ -120,11 +238,15 @@ def convert_offset_markers(
 
     for marker in inserted_markers:
 
-        base_marker     = marker.split("::")[0]
+        marker_parts    = marker.split("::")
+        # Keeps any "-" sign -- a per-element-reversed clone (e.g. "-m")
+        # is `sad_sequence`'s own lookup key, distinct from the "::N"
+        # replica suffix Xsuite gives a same-sign repeated element.
+        signed_marker   = marker_parts[0]
+        replica_index   = int(marker_parts[1]) if len(marker_parts) > 1 else 0
 
-        reversed_marker = base_marker.startswith("-")
-        if reversed_marker:
-            base_marker = base_marker[1:]
+        reversed_marker = signed_marker.startswith("-")
+        base_marker     = signed_marker[1:] if reversed_marker else signed_marker
 
         ########################################
         # Only consider the offset markers
@@ -161,22 +283,35 @@ def convert_offset_markers(
         # Case 2: Marker is offset to within another element
         ########################################
         else:
-            # Get the index of the corresponding element
             relative_idx    = int(np.floor(offset))
-            marker_idx      = element_names.index(marker)
-            insert_at_ele   = element_names[marker_idx + relative_idx]
 
-            # Get the length of the element to insert at
-            insert_ele_length   = tt["length", insert_at_ele]
+            # `signed_marker` (not `base_marker`) is the lookup key: a
+            # per-element-reversed clone is a distinct "-"-prefixed
+            # entry in `sad_sequence`, not a numbered replica of the
+            # forward one -- `base_marker` would find the wrong
+            # occurrence for a reversed reference.
+            occurrences     = [
+                i for i, name in enumerate(sad_sequence) if name == signed_marker]
+            marker_idx      = occurrences[replica_index]
+            target_idx      = marker_idx + relative_idx
+            target_name     = sad_sequence[target_idx]
+            target_length   = sad_lengths[target_idx]
 
             # Add the fraction of element length
-            s_to_insert     = tt["s", insert_at_ele] +\
-                insert_ele_length * (offset % 1)
+            s_to_insert     = cumulative_s[target_idx] +\
+                target_length * (offset % 1)
+
+            # `line` was already mirrored (reverse_line_element_order,
+            # _007_reversals.py) before this function runs -- carry the
+            # target across the same s -> (total length) - s transform.
+            if reverse_element_order:
+                s_to_insert = cumulative_s[-1] - s_to_insert
 
             ########################################
             # Exclude slicing solenoids
             ########################################
-            if isinstance(line[insert_at_ele], xt.UniformSolenoid):
+            target_name_bare = target_name[1:] if target_name.startswith("-") else target_name
+            if target_name_bare in parsed_elements.get("sol", {}):
                 logger.warning(
                     f"Offset marker {base_marker} not installed at "
                     f"s = {s_to_insert}: slicing solenoid elements "

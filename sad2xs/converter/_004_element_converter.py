@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-23
+Date:       2026-07-24
 ================================================================================
 """
 
@@ -1147,9 +1147,13 @@ def convert_quadrupoles(
     `_quad_linear_fringe_coefficients`): the converted element then
     becomes a subline of [entrance fringe map, quadrupole body, exit
     fringe map] -- only the side(s) actually active are built, never a
-    placeholder identity map for an inactive side. The body element is
-    named `{name}_quad` (so its strength variable is `k1_{name}_quad`,
-    not the usual `k1_{name}` -- the subline itself keeps `{name}`).
+    placeholder identity map for an inactive side. The quadrupole body
+    keeps the bare `{name}` (so physicists and twiss-alignment tooling
+    can still find it by its original SAD name); the wrapping subline
+    is named `{name}_compound` instead. That name never surfaces in a
+    built line -- `convert_lines` (`_005_line_converter.py`) redirects
+    any component reference to `{name}` onto `{name}_compound`, which
+    then flattens transparently to its own components.
 
     Parameters
     ----------
@@ -1167,8 +1171,7 @@ def convert_quadrupoles(
             _convert_typed_multipole(ele_name, ele_vars, environment, 2, xt.Quadrupole, "k1")
             continue
 
-        body_name = f"{ele_name}_quad"
-        _convert_typed_multipole(body_name, ele_vars, environment, 2, xt.Quadrupole, "k1")
+        _convert_typed_multipole(ele_name, ele_vars, environment, 2, xt.Quadrupole, "k1")
         theta = fringe["theta"]
 
         components = []
@@ -1177,14 +1180,14 @@ def convert_quadrupoles(
             _new_quad_fringe_element(environment, f"{ele_name}_fringe_in", a, b, theta)
             components.append(f"{ele_name}_fringe_in")
 
-        components.append(body_name)
+        components.append(ele_name)
 
         if "out" in fringe:
             a, b = fringe["out"]
             _new_quad_fringe_element(environment, f"{ele_name}_fringe_out", -a, b, theta)
             components.append(f"{ele_name}_fringe_out")
 
-        environment.new_line(name = ele_name, components = components)
+        environment.new_line(name = f"{ele_name}_compound", components = components)
 
 ################################################################################
 # Convert Sextupoles

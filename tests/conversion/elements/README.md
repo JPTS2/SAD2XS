@@ -201,7 +201,7 @@ verified against real SAD in `tests/sad/test_quad.py`). Xsuite's
 `edge_entry_active`/`edge_exit_active`, so — unlike the private, opt-in
 `_import_sad_bend_fringes` bend flag — SAD2XS enables it by **default** via
 `configure_quadrupole_model(edge='full')` (`config.py`'s `EDGE_MODEL_QUAD`,
-applied in `main.py` and the writer's `_014_model.py` alongside
+applied in `main.py` and the writer's `_015_model.py` alongside
 `configure_bend_model`). `test_quad_conversion_default_enables_edge_fringe`
 locks in the default; `test_quad_conversion_matches_sad_tracking_for_large_transverse_offsets`
 confirms it materially improves agreement with SAD at realistic
