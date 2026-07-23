@@ -10,6 +10,22 @@ warning, a config default, an accepted test limitation), the decision
 itself and its reasoning live in `docs/design-decisions.md`, which points
 back here for the underlying evidence.
 
+## Contents
+
+- [Solenoid fringe kick (`DISFRIN`)](#solenoid-fringe-kick-disfrin)
+- [`MULT` `K0`/`SK0` dipole fringe](#mult-k0sk0-dipole-fringe)
+- [`BEND` `F1`/`FRINGE` soft-edge fringe](#bend-f1fringe-soft-edge-fringe)
+- [`BEND` `DISFRIN` hard-edge fringe](#bend-disfrin-hard-edge-fringe)
+- [`QUAD` `F1`/`F2`/`FRINGE` soft-edge fringe](#quad-f1f2fringe-soft-edge-fringe)
+- [`QUAD` `DISFRIN` hard-edge fringe](#quad-disfrin-hard-edge-fringe)
+- [`MULT` fringe: QUAD's mechanism, generalized](#mult-fringe-quads-mechanism-generalized)
+- [`SEXT`/`OCT` `DISFRIN` hard-edge fringe](#sextoct-disfrin-hard-edge-fringe)
+- [RF focusing in accelerating `MULT`/`CAVI` elements](#rf-focusing-in-accelerating-multcavi-elements)
+- [`CAVI` `FRINGE`/`DISFRIN` RF edge-focusing kick](#cavi-fringedisfrin-rf-edge-focusing-kick)
+- [Bend element-offset (`DX`/`DY`) reference-orbit convention](#bend-element-offset-dxdy-reference-orbit-convention)
+- [Twiss conventions in coupled regions (skew quads, solenoids, ...)](#twiss-conventions-in-coupled-regions-skew-quads-solenoids-)
+- [`LINE X = (-Y);` reversal is a MAIN-file declaration, not a live command](#line-x---y-reversal-is-a-main-file-declaration-not-a-live-command)
+
 ## Solenoid fringe kick (`DISFRIN`)
 
 SAD's solenoid Hamiltonian includes a nonlinear, hard-edge fringe kick,
@@ -27,11 +43,20 @@ genuine nonlinear ("octupolar") term, not a linear edge effect or a
 finite-length ramp. Neither `xt.UniformSolenoid` nor `xt.VariableSolenoid`
 implements it. Agreement between SAD and Xsuite is otherwise excellent once
 this is accounted for: setting `DISFRIN=1` on the SAD side makes SAD's own
-output match Xsuite's.
+output match Xsuite's. This matches the derivation in K. Oide, "Fringe
+Field of Solenoid", 15th KEKB-ARC (2010): the same nonlinear Hamiltonian
+follows from the delta-function terms in the fringe's vector potential
+required to satisfy Maxwell's equations at a hard edge, independent of the
+fringe length `f` — the field model's linear terms are separately
+captured by ordinary hard-edge slicing and are not this term.
 
 `F1` ("fringe length") is a red herring for this — SAD's own documentation
 states `F1` only affects the emittance/radiation calculation ("if `F1`=0,
-no radiation arises at the fringe"), not the orbital kick.
+no radiation arises at the fringe"), not the orbital kick. `SOL` has no
+`FRINGE` keyword at all, nor `F2`/`FB1`/`FB2`/`F1K1F`/`F2K1F`/`F1K1B`/
+`F2K1B` — all rejected outright (confirmed empirically,
+`tests/sad/test_sol.py`, `REJECTED_PARAMS`); `DISFRIN` alone gates the
+orbital kick above.
 
 This fringe kick was checked and ruled out as the cause of a separately
 observed ~28% SAD-vs-Xsuite radiation-loss gap for solenoids: SAD's radiated
@@ -150,6 +175,175 @@ residual — not skipped, not left to silently pass or silently stay
 wrong. If Xsuite/MAD-NG's native formula ever changes upstream, these
 tests fail and surface for review rather than passing silently.
 
+## `BEND` `DISFRIN` hard-edge fringe
+
+A SAD `BEND` also carries a separate, nonlinear hard-edge fringe kick gated
+by `DISFRIN` — structurally distinct from the linear-plus-cubic `F1`/
+`FRINGE` soft-edge term above (`DISFRIN` and `FRINGE` are unrelated on
+`BEND`: each controls its own term, with no interaction between them,
+unlike on `QUAD` below). `DISFRIN` is a strict boolean gate, not a graded
+mode like `FRINGE`: unset defaults to `DISFRIN=0` (fringe enabled), and any
+nonzero value (checked at `1, 2, -1, 3, 0.5`) disables it identically,
+bit-for-bit — confirmed against the real binary
+(`tests/sad/test_bend.py`, `test_bend_disfrin_default_matches_explicit_zero`/
+`test_bend_disfrin_is_boolean`). The kick is `K1`-dependent and only
+resolvable at a realistic (few-cm) transverse offset — pinned against real
+SAD binary output at `test_bend_disfrin_hard_edge_matches_sad_reference_values`.
+
+Xsuite's native `edge_entry_model`/`edge_exit_model` on `xt.Bend` already
+implements the identical mechanism: `"full"` matches SAD's `DISFRIN=0` to
+~2e-5 relative, `"suppressed"` matches `DISFRIN=1` to ~2e-6 relative
+(checked on a sector bend, `L=2.0`, `ANGLE=0.2`, `K1=1.0`, `y=0.03`) — no
+additional physics needed beyond what BEND's fringe-import work already
+builds.
+
+On the `ANGLE == 0`, `K0`-only corrector code path, this question turns out
+to be moot: SAD does not allow a corrector to carry a nonzero `K1` alongside
+`K0` at all when `ANGLE` is absent/zero — a confirmed, separate SAD bug
+(the combination silently no-ops the whole element rather than erroring;
+reported upstream) — so there is no quadrupole content for `DISFRIN`'s
+hard-edge term to gate on a real corrector
+(`test_corrector_disfrin_has_no_effect_without_k1`).
+
+## `QUAD` `F1`/`F2`/`FRINGE` soft-edge fringe
+
+A SAD `QUAD` applies a genuinely **linear** fringe kick at each edge (no
+cubic term, unlike `BEND`'s `F1`), sized by `F1`/`F2` (symmetric) or the
+per-edge `F1K1F`/`F2K1F` (entrance) and `F1K1B`/`F2K1B` (exit) terms, and
+gated by `FRINGE` — inert unless `FRINGE` is set, matching `BEND`'s own
+`F1` convention (`tests/sad/test_quad.py`,
+`test_quad_f1_f2_is_inert_without_fringe`).
+
+**`QUAD`'s `FRINGE` (internal name `mfring`) is a different numbering
+system from `BEND`'s `FRMD_BEND`, despite sharing the same SAD keyword
+name**: it is a strict membership test on `{1, 2, 3}` — `1`=entrance-only,
+`2`=exit-only, `3`=both — not sign-graded. Any other value, including
+positive ones like `4`, leaves the linear fringe off entirely; there is no
+`BEND`-style "any positive value enables both" rule. Confirmed against the
+real binary across the full grid with genuinely asymmetric
+`F1K1F`/`F1K1B`/`F2K1F`/`F2K1B` (`test_quad_fringe_mode_gates_entrance_exit`).
+
+Reversing a line (`-LINE`) permutes *which side* gets the linear fringe
+kick, not just which raw per-side parameter feeds which side: a reversed
+`FRINGE=1` element matches a forward `FRINGE=2` element with
+`F1K1F`/`F1K1B` (and `F2K1F`/`F2K1B`) swapped, exactly — confirmed against
+real SAD's own `-LINE` output, not assumed from the parameter-swap alone
+(`test_quad_reversed_line_fringe_mode_permutes`). `FRINGE=3` and `FRINGE=0`
+are fixed points of this permutation (both sides symmetric under it), so
+this only matters in practice for a quad using `FRINGE=1`/`2` that is ever
+traversed in reverse.
+
+Pinned against real SAD binary output for `K1>0`, `K1<0` (confirming SAD
+internally encodes a defocusing quad as a focusing quad rotated 90 degrees,
+via `ROTATE + akang(K1)`), and skewed (`ROTATE != 0`) cases
+(`test_quad_f1_f2_matches_sad_reference_values` and its `_negative_k1`/
+`_skew` variants).
+
+## `QUAD` `DISFRIN` hard-edge fringe
+
+Same convention as `BEND` and `SOL`: `DISFRIN` gates a separate, nonlinear
+hard-edge fringe kick, defaulting to `DISFRIN=0` (enabled), strictly
+boolean (checked at `1, 2, -1, 3, 0.5`, all bit-identical to `DISFRIN=1`)
+— confirmed against the real binary
+(`test_quad_disfrin_default_matches_explicit_zero`/
+`test_quad_disfrin_is_boolean`), pinned at a realistic offset
+(`test_quad_disfrin_hard_edge_matches_sad_reference_values`).
+
+**Unlike `BEND`, `FRINGE` on a `QUAD` is not independent of `DISFRIN`**: it
+additionally gates *which side* of the hard-edge fringe applies, regardless
+of `DISFRIN`'s own value. The entrance hard-edge kick is skipped outright
+whenever `FRINGE==2`, the exit one whenever `FRINGE==1` — the same
+`mfring` value that selects the linear fringe side also selects the
+hard-edge side. Confirmed directly against real SAD with no `F1`/`F2`/
+`F1K1x` terms set at all, isolating the hard-edge mechanism alone
+(`test_quad_fringe_mode_also_gates_hard_edge_fringe_sides`): the effect
+size from losing one hard-edge side is over an order of magnitude *larger*
+than the net two-sided residual `DISFRIN` alone removes — the two sides'
+hard-edge contributions mostly cancel when both are present, so isolating
+one side is not a small correction. `FRINGE<=-4` is a master disable for
+the hard-edge fringe on both sides unconditionally, matching `DISFRIN=1`
+bit-identically; `FRINGE=0`/unset and `FRINGE=3` leave both hard-edge sides
+exactly as `DISFRIN` alone would set them.
+
+This means the linear (`F1`/`F2`) and hard-edge (`DISFRIN`) fringes on a
+`QUAD` do **not** simply compose additively for every `FRINGE` value —
+confirmed additive only at `FRINGE=3`
+(`test_quad_f1_f2_composes_additively_with_default_nonlinear_fringe`),
+where neither hard-edge side is excluded.
+
+## `MULT` fringe: QUAD's mechanism, generalized
+
+A SAD `MULT` combines BEND-style bending content (`ANGLE`/`K0`, soft-edge
+`FB1`/`FB2`) and QUAD-style quadrupole content (`K1`, soft-edge `F1`/`F2`/
+`F1K1F`/`F2K1F`/`F1K1B`/`F2K1B`) in a single element, and its source
+(`tmulti.f`) mirrors `tquad.f` almost line-for-line: a `MULT` with only
+`K1` set (no other order content) gives **bit-identical** tracking output
+to the equivalent `QUAD`, including all pinned reference values
+(`tests/sad/test_mult.py`, `test_mult_k1_f1_f2_matches_sad_reference_values`).
+
+`FRINGE` (internal `mfring`) uses the **same `{1, 2, 3}` numbering as
+`QUAD`** — `1`=entrance-only, `2`=exit-only, `3`=both — for **all** of
+`MULT`'s fringe sub-mechanisms simultaneously: the `K1` quad-style
+linear fringe, the `FB1`/`FB2` dipole-style linear fringe, and the
+`DISFRIN`-gated hard-edge kick all read the same `mfring` value to select
+entrance/exit. This is confirmed against the real binary for `FB1`/`FB2`
+specifically (`test_mult_fb1_fb2_fringe_mode_gates_entrance_exit`) and
+explains a previously-recorded finding above: a `K0`-only `MULT` and the
+equivalent `K0`-only `BEND`, both given the same `FRINGE=1`/`FB1`/`FB2`,
+give clearly different `py(y)`
+(`test_mult_k0_fringe_with_nonzero_fb_does_not_match_equivalent_bend`) —
+not because `MULT` uses a different fringe *formula*, but because
+`FRINGE=1` means something different on each element: "both edges active"
+on `BEND` (a positive value, per `BEND`'s own sign-based scheme) versus
+"entrance-only" on `MULT` (the `{1,2,3}` membership scheme). The reversed-
+`-LINE` mode-permutation (`FRINGE` `1↔2`, parameter swap) is identical to
+`QUAD`'s (`test_mult_reversed_line_fringe_mode_permutes`).
+
+`DISFRIN` gates the same generic hard-edge kick as `BEND`/`QUAD`/`SEXT`/
+`OCT`: default `0` (enabled), strictly boolean, pinned identical to the
+equivalent `QUAD` (`test_mult_disfrin_hard_edge_matches_sad_reference_values`).
+Like `QUAD`, `FRINGE` additionally gates *which side* of this hard-edge
+kick applies, independent of `DISFRIN`
+(`test_mult_fringe_mode_also_gates_hard_edge_fringe_sides`). **Unlike
+`QUAD`, `MULT` has no `FRINGE<=-4` master-disable for the hard-edge term**
+— `tmulti.f`'s hard-edge gate checks only `mfring /= 1`/`mfring /= 2`,
+with no lower-bound condition, whereas `tquad.f`'s adds `mfring .gt. -4`;
+confirmed empirically that `FRINGE=-4` leaves both hard-edge sides fully
+active on a `MULT`, where the identical value disables both on a `QUAD`.
+
+The pre-existing `K0`/`SK0` dipole-fringe transfer-matrix finding above
+(`FRINGE=1` zeroes `m43`/`m21` exactly, `DISFRIN` does not control it) is
+a Twiss/linear-map-level fact from SAD's `CALC4D`/`TransferMatrix[]`
+machinery, a different code path from the particle-tracking `tmulti`
+routine this section describes — the two are complementary, not in
+tension: `DISFRIN` can (and does) affect tracked orbits through a `K1`-
+or-higher-order `MULT` via the hard-edge mechanism above, while leaving
+the K0-order linear map's fringe term exactly as `FRINGE` alone sets it.
+
+## `SEXT`/`OCT` `DISFRIN` hard-edge fringe
+
+Unlike `BEND`/`QUAD`/`MULT`, `SEXT` and `OCT` have no `FRMD`/soft-edge-fringe
+keyword at all: `FRINGE`, `F1`, `F2`, `FB1`, `FB2`, `F1K1F`, `F2K1F`,
+`F1K1B`, `F2K1B` are all rejected outright by the parser — confirmed
+empirically, not inferred from the absence of a converter path
+(`tests/sad/test_sext.py`/`test_oct.py`, `REJECTED_PARAMS`). Traced to
+source (`tffs.f`'s per-element-type parameter setup switch): the
+`icSEXT`/`icOCTU`/`icDECA`/`icDODECA` case only derives `ROTATE`'s
+sin/cos, with no `FRMD`/`FRIN` handling at all — there is no keyword slot
+for the parser to recognise.
+
+They do accept `DISFRIN`, which gates the same generic hard-edge fringe
+kick mechanism (`ttfrin`, shared with `BEND`/`QUAD`) via the `tthin`
+tracking routine — applied identically at **both** entrance and exit, with
+no per-side control (there is no `FRINGE` mode to select a single side, the
+way `QUAD` can). Default `DISFRIN=0` (enabled), strictly boolean (checked
+at `1, 2, -1, 3, 0.5`, all bit-identical to `DISFRIN=1`) — confirmed
+against the real binary and pinned
+(`test_sext_disfrin_hard_edge_matches_sad_reference_values`/
+`test_oct_disfrin_hard_edge_matches_sad_reference_values`). Since there is
+no `FRINGE` keyword for these elements, the `QUAD`-specific
+`FRINGE`-gates-`DISFRIN`-side interaction above does not arise here.
+
 ## RF focusing in accelerating `MULT`/`CAVI` elements
 
 SAD's accelerating-element tracking (`tmultiacc` in `tmulti.f`) applies an
@@ -196,6 +390,37 @@ mismatched Twiss normalization — Xsuite's own `line.twiss()` applies an
 additional, separately real `p_exit/p_entry` scaling to `betx` on top of
 this raw matrix, which must not be conflated with the RF-focusing question).
 Locked in by `tests/xtrack/test_cavity.py`.
+
+## `CAVI` `FRINGE`/`DISFRIN` RF edge-focusing kick
+
+Separate from the `vcorr` body term above, a `VOLT != 0` `CAVI` applies a
+genuine edge-focusing kick (`tcavfrin` in `tcav.f`) at each end — linear in
+`x`/`y`, not the `vcorr` term's quadratic form, and not shared with `MULT`.
+`CAVI` rejects the `QUAD`/`BEND`/`MULT`-style linear soft-edge fringe
+parameters (`F1`, `F2`, `FB1`, `FB2`, `F1K1F`, `F2K1F`, `F1K1B`, `F2K1B`)
+entirely — confirmed empirically (`tests/sad/test_cavi.py`,
+`REJECTED_PARAMS`) — and instead accepts its own `V1`/`V20`/`V11`/`V02`
+transverse RF-multipole coefficients (confirmed accepted; their physics is
+out of scope for this pass).
+
+`DISFRIN` gates the edge kick with the usual convention: default `0`
+(enabled), strictly boolean, pinned against real SAD binary output
+(`test_cavi_disfrin_default_matches_explicit_zero`/
+`test_cavi_disfrin_is_boolean`/
+`test_cavi_fringe_disfrin_matches_sad_reference_values`).
+
+**`CAVI`'s `FRINGE` is a third distinct numbering system**, different
+again from `BEND`'s own sign-based scheme and `QUAD`'s/`MULT`'s strict
+`{1,2,3}` membership test: `0`/unset (or any value other than exactly `1`
+or `2`) enables **both** edges; `1` = entrance-only; `2` = exit-only; and
+any **negative** value disables the kick entirely, matching `DISFRIN=1` —
+confirmed against the real binary across the full grid
+(`test_cavi_fringe_mode_gates_entrance_exit`). Traced to `tcav.f`:
+`fringe .and. mfring >= 0 .and. mfring /= 2` gates the entrance kick,
+`fringe .and. mfring >= 0 .and. mfring /= 1` the exit kick — the
+`mfring >= 0` clause is what makes any negative value a master-disable,
+structurally distinct from `QUAD`'s `mfring .gt. -4` threshold or `MULT`'s
+complete absence of a lower bound.
 
 ## Bend element-offset (`DX`/`DY`) reference-orbit convention
 

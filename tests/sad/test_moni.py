@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-23
 ================================================================================
 """
 ################################################################################
@@ -75,13 +75,23 @@ REJECTED_PARAMS = [
     pytest.param("SK2=0.1",    id = "sk2"),
     pytest.param("SK3=0.1",    id = "sk3"),
     pytest.param("SK4=0.1",    id = "sk4"),
+    pytest.param("FRINGE=1",   id = "fringe"),
+    pytest.param("DISFRIN=1",  id = "disfrin"),
+    pytest.param("F1=0.1",     id = "f1"),
+    pytest.param("F2=0.1",     id = "f2"),
+    pytest.param("FB1=0.1",    id = "fb1"),
+    pytest.param("FB2=0.1",    id = "fb2"),
+    pytest.param("F1K1F=0.1",  id = "f1k1f"),
+    pytest.param("F2K1F=0.1",  id = "f2k1f"),
+    pytest.param("F1K1B=0.1",  id = "f1k1b"),
+    pytest.param("F2K1B=0.1",  id = "f2k1b"),
 ]
 
 @pytest.mark.parametrize("params", REJECTED_PARAMS)
 def test_moni_rejects(sad_rejects, params):
     """
-    SAD's MONI element should reject field (K0-K4/SK0-SK4), bending, and
-    RF parameters.
+    SAD's MONI element should reject field (K0-K4/SK0-SK4), bending, RF,
+    and fringe (FRINGE/DISFRIN/F1/F2/FB1/FB2/F1K1x) parameters.
     """
     sad_rejects(
         f"MONI MN1 = ({params});\n"

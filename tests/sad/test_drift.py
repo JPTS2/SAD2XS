@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-23
 ================================================================================
 """
 ################################################################################
@@ -46,12 +46,23 @@ REJECTED_PARAMS = [
     pytest.param("L=1.0 BZ=0.1",     id = "bz"),
     pytest.param("L=1.0 HARM=1000",  id = "harm"),
     pytest.param("L=1.0 FREQ=400E6", id = "freq"),
+    pytest.param("L=1.0 FRINGE=1",   id = "fringe"),
+    pytest.param("L=1.0 DISFRIN=1",  id = "disfrin"),
+    pytest.param("L=1.0 F1=0.1",     id = "f1"),
+    pytest.param("L=1.0 F2=0.1",     id = "f2"),
+    pytest.param("L=1.0 FB1=0.1",    id = "fb1"),
+    pytest.param("L=1.0 FB2=0.1",    id = "fb2"),
+    pytest.param("L=1.0 F1K1F=0.1",  id = "f1k1f"),
+    pytest.param("L=1.0 F2K1F=0.1",  id = "f2k1f"),
+    pytest.param("L=1.0 F1K1B=0.1",  id = "f1k1b"),
+    pytest.param("L=1.0 F2K1B=0.1",  id = "f2k1b"),
 ]
 
 @pytest.mark.parametrize("params", REJECTED_PARAMS)
 def test_drift_rejects(sad_rejects, params):
     """
-    SAD's DRIFT element should reject every parameter except L.
+    SAD's DRIFT element should reject every parameter except L, including
+    FRINGE/DISFRIN and every soft-edge fringe sub-parameter.
     """
     sad_rejects(
         f"DRIFT D1 = ({params});\n"
