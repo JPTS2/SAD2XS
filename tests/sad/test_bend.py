@@ -39,6 +39,7 @@ ACCEPTED_PARAMS = [
     pytest.param("L=1.0 ANGLE=0.01 F1=0.05 FRINGE=1",    id = "fringe"),
     pytest.param("L=1.0 ANGLE=0.01 FRINGE=1 FB1=0.05",   id = "fb1"),
     pytest.param("L=1.0 ANGLE=0.01 FRINGE=1 FB2=0.05",   id = "fb2"),
+    pytest.param("L=1.0 ANGLE=0.01 K1=0.2 DISFRIN=1",    id = "disfrin"),
 ]
 
 @pytest.mark.parametrize("params", ACCEPTED_PARAMS)
@@ -65,13 +66,20 @@ REJECTED_PARAMS = [
     pytest.param("L=1.0 HARM=1000",  id = "harm"),
     pytest.param("L=1.0 FREQ=400E6", id = "freq"),
     pytest.param("L=1.0 BZ=0.1",     id = "bz"),
+    pytest.param("L=1.0 F2=0.1",     id = "f2"),
+    pytest.param("L=1.0 F1K1F=0.1",  id = "f1k1f"),
+    pytest.param("L=1.0 F2K1F=0.1",  id = "f2k1f"),
+    pytest.param("L=1.0 F1K1B=0.1",  id = "f1k1b"),
+    pytest.param("L=1.0 F2K1B=0.1",  id = "f2k1b"),
 ]
 
 @pytest.mark.parametrize("params", REJECTED_PARAMS)
 def test_bend_rejects(sad_rejects, params):
     """
     SAD's BEND element should reject skew/higher-order field
-    (SK0/SK1/K2-K4/SK2-SK4), solenoid (BZ), and RF parameters.
+    (SK0/SK1/K2-K4/SK2-SK4), solenoid (BZ), RF parameters, and the
+    QUAD/MULT-style per-side quad fringe terms (F2/F1K1F/F2K1F/F1K1B/
+    F2K1B) -- BEND's own soft-edge fringe is F1/FB1/FB2 only.
     """
     sad_rejects(
         f"BEND B1 = ({params});\n"
@@ -451,3 +459,80 @@ def test_corrector_fringe_matches_sad_reference_values(tmp_path):
             "FB1/FB2/FRINGE set no longer matches the pinned reference "
             "values — SAD's fringe behaviour may have changed, or this "
             "reference lattice was altered unintentionally."))
+
+################################################################################
+# DISFRIN hard-edge fringe (ground truth) -- see docs/sad-behaviour.md
+################################################################################
+def test_bend_disfrin_default_matches_explicit_zero(tmp_path):
+    """
+    DISFRIN unset defaults to DISFRIN=0 (hard-edge fringe enabled) --
+    bit-identical output, not just approximately equal.
+    """
+    y_vals = np.array([0.03])
+    delta_vals = np.zeros(1)
+    body_unset = "BEND B = (L=2.0 ANGLE=0.2 K1=1.0);\nMARK START=()\n END=();\nLINE TEST=(START B END);"
+    body_zero  = "BEND B = (L=2.0 ANGLE=0.2 K1=1.0 DISFRIN=0);\nMARK START=()\n END=();\nLINE TEST=(START B END);"
+    r_unset = _track_bend_probe(tmp_path, body_unset, "bend_disfrin_unset.sad", y_vals, delta_vals)
+    r_zero  = _track_bend_probe(tmp_path, body_zero, "bend_disfrin_zero.sad", y_vals, delta_vals)
+    assert r_unset["py"][0] == pytest.approx(r_zero["py"][0], abs=1e-15), (
+        "DISFRIN unset should default to DISFRIN=0 (hard-edge fringe "
+        "enabled), bit-identically.")
+
+def test_bend_disfrin_is_boolean(tmp_path):
+    """
+    DISFRIN is a strict boolean gate, not a graded mode selector like
+    FRINGE: any nonzero value disables the hard-edge fringe identically.
+    """
+    y_vals = np.array([0.03])
+    delta_vals = np.zeros(1)
+
+    def run(disfrin):
+        body = (
+            f"BEND B = (L=2.0 ANGLE=0.2 K1=1.0 DISFRIN={disfrin});\n"
+            "MARK START=()\n END=();\nLINE TEST=(START B END);")
+        return _track_bend_probe(
+            tmp_path, body, f"bend_disfrin_bool_{disfrin}.sad", y_vals, delta_vals)["py"][0]
+
+    disfrin_1 = run(1)
+    for disfrin in (2, -1, 3, 0.5):
+        assert run(disfrin) == pytest.approx(disfrin_1, abs=1e-15), (
+            f"DISFRIN={disfrin} should disable the hard-edge fringe "
+            "identically to DISFRIN=1 -- DISFRIN is boolean, not graded.")
+
+def test_bend_disfrin_hard_edge_matches_sad_reference_values(tmp_path):
+    """
+    Pinned ground truth: L=2.0, ANGLE=0.2, K1=1.0, on-momentum (delta=0),
+    py(y=0.03) with the hard-edge fringe enabled (DISFRIN=0/unset) and
+    disabled (DISFRIN=1). Real SAD binary outputs, recorded once and
+    locked in.
+    """
+    y_vals = np.array([0.03])
+    delta_vals = np.zeros(1)
+    body_on  = "BEND B = (L=2.0 ANGLE=0.2 K1=1.0);\nMARK START=()\n END=();\nLINE TEST=(START B END);"
+    body_off = "BEND B = (L=2.0 ANGLE=0.2 K1=1.0 DISFRIN=1);\nMARK START=()\n END=();\nLINE TEST=(START B END);"
+    r_on  = _track_bend_probe(tmp_path, body_on, "bend_disfrin_ref_on.sad", y_vals, delta_vals)
+    r_off = _track_bend_probe(tmp_path, body_off, "bend_disfrin_ref_off.sad", y_vals, delta_vals)
+
+    assert r_on["py"][0] == pytest.approx(4.1027345140e-02, rel=1e-6), (
+        "SAD's on-momentum py with the hard-edge fringe enabled no longer "
+        "matches the pinned reference value.")
+    assert r_off["py"][0] == pytest.approx(4.1051237303e-02, rel=1e-6), (
+        "SAD's on-momentum py with the hard-edge fringe disabled "
+        "(DISFRIN=1) no longer matches the pinned reference value.")
+
+def test_corrector_disfrin_has_no_effect_without_k1(tmp_path):
+    """
+    DISFRIN has no measurable effect on a K0-only corrector (no K1 term
+    for its hard-edge fringe to gate). Note: SAD does not let a corrector
+    (ANGLE absent/zero) carry a nonzero K1 alongside K0 at all -- see
+    dev/sad_bend_k0_k1_bug/ -- so this is the only DISFRIN case reachable
+    for a corrector, not an arbitrary restriction of this test.
+    """
+    y_vals = np.array([0.01])
+    delta_vals = np.zeros(1)
+    body_unset = "BEND C = (L=0.5 K0=0.05);\nMARK START=()\n END=();\nLINE TEST=(START C END);"
+    body_on    = "BEND C = (L=0.5 K0=0.05 DISFRIN=1);\nMARK START=()\n END=();\nLINE TEST=(START C END);"
+    r_unset = _track_bend_probe(tmp_path, body_unset, "corr_disfrin_unset.sad", y_vals, delta_vals)
+    r_on    = _track_bend_probe(tmp_path, body_on, "corr_disfrin_on.sad", y_vals, delta_vals)
+    assert r_unset["py"][0] == pytest.approx(r_on["py"][0], abs=1e-15), (
+        "DISFRIN should have no effect on a K0-only corrector.")
