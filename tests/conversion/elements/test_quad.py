@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-22
 ================================================================================
 """
 ################################################################################
@@ -239,6 +239,7 @@ def _assert_quad_twiss_matches_sad(
 def test_quad_converter_creates_xsuite_quadrupole(
         parsed_elements,
         xsuite_environment,
+        sad2xs_config,
         assert_environment_element,
         k1l,
         expected_k1):
@@ -250,7 +251,8 @@ def test_quad_converter_creates_xsuite_quadrupole(
             element_type        = "quad",
             element_name        = "test_quad",
             element_variables   = {"l": 0.5, "k1": k1l}),
-        environment     = xsuite_environment)
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
 
     quad = assert_environment_element(
         environment     = xsuite_environment,
@@ -267,6 +269,7 @@ def test_quad_converter_creates_xsuite_quadrupole(
 
 def test_quad_converter_creates_all_quadrupoles(
         xsuite_environment,
+        sad2xs_config,
         assert_environment_element):
     """
     Multiple parsed SAD QUAD elements should all be converted.
@@ -281,7 +284,8 @@ def test_quad_converter_creates_all_quadrupoles(
 
     convert_quadrupoles(
         parsed_elements = parsed_elements,
-        environment     = xsuite_environment)
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
 
     assert set(xsuite_environment.element_dict) == {"qf", "qd", "q0"}, (
         "All parsed SAD QUAD elements should be present in the environment.")
@@ -305,6 +309,7 @@ def test_quad_converter_creates_all_quadrupoles(
 def test_quad_converter_defaults_missing_k1_to_zero(
         parsed_elements,
         xsuite_environment,
+        sad2xs_config,
         assert_environment_element):
     """
     A SAD QUAD without K1 should convert as a zero-strength quadrupole.
@@ -314,7 +319,8 @@ def test_quad_converter_defaults_missing_k1_to_zero(
             element_type        = "quad",
             element_name        = "test_quad",
             element_variables   = {"l": 0.5}),
-        environment     = xsuite_environment)
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
 
     quad = assert_environment_element(
         environment     = xsuite_environment,
@@ -327,6 +333,7 @@ def test_quad_converter_defaults_missing_k1_to_zero(
 def test_quad_converter_preserves_symbolic_strength_with_environment_variable(
         parsed_elements,
         xsuite_environment,
+        sad2xs_config,
         assert_environment_element):
     """
     Symbolic SAD QUAD strengths should resolve through Xsuite environment vars.
@@ -338,7 +345,8 @@ def test_quad_converter_preserves_symbolic_strength_with_environment_variable(
             element_type        = "quad",
             element_name        = "test_quad",
             element_variables   = {"l": 0.5, "k1": "kq"}),
-        environment     = xsuite_environment)
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
 
     quad = assert_environment_element(
         environment     = xsuite_environment,
@@ -356,6 +364,7 @@ def test_quad_converter_preserves_symbolic_strength_with_environment_variable(
 def test_quad_converter_preserves_offsets_and_rotation(
         parsed_elements,
         xsuite_environment,
+        sad2xs_config,
         assert_environment_element):
     """
     SAD QUAD DX, DY, and ROTATE should map to Xsuite element fields.
@@ -371,7 +380,8 @@ def test_quad_converter_preserves_offsets_and_rotation(
                 "dy":       -2.0E-3,
                 "rotate":   0.125,
             }),
-        environment     = xsuite_environment)
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
 
     quad = assert_environment_element(
         environment     = xsuite_environment,
@@ -397,6 +407,7 @@ def test_quad_converter_preserves_offsets_and_rotation(
 def test_quad_converter_maps_45_degree_rotations_to_skew_strength(
         parsed_elements,
         xsuite_environment,
+        sad2xs_config,
         assert_environment_element,
         sad_rotation,
         expected_k1,
@@ -413,7 +424,8 @@ def test_quad_converter_maps_45_degree_rotations_to_skew_strength(
                 "k1":       0.1,
                 "rotate":   sad_rotation,
             }),
-        environment     = xsuite_environment)
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
 
     quad = assert_environment_element(
         environment     = xsuite_environment,
@@ -438,6 +450,7 @@ def test_quad_converter_maps_45_degree_rotations_to_skew_strength(
 def test_quad_converter_near_45_degree_rotations_remain_explicit_rotations(
         parsed_elements,
         xsuite_environment,
+        sad2xs_config,
         assert_environment_element,
         sad_rotation):
     """
@@ -452,7 +465,8 @@ def test_quad_converter_near_45_degree_rotations_remain_explicit_rotations(
                 "k1":       0.1,
                 "rotate":   sad_rotation,
             }),
-        environment     = xsuite_environment)
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
 
     quad = assert_environment_element(
         environment     = xsuite_environment,
@@ -469,6 +483,7 @@ def test_quad_converter_near_45_degree_rotations_remain_explicit_rotations(
 def test_quad_converter_supports_symbolic_length_and_strength(
         parsed_elements,
         xsuite_environment,
+        sad2xs_config,
         assert_environment_element):
     """
     Symbolic SAD QUAD lengths and strengths should resolve through Xsuite vars.
@@ -481,7 +496,8 @@ def test_quad_converter_supports_symbolic_length_and_strength(
             element_type        = "quad",
             element_name        = "test_quad",
             element_variables   = {"l": "lq", "k1": "kq"}),
-        environment     = xsuite_environment)
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
 
     quad = assert_environment_element(
         environment     = xsuite_environment,
@@ -506,6 +522,7 @@ def test_quad_converter_supports_symbolic_length_and_strength(
 def test_quad_converter_converts_thin_quadrupole_to_multipole(
         parsed_elements,
         xsuite_environment,
+        sad2xs_config,
         assert_environment_element,
         element_variables):
     """
@@ -516,7 +533,8 @@ def test_quad_converter_converts_thin_quadrupole_to_multipole(
             element_type        = "quad",
             element_name        = "test_quad",
             element_variables   = element_variables),
-        environment     = xsuite_environment)
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
 
     multipole = assert_environment_element(
         environment     = xsuite_environment,
@@ -529,6 +547,7 @@ def test_quad_converter_converts_thin_quadrupole_to_multipole(
 def test_quad_converter_thin_element_preserves_offsets_and_rotation(
         parsed_elements,
         xsuite_environment,
+        sad2xs_config,
         assert_environment_element):
     """
     Thin SAD QUAD DX, DY, and ROTATE should map to Xsuite Multipole fields.
@@ -543,7 +562,8 @@ def test_quad_converter_thin_element_preserves_offsets_and_rotation(
                 "dy":       -2.0E-3,
                 "rotate":   0.125,
             }),
-        environment     = xsuite_environment)
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
 
     multipole = assert_environment_element(
         environment     = xsuite_environment,
@@ -566,6 +586,7 @@ def test_quad_converter_thin_element_preserves_offsets_and_rotation(
 def test_quad_converter_thin_element_maps_45_degree_rotations_to_skew_strength(
         parsed_elements,
         xsuite_environment,
+        sad2xs_config,
         assert_environment_element,
         sad_rotation,
         expected_knl1,
@@ -581,7 +602,8 @@ def test_quad_converter_thin_element_maps_45_degree_rotations_to_skew_strength(
                 "k1":       0.1,
                 "rotate":   sad_rotation,
             }),
-        environment     = xsuite_environment)
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
 
     multipole = assert_environment_element(
         environment     = xsuite_environment,
@@ -606,6 +628,7 @@ def test_quad_converter_thin_element_maps_45_degree_rotations_to_skew_strength(
 def test_quad_converter_thin_element_near_45_degree_rotations_remain_explicit_rotations(
         parsed_elements,
         xsuite_environment,
+        sad2xs_config,
         assert_environment_element,
         sad_rotation):
     """
@@ -619,7 +642,8 @@ def test_quad_converter_thin_element_near_45_degree_rotations_remain_explicit_ro
                 "k1":       0.1,
                 "rotate":   sad_rotation,
             }),
-        environment     = xsuite_environment)
+        environment     = xsuite_environment,
+        config          = sad2xs_config)
 
     multipole = assert_environment_element(
         environment     = xsuite_environment,
@@ -1184,3 +1208,258 @@ def test_quad_conversion_matches_sad_tracking_for_element_rotation(
             "For +/- pi/4, SAD2XS currently rewrites the rotated quadrupole "
             "as a pure skew quadrupole.",
         ])
+
+################################################################################
+# Linear (F1/F2) fringe import (_import_sad_quad_fringes) -- see
+# tests/sad/test_quad.py for the ground truth this mirrors, and
+# docs/sad-behaviour.md. Experimental: defaults to False, unlike
+# _import_sad_bend_fringes.
+################################################################################
+def _quad_fringe_lattice_text(fringe_params, k1 = 0.3):
+    return f"""\
+    MOMENTUM    = 1.0 GEV;
+
+    QUAD        TEST_QUAD   = (L = 1.0 K1 = {k1} {fringe_params});
+
+    MARK        START       = ()
+                END         = ();
+
+    LINE        TEST_LINE   = (START TEST_QUAD END);
+    """
+
+def test_quad_fringe_import_defaults_off(write_lattice):
+    """
+    _import_sad_quad_fringes defaults to False -- F1/F2/FRINGE on a QUAD
+    should have no effect on the converted element without explicitly
+    passing the flag.
+    """
+    lattice_path = write_lattice(
+        _quad_fringe_lattice_text("F1=0.02 F2=0.01 FRINGE=3"),
+        filename = "quad_fringe_import_default_off.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path    = str(lattice_path),
+        output_directory    = "N/A",
+        _verbose            = False,
+        _test_mode          = True)
+
+    assert isinstance(line["test_quad"], xt.Quadrupole), (
+        "F1/F2/FRINGE should be ignored by default "
+        "(_import_sad_quad_fringes defaults to False) -- the converted "
+        "element should stay a bare Quadrupole, not a fringe subline.")
+
+def test_quad_fringe_import_explicit_off(write_lattice):
+    """
+    With _import_sad_quad_fringes explicitly disabled, F1/F2/FRINGE on a
+    QUAD should have no effect, same as the default.
+    """
+    lattice_path = write_lattice(
+        _quad_fringe_lattice_text("F1=0.02 F2=0.01 FRINGE=3"),
+        filename = "quad_fringe_import_explicit_off.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path            = str(lattice_path),
+        output_directory            = "N/A",
+        _verbose                    = False,
+        _test_mode                  = True,
+        _import_sad_quad_fringes    = False)
+
+    assert isinstance(line["test_quad"], xt.Quadrupole), (
+        "F1/F2/FRINGE should be ignored when _import_sad_quad_fringes is "
+        "explicitly disabled.")
+
+def test_quad_fringe_import_zero_terms_stays_bare_quadrupole(write_lattice):
+    """
+    With _import_sad_quad_fringes=True but no F1/F2/asymmetric terms set
+    at all, the converted element should stay a bare Quadrupole -- no
+    subline should be built when there is nothing to model (protects
+    against every plain QUAD in every existing lattice silently gaining
+    extra elements).
+    """
+    lattice_path = write_lattice(
+        _quad_fringe_lattice_text(""),
+        filename = "quad_fringe_import_zero_terms.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path            = str(lattice_path),
+        output_directory            = "N/A",
+        _verbose                    = False,
+        _test_mode                  = True,
+        _import_sad_quad_fringes    = True)
+
+    assert isinstance(line["test_quad"], xt.Quadrupole), (
+        "A QUAD with no F1/F2/asymmetric fringe terms set should convert "
+        "to a bare Quadrupole even with _import_sad_quad_fringes=True -- "
+        "there is nothing for the fringe subline to model.")
+
+def test_quad_fringe_import_builds_subline_with_both_sides(write_lattice):
+    """
+    With _import_sad_quad_fringes=True, F1/F2 set, and FRINGE=3 (both
+    sides active), the converted element should become a subline with an
+    entrance fringe map, the quadrupole body, and an exit fringe map, in
+    that order.
+    """
+    lattice_path = write_lattice(
+        _quad_fringe_lattice_text("F1=0.02 F2=0.01 FRINGE=3"),
+        filename = "quad_fringe_import_both_sides.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path            = str(lattice_path),
+        output_directory            = "N/A",
+        _verbose                    = False,
+        _test_mode                  = True,
+        _import_sad_quad_fringes    = True)
+
+    assert "test_quad_fringe_in" in line.element_names, (
+        "FRINGE=3 should build an entrance fringe element.")
+    assert "test_quad_fringe_out" in line.element_names, (
+        "FRINGE=3 should build an exit fringe element.")
+    assert isinstance(line["test_quad_fringe_in"], xt.SecondOrderTaylorMap), (
+        "The entrance fringe element should be a SecondOrderTaylorMap.")
+    assert isinstance(line["test_quad_fringe_out"], xt.SecondOrderTaylorMap), (
+        "The exit fringe element should be a SecondOrderTaylorMap.")
+    assert isinstance(line["test_quad_quad"], xt.Quadrupole), (
+        "The quadrupole body should still be a native Xsuite Quadrupole.")
+    in_idx  = line.element_names.index("test_quad_fringe_in")
+    body_idx = line.element_names.index("test_quad_quad")
+    out_idx = line.element_names.index("test_quad_fringe_out")
+    assert in_idx < body_idx < out_idx, (
+        "The fringe subline should be ordered entrance, body, exit.")
+
+def test_quad_fringe_import_builds_only_active_side(write_lattice):
+    """
+    With FRINGE=1 (entrance-only), only the entrance fringe element
+    should be built -- no placeholder/identity map for the inactive exit
+    side.
+    """
+    lattice_path = write_lattice(
+        _quad_fringe_lattice_text("F1K1F=0.05 F2K1F=0.02 FRINGE=1"),
+        filename = "quad_fringe_import_entrance_only.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path            = str(lattice_path),
+        output_directory            = "N/A",
+        _verbose                    = False,
+        _test_mode                  = True,
+        _import_sad_quad_fringes    = True)
+
+    assert "test_quad_fringe_in" in line.element_names, (
+        "FRINGE=1 should build an entrance fringe element.")
+    assert "test_quad_fringe_out" not in line.element_names, (
+        "FRINGE=1 should NOT build an exit fringe element -- there is "
+        "nothing active on that side to model.")
+
+def test_quad_fringe_import_matches_sad_tracking(write_lattice, tmp_path):
+    """
+    Converted QUAD with F1/F2/FRINGE=3 (positive K1) should match SAD
+    tracking, once _import_sad_quad_fringes=True.
+    """
+    x_init, px_init, y_init, py_init, zeta_init, delta_init = \
+        _standard_five_particle_offsets()
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        lattice_text = _quad_fringe_lattice_text("F1=0.02 F2=0.01 FRINGE=3", k1 = 0.3)
+        lattice_path = write_lattice(
+            lattice_text, filename = "quad_fringe_import_tracking.sad")
+
+        sad_particles = track_sad(
+            lattice_filepath       = lattice_path.name,
+            line_name              = "TEST_LINE",
+            x_init                 = x_init,
+            px_init                = px_init,
+            y_init                 = y_init,
+            py_init                = py_init,
+            zeta_init              = zeta_init,
+            delta_init             = delta_init,
+            n_turns                = 1,
+            rfsw                   = True,
+            rad                    = False,
+            fluc                   = False,
+            radcod                 = False,
+            radtaper               = False,
+            turn_by_turn_monitor   = False,
+            with_progress          = False,
+            wall_time              = 30)
+
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path            = str(lattice_path),
+            output_directory            = "N/A",
+            _verbose                    = False,
+            _test_mode                  = True,
+            _import_sad_quad_fringes    = True)
+
+        xs_particles = track_xsuite_particles(
+            line, x_init, px_init, y_init, py_init, zeta_init, delta_init)
+    finally:
+        os.chdir(cwd)
+
+    for coord, sad_values, xs_values in [
+            ("x",  sad_particles["x"],  xs_particles.x),
+            ("px", sad_particles["px"], xs_particles.px),
+            ("y",  sad_particles["y"],  xs_particles.y),
+            ("py", sad_particles["py"], xs_particles.py)]:
+        np.testing.assert_allclose(
+            xs_values, sad_values, rtol = 1e-6, atol = 1e-9,
+            err_msg = (
+                f"Converted QUAD F1/F2 fringe tracking `{coord}` should "
+                "match SAD once _import_sad_quad_fringes=True."))
+
+def test_quad_fringe_import_matches_sad_tracking_negative_k1(write_lattice, tmp_path):
+    """
+    Same as test_quad_fringe_import_matches_sad_tracking but K1<0 --
+    pins the sign-asymmetric case that requires the theta=ROTATE+
+    akang(K1) frame rotation to reproduce.
+    """
+    x_init, px_init, y_init, py_init, zeta_init, delta_init = \
+        _standard_five_particle_offsets()
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        lattice_text = _quad_fringe_lattice_text("F1=0.02 F2=0.01 FRINGE=3", k1 = -0.3)
+        lattice_path = write_lattice(
+            lattice_text, filename = "quad_fringe_import_tracking_neg_k1.sad")
+
+        sad_particles = track_sad(
+            lattice_filepath       = lattice_path.name,
+            line_name              = "TEST_LINE",
+            x_init                 = x_init,
+            px_init                = px_init,
+            y_init                 = y_init,
+            py_init                = py_init,
+            zeta_init              = zeta_init,
+            delta_init             = delta_init,
+            n_turns                = 1,
+            rfsw                   = True,
+            rad                    = False,
+            fluc                   = False,
+            radcod                 = False,
+            radtaper               = False,
+            turn_by_turn_monitor   = False,
+            with_progress          = False,
+            wall_time              = 30)
+
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path            = str(lattice_path),
+            output_directory            = "N/A",
+            _verbose                    = False,
+            _test_mode                  = True,
+            _import_sad_quad_fringes    = True)
+
+        xs_particles = track_xsuite_particles(
+            line, x_init, px_init, y_init, py_init, zeta_init, delta_init)
+    finally:
+        os.chdir(cwd)
+
+    for coord, sad_values, xs_values in [
+            ("x",  sad_particles["x"],  xs_particles.x),
+            ("px", sad_particles["px"], xs_particles.px),
+            ("y",  sad_particles["y"],  xs_particles.y),
+            ("py", sad_particles["py"], xs_particles.py)]:
+        np.testing.assert_allclose(
+            xs_values, sad_values, rtol = 1e-6, atol = 1e-9,
+            err_msg = (
+                f"Converted K1<0 QUAD F1/F2 fringe tracking `{coord}` "
+                "should match SAD once _import_sad_quad_fringes=True."))

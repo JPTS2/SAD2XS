@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-12
+Date:       2026-07-22
 ================================================================================
 """
 ################################################################################
@@ -871,3 +871,69 @@ def test_pipeline_reverse_element_order_translation_physics_matches_sad(tmp_path
         f"""SAD reversed: {r_sad_rev["x"][0]:.6e}. """
         "Both SAD values are the same; a sign error in shift_x negation "
         "would produce the opposite sign here.")
+
+
+################################################################################
+# QUAD Linear Fringe Field Adjustment (_import_sad_quad_fringes)
+################################################################################
+def test_pipeline_reverse_element_order_quad_fringe_matches_sad_reversed_line(tmp_path):
+    """
+    Xsuite tracking through a reverse_element_order=True conversion of a
+    QUAD with asymmetric F1K1F/F1K1B (FRINGE=1, entrance-only) should
+    match SAD tracking through the native SAD-reversed line
+    (LINE TESTREV = (-TEST)). This is the strongest available check on
+    the reversal fix-up: it only passes if BOTH the F1K1F<->F1K1B
+    parameter swap AND the FRINGE mode permutation (1<->2) are applied
+    together -- see tests/sad/test_quad.py's
+    test_quad_reversed_line_fringe_mode_permutes for the SAD-only ground
+    truth this mirrors.
+    """
+    lattice_content = (
+        "MOMENTUM = 1.0 GEV;\n"
+        "QUAD Q1 = (L=1.0 K1=0.3 F1K1F=0.05 F1K1B=-0.03 F2K1F=0.02 "
+        "F2K1B=-0.01 FRINGE=1);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST    = (START Q1 END);\n"
+        "LINE TESTREV = (-TEST);\n")
+
+    lat_path = tmp_path / "rev_quad_fringe.sad"
+    lat_path.write_text(lattice_content)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        r_sad = track_sad(
+            lattice_filepath = lat_path.name,
+            line_name        = "TESTREV",
+            x_init           = np.array([1e-3]),
+            px_init          = np.array([2e-3]),
+            y_init           = np.array([-1.5e-3]),
+            py_init          = np.array([0.5e-3]),
+            zeta_init        = np.array([0.0]),
+            delta_init       = np.array([0.0]),
+            n_turns          = 1,
+            rfsw             = False,
+            with_progress    = False)
+    finally:
+        os.chdir(cwd)
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path            = str(lat_path),
+        output_directory            = "N/A",
+        reverse_element_order       = True,
+        _import_sad_quad_fringes    = True,
+        _verbose                    = False,
+        _test_mode                  = True)
+
+    p = xt.Particles(
+        "positron", p0c=1.0E9,
+        x=1e-3, px=2e-3, y=-1.5e-3, py=0.5e-3, zeta=0.0, delta=0.0)
+    line.track(p, num_turns=1)
+
+    for coord, sad_val, xs_val in [
+            ("x", r_sad["x"][0], p.x[0]), ("px", r_sad["px"][0], p.px[0]),
+            ("y", r_sad["y"][0], p.y[0]), ("py", r_sad["py"][0], p.py[0])]:
+        assert xs_val == pytest.approx(sad_val, rel=1e-6, abs=1e-9), (
+            f"Xsuite reverse_element_order=True QUAD fringe tracking "
+            f"`{coord}` should match SAD's native -LINE reversed tracking. "
+            f"Xsuite: {xs_val:.6e}, SAD: {sad_val:.6e}.")

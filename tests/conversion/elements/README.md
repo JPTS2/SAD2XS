@@ -44,7 +44,7 @@ to extend.
 | `test_moni.py` | 5 | 0 | — |
 | `test_mult.py` | 26 | 0 | — |
 | `test_oct.py` | 18 | 0 | — |
-| `test_quad.py` | 20 | 0 | — |
+| `test_quad.py` | 27 | 7 | `_import_sad_quad_fringes` not yet implemented (expected until the converter/reversal work lands) |
 | `test_sext.py` | 18 | 0 | — |
 | `test_sol.py` | 26 | 0 | — |
 

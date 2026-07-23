@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-22
 ================================================================================
 """
 
@@ -45,6 +45,7 @@ class Config:
     _replace_repeated_elements:     bool            = True
     _install_offset_markers:        bool            = True
     _import_sad_bend_fringes:       bool            = True
+    _import_sad_quad_fringes:       bool            = False
 
     ############################################################################
     # Constants

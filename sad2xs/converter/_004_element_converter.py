@@ -118,7 +118,8 @@ def convert_elements(
         log_section_heading("Converting Quadrupoles", mode = "section")
         convert_quadrupoles(
             parsed_elements = parsed_elements,
-            environment     = environment)
+            environment     = environment,
+            config          = config)
         logger.info(f"""Converted {len(parsed_elements["quad"])} quadrupole definitions""")
 
     ########################################
@@ -917,14 +918,238 @@ def _convert_typed_multipole(
         rot_s_rad   = rotation)
 
 ################################################################################
+# Quadrupole Linear (F1/F2) Fringe Helpers
+################################################################################
+def _quad_fringe_akang(K1: float) -> float:
+    """
+    tfloor.f's akang (L>0 assumed): SAD encodes a defocusing quadrupole
+    as a focusing one rotated 90 degrees rather than tracking K1's sign
+    directly through the fringe formula -- akang supplies that extra
+    rotation.
+    """
+    return np.pi / 2.0 if K1 < 0.0 else 0.0
+
+
+def _sad_quad_fringe_coeffs(
+        L: float, K1: float, F1: float, F2: float,
+        F1K1F: float, F2K1F: float, F1K1B: float, F2K1B: float
+        ) -> tuple[float, float, float, float]:
+    """
+    tffs.f:952-980 (tsetfringep), cmp%ori=True branch: the a/b
+    coefficients tquad.f's entrance/exit kicks actually use, derived
+    from the user-facing F1/F2/F1K1F/F1K1B/F2K1F/F2K1B parameters.
+
+    Returns (a_in, b_in, a_out, b_out).
+    """
+    akk = K1 / L
+    f1_raw_in  = F1 + F1K1F
+    f1_raw_out = F1 + F1K1B
+    f2_raw_in  = F2 + F2K1F
+    f2_raw_out = F2 + F2K1B
+
+    a_in  = -abs(akk * f1_raw_in  * f1_raw_in)  / 24.0
+    b_in  = abs(akk) * f2_raw_in
+    a_out = -abs(akk * f1_raw_out * f1_raw_out) / 24.0
+    b_out = abs(akk) * f2_raw_out
+    return a_in, b_in, a_out, b_out
+
+
+def _quad_fringe_taylor_coeffs(a: float, b: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    (k, R, T) for one SAD QUAD linear fringe kick (tquad.f:52-67/86-102),
+    Taylor-expanded to O(delta) about delta=0 -- the exact kick is
+    non-polynomial in delta (exp(a/(1+delta)), 1/(1+delta)**2), so this
+    is the same intentional, quantified truncation an
+    `xt.SecondOrderTaylorMap` (degree<=2 in phase space) allows.
+
+    Call with a=a_in for the entrance kick, a=-a_out for the exit kick
+    (tquad.f's own entrance/exit sign convention); b is unchanged either
+    way.
+
+    Hand-derived closed form, not evaluated symbolically at runtime
+    (sympy is not a sad2xs dependency) -- cross-checked to machine
+    precision against an independent symbolic derivation over a wide
+    (a, b) grid before landing.
+
+    Approximation: this expansion is in Xsuite's `pzeta`, which equals
+    SAD's `delta` only in the beta0->1 (ultra-relativistic) limit --
+    exact for the electron/positron lattices this feature targets
+    (KEKB), not verified for lower-beta0 species (e.g. protons).
+    """
+    ea, eam = np.exp(a), np.exp(-a)
+
+    k = np.zeros(6)
+    R = np.zeros((6, 6))
+    T = np.zeros((6, 6, 6))
+
+    R[0, 0] = ea
+    R[0, 1] = b
+    R[1, 1] = eam
+    R[2, 2] = eam
+    R[2, 3] = -b
+    R[3, 3] = ea
+    R[4, 4] = 1.0
+    R[5, 5] = 1.0
+
+    T[0, 0, 5] = T[0, 5, 0] = -a * ea / 2.0
+    T[0, 1, 5] = T[0, 5, 1] = -b
+    T[1, 1, 5] = T[1, 5, 1] = a * eam / 2.0
+    T[2, 2, 5] = T[2, 5, 2] = a * eam / 2.0
+    T[2, 3, 5] = T[2, 5, 3] = b
+    T[3, 3, 5] = T[3, 5, 3] = -a * ea / 2.0
+    T[4, 1, 1] = -b * eam * (1.0 + a / 2.0)
+    T[4, 3, 3] = b * ea * (1.0 - a / 2.0)
+    T[4, 0, 1] = T[4, 1, 0] = -a / 2.0
+    T[4, 2, 3] = T[4, 3, 2] = a / 2.0
+
+    return k, R, T
+
+
+def _rotate_quad_fringe_taylor_map(
+        theta: float, k: np.ndarray, R: np.ndarray, T: np.ndarray
+        ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Conjugate (k, R, T) by the SAD-frame rotation theta=ROTATE+akang(K1)
+    (tffs.f's p_THETA2_QUAD), so the resulting map reproduces "rotate in
+    -> apply (k,R,T) -> rotate out" as a single SecondOrderTaylorMap.
+    Only the transverse (x,px,y,py) block rotates; zeta/pzeta pass
+    through unrotated. theta uses SAD's own angle directly (unlike the
+    quadrupole body, which needs `rot_s_rad=-ROTATE` -- an unrelated
+    Xsuite-API sign convention, see `get_element_misalignments`).
+    """
+    c, s = np.cos(theta), np.sin(theta)
+    rot_in = np.eye(6)
+    rot_in[0, 0], rot_in[0, 2] = c, -s
+    rot_in[1, 1], rot_in[1, 3] = c, -s
+    rot_in[2, 0], rot_in[2, 2] = s, c
+    rot_in[3, 1], rot_in[3, 3] = s, c
+    rot_out = rot_in.T
+
+    k_new = rot_out @ k
+    R_new = rot_out @ R @ rot_in
+    T_new = np.einsum('ia,abc,bj,ck->ijk', rot_out, T, rot_in, rot_in)
+    return k_new, R_new, T_new
+
+
+def _quad_linear_fringe_coefficients(
+        ele_vars: dict[str, SadValue], config: ConfigLike) -> dict:
+    """
+    Derive the per-side (a, b) linear-fringe coefficients and frame
+    angle for a SAD QUAD.
+
+    Returns {} if fringe import is disabled
+    (`config._import_sad_quad_fringes`), the QUAD has no length (SAD
+    itself defines f1=f2=0 for a thin QUAD -- a no-op, matching
+    tquad.f), or every fringe term is zero/FRINGE gates both sides off.
+    Otherwise returns a dict with a "theta" entry plus an "in" and/or
+    "out" entry (each an (a, b) tuple) -- present only for the side(s)
+    that are both FRINGE-active AND numerically non-trivial, so a
+    caller never has to build a placeholder identity map for an
+    inactive or trivial side.
+
+    Parameters
+    ----------
+    ele_vars : dict
+        The QUAD element's parsed parameters.
+    config : ConfigLike
+        Converter configuration; only `_import_sad_quad_fringes` is
+        used.
+
+    Raises
+    ------
+    ValueError
+        If K1, F1, F2, F1K1F, F2K1F, F1K1B, F2K1B, FRINGE, or ROTATE is
+        a deferred expression rather than a concrete number.
+    """
+    if not config._import_sad_quad_fringes:
+        return {}
+
+    length = parse_expression(ele_vars.get("l", 0.0))
+    if not isinstance(length, float) or np.isclose(length, 0.0):
+        return {}
+
+    mfring = parse_expression(ele_vars.get("fringe", 0.0))
+    if not isinstance(mfring, float):
+        raise ValueError(
+            f"FRINGE must be a concrete number to import the linear QUAD "
+            f"fringe, got a deferred expression: {mfring!r}.")
+    mfring = int(mfring)
+    if mfring == 0:
+        return {}
+
+    k1    = parse_expression(ele_vars.get("k1", 0.0))
+    f1    = parse_expression(ele_vars.get("f1", 0.0))
+    f2    = parse_expression(ele_vars.get("f2", 0.0))
+    f1k1f = parse_expression(ele_vars.get("f1k1f", 0.0))
+    f2k1f = parse_expression(ele_vars.get("f2k1f", 0.0))
+    f1k1b = parse_expression(ele_vars.get("f1k1b", 0.0))
+    f2k1b = parse_expression(ele_vars.get("f2k1b", 0.0))
+    rotate = parse_expression(ele_vars.get("rotate", 0.0))
+    for name, value in (
+            ("K1", k1), ("F1", f1), ("F2", f2), ("F1K1F", f1k1f),
+            ("F2K1F", f2k1f), ("F1K1B", f1k1b), ("F2K1B", f2k1b),
+            ("ROTATE", rotate)):
+        if not isinstance(value, float):
+            raise ValueError(
+                f"{name} must be a concrete number to import the linear "
+                f"QUAD fringe, got a deferred expression: {value!r}.")
+
+    a_in, b_in, a_out, b_out = _sad_quad_fringe_coeffs(
+        length, k1, f1, f2, f1k1f, f2k1f, f1k1b, f2k1b)
+
+    result = {}
+    if mfring in (1, 3) and not (a_in == 0.0 and b_in == 0.0):
+        result["in"] = (a_in, b_in)
+    if mfring in (2, 3) and not (a_out == 0.0 and b_out == 0.0):
+        result["out"] = (a_out, b_out)
+    if not result:
+        return {}
+    result["theta"] = rotate + _quad_fringe_akang(k1)
+    return result
+
+def _new_quad_fringe_element(
+        environment: xt.Environment, name: str, a: float, b: float, theta: float) -> None:
+    """
+    Build one entrance/exit linear-fringe SecondOrderTaylorMap and store
+    it in `environment.elements[name]`.
+
+    The (a, b, theta) it was built from are stashed as plain attributes
+    on the element itself (not xofields -- Xsuite has no field for
+    them, but the Python object happily carries extra attributes that
+    survive line-building and `line.mirror()`). This lets
+    `reverse_line_element_order` (`_007_reversals.py`) rebuild the
+    fringe content correctly under `-LINE`/`reverse_element_order`
+    without any extra plumbing between the converter and the reversal
+    step -- the same "read what's already on the object" pattern
+    `_007_reversals.py` already uses for bend/solenoid attributes,
+    just via a plain attribute instead of an xofield.
+    """
+    k, R, T = _rotate_quad_fringe_taylor_map(theta, *_quad_fringe_taylor_coeffs(a, b))
+    element = xt.SecondOrderTaylorMap(k = k, R = R, T = T, length = 0.0)
+    element._sad_quad_fringe_a     = a
+    element._sad_quad_fringe_b     = b
+    element._sad_quad_fringe_theta = theta
+    environment.elements[name] = element
+
+################################################################################
 # Convert Quadrupoles
 ################################################################################
-def convert_quadrupoles(parsed_elements: dict[str, dict], environment: xt.Environment) -> None:
+def convert_quadrupoles(
+        parsed_elements:    dict[str, dict],
+        environment:        xt.Environment,
+        config:             ConfigLike) -> None:
     """
     Convert SAD QUAD elements into Xsuite Quadrupole/Multipole elements.
 
     Thin wrapper around `_convert_typed_multipole` for order n=2
-    (strength parameter "k1").
+    (strength parameter "k1"), except when `config._import_sad_quad_fringes`
+    is set and the QUAD carries an active linear (F1/F2) fringe (see
+    `_quad_linear_fringe_coefficients`): the converted element then
+    becomes a subline of [entrance fringe map, quadrupole body, exit
+    fringe map] -- only the side(s) actually active are built, never a
+    placeholder identity map for an inactive side. The body element is
+    named `{name}_quad` (so its strength variable is `k1_{name}_quad`,
+    not the usual `k1_{name}` -- the subline itself keeps `{name}`).
 
     Parameters
     ----------
@@ -932,9 +1157,34 @@ def convert_quadrupoles(parsed_elements: dict[str, dict], environment: xt.Enviro
         The "elements" sub-dictionary of parsed lattice data.
     environment : xt.Environment
         The Xsuite environment to create converted elements into.
+    config : ConfigLike
+        Converter configuration; only `_import_sad_quad_fringes` is
+        used by the fringe path (the body itself needs no config).
     """
     for ele_name, ele_vars in parsed_elements["quad"].items():
-        _convert_typed_multipole(ele_name, ele_vars, environment, 2, xt.Quadrupole, "k1")
+        fringe = _quad_linear_fringe_coefficients(ele_vars, config)
+        if not fringe:
+            _convert_typed_multipole(ele_name, ele_vars, environment, 2, xt.Quadrupole, "k1")
+            continue
+
+        body_name = f"{ele_name}_quad"
+        _convert_typed_multipole(body_name, ele_vars, environment, 2, xt.Quadrupole, "k1")
+        theta = fringe["theta"]
+
+        components = []
+        if "in" in fringe:
+            a, b = fringe["in"]
+            _new_quad_fringe_element(environment, f"{ele_name}_fringe_in", a, b, theta)
+            components.append(f"{ele_name}_fringe_in")
+
+        components.append(body_name)
+
+        if "out" in fringe:
+            a, b = fringe["out"]
+            _new_quad_fringe_element(environment, f"{ele_name}_fringe_out", -a, b, theta)
+            components.append(f"{ele_name}_fringe_out")
+
+        environment.new_line(name = ele_name, components = components)
 
 ################################################################################
 # Convert Sextupoles
