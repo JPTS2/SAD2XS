@@ -37,7 +37,7 @@ to extend.
 | `test_bend.py` | 43 | 0 | — |
 | `test_cavi.py` | 10 | 0 | — |
 | `test_coord.py` | 10 | 0 | — |
-| `test_corrector.py` | 24 | 0 | — |
+| `test_corrector.py` | 25 | 0 | — |
 | `test_drift.py` | 7 | 0 | — |
 | `test_map.py` | 6 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
@@ -170,16 +170,19 @@ for the resulting converter decision.
 
 `_import_sad_bend_fringes` (private, default `True`) reproduces SAD's
 `FRINGE`/`F1`/`FB1`/`FB2` soft-edge fringe via Xsuite's native
-`fint`/`hgap`. Both files follow the same four-test pattern: a
+`fint`/`hgap`. Both files follow the same five-test pattern: a
 `..._defaults_on` test locking in that the flag takes effect without
 needing to be passed; a `..._explicit_off` test locking in that it can
-still be disabled; a `..._matches_sad_on_momentum` test asserting a
-tight match at `delta=0`; and a `..._off_momentum_residual_is_bounded`
-test asserting the known, currently-characterised residual explicitly
-rather than skipping it — a future upstream Xsuite/MAD-NG momentum-scaling
-fix should make this test fail (residual outside the asserted band) and
-surface for review, not silently pass. See `docs/sad-behaviour.md`
-("`BEND` `F1`/`FRINGE` soft-edge fringe") for the derivation and
+still be disabled; a `..._fringe_gates_single_edge` test covering the
+full FRINGE gating grid (0 or `<= -3` = neither edge, `-1`/`-2` =
+entrance-/exit-only, any positive value = both); a
+`..._matches_sad_on_momentum` test asserting a tight match at `delta=0`;
+and a `..._off_momentum_residual_is_bounded` test asserting the known,
+currently-characterised residual explicitly rather than skipping it — a
+future upstream Xsuite/MAD-NG momentum-scaling fix should make this test
+fail (residual outside the asserted band) and surface for review, not
+silently pass. See `docs/sad-behaviour.md` ("`BEND` `F1`/`FRINGE`
+soft-edge fringe") for the derivation and full gating grid, and
 `docs/design-decisions.md` ("`BEND` `F1`/`FRINGE` fringe import is
 private, default-on" section) for why the flag is private and the
 off-momentum caveat that comes with it.

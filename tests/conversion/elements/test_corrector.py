@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-23
 ================================================================================
 """
 ################################################################################
@@ -1388,6 +1388,63 @@ def test_corrector_fringe_import_explicit_off(write_lattice, tmp_path):
     assert corrector.edge_entry_fint == 0.0 and corrector.edge_entry_hgap == 0.0, (
         "FB1/FB2/FRINGE should be ignored when _import_sad_bend_fringes is "
         "explicitly disabled.")
+
+@pytest.mark.parametrize("fringe, entry_active, exit_active", [
+    (0, False, False),
+    (-1, True, False),
+    (-2, False, True),
+    (-3, False, False),
+    (-4, False, False),
+    (1, True, True),
+    (2, True, True),
+    (3, True, True)])
+def test_corrector_fringe_import_fringe_gates_single_edge(
+        write_lattice, tmp_path, fringe, entry_active, exit_active):
+    """
+    Same grid as test_bend.py's fringe_import_fringe_gates_single_edge,
+    for a K0-only corrector -- see docs/sad-behaviour.md.
+    """
+    lattice_text = f"""\
+    MOMENTUM    = 1.0 GEV;
+
+    BEND        TEST_CORR   = (
+        L       = 0.5
+        K0      = 0.05
+        FB1     = 0.15
+        FB2     = 0.08
+        FRINGE  = {fringe}
+    );
+
+    MARK        START       = ()
+                END         = ();
+
+    LINE        TEST_LINE   = (START TEST_CORR END);
+    """
+    lattice_path = write_lattice(
+        lattice_text, filename = f"corrector_fringe_import_fringe_{fringe}.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path            = str(lattice_path),
+        output_directory            = "N/A",
+        _verbose                    = False,
+        _test_mode                  = True,
+        _import_sad_bend_fringes    = True)
+
+    corrector = line["test_corr"]
+    if entry_active:
+        assert corrector.edge_entry_fint != 0.0, (
+            f"FRINGE={fringe} should activate the entry edge fringe.")
+    else:
+        assert corrector.edge_entry_fint == 0.0 and corrector.edge_entry_hgap == 0.0, (
+            f"FRINGE={fringe} should leave the entry edge at Xsuite's own "
+            "defaults.")
+    if exit_active:
+        assert corrector.edge_exit_fint != 0.0, (
+            f"FRINGE={fringe} should activate the exit edge fringe.")
+    else:
+        assert corrector.edge_exit_fint == 0.0 and corrector.edge_exit_hgap == 0.0, (
+            f"FRINGE={fringe} should leave the exit edge at Xsuite's own "
+            "defaults.")
 
 def test_corrector_fringe_import_matches_sad_on_momentum(write_lattice, tmp_path):
     """
