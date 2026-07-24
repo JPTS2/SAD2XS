@@ -490,8 +490,6 @@ def convert_bends(
 
     bends  = parsed_elements["bend"]
 
-    # Bends with ANGLE != 0 and a nonzero DX/DY: SAD2XS cannot reproduce
-    # SAD's reference-orbit convention for a displaced curved element.
     # Reported once for the whole lattice below, not once per element.
     offset_bends = []
 
@@ -1315,10 +1313,8 @@ def convert_multipoles(
         # RF Parameters (VOLT/HARM/FREQ) -- interleaved Multipole/Cavity slices
         ########################################
         if any(_rf_key in ele_vars for _rf_key in ("volt", "harm", "freq")):
-            # RF parameters take priority over both SIMPLIFY_MULTIPOLES and
-            # user_multipole_replacements, the same way they already take
-            # priority over SIMPLIFY_MULTIPOLES below -- an RF-carrying MULT
-            # is never a candidate for single-purpose-element replacement.
+            # RF parameters take priority over SIMPLIFY_MULTIPOLES and
+            # user_multipole_replacements: this MULT is never simplified.
             voltage, freq, harmonic, phi = parse_rf_parameters(
                 environment = environment,
                 ele_name    = ele_name,
@@ -1327,15 +1323,8 @@ def convert_multipoles(
             n_slices = 1 if is_effectively_zero(length, config.KNL_ZERO_TOL) \
                 else config.N_SLICES_MULT_RF
 
-            # NOTE: slices are always uniform (each an equal fraction of the
-            # total), so a reversed line reference to this element is a true
-            # no-op today -- _005_line_converter.py's generated-subline path
-            # already preserves component order, and reused Multipole/Cavity
-            # elements are direction-symmetric. This would need dedicated
-            # reorder logic (there is no existing one to reuse -- bound
-            # solenoids solve reversal differently, via a post-hoc scan of
-            # the flattened line, not a generated-subline reversal) only if
-            # slicing is ever made non-uniform.
+            # Slices are always uniform, so reversal is a no-op today; would
+            # need dedicated reorder logic if slicing ever becomes non-uniform.
             components = []
             for i in range(n_slices):
                 mult_name = f"{ele_name}_mult_{i}"
