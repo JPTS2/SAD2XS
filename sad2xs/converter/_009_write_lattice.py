@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-23
 ================================================================================
 """
 
@@ -36,9 +36,10 @@ from ..output_writer._009_cavity import create_cavity_lattice_file_information
 from ..output_writer._010_refshift import create_refshift_lattice_file_information
 from ..output_writer._011_aperture import create_aperture_lattice_file_information
 from ..output_writer._012_marker import create_marker_lattice_file_information
-from ..output_writer._013_line import create_line_lattice_file_information
-from ..output_writer._014_model import create_model_lattice_file_information
-from ..output_writer._015_offset_markers import create_offset_marker_lattice_file_information
+from ..output_writer._013_taylor_maps import create_taylor_map_lattice_file_information
+from ..output_writer._014_line import create_line_lattice_file_information
+from ..output_writer._015_model import create_model_lattice_file_information
+from ..output_writer._016_offset_markers import create_offset_marker_lattice_file_information
 
 logger  = logging.getLogger(__name__)
 
@@ -62,11 +63,12 @@ def write_lattice(
     executed against a fresh `xt.Environment`: reference-particle
     globals, then one section per element family (drifts, bends,
     correctors, quadrupoles, sextupoles, octupoles, multipoles,
-    solenoids, cavities, reference shifts, apertures, markers), then
-    the LINE definition and modelling (integrator/model) settings, and
-    finally any resolved offset-marker insertion points. Elements are
-    grouped by length (see `sad2xs.output_writer._000_helpers`) so
-    identical elements are written once and reused via
+    solenoids, cavities, reference shifts, apertures, markers, Taylor
+    maps), then the LINE definition and modelling (integrator/model)
+    settings, and finally any resolved offset-marker insertion points.
+    Elements are grouped by length (see
+    `sad2xs.output_writer._000_helpers`) so identical elements are
+    written once and reused via
     `env.new(..., mode="clone")`; a `-`-prefixed element is only
     written if no non-reversed sibling of the same root name exists in
     the line.
@@ -309,6 +311,14 @@ env.particle_ref    = {_particle_ref_line}
         line_table              = line_table,
         offset_marker_locations = offset_marker_locations,
         config                  = config)
+
+    ########################################
+    # Taylor Maps
+    ########################################
+    lattice_file_string += create_taylor_map_lattice_file_information(
+        line        = line,
+        line_table  = line_table,
+        config      = config)
 
     ########################################
     # Line

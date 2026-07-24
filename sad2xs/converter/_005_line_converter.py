@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-23
+Date:       2026-07-24
 ================================================================================
 """
 
@@ -158,16 +158,18 @@ def convert_lines(
     """
     Build every parsed SAD LINE as an Xsuite line, handling reversals.
 
-    Reversed line references (`-LINENAME`) are resolved in three
-    passes: (1) reversed real (imported) sublines have their element
-    order reversed and every component negated; (2) reversed generated
-    sublines (e.g. solenoid/reference-shift/thick-cavity sub-lines,
-    which are never reordered) have every component negated but keep
-    their order; (3) any remaining reversed component (a single
-    element, not a subline) is resolved directly via
-    `create_reversed_component`. Reversed generated sublines are
-    deduplicated by name, so repeated references reuse the same
-    `*_reversed` line.
+    A component referencing a quad-fringe compound (`{name}_compound`,
+    see `convert_quadrupoles`) is first redirected there from the bare
+    `{name}` SAD element name. Reversed line references (`-LINENAME`)
+    are then resolved in three passes: (1) reversed real (imported)
+    sublines have their element order reversed and every component
+    negated; (2) reversed generated sublines (e.g. solenoid/reference-
+    shift/thick-cavity sub-lines, which are never reordered) have
+    every component negated but keep their order; (3) any remaining
+    reversed component (a single element, not a subline) is resolved
+    directly via `create_reversed_component`. Reversed generated
+    sublines are deduplicated by name, so repeated references reuse
+    the same `*_reversed` line.
 
     Parameters
     ----------
@@ -201,6 +203,25 @@ def convert_lines(
     ########################################
     converted_lines = []
     for line, components in parsed_lines.items():
+
+        # Work on a copy: the passes below rewrite entries in place, and
+        # that must never leak back into parsed_lattice_data["lines"]
+        # -- other converter stages (offset markers) rely on it staying
+        # an unmutated record of what SAD actually declared.
+        components = list(components)
+
+        ########################################################################
+        # Handle quad-fringe compound references
+        ########################################################################
+        # convert_quadrupoles names a fringe/body compound's wrapping line
+        # "{name}_compound" so the quadrupole body can keep the bare SAD
+        # name -- redirect any component referencing "{name}" onto it.
+        for i, component in enumerate(components):
+            is_reversed     = component.startswith("-")
+            base_name       = component[1:] if is_reversed else component
+            compound_name   = f"{base_name}_compound"
+            if compound_name in environment.lines:
+                components[i] = f"-{compound_name}" if is_reversed else compound_name
 
         ########################################################################
         # Handle reversed real sublines

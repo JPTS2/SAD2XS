@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-24
 ================================================================================
 """
 ################################################################################
@@ -256,3 +256,25 @@ def test_supported_elements_writer_handles_marker(tmp_path):
     output_dir = _write_only(line, tmp_path, "marker")
 
     _assert_file_exists_and_is_executable(output_dir, "marker")
+
+
+def test_supported_elements_writer_handles_first_order_taylor_map(tmp_path):
+    """
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.FirstOrderTaylorMap element.
+    """
+    line       = _build_single_element_line(xt.FirstOrderTaylorMap(), "m1")
+    output_dir = _write_only(line, tmp_path, "first_order_taylor_map")
+
+    _assert_file_exists_and_is_executable(output_dir, "first_order_taylor_map")
+
+
+def test_supported_elements_writer_handles_second_order_taylor_map(tmp_path):
+    """
+    write_lattice should produce an executable lattice file when the line
+    contains an xt.SecondOrderTaylorMap element.
+    """
+    line       = _build_single_element_line(xt.SecondOrderTaylorMap(), "m1")
+    output_dir = _write_only(line, tmp_path, "second_order_taylor_map")
+
+    _assert_file_exists_and_is_executable(output_dir, "second_order_taylor_map")

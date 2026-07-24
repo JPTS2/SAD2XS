@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-24
 ================================================================================
 """
 ################################################################################
@@ -27,12 +27,12 @@ logger  = logging.getLogger(__name__)
 
 _REPEAT_SUFFIX_RE  = re.compile(r"^(.*)\.(\d+)$")
 
-# One SAD solenoid-boundary element becomes 4 Xsuite placements (only
-# "_bound" carries real physics); see docs/xsuite-helpers.md for why the
-# front face isn't always "_bound". _collapse_slicing folds all 4 into one.
-_BOUNDARY_COMPOUND_SUFFIXES    = {"bound", "dxy", "dz", "rot"}
+# Suffixes for a SAD element split into several Xsuite placements
+# (solenoid boundary, quad linear fringe) that _collapse_slicing folds
+# back into one; see docs/xsuite-helpers.md.
+_COMPOUND_SUFFIXES  = {"bound", "dxy", "dz", "rot", "fringe_in", "fringe_out"}
 _COMPOUND_SUFFIX_RE = re.compile(
-    r"_(?:" + "|".join(_BOUNDARY_COMPOUND_SUFFIXES) + r")(\.\d+)?$")
+    r"_(?:" + "|".join(_COMPOUND_SUFFIXES) + r")(\.\d+)?$")
 
 ################################################################################
 # Name helpers
@@ -40,7 +40,7 @@ _COMPOUND_SUFFIX_RE = re.compile(
 def _collapse_slicing(name: str) -> str:
     """
     Strip xtrack's ``::N`` table-disambiguation and ``..N``/``..entry_map``
-    slicing suffixes, and sad2xs's solenoid-boundary compound suffix (keeping
+    slicing suffixes, and sad2xs's own compound-piece suffixes (keeping
     any trailing repeat digit), leaving the name of the one logical placement
     a row belongs to.
 
@@ -216,18 +216,21 @@ def align_xsuite_twiss_with_sad_twiss(
     s_for_tol   = s_sad if s_sad is not None else xs_s
 
     ########################################
-    # Face row per placement: smallest s, or the {name}_entry marker
-    # slice_thick_elements() adds, which wins any tie on s.
+    # Face row per placement: earliest row (table order, not s -- ties
+    # on s must still resolve to the earlier row).
     ########################################
     face_row_for_placement     = {}
     for i, (name, s) in enumerate(zip(xs_names, xs_s)):
         collapsed   = _collapse_slicing(name)
         prev        = face_row_for_placement.get(collapsed)
-        if prev is None or s < prev[1]:
+        if prev is None or i < prev[0]:
             face_row_for_placement[collapsed]  = (i, s)
     for i, name in enumerate(xs_names):
         if name.endswith("_entry"):
-            face_row_for_placement[name[:-len("_entry")]]  = (i, xs_s[i])
+            base    = name[:-len("_entry")]
+            prev    = face_row_for_placement.get(base)
+            if prev is None or i < prev[0]:
+                face_row_for_placement[base]   = (i, xs_s[i])
 
     # Repeat-suffixed placements by stripped base; only consulted after an
     # exact-match miss, so a real SAD ".<digits>" name (e.g. "QEAP.44") is

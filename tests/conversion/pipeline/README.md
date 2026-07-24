@@ -25,7 +25,7 @@ should stay focused on pipeline orchestration and public user options.
 | `test_reverse_survey_horizontal.py` | 12 | 0 | — |
 | `test_reverse_survey_vertical.py` | 13 | 0 | — |
 | `test_reverse_charge_sign.py` | 6 | 0 | — |
-| `test_reverse_element_order.py` | 16 | 0 | — |
+| `test_reverse_element_order.py` | 17 | 0 | — |
 | `test_reversed_component_syntax.py` | 7 | 0 | — |
 
 ### `test_convert_sad_to_xsuite.py` note

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-23
 ================================================================================
 """
 
@@ -40,7 +40,7 @@ def create_marker_lattice_file_information(
     by `convert_offset_markers`) are included here even though they
     were removed from the in-memory line -- they get their real
     positions from
-    `sad2xs.output_writer._015_offset_markers.create_offset_marker_lattice_file_information`
+    `sad2xs.output_writer._016_offset_markers.create_offset_marker_lattice_file_information`
     later in the file; this section only needs to declare them to
     exist.
 

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-24
 ================================================================================
 """
 
@@ -370,8 +370,10 @@ def convert_sad_to_xsuite(
     log_section_heading("Converting Offset Markers", mode = "section")
 
     line, offset_marker_locations   = convert_offset_markers(
-        line                = line,
-        parsed_lattice_data = parsed_lattice_data)
+        line                    = line,
+        parsed_lattice_data     = parsed_lattice_data,
+        line_name               = selected_line.lower(),
+        reverse_element_order   = reverse_element_order)
 
     ############################################################################
     # Breakpoint for testing

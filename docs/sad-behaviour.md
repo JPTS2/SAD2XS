@@ -239,6 +239,18 @@ via `ROTATE + akang(K1)`), and skewed (`ROTATE != 0`) cases
 (`test_quad_f1_f2_matches_sad_reference_values` and its `_negative_k1`/
 `_skew` variants).
 
+**The kick itself** (`tquad.f:52-67/86-102`) is a per-side linear map in
+two coefficients, `a` and `b`, derived from the user-facing parameters
+(`tffs.f:952-980`'s `tsetfringep`, `cmp%ori=True` branch):
+`akk = K1/L`, `a = -abs(akk * f1_raw^2)/24`, `b = abs(akk) * f2_raw`, where
+`f1_raw`/`f2_raw` are `F1+F1K1F`/`F2+F2K1F` at the entrance and
+`F1+F1K1B`/`F2+F2K1B` at the exit. `tquad.f` applies `+a` at the entrance
+and `-a` at the exit (same `b`, unchanged sign) — the reason a reversed
+element's surviving fringe side only flips `a`, not `b` or the frame angle
+`ROTATE + akang(K1)`. The exact kick is non-polynomial in `delta`
+(`exp(a/(1+delta))`, `1/(1+delta)^2`); see `docs/design-decisions.md`
+for how SAD2XS represents it.
+
 ## `QUAD` `DISFRIN` hard-edge fringe
 
 Same convention as `BEND` and `SOL`: `DISFRIN` gates a separate, nonlinear

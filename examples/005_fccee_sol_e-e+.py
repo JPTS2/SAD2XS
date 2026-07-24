@@ -35,7 +35,7 @@ from sad2xs.xsuite_helpers import align_xsuite_twiss_with_sad_twiss, \
 # User Parameters
 ################################################################################
 SAD_LATTICE_PATH            = "lattices/fccee_sol.sad"
-REBUILT_SAD_LATTICE_PATH    = "lattices/fccee_sol_rebuilt.sad"
+REBUILT_SAD_LATTICE_PATH    = "lattices/fccee_sole+e-_rebuilt.sad"
 LINE_NAME                   = "RING"
 
 # SAD's coupled beta/alpha (Edwards-Teng convention) map to these Xsuite columns
