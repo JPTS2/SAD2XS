@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-23
+Date:       2026-07-24
 ================================================================================
 """
 
@@ -137,13 +137,13 @@ def create_taylor_map_lattice_file_information(
     ########################################
     for name in unique_first_order_names:
 
+        element = line[name]
+
         # Remove the minus sign if no non minus version exists
         if name.startswith("-"):
             root_name   = name[1:]
             if root_name not in unique_first_order_names:
                 name    = root_name
-
-        element = line[name]
 
         output_string   += f"""
 env.new(
@@ -158,13 +158,13 @@ env.new(
     ########################################
     for name in unique_second_order_names:
 
+        element = line[name]
+
         # Remove the minus sign if no non minus version exists
         if name.startswith("-"):
             root_name   = name[1:]
             if root_name not in unique_second_order_names:
                 name    = root_name
-
-        element = line[name]
 
         output_string   += f"""
 env.new(
