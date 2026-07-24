@@ -15,12 +15,12 @@ rather than one serialised element or feature.
   particle reference, and supported scalar/array fields for every element in
   one shot. All tests expected to pass.
 
-- `test_supported_elements.py` (15 tests) — supported-element policy: one test
+- `test_supported_elements.py` (17 tests) — supported-element policy: one test
   per element type the writer handles. Each test builds a minimal
   single-element line, calls `write_lattice` and `write_optics`, asserts the
   output file is created, and calls it via `env.call()` to confirm it is
   syntactically valid and loadable. Bend (h≠0) and corrector (h=0, k0 set) are
-  tested as distinct writer paths. All 15 tests expected to pass.
+  tested as distinct writer paths. All 17 tests expected to pass.
 
 - `test_lattice_writer.py` (9 tests) — `write_lattice` entry point:
   - File creation, correct filename, `output_header` written to file,
