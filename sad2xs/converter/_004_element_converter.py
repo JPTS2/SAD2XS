@@ -365,24 +365,9 @@ def _canonicalize_dipole_rotation(rotation: SadValue) -> tuple[SadValue, int]:
 
 def _has_nonzero_offset(shift_x: SadValue, shift_y: SadValue, tol: float) -> bool:
     """
-    True if either misalignment is symbolic or numerically nonzero.
-
-    A symbolic (deferred) value is treated conservatively as possibly
-    nonzero, since its runtime value is not known at conversion time.
-
-    Parameters
-    ----------
-    shift_x : float or str
-        Horizontal misalignment, or a deferred expression string.
-    shift_y : float or str
-        Vertical misalignment, or a deferred expression string.
-    tol : float
-        Absolute tolerance below which a numeric value counts as zero.
-
-    Returns
-    -------
-    bool
-        True if `shift_x` or `shift_y` is non-numeric or exceeds `tol`.
+    True if either misalignment is symbolic (treated conservatively as
+    possibly nonzero, since its runtime value isn't known yet) or
+    numerically exceeds `tol`.
     """
     return not (
         is_effectively_zero(shift_x, tol)
@@ -920,12 +905,12 @@ def _convert_typed_multipole(
 ################################################################################
 # Quadrupole Linear (F1/F2) Fringe Helpers
 ################################################################################
-def _quad_fringe_akang(K1: float) -> float:
+def _defocusing_quad_frame_rotation(K1: float) -> float:
     """
-    tfloor.f's akang (L>0 assumed): SAD encodes a defocusing quadrupole
-    as a focusing one rotated 90 degrees rather than tracking K1's sign
-    directly through the fringe formula -- akang supplies that extra
-    rotation.
+    SAD represents a defocusing quad as a focusing one rotated by an
+    extra pi/2 (tfloor.f's "akang"), rather than carrying K1's sign
+    through the fringe formula directly. Returns that extra rotation,
+    or 0 for a focusing quad.
     """
     return np.pi / 2.0 if K1 < 0.0 else 0.0
 
@@ -1104,7 +1089,7 @@ def _quad_linear_fringe_coefficients(
         result["out"] = (a_out, b_out)
     if not result:
         return {}
-    result["theta"] = rotate + _quad_fringe_akang(k1)
+    result["theta"] = rotate + _defocusing_quad_frame_rotation(k1)
     return result
 
 def _new_quad_fringe_element(
