@@ -48,8 +48,20 @@ The version of Xsuite used in comparisons is the latest version, available at [X
 
 
 ## Citing SAD2XS
-No dedicated paper on SAD2XS has been published. 
-To reference the use of SAD2XS, please reference the proceedings of eeFACT 2025 (publication TBD):
+If you use SAD2XS in your work, please cite the archived software release.
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18985396.svg)](https://doi.org/10.5281/zenodo.18985396)
+
+    J. P. T. Salvesen, "SAD2XS: The unofficial Strategic Accelerator Design
+    (SAD) to Xsuite converter". Zenodo. https://doi.org/10.5281/zenodo.18985396
+
+This DOI always resolves to the most recent release.
+To cite a specific version instead, use the version DOI shown on that release's Zenodo record.
+
+GitHub generates APA and BibTeX from `CITATION.cff` via the "Cite this repository" button.
+
+No dedicated paper on SAD2XS has been published.
+The converter is also described in the proceedings of eeFACT 2025 (publication TBD):
 
     "CONSISTENT REPRESENTATION OF LATTICES BETWEEN OPTICS CODE FOR FCC-ee SUPERKEKB AND MORE"
     J. Salvesen, G. Iadarola, G. Broggi, H. Sugimoto, K. Oide, G. Roy, A. Oeftiger
