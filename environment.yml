@@ -8,22 +8,24 @@
 #
 # Authors:    John P. T. Salvesen
 # Email:      john.salvesen@cern.ch
-# Date:       2026-07-20
+# Date:       2026-07-27
 # ==============================================================================
 
 name: sad2xs
 channels:
   - conda-forge
 dependencies:
-  - python=3.12
+  - python=3.13
   - pip
-  - setuptools
+  # PEP 639 license expressions require setuptools 77 or newer
+  - setuptools>=77
   - wheel
   - pip:
       - pytest
       - pyyaml>=6.0
       - xsuite
       - numpy
+      - scipy
       - pandas
       - tfs-pandas
       - matplotlib
