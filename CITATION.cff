@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter"
+abstract: >-
+  SAD2XS converts Strategic Accelerator Design (SAD) lattices into the Xsuite
+  format. It reads a SAD lattice file and produces an Xtrack Line object,
+  together with generated lattice and optics files.
+type: software
+authors:
+  - family-names: Salvesen
+    given-names: John P. T.
+    email: john.salvesen@cern.ch
+    affiliation: "CERN"
+    orcid: "https://orcid.org/0000-0001-9542-9886"
+repository-code: "https://github.com/JPTS2/sad2xs"
+url: "https://github.com/JPTS2/sad2xs"
+license: Apache-2.0
+version: 0.3.0
+date-released: 2026-07-28
+doi: 10.5281/zenodo.18985396
+keywords:
+  - accelerator physics
+  - lattice
+  - SAD
+  - Xsuite
+  - Xtrack
