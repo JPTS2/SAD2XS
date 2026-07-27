@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-24
+Date:       2026-07-27
 ================================================================================
 """
 ################################################################################
@@ -24,19 +24,13 @@ from tests.support.writer_helpers import write_and_load as _shared_write_and_loa
 ################################################################################
 # Helpers
 ################################################################################
-def _write_and_load(line, tmp_path):
-    """
-    Write a line using the public SAD2XS writer entry points and reload it in
-    a clean Xsuite environment.
-    """
-    return _shared_write_and_load(line, tmp_path, output_header = "Taylor map writer test")
-
-
 def _writer_roundtrip(line, tmp_path):
     """
-    Write and reload a line. Returns the reloaded line only.
+    Write a line using the public SAD2XS writer entry points, reload it in a
+    clean Xsuite environment, and return the reloaded line.
     """
-    _, reloaded_line = _write_and_load(line, tmp_path)
+    _, reloaded_line = _shared_write_and_load(
+        line, tmp_path, output_header = "Taylor map writer test")
     return reloaded_line
 
 
@@ -60,14 +54,10 @@ def _build_first_order_map_line(length = 0.0, m0 = None, m1 = None, name = "m1")
     return line
 
 
-def _build_second_order_map_line(
-        length = 0.0, k = None, R = None, T = None, name = "m1",
-        sad_quad_fringe = None):
+def _build_second_order_map_line(length = 0.0, k = None, R = None, T = None, name = "m1"):
     """
     Build a minimal single-SecondOrderTaylorMap Xsuite line with a reference
-    particle. `sad_quad_fringe`, if given, is an (a, b, theta) tuple stashed
-    as the plain `_sad_quad_fringe_a/b/theta` attributes `_new_quad_fringe_element`
-    (`_004_element_converter.py`) adds for quad-fringe maps.
+    particle.
     """
     kwargs = dict(length = length)
     if k is not None:
@@ -77,15 +67,8 @@ def _build_second_order_map_line(
     if T is not None:
         kwargs["T"] = T
 
-    element = xt.SecondOrderTaylorMap(**kwargs)
-    if sad_quad_fringe is not None:
-        a, b, theta = sad_quad_fringe
-        element._sad_quad_fringe_a     = a
-        element._sad_quad_fringe_b     = b
-        element._sad_quad_fringe_theta = theta
-
     line = xt.Line(
-        elements      = [xt.Marker(), element, xt.Marker()],
+        elements      = [xt.Marker(), xt.SecondOrderTaylorMap(**kwargs), xt.Marker()],
         element_names = ["start", name, "end"])
 
     line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
@@ -296,12 +279,15 @@ def test_second_order_taylor_map_writer_preserves_full_double_precision(tmp_path
 ################################################################################
 def test_second_order_taylor_map_writer_preserves_sad_quad_fringe_metadata_when_present(tmp_path):
     """
-    A SecondOrderTaylorMap built by _new_quad_fringe_element carries plain
-    _sad_quad_fringe_a/b/theta attributes that reverse_line_element_order
-    needs; these should survive a write and reload cycle.
+    The converter stashes plain (non-xofield) _sad_quad_fringe_a/b/theta
+    attributes on a quad-fringe map. The reversal fix-up needs them, so they
+    should survive a write and reload cycle.
     """
-    original_line = _build_second_order_map_line(
-        sad_quad_fringe = (-3.125E-05, 0.006, 0.0))
+    original_line = _build_second_order_map_line()
+    original_line["m1"]._sad_quad_fringe_a     = -3.125E-05
+    original_line["m1"]._sad_quad_fringe_b     = 0.006
+    original_line["m1"]._sad_quad_fringe_theta = 0.0
+
     reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
 
     element = reloaded_line["m1"]
@@ -336,6 +322,59 @@ def test_second_order_taylor_map_writer_omits_sad_quad_fringe_metadata_when_abse
 ################################################################################
 # Minus-Sign Root-Name Cleanup
 ################################################################################
+def test_first_order_taylor_map_writer_strips_minus_sign_without_matching_root(tmp_path):
+    """
+    A FirstOrderTaylorMap named with a leading "-" and no non-minus sibling in
+    the line should reload under the stripped (non-minus) name, matching
+    Cavity's convention -- a direction-symmetric element gains nothing from
+    keeping a reversal-only name.
+    """
+    original_line = _build_first_order_map_line(name = "-fringe_in")
+    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+
+    assert "fringe_in" in list(reloaded_line.element_names), (
+        "A FirstOrderTaylorMap named '-fringe_in' with no 'fringe_in' sibling "
+        "should reload under the stripped name 'fringe_in'. "
+        f"Got: {list(reloaded_line.element_names)}.")
+    assert "-fringe_in" not in list(reloaded_line.element_names), (
+        "The minus-prefixed name should not survive when no non-minus "
+        f"sibling exists. Got: {list(reloaded_line.element_names)}.")
+
+
+def test_first_order_taylor_map_writer_keeps_minus_sign_with_matching_root(tmp_path):
+    """
+    When both "name" and "-name" FirstOrderTaylorMap elements exist in the
+    same line, both are genuinely distinct maps and neither should be
+    collapsed away.
+    """
+    m0_plus  = np.array([1.0, 0, 0, 0, 0, 0])
+    m0_minus = np.array([-1.0, 0, 0, 0, 0, 0])
+
+    line = xt.Line(
+        elements = [
+            xt.Marker(),
+            xt.FirstOrderTaylorMap(m0 = m0_plus),
+            xt.FirstOrderTaylorMap(m0 = m0_minus),
+            xt.Marker(),
+        ],
+        element_names = ["start", "fringe_in", "-fringe_in", "end"])
+
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
+
+    reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
+
+    assert "fringe_in" in list(reloaded_line.element_names), (
+        "Both 'fringe_in' and '-fringe_in' should survive when both exist. "
+        f"Got: {list(reloaded_line.element_names)}.")
+    assert "-fringe_in" in list(reloaded_line.element_names), (
+        "Both 'fringe_in' and '-fringe_in' should survive when both exist. "
+        f"Got: {list(reloaded_line.element_names)}.")
+    assert reloaded_line["fringe_in"].m0[0] == pytest.approx(1.0), (
+        "The non-minus element's own m0 should be preserved independently.")
+    assert reloaded_line["-fringe_in"].m0[0] == pytest.approx(-1.0), (
+        "The minus-prefixed element's own m0 should be preserved independently.")
+
+
 def test_second_order_taylor_map_writer_strips_minus_sign_without_matching_root(tmp_path):
     """
     A SecondOrderTaylorMap named with a leading "-" and no non-minus sibling
