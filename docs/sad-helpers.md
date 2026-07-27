@@ -7,7 +7,7 @@ These helpers are separate from the core SAD-to-Xsuite converter. They are used 
 `sad2xs.sad_helpers` is lazily imported, so a bare `import sad2xs` does not require its dependencies. Install them with:
 
 ```
-pip install sad2xs[sad_helpers]
+pip install sad2xs[sad-helpers]
 ```
 
 ## Requirements
