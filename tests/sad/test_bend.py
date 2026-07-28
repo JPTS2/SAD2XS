@@ -522,11 +522,12 @@ def test_bend_disfrin_hard_edge_matches_sad_reference_values(tmp_path):
 
 def test_corrector_disfrin_has_no_effect_without_k1(tmp_path):
     """
-    DISFRIN has no measurable effect on a K0-only corrector (no K1 term
-    for its hard-edge fringe to gate). Note: SAD does not let a corrector
-    (ANGLE absent/zero) carry a nonzero K1 alongside K0 at all -- see
-    dev/sad_bend_k0_k1_bug/ -- so this is the only DISFRIN case reachable
-    for a corrector, not an arbitrary restriction of this test.
+    DISFRIN has no measurable effect on a K0-only corrector, because there is
+    no K1 term for its hard-edge fringe to gate.
+
+    SAD does not let a corrector, with ANGLE absent or zero, carry a nonzero K1
+    alongside K0 at all. This is therefore the only DISFRIN case reachable for
+    a corrector, not an arbitrary restriction of this test.
     """
     y_vals = np.array([0.01])
     delta_vals = np.zeros(1)

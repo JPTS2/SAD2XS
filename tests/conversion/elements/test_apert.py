@@ -1219,16 +1219,14 @@ def test_aper_rotated_limitrect_grid_loss_matches_sad_boundary(
         xsuite_environment,
         assert_environment_element):
     """
-    A rotated rectangular APERT, once CONVERTED, should lose exactly the
-    particles real SAD loses. The aperture is built by converting a SAD APERT
-    definition (not hand-constructed) so the converter's ROTATE handling is
-    exercised end-to-end.
+    A converted rotated rectangular APERT loses exactly the particles real SAD
+    loses.
 
-    A 30 deg angle with off-axis probes makes the rotation sign unambiguous.
-    SAD APERT ROTATE = R corresponds to a coordinate rotation by -R: this was
-    confirmed against real SAD aperture tracking, where at ROTATE = 30 deg the
-    survival of 11 probes matched the analytic model evaluated at -R exactly
-    (e.g. (0.012, 0.012) survives while (-0.012, 0.012) is lost).
+    The aperture is built by converting a SAD APERT definition rather than
+    hand-constructed, so the converter's ROTATE handling is exercised end to
+    end. A 30 deg angle with off-axis probes makes the sign unambiguous: SAD's
+    ROTATE = R is a coordinate rotation by -R, so (0.012, 0.012) survives
+    while (-0.012, 0.012) is lost.
     """
     min_x = -0.01
     max_x = 0.01

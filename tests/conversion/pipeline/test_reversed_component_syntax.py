@@ -154,15 +154,13 @@ def test_reversed_component_solenoid_negates_ks(write_lattice):
 ################################################################################
 def test_reversed_component_bend_swaps_edge_angles(write_lattice):
     """
-    A per-element "-NAME" reference to a Bend should swap the entry and exit
-    edge angles, exactly as reverse_element_order=True does (see
-    test_pipeline_reverse_element_order_swaps_bend_edge_angles).
-    With ANGLE=0.1, E1=0.5, E2=0.25:
-      forward:  entry = 0.05, exit = 0.025
-      reversed: entry = 0.025, exit = 0.05
+    A per-element "-NAME" reference to a Bend swaps the entry and exit edge
+    angles, as reverse_element_order does.
 
-    create_reversed_component clones the bend under its dash-prefixed name
-    ("-b1"), leaving the original "b1" untouched -- check the clone.
+    With ANGLE=0.1, E1=0.5, E2=0.25 the forward entry/exit are 0.05/0.025 and
+    the reversed are 0.025/0.05. Asserts on the dash-prefixed clone "-b1",
+    which create_reversed_component builds while leaving "b1" untouched. Whole
+    line equivalent: test_pipeline_reverse_element_order_swaps_bend_edge_angles.
     """
     lattice_path = write_lattice(
         """\
@@ -198,15 +196,13 @@ def test_reversed_component_bend_swaps_edge_angles(write_lattice):
 ################################################################################
 def test_reversed_component_bend_swaps_fint_hgap(write_lattice):
     """
-    A per-element "-NAME" reference to a Bend should swap the entry and exit
-    fringe fields (fint/hgap), exactly as reverse_element_order=True already
-    does (test_pipeline_reverse_element_order_swaps_bend_fint_hgap).
-    With F1=0.24, FB1=0.12, FB2=0.0:
-      forward:  entry fint = 0.36, exit fint = 0.24
-      reversed: entry fint = 0.24, exit fint = 0.36
+    A per-element "-NAME" reference to a Bend swaps the entry and exit fringe
+    fields, as reverse_element_order does.
 
-    create_reversed_component clones the bend under its dash-prefixed name
-    ("-b1"), leaving the original "b1" untouched -- check the clone.
+    With F1=0.24, FB1=0.12, FB2=0.0 the forward entry/exit fint are 0.36/0.24
+    and the reversed are 0.24/0.36. Asserts on the dash-prefixed clone "-b1".
+    Whole line equivalent:
+    test_pipeline_reverse_element_order_swaps_bend_fint_hgap.
     """
     lattice_path = write_lattice(
         """\
@@ -305,19 +301,13 @@ def test_reversed_component_bend_poleface_physics_matches_sad(tmp_path):
 
 def test_reversed_component_bend_fringe_physics_matches_sad(tmp_path):
     """
-    A per-element "-NAME" reference to a bend with asymmetric soft-edge
-    fringe (FB1 != FB2, no poleface angle) should reproduce SAD's own
-    tracking through the identical per-element-reversed line.
+    A per-element reversed bend with asymmetric fringe reproduces SAD's own
+    tracking through the equivalent reversed line.
 
-    ANGLE=0.05 (h != 0, so the edge-fringe term is actually engaged) with
-    E1=E2=0 isolates the fint effect from the edge-angle swap (covered by
-    test_reversed_component_bend_poleface_physics_matches_sad instead).
-    A bend with the fint/hgap swap missing reproduces SAD's FORWARD y to
-    ~1e-10 relative and differs from SAD's reversed y by ~6e-5 relative --
-    i.e. it reproduces the forward bend, not the reversed one -- so the
-    rel=1e-6 tolerance here is tight enough to catch a missing swap while
-    still passing the correctly-swapped case (~6e-11 relative, matching
-    the whole-line reversal path's own accuracy).
+    Uses ANGLE=0.05 to engage the edge-fringe term, with E1=E2=0 to isolate
+    fint from the edge-angle swap. The rel=1e-6 tolerance is chosen to catch a
+    missing swap: without it the result matches SAD's forward y instead, which
+    differs from the reversed y by ~6e-5 relative.
     """
     lattice_content = (
         "MOMENTUM = 1.0 GEV;\n"

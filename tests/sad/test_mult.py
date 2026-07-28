@@ -511,7 +511,7 @@ def test_mult_sk0_dipole_fringe_mirrors_in_horizontal_plane(tmp_path):
 
 ################################################################################
 # K0 dipole fringe with a real nonzero FB1/FB2 -- see the "MULT is out of
-# scope" decision in docs/development/design-decisions.md
+# scope" decision in docs/converter/fringes.md
 ################################################################################
 def test_mult_k0_fringe_with_nonzero_fb_does_not_match_equivalent_bend(tmp_path):
     """
@@ -556,7 +556,7 @@ def test_mult_k0_fringe_with_nonzero_fb_does_not_match_equivalent_bend(tmp_path)
         "same FRINGE/FB1/FB2, should NOT give closely matching py(y) -- "
         f"got ratio={ratio:.4f}. If this now passes (ratio near 1), MULT "
         "may have started sharing BEND's fringe formula and "
-        "docs/development/design-decisions.md's MULT exclusion should be revisited.")
+        "docs/converter/fringes.md's MULT exclusion should be revisited.")
 
 ################################################################################
 # F1/F2/FRINGE quad-style soft-edge fringe (ground truth) -- see

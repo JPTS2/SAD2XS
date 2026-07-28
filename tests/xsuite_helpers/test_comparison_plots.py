@@ -218,17 +218,13 @@ def test_default_figsize_is_larger_than_matplotlib_default():
 
 def test_second_group_axis_autoscales_to_real_data_not_ribbon_scale():
     """
-    Regression test: `_draw_lattice_ribbon` caches the lattice bars after
-    the first quantity row it ever draws, and every later row (any
-    quantity in any group after the first) reuses that cache. That reused
-    branch must still return the real, autoscaling data axis -- not the
-    hidden ribbon axis fixed at ylim=(-1.5, 1.5) -- or the SAD/Xsuite
-    curves get drawn on the wrong axis and the visible one is left at
-    matplotlib's untouched default ylim=(0, 1), with no visible ylabel
-    (the ribbon axis's own axis is turned off).
+    A second-group axis autoscales to the real data, not to the ribbon scale.
 
-    `betx` on this fixture's line runs roughly 3.9-5.1 -- well outside
-    both matplotlib's default (0, 1) and the ribbon's fixed (-1.5, 1.5).
+    _draw_lattice_ribbon caches its bars after the first quantity row, and
+    every later row reuses that cache. Asserts the reused branch still returns
+    the autoscaling data axis, not the hidden ribbon axis fixed at (-1.5, 1.5).
+    betx on this fixture runs 3.9-5.1, outside both that range and
+    matplotlib's default (0, 1).
     """
     xsuite, sad = _aligned_pair()
 

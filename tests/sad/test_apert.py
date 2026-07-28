@@ -98,9 +98,8 @@ def test_apert_does_not_affect_twiss_betx(tmp_path):
 # terms case both match the SAD manual once read correctly (see their own
 # docstrings). Only one sub-case remains a genuine, unresolved discrepancy:
 # a missing ellipse axis (AX or AY entirely omitted) does not behave as
-# "infinite" — see test_apert_missing_ellipse_axis_behavior and
-# dev/apert_mwe_missing_axis_infinite.sad, under active discussion with the
-# SAD author.
+# "infinite" — see test_apert_missing_ellipse_axis_behavior. This is under
+# active discussion with the SAD side.
 ################################################################################
 def _track_apert_grid(tmp_path, name, apert_params, x_grid, y_grid):
     """
@@ -266,22 +265,12 @@ def test_apert_rotated_rectangle_grid_matches_analytic_boundary(tmp_path):
 
 def test_apert_offset_shifts_both_ellipse_and_rectangle(tmp_path):
     """
-    RESOLVED (not a discrepancy): an earlier reading of the SAD manual
-    transcribed the rectangle clause as raw x (min(DX1,DX2) < x <
-    max(DX1,DX2)), which would mean DX recentres only the ellipse. The
-    correct clause is min(DX1,DX2) < (x-DX) < max(DX1,DX2) — i.e. DX
-    recentres BOTH terms. This is algebraically equivalent to checking raw x
-    against the shifted bound [DX1+DX, DX2+DX], which is exactly what's
-    observed here, confirming the corrected formula rather than a SAD bug.
+    A SAD APERT DX offset recentres both the ellipse and the rectangle.
 
-    With DX1=-0.01, DX2=0.01, AX=AY=0.005, DX=0.01:
-    x=0.000: (x-DX)=-0.01 (rect boundary) but the ellipse term alone already
-      rejects it ((0-0.01)^2/0.005^2 = 4 > 1) -> lost.
-    x=0.009: (x-DX)=-0.001, inside (-0.01,0.01); ellipse also satisfied
-      ((0.009-0.01)^2/0.005^2 = 0.04 < 1) -> alive.
-    x=0.015: (x-DX)=0.005, inside (-0.01,0.01) -> alive. (A raw-x reading of
-      the rectangle clause would reject this; the corrected (x-DX) reading
-      correctly predicts it survives.)
+    Tracks probes at x = 0.000, 0.009, 0.015 with DX1=-0.01, DX2=0.01,
+    AX=AY=0.005, DX=0.01, and asserts which survive. The rectangle clause is
+    min(DX1,DX2) < (x-DX) < max(DX1,DX2), equivalent to testing raw x against
+    the shifted bound. A raw-x reading would wrongly reject x=0.015.
     """
     x0 = np.array([0.000, 0.009, 0.015])
     y0 = np.array([0.000, 0.000, 0.000])
@@ -300,11 +289,9 @@ def test_apert_missing_ellipse_axis_behavior(tmp_path):
     OBSERVED BEHAVIOUR, not yet confirmed against the SAD manual: an APERT
     with only AX set (AY entirely omitted) currently rejects even a
     dead-centre (x=0, y=0) particle in this SAD build, contradicting the
-    documented "absent axis = infinite" rule. See
-    dev/apert_ax_ay_bug_demo_no_commas.sad for a minimal standalone
-    reproduction. This test pins the CURRENT behaviour so a future fix (or
-    correction of this test, if the manual is confirmed right and something
-    else is wrong) is a deliberate, visible change.
+    documented "absent axis = infinite" rule. This test pins the CURRENT
+    behaviour, so a future fix, or a correction of this test if the manual is
+    confirmed right, is a deliberate and visible change.
     """
     alive = _track_apert_grid(
         tmp_path, "apert_missing_axis.sad", "AX=0.01",

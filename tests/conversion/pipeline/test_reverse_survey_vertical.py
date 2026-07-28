@@ -142,20 +142,14 @@ def test_pipeline_reverse_survey_vertical_bend_offsets_and_rotation(write_lattic
 
 def test_pipeline_reverse_survey_vertical_rotated_bend_direction_and_tracking(write_lattice):
     """
-    The specific case that motivated a closer look at this feature: a BEND
-    with ROTATE = pi/2 (a genuine vertical bend). The SAD2XS element converter
-    canonicalises any SAD ROTATE of +-pi/2 on a BEND to a fixed
-    rot_s_rad = +pi/2, carrying the bend direction in the sign of angle/k0
-    instead (see sad2xs/converter/_004_element_converter.py's
-    _canonicalize_dipole_rotation). reverse_survey_vertical leaves angle/k0
-    unchanged (per the uniform normal/skew parity rule) and negates
-    rot_s_rad -- so the vertical bend's direction is flipped via rot_s_rad,
-    not via angle. A parameter check alone doesn't prove this is physically
-    correct, so this test also tracks an asymmetric particle through both
-    conversions and checks that the reversed line, fed the y/py-mirrored
-    initial coordinates, reproduces the y/py-mirror of the forward line's
-    result -- the same self-consistency check used to verify the sign
-    convention against real xtrack tracking before this feature was written.
+    A genuine vertical bend, ROTATE = pi/2, has its direction flipped through
+    rot_s_rad rather than through angle.
+
+    The converter canonicalises ROTATE = +-pi/2 to a fixed rot_s_rad = +pi/2
+    and carries direction in the sign of angle. This flag leaves angle
+    unchanged and negates rot_s_rad. A parameter check alone cannot prove that
+    is physically right, so this also tracks an asymmetric particle and asserts
+    the reversed line reproduces the y/py-mirror of the forward result.
     """
     lattice_path = write_lattice(
         """\
@@ -521,17 +515,12 @@ def test_pipeline_reverse_survey_vertical_negates_solenoid_ks(write_lattice):
 def test_pipeline_reverse_survey_vertical_negates_solenoid_ks_with_charge_minus_one(
         write_lattice):
     """
-    Composability check (internal consistency only -- see note below): does a
-    genuine CHARGE=-1 lattice, which bakes the reference charge into the
-    solenoid's base ks (see sad2xs/converter/_004_element_converter.py's
-    convert_solenoids), still get correctly negated by
-    reverse_survey_vertical's geometric-mirror ks negation?
+    The charge-dependent and geometric-mirror ks negations compose correctly.
 
-    NOTE ON SCOPE: like reverse_survey_horizontal (see
-    test_reverse_survey_horizontal.py), this file has no real-SAD-verified
-    test at all -- every test here checks the converter's internal Python
-    logic for self-consistency, not real SAD output, since a geometric
-    mirror has no native SAD operator to compare against.
+    Asserts the composition arithmetically, in converter code only. As with
+    reverse_survey_horizontal, a geometric mirror has no native SAD operator to
+    compare against, so this file has no real-SAD comparison. That is a known
+    coverage gap.
     """
     lattice_path = write_lattice(
         """\
@@ -765,16 +754,12 @@ def test_pipeline_reverse_survey_vertical_coord_chi2_negated_chi1_unchanged_chi3
 ################################################################################
 def test_pipeline_reverse_survey_vertical_twiss_beta_functions_unchanged(write_lattice):
     """
-    reverse_survey_vertical=True is a vertical mirror of the lattice. Unlike
-    the horizontal-mirror test (which uses a plain BEND+QUAD+SEXT+DRIFT
-    lattice), that lattice would be a trivial no-op here: a plain bend's
-    angle/k0 and a plain quad/sext's k1/k2 are all unchanged under the
-    vertical rule, so nothing would actually flip. Instead, this uses a skew
-    QUAD (ROTATE=pi/4) and skew SEXT (ROTATE=pi/6), whose k1s/k2s genuinely
-    negate under this flag, to exercise a meaningful invariance check: 4D
-    Twiss betx/bety at the end of the line must be identical whether or not
-    the flag is set, since a pure geometric mirror cannot change the linear
-    optics.
+    A vertical mirror leaves the 4D Twiss beta functions unchanged.
+
+    Uses a skew QUAD (ROTATE=pi/4) and skew SEXT (ROTATE=pi/6), whose k1s and
+    k2s genuinely negate under this flag. The horizontal test's plain
+    BEND+QUAD+SEXT lattice would be a no-op here, because the vertical rule
+    leaves normal components unchanged at every order.
     """
     lattice_path = write_lattice(
         """\

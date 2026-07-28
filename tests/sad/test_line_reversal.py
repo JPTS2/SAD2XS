@@ -110,19 +110,14 @@ def test_sad_reversed_line_reverses_tracking_element_order(tmp_path):
 
 def test_reversed_line_bend_angle_sign_matches_converter_assumption(tmp_path):
     """
-    _007_reversals.py assumes that reversing a line negates a BEND's ANGLE.
-    Confirmed against real SAD, with one caveat found and documented rather
-    than hidden behind a loose tolerance: SAD's native "-FORWARD" reversal
-    of a single BEND and a manually ANGLE-negated reconstruction agree on
-    sign and dominant magnitude, but differ by a small residual that scales
-    LINEARLY with angle (checked at ANGLE = 0.05, 0.025, 0.0125 rad: the x
-    residual was 2.08e-8, 1.05e-8, 5.25e-9 — ratio ~4.2e-7 per radian,
-    constant across all three, i.e. genuinely angle-proportional, not
-    numerical noise and not a quadratic sagitta-type effect). The root
-    cause (likely something in SAD's bend edge/reference-trajectory model)
-    was not identified — this test uses a tolerance that comfortably covers
-    the confirmed residual (~1.7e-5 relative at ANGLE=0.05) rather than
-    asserting exact equality or guessing at an unconfirmed explanation.
+    Reversing a line negates a BEND's ANGLE, the assumption _007_reversals.py
+    relies on.
+
+    Compares SAD's native "-FORWARD" reversal against a manually
+    ANGLE-negated reconstruction. They carry a residual scaling linearly with
+    angle: 2.08e-8, 1.05e-8, 5.25e-9 at ANGLE = 0.05, 0.025, 0.0125. The root
+    cause is unidentified, so the tolerance covers it rather than asserting
+    exact equality.
     """
     lat = tmp_path / "bend_reversal.sad"
     lat.write_text(

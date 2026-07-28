@@ -161,15 +161,13 @@ def _build_repeated_sliced_cavity_line():
 
 def test_install_raises_for_repeated_placement_of_sliced_cavity():
     """
-    A cavity placed more than once AND sliced (thick, so it produces
-    ThinSliceCavity/DriftSliceCavity rows) must still be caught. Slicing
-    gives each slice a uniquely-numbered name that is not grouped by
-    placement, so the repeat is no longer visible in the slice names
-    themselves -- unlike the unsliced case above, this does not raise from
-    a `::N` suffix on the cavity's own row. Covers both orderings that
-    still leave the repeat unresolved by the time of slicing: no call to
-    replace_all_repeated_elements() at all, and calling it only after
-    slicing (too late -- the slices were already assigned by then).
+    A cavity that is both placed more than once and sliced is still caught.
+
+    Slicing gives each slice a uniquely-numbered name that is not grouped by
+    placement, so unlike the unsliced case this cannot raise from a `::N`
+    suffix. Covers both orderings that leave the repeat unresolved at slicing
+    time: no call to replace_all_repeated_elements, and calling it only after
+    slicing.
     """
     line = _build_repeated_sliced_cavity_line()
     line.slice_thick_elements(
