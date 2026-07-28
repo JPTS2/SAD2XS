@@ -4,6 +4,13 @@ How SAD's `OFFSET` parameter on `MARK`, `MONI`, and `BEAMBEAM` elements is resol
 
 Offset markers are handled by `sad2xs/converter/_008_offset_markers.py`. The insertion itself happens later, in `sad2xs/output_writer/_016_offset_markers.py`.
 
+**On this page:**
+
+- [What SAD's OFFSET does](#what-sads-offset-does)
+- [Why the SAD sequence is used, not the Xsuite table](#why-the-sad-sequence-is-used-not-the-xsuite-table)
+- [Interaction with reversed element order](#interaction-with-reversed-element-order)
+- [Where the marker goes](#where-the-marker-goes)
+
 ## What SAD's OFFSET does
 
 `OFFSET` places a marker at a fractional position relative to its own nominal location. It does not move the marker to an absolute `s`.

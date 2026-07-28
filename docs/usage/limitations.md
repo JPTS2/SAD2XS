@@ -32,9 +32,9 @@ Each of these is a known, characterised difference, not an open bug. Most raise 
 
 SAD's nonlinear solenoid fringe kick is not modelled. Every converted solenoid behaves as if `DISFRIN=1` had been set, whatever the source file says.
 
-Neither `xt.UniformSolenoid` nor `xt.VariableSolenoid` implements the term. For SAD comparisons, set `DISFRIN=1` on the SAD side to compare like with like.
+Neither `xt.UniformSolenoid` nor `xt.VariableSolenoid` implements the term. For SAD comparisons, set `DISFRIN=1` on the SAD side. This ensures the two codes are modelling the same physical magnet.
 
-A related consequence: spin-tracking studies through solenoid lattices are not well supported, because spin precession is highly sensitive to exactly this kind of fine field detail at the fringe.
+The same limitation applies to spin tracking. Spin precession is highly sensitive to the fine field detail at the fringe, so this converter is not a reliable tool for spin-tracking studies through solenoid lattices.
 
 See [solenoid conversion](../converter/solenoids.md).
 
@@ -62,7 +62,7 @@ See [element conversion](../converter/elements.md).
 
 SAD has several distinct fringe mechanisms. Two are imported: the bend soft-edge fringe, on by default, and the quadrupole linear fringe, off by default pending an Xsuite release.
 
-The rest are not. Most importantly, **`DISFRIN` is not read for bends or quadrupoles**, so a lattice that deliberately disables the hard-edge fringe still gets it after conversion. This one is silent — no warning is raised.
+The rest are not imported. Most importantly, **`DISFRIN` is not read for bends or quadrupoles**. A lattice that deliberately disables the hard-edge fringe still gets that fringe after conversion. This limitation is silent: no warning is raised.
 
 The imported bend fringe carries a known bounded off-momentum residual, a few percent on realistic magnet parameters, until an upstream Xsuite fix reaches a released version.
 
@@ -72,7 +72,7 @@ See [fringe models](../converter/fringes.md).
 
 ## Radiation against SAD
 
-A quantum radiation discrepancy against SAD is open, escalating with multipole order:
+A quantum radiation discrepancy against SAD is open. It grows with multipole order:
 
 | Element | Discrepancy |
 | --- | --- |
@@ -81,7 +81,7 @@ A quantum radiation discrepancy against SAD is open, escalating with multipole o
 | Octupole | ~24.5% |
 | Solenoid | ~28% |
 
-For the solenoid this was confirmed **not** to be a fringe-field mismatch — the gap is flat with amplitude across three orders of magnitude in radius, pointing to a fixed proportionality or convention difference in the radiated-power calculation.
+For the solenoid, this was confirmed **not** to be a fringe-field mismatch. The gap is flat with amplitude across three orders of magnitude in radius. That points to a fixed proportionality or convention difference in the radiated-power calculation.
 
 The root cause is not identified. Treat radiation results against SAD for these element types with caution at significant amplitude.
 
@@ -93,7 +93,7 @@ See [models and integrators](../converter/models-integrators.md).
 
 ## Written lattice files
 
-The writer bakes deferred (xdeps) expressions to literal floats. A line built with expressions loses them on write: structure and values survive a round trip, the dependency graph does not.
+The writer converts deferred (xdeps) expressions to literal floats. A line built with expressions loses them on write. Structure and values survive a round trip; the dependency graph does not.
 
 Negative-length drifts are converted as-is, and are known to break offset-marker insertion in some cases.
 

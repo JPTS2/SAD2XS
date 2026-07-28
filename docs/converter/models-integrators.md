@@ -28,7 +28,11 @@ Each choice was derived against three factors:
 
 Every element was cross-checked against SAD, an independent validated tracking code, not only against Xsuite's own internal convergence.
 
-One methodological point matters for reading any claim below. A single quantum-radiation trial's sigma is not reliable evidence of convergence. Every "settled by N kicks" claim was verified with five independent repeated trials at fixed configuration, checking whether results scatter around zero or sit consistently to one side. That method caught a real 1.2% bias for Multipole at 20 kicks, and a 0.27% bias for UniformSolenoid at 20 kicks, that a single-trial sweep would have missed.
+One methodological point matters for reading any claim below. The sigma of a single quantum-radiation trial is not reliable evidence of convergence.
+
+Every "settled by N kicks" claim was therefore verified with five independent repeated trials at a fixed configuration. The check is whether the results scatter around zero, or sit consistently to one side.
+
+That method caught two real biases that a single-trial sweep would have missed: 1.2% for Multipole at 20 kicks, and 0.27% for UniformSolenoid at 20 kicks.
 
 ## Current defaults
 
@@ -92,32 +96,32 @@ It did not close the bend element-offset discrepancy, a `DX` offset combined wit
 
 ### Quadrupole, Sextupole, Octupole and Multipole use `mat-kick-mat`
 
-The alternative here is `rot-kick-rot-high-order`, which is more accurate in isolated single-element tests. It is not used, because it fails on a real lattice.
+The alternative here is `rot-kick-rot-high-order`. It is more accurate in isolated single-element tests. It is not used, because it fails on a real lattice.
 
-With a tilted thick element in a strongly x-y-coupled region, such as a skew-tilted quadrupole next to a solenoid, repeated passage around a periodic ring amplifies a bias that is small in a single pass. Isolated single-element tests cannot show this.
+The failure needs a tilted thick element in a strongly x-y-coupled region, such as a skew-tilted quadrupole next to a solenoid. Repeated passage around a periodic ring then amplifies a bias that is small in a single pass. An isolated single-element test cannot show this.
 
-The symptom is severe and easy to miss. Single-pass tracking looks correct. The periodic closed-orbit solution does not: `bety` peaks come out missing roughly half their height on the FCC-ee solenoid lattice.
+The symptom is severe, and it is easy to miss. Single-pass tracking looks correct. The periodic closed-orbit solution does not: on the FCC-ee solenoid lattice, the `bety` peaks come out at roughly half their correct height.
 
-`mat-kick-mat` does not have this problem at the same kick count. Its isolated-element accuracy disadvantage is real, and it is outweighed by a failure that affects a lattice SAD2XS is used on.
+`mat-kick-mat` does not have this problem at the same kick count. Its disadvantage in isolated-element accuracy is real, and it is outweighed by a failure that affects a lattice SAD2XS is used on.
 
 ## Choosing the integrator
 
 `uniform` and `yoshida4` fail in opposite directions, so neither is correct everywhere.
 
-`yoshida4` places its internal sub-kicks at fixed fractional positions, chosen to cancel operator-splitting error for the overall map. That gives an excellent tracking order. It also means radiation happens at a handful of clustered locations rather than spread along the element.
+`yoshida4` places its internal sub-kicks at fixed fractional positions, chosen to cancel the operator-splitting error of the overall map. This gives an excellent tracking order. It also means radiation occurs at a few clustered locations, rather than spread along the element.
 
-`uniform` spreads kicks across the element's real length. That is what radiation trajectory-spread fidelity needs.
+`uniform` spreads its kicks across the real length of the element. This is what fidelity of the radiation trajectory spread needs.
 
-`uniform` beats `yoshida4` for radiation trajectory-spread fidelity, at comparable or lower cost, for every element where this was tested: bend, quadrupole, and solenoid.
+For every element where this was tested — bend, quadrupole, and solenoid — `uniform` gives better radiation trajectory-spread fidelity than `yoshida4`, at comparable or lower cost.
 
 The resulting rule:
 
-- **Bend and corrector use `uniform`.** Radiation fidelity is a first-order concern for them. A wiggler is physically modelled as a strong corrector, so correctors are treated like bends by default rather than as weak incidental orbit correctors.
-- **Quadrupole, Sextupole, Octupole and Multipole use `yoshida4`.** Radiation is secondary for a normally configured element of these types, so `yoshida4`'s large tracking advantage wins the trade.
+- **Bend and corrector use `uniform`.** Radiation fidelity is a first-order concern for them. A wiggler is physically modelled as a strong corrector, so correctors are treated like bends by default, rather than as weak incidental orbit correctors.
+- **Quadrupole, Sextupole, Octupole and Multipole use `yoshida4`.** Radiation is a secondary concern for a normally configured element of these types, so the large tracking advantage of `yoshida4` wins the trade.
 
-Switch an individual element to `uniform` where its radiation fidelity does become first-order, such as at large dispersion or a large closed-orbit offset.
+Switch an individual element to `uniform` where its radiation fidelity does become a first-order concern, such as at large dispersion or at a large closed-orbit offset.
 
-Radiation needs its own kick resolution regardless of whether tracking is exact. This holds for bend, quadrupole, and solenoid alike. Even where the tracking map is closed-form and kick-independent, the mean radiated energy, and especially the quantum trajectory spread, still need real spatial resolution to converge.
+Radiation needs its own kick resolution whether or not the tracking is exact. This holds for bend, quadrupole, and solenoid alike. Even where the tracking map is closed-form and independent of kick count, the mean radiated energy still needs real spatial resolution to converge. The quantum trajectory spread needs it more.
 
 ## Choosing the kick count
 
@@ -137,17 +141,17 @@ Results are bit-identical for any kick count mapping to the same slice count. Th
 | 15–21 | 3 | ~1.50x |
 | 22–28 | 4 | ~2.00x |
 
-A consequence worth knowing: 14 and 10 cost exactly the same and produce bit-identical output. On a 2-million-particle timing benchmark they measured 837 ms against 836 ms. Choosing 14 over 10 looks more precise without being so.
+One consequence is worth knowing. 14 kicks and 10 kicks cost exactly the same and produce bit-identical output. On a 2-million-particle timing benchmark they measured 837 ms against 836 ms. Choosing 14 over 10 therefore looks more precise without being more precise.
 
 ### Why 14 and not 21
 
-The per-element convergence studies landed on two slices for the quadrupole and three for sextupole, octupole, and multipole. The study's own standard recommendation was therefore 21, covering all of them with margin.
+The per-element convergence studies landed on two slices for the quadrupole, and three for the sextupole, octupole, and multipole. The standard recommendation of the study was therefore 21 kicks, which covers all of them with margin.
 
-SAD2XS uses 14. That is a deliberate trade: dropping from three slices to two is a genuine 33% speedup for quadrupole, sextupole, octupole, and multipole tracking.
+SAD2XS uses 14. This is a deliberate trade. Dropping from three slices to two is a genuine 33% speedup for quadrupole, sextupole, octupole, and multipole tracking.
 
-The accuracy cost is real but small, and it falls specifically on Sextupole, Octupole, and Multipole. Two slices was more than enough for the quadrupole, where the error was around `1e-9`. It is measurably short of what sextupole, octupole, and multipole need, because their `k2` and `k3` content has no thick shortcut at all.
+The accuracy cost is real but small, and it falls specifically on the Sextupole, Octupole, and Multipole. Two slices was more than enough for the quadrupole, where the error was around `1e-9`. It is measurably short of what the sextupole, octupole, and multipole need, because their `k2` and `k3` content has no thick shortcut at all.
 
-For a lattice dominated by strong deliberate sextupole or octupole correction, raise this to 21.
+Raise this to 21 for a lattice dominated by strong deliberate sextupole or octupole correction.
 
 ### The bend's kick count follows a different rule
 
@@ -163,9 +167,9 @@ Kick count controls how much of the radiation trajectory-spread signal is captur
 | 10 | 78–80% | 2.5x |
 | 20 | 92% | 4.1x |
 
-SAD2XS uses 20. The study's own recommendation was 10; 20 was adopted to make a skew-quadrupole case pass, and it captures 92% of the signal rather than 78–80%.
+SAD2XS uses 20. The recommendation of the study was 10. 20 was adopted to make a skew-quadrupole case pass, and it captures 92% of the signal rather than 78–80%.
 
-For plain tracking — position and angle accuracy, closed orbit, dynamic aperture — bend convergence is already at the `1e-6` level by 3 kicks. Lowering the count is defensible for those studies. It is not defensible for damping-ring or wiggler emittance work, where quantum-radiation trajectory spread is the effect being measured.
+For plain tracking, meaning position and angle accuracy, closed orbit, and dynamic aperture, bend convergence is already at the `1e-6` level by 3 kicks. Lowering the count is defensible for those studies. It is not defensible for damping-ring or wiggler emittance work, where the quantum-radiation trajectory spread is the effect being measured.
 
 ## Edge models
 
@@ -180,13 +184,15 @@ For plain tracking — position and angle accuracy, closed orbit, dynamic apertu
 | `dipole-only` | 1.404e-05 |
 | `suppressed` | 8.641e-05 |
 
-`full` is 6.5 times better than the default. The improvement is converged, not a slicing artifact. A rectangular-bend hypothesis, `e1 = e2 = angle/2`, was tested separately and ruled out — it made the residual worse, at `5.5e-4`, confirming that Xsuite's sector-bend default of `e1 = e2 = 0` already matches SAD's assumption.
+`full` is 6.5 times better than the default. The improvement is converged, and it is not a slicing artifact.
+
+A rectangular-bend hypothesis, `e1 = e2 = angle/2`, was tested separately and ruled out. It made the residual worse, at `5.5e-4`. This confirms that Xsuite's sector-bend default of `e1 = e2 = 0` already matches SAD's assumption.
 
 ## Solenoids
 
 The solenoid has no `model` attribute, so the model choice does not apply.
 
-Its own field, `ks` or `ks_profile`, is fully thick regardless of the kick count. This includes a genuine linear ramp on `VariableSolenoid`, not only a constant field. A pure solenoid therefore needs no kick budget at all.
+Its own field, `ks` or `ks_profile`, is fully thick whatever the kick count. This includes a genuine linear ramp on `VariableSolenoid`, not only a constant field. A pure solenoid therefore needs no kick budget at all.
 
 A solenoid carrying additional `knl` or `ksl` content is different. Treat it like any other `yoshida4`-tracked element.
 
@@ -206,7 +212,7 @@ The default, `isthick=False`, makes length, model, integrator, and kick count al
 
 ## Known gap: radiation against SAD
 
-A large SAD-versus-Xsuite quantum radiation discrepancy is open, and it escalates with multipole order and element complexity:
+A large SAD-versus-Xsuite quantum radiation discrepancy is open. It grows with multipole order and with element complexity:
 
 | Element | Discrepancy |
 | --- | --- |
@@ -215,9 +221,9 @@ A large SAD-versus-Xsuite quantum radiation discrepancy is open, and it escalate
 | Octupole | ~24.5% |
 | Solenoid | ~28% |
 
-For the solenoid, an amplitude scan spanning three orders of magnitude in radius confirmed this is **not** a fringe-field modelling mismatch. The gap is flat with amplitude, which points to a fixed proportionality or convention difference in the underlying radiated-power calculation rather than a geometry artifact.
+For the solenoid, an amplitude scan spanning three orders of magnitude in radius confirmed that this is **not** a fringe-field modelling mismatch. The gap is flat with amplitude. That points to a fixed proportionality or convention difference in the underlying radiated-power calculation, rather than to a geometry artifact.
 
-The root cause is not identified for any of these. Treat radiation results against SAD for these element types with caution at significant amplitude.
+The root cause is not identified for any of these elements. Treat radiation results against SAD for these element types with caution at significant amplitude.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

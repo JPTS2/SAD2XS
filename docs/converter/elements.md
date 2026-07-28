@@ -123,11 +123,13 @@ A SAD `CAVI` becomes an `xt.Cavity`.
 
 ### The transverse RF-focusing kick is not modelled
 
-SAD applies a transverse RF-focusing kick to accelerating elements — a `MULT` or `CAVI` with `VOLT != 0`, tracked with `RFSW` on, independent of `TRPT`. SAD2XS does not implement it.
+SAD applies a transverse RF-focusing kick to accelerating elements. This means a `MULT` or `CAVI` with `VOLT != 0`, tracked with `RFSW` on, and it applies independently of `TRPT`. SAD2XS does not implement this kick.
 
 Every converted `xt.Cavity` behaves as if the term were absent, whether it came from a plain `CAVI` or from the interleaved slices of a combined `K1`-plus-`VOLT` `MULT`.
 
-`xt.Cavity` has no transverse coupling in its tracking code at all. That was confirmed by tracking, not by reading the source once. The kick-application machinery does exist in xtrack, attached to `xt.RFMultipole`. Reproducing SAD's coefficient inside `xt.Cavity` would be the cleaner fix, but the exact phase convention has not been validated against the literature closed form (Rosenzweig and Serafini, 1994) or against SAD, so it is implemented on neither side.
+`xt.Cavity` has no transverse coupling in its tracking code at all. That was confirmed by tracking, not by reading the source once.
+
+The kick-application machinery does exist in xtrack, attached to `xt.RFMultipole`. Reproducing SAD's coefficient inside `xt.Cavity` would be the cleaner fix. The exact phase convention has not yet been validated against the literature closed form (Rosenzweig and Serafini, 1994), nor against SAD, so it is implemented on neither side.
 
 The converter warns once per lattice whenever any `xt.Cavity` ends up in the converted line. The warning is raised in `convert_elements` rather than duplicated into both the cavity path and the RF-`MULT` path.
 

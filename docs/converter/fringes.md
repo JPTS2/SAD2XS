@@ -59,7 +59,7 @@ edge_exit_fint  = F1 + FB2        edge_exit_hgap  = 1/12
 
 This applies on both bend paths: the sector-bend path where `ANGLE != 0`, and the `K0`-only corrector path where `ANGLE == 0`.
 
-The writer serialises these four fields whenever they are non-zero. A bend or corrector carrying only `fint`/`hgap`, otherwise at defaults, no longer qualifies for the compact one-line output form — before that was handled, such an element was written with every extra attribute silently dropped.
+The writer serialises these four fields whenever they are non-zero. A bend or corrector that carries only `fint` and `hgap`, and is otherwise at its defaults, does not qualify for the compact one-line output form. This matters: such an element would otherwise be written with every extra attribute silently dropped.
 
 ### Soft-edge accuracy, and the off-momentum residual
 
@@ -88,13 +88,13 @@ Xsuite already implements the same mechanism natively through the bend edge mode
 
 **SAD2XS applies `EDGE_MODEL_BEND = "full"` to every bend and never reads `DISFRIN`.** A source lattice that sets `DISFRIN=1` on a bend, intending to disable the hard-edge fringe, still gets the fringe after conversion. See [models and integrators](models-integrators.md) for why `full` is the default rather than Xsuite's `linear`.
 
-On the corrector path this is moot. SAD does not allow a corrector to carry a non-zero `K1` alongside `K0` when `ANGLE` is absent or zero — a confirmed separate SAD bug, where the combination silently no-ops the whole element rather than erroring. There is therefore no quadrupole content for the hard-edge term to act on.
+On the corrector path the question does not arise. SAD does not allow a corrector to carry a non-zero `K1` alongside `K0` when `ANGLE` is absent or zero. This is a confirmed, separate SAD bug: the combination silently no-ops the whole element instead of raising an error. There is therefore no quadrupole content for the hard-edge term to act on.
 
 ## Quadrupole fringe
 
 ### Soft-edge: imported as a Taylor map
 
-The quadrupole linear fringe has no equivalent native Xsuite field, so a bolted-on Taylor map is the natural fit.
+The quadrupole linear fringe has no equivalent native Xsuite field, so a dedicated Taylor map is the natural fit.
 
 Each side gets an `(a, b)` pair:
 
@@ -147,7 +147,7 @@ A `QUAD` also carries a `DISFRIN`-gated hard-edge kick, with the same boolean co
 
 Unlike the bend, `FRINGE` on a `QUAD` is **not** independent of `DISFRIN`. It additionally selects *which side* of the hard-edge fringe applies, whatever `DISFRIN` is set to. The entrance hard-edge kick is skipped whenever `FRINGE == 2`, and the exit one whenever `FRINGE == 1`. `FRINGE <= -4` disables both sides unconditionally.
 
-This matters more than it sounds. The two sides' hard-edge contributions largely cancel when both are present, so losing one side is not a small correction — the effect is over an order of magnitude larger than the net two-sided residual that `DISFRIN` alone removes.
+The scale of this effect is easy to underestimate. The hard-edge contributions of the two sides largely cancel when both are present. Losing one side is therefore not a small correction: the effect is more than an order of magnitude larger than the net two-sided residual that `DISFRIN` alone removes.
 
 A direct consequence: the linear and hard-edge fringes on a `QUAD` do **not** compose additively for every `FRINGE` value. They were confirmed additive only at `FRINGE = 3`, where neither hard-edge side is excluded.
 

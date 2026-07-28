@@ -61,13 +61,13 @@ folders, what each covers, and whether it requires SAD.
 
 `tests/sad/` contains empirical tests that machine-verify which parameters each
 SAD element type accepts or rejects at runtime. When the behaviour of any SAD
-element, parameter, or reserved name is uncertain, a test is added here to
-establish ground truth before any converter logic is written or changed. The
-SAD runtime is the authoritative source — not documentation or assumption.
+element, parameter, or reserved name is uncertain, add a test here to establish
+ground truth before writing or changing any converter logic. The SAD runtime is
+the authoritative source, not the documentation and not assumption.
 
-The accepted/rejected parameter matrix for all tested element types is in
-`tests/sad/README.md`. The findings are consistent with direct confirmation from
-K. Oide (SAD author, 2026-06-24) on typed-element parameter restrictions.
+`tests/sad/README.md` holds the accepted and rejected parameter matrix for every
+tested element type. These findings are consistent with direct confirmation from
+the SAD author on the typed-element parameter restrictions.
 
 Reference: [SAD FFS command documentation](https://acc-physics.kek.jp/SAD/how-to-use-sad/sad-ffs-command-sad-script/)
 
@@ -80,16 +80,17 @@ runs first so a misconfigured `testpaths` list is itself caught immediately
 (see `tests/ci/test_pytest_ini_testpaths.py`); after that, `installation` is
 verified before SAD-dependent tests run.
 
-`--import-mode=importlib` is also set in `pytest.ini`. It is required because
-`tests/sad/` and `tests/conversion/elements/` share basenames (e.g.
-`test_bend.py`). Without importlib mode pytest uses flat module names and
-collects with errors. Any new test directory added to the suite must also be
-added to `testpaths` in `pytest.ini` -- `tests/ci/test_pytest_ini_testpaths.py`
-now fails the run if one is missed.
+`pytest.ini` also sets `--import-mode=importlib`. This is required because
+`tests/sad/` and `tests/conversion/elements/` share basenames, such as
+`test_bend.py`. Without importlib mode, pytest uses flat module names and
+collection fails.
+
+Add any new test directory to `testpaths` in `pytest.ini`.
+`tests/ci/test_pytest_ini_testpaths.py` fails the run if one is missed.
 
 Large end-to-end lattice tests are useful, but they should not be the only
 protection. Small, targeted regression tests make failures easier to understand
-and diagnose.
+and to diagnose.
 
 ## Regression Workflow
 
@@ -126,36 +127,39 @@ pytest -m "known_issue"      # tests documenting known failures
 ```
 
 `tests/support/known_issues.py` maintains a single `KNOWN_ISSUES` list of
-`(test node prefix, parameter-id fragment, tracker id)` tuples — an empty
-fragment (`""`) matches every parametrisation of that test, i.e. the whole test
-is the known failure, not just specific parameters. These tests must not be
-modified to pass artificially — they are the record of what is broken and what
-needs to be fixed. The current contents of that list (it is empty as often as
-not) are the live source of truth for what is currently known-failing; this
-document does not track a count.
+`(test node prefix, parameter-id fragment, tracker id)` tuples. An empty
+fragment, `""`, matches every parametrisation of that test. It means the whole
+test is the known failure, not only specific parameters.
 
-`tests/conftest.py` fails collection loudly if a `KNOWN_ISSUES` entry's
-fragment matches nothing currently collected — e.g. a fragment that stopped
-matching after a parametrize change, or an entry whose test function still
-exists but none of its collected parametrisations match. This is checked
-automatically at collection time for whatever subset of the suite is being
-run; it does not require a full-suite run to catch. It does not catch a test
-function being renamed or removed entirely — that scenario has not yet been
+Do not modify these tests to make them pass artificially. They are the record of
+what is broken and what needs to be fixed. The contents of that list are the live
+source of truth for what is currently known-failing, and the list is empty as
+often as not. This page does not track a count.
+
+`tests/conftest.py` fails collection loudly if a `KNOWN_ISSUES` entry's fragment
+matches nothing currently collected. Two examples: a fragment that stopped
+matching after a parametrize change, and an entry whose test function still
+exists but none of whose collected parametrisations match.
+
+This check runs at collection time, on whatever subset of the suite is being run.
+It does not need a full-suite run to catch a stale entry. It does not catch a
+test function that is renamed or removed entirely. That scenario has not yet been
 observed, so detecting it was left out rather than added speculatively.
 
 ## Accepted Physics Limitations
 
-Not every documented SAD-vs-Xsuite difference is an open bug. Some are
-permanent, deliberate limitations — a physics effect SAD2XS does not and will
-not model, with the divergence it causes locked in by a dedicated test that
-asserts the divergence itself, rather than a bug to fix.
+Not every documented SAD-vs-Xsuite difference is an open bug. Some are permanent,
+deliberate limitations: a physics effect that SAD2XS does not model and will not
+model. A dedicated test locks in the divergence such a limitation causes, by
+asserting the divergence itself.
 
-These tests are not added to `tests/support/known_issues.py` and do not carry
-the `known_issue` marker — they are expected to pass, and a passing result
-documents that the limitation still behaves as understood. If one of these
-tests starts failing, or unexpectedly starts passing in the "matches"
-direction, that is a signal the underlying assumption has changed and needs
-re-examination — not a regression to silently fix.
+These tests are not added to `tests/support/known_issues.py`, and they do not
+carry the `known_issue` marker. They are expected to pass. A passing result
+documents that the limitation still behaves as understood.
+
+If one of these tests starts failing, or unexpectedly starts passing in the
+"matches" direction, the underlying assumption has changed and needs
+re-examination. Do not treat it as a regression to fix silently.
 
 Current examples:
 
@@ -170,15 +174,18 @@ Current examples:
 - `test_bend_offset_orbit_residual_is_angle_squared_order` and
   `test_bend_offset_thin_bend_dispersion_residual_is_angle_squared_order`
   (`tests/conversion/elements/test_bend.py`) assert the accepted `ANGLE^2`
-  reference-orbit residual for an offset curved bend, with their
-  tracking-mode counterparts
+  reference-orbit residual for an offset curved bend.
+
+  Their tracking-mode counterparts,
   `test_bend_offset_orbit_residual_diverges_in_tracking` and
-  `test_bend_offset_thin_bend_dispersion_residual_diverges_in_tracking`
-  asserting the same divergence in actual particle tracking rather than
-  only the closed-orbit twiss value. `test_bend_offset_rotated_coupling_is_a_sad_side_artifact`
-  and `test_bend_conversion_matches_sad_twiss_for_rotated_element_offsets`
-  assert a further, separate SAD-side coupling artifact found combined
-  with `ROTATE`.
+  `test_bend_offset_thin_bend_dispersion_residual_diverges_in_tracking`, assert
+  the same divergence in actual particle tracking, rather than only in the
+  closed-orbit twiss value.
+
+  `test_bend_offset_rotated_coupling_is_a_sad_side_artifact` and
+  `test_bend_conversion_matches_sad_twiss_for_rotated_element_offsets` assert a
+  further, separate SAD-side coupling artifact that appears when the offset is
+  combined with `ROTATE`.
 
 See `docs/reference/sad-behaviour.md` for the corresponding SAD physics and convention
 notes, and `docs/development/design-decisions.md` for the resulting converter decisions.
@@ -188,11 +195,13 @@ notes, and `docs/development/design-decisions.md` for the resulting converter de
 The test suite requires SAD for conversion and helper tests. Parser, writer,
 packaging, CI, and converter quiet-mode tests do not invoke the SAD executable.
 
-CI runs the whole suite as a single job with two sequential steps (blocking
-regression, then non-blocking known-issue) rather than separate jobs — see
-CI below. Locally, a bare `pytest` run honours `pytest.ini`'s `testpaths`
-order, so installation is verified before other tests; CI's own invocation
-does not (see the CI section's note below).
+CI runs the whole suite as a single job with two sequential steps, rather than as
+separate jobs: a blocking regression step, then a non-blocking known-issue step.
+See the CI section below.
+
+Locally, a bare `pytest` run honours the `testpaths` order in `pytest.ini`, so
+installation is verified before the other tests. The CI invocation does not. See
+the note in the CI section.
 
 ## Temporary Files
 
@@ -213,26 +222,30 @@ summaries. The artifact path mirrors the test area that produced it.
 
 ## CI
 
-**`run_tests.yml`** — master workflow. Triggered on pull requests to `main`
-and `release/**`, and on a weekly schedule (catches upstream SAD/Xsuite
-breakage independent of any SAD2XS change). One job (`run-tests`), two
-sequential steps: step 1 runs `pytest -m "not known_issue" tests/` and
-blocks the PR on failure; step 2 runs `pytest -m "known_issue" tests/` with
-`continue-on-error: true`, so known-bug failures stay visible without
-blocking a merge. Both steps pull the SAD Docker image and run pytest
-inside it.
+**`run_tests.yml`** is the master workflow. It triggers on pull requests to
+`main` and `release/**`, and on a weekly schedule. The weekly run catches
+upstream SAD and Xsuite breakage independently of any SAD2XS change.
 
-Note: passing `tests/` explicitly makes pytest ignore `testpaths` entirely,
-including its order (pytest only applies `testpaths` when invoked with no
-path argument) — so CI collects in plain filesystem order, not the
-`testpaths` order described above. This doesn't affect pass/fail, only which
-order failures are reported in.
+It has one job, `run-tests`, with two sequential steps:
 
-**Per-folder workflows** (`test_parser.yml`, `test_conversion.yml`, etc.) —
-one workflow per test folder, all manually triggerable via `workflow_dispatch`.
-These allow targeted re-runs of one area without waiting for the full suite.
+1. `pytest -m "not known_issue" tests/`, which blocks the PR on failure;
+2. `pytest -m "known_issue" tests/` with `continue-on-error: true`, so known-bug
+   failures stay visible without blocking a merge.
 
-**`docker-build.yml`** — builds the SAD Docker image on push to `main` and on
+Both steps pull the SAD Docker image and run pytest inside it.
+
+Note that passing `tests/` explicitly makes pytest ignore `testpaths` entirely,
+including its order. pytest applies `testpaths` only when it is invoked with no
+path argument. CI therefore collects in plain filesystem order, not the
+`testpaths` order described above. This does not affect pass or fail. It affects
+only the order in which failures are reported.
+
+**Per-folder workflows**, such as `test_parser.yml` and `test_conversion.yml`,
+give one workflow per test folder. All are triggerable manually through
+`workflow_dispatch`. They allow targeted re-runs of one area without waiting for
+the full suite.
+
+**`docker-build.yml`** builds the SAD Docker image on push to `main`, and on
 demand. The SAD image packages the SAD executable and all Python dependencies.
 
 ## Physics Edge Cases
@@ -248,23 +261,23 @@ Examples include:
 - RF phase and harmonic conventions
 - generated lattice write/reload equivalence
 
-The default baseline tests should remain simple. Extreme values should be
-isolated in targeted tests so they do not obscure unrelated failures.
+Keep the default baseline tests simple. Isolate extreme values in targeted tests,
+so that they do not obscure unrelated failures.
 
-When a test calls the SAD executable, ensure the lattice is physically valid —
-a line composed entirely of zero-length elements is degenerate and will cause
-SAD to abort. Embed zero-length elements in a lattice with at least one
-physical element.
+When a test calls the SAD executable, make sure the lattice is physically valid.
+A line composed entirely of zero-length elements is degenerate, and SAD aborts on
+it. Embed zero-length elements in a lattice that has at least one physical
+element.
 
 ## Naming
 
-Use descriptive filenames. SAD element mnemonics may be used in
-element-specific filenames when they make the converter contract clearer — for
-example `cavi`, `aper`, `moni`, and `sol`.
+Use descriptive filenames. SAD element mnemonics such as `cavi`, `aper`, `moni`,
+and `sol` are acceptable in element-specific filenames, where they make the
+converter contract clearer.
 
-For large element families a subfolder is acceptable, but do not add
-per-element subfolders by default unless the test set is large enough to
-justify the extra navigation.
+A subfolder is acceptable for a large element family. Do not add per-element
+subfolders by default, unless the test set is large enough to justify the extra
+navigation.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

@@ -56,12 +56,19 @@ without a debugger.
 
 ### `test_globals.py` note
 
-`CHARGE` is recognised as a protected global keyword so that SAD files
-containing it do not cause parse errors. However, SAD only supports positrons
-and silently ignores `CHARGE` at runtime (confirmed by K. Oide, 2026-06-27),
-so the parser does not store `CHARGE` in `q0`. Any `CHARGE != 1` line emits a
-`UserWarning` directing users to `reverse_charge_sign=True`. The `q0` global always
-defaults to `+1` regardless of what `CHARGE` is set to.
+`CHARGE` is a recognised protected global keyword, and the parser stores it
+directly as `q0`.
+
+SAD's own Twiss and tracking computations respect `CHARGE`. This was verified
+empirically against real SAD in `tests/sad/test_reference_particle.py`:
+`CHARGE=-1` gives the exact sign-reversed solenoid orbit and coupling. An earlier
+belief that SAD silently ignores non-unity `CHARGE` was disproved, and the parser
+was corrected to match. See
+[line reversals](../../docs/converter/line-reversals.md) for the full account.
+
+`q0` falls back to `+1` only when the SAD file declares no charge and the caller
+supplies none. `CHARGE = 0` is rejected with a `ValueError`, because a neutral
+reference particle is not physically meaningful here.
 
 ### `test_functions.py` note
 

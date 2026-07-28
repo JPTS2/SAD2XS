@@ -15,7 +15,7 @@ pip install sad2xs[sad-helpers]
 - [Requirements](#requirements)
 - [Public helper functions](#public-helper-functions)
 - [Typical use from Python](#typical-use-from-python)
-- [Twiss conventions in coupled regions (skew quads, solenoids, ...)](#twiss-conventions-in-coupled-regions-skew-quads-solenoids)
+- [Twiss conventions in coupled regions (skew quads, solenoids, ...)](#twiss-conventions-in-coupled-regions-skew-quads-solenoids-)
 - [Additional SAD commands](#additional-sad-commands)
 - [Output and error handling](#output-and-error-handling)
 - [Temporary files](#temporary-files)
@@ -115,9 +115,9 @@ Use this argument carefully. It is raw SAD command text and is not validated by 
 
 ## Output and error handling
 
-Helpers are silent by default. Progress messages and SAD's own terminal output are emitted through the `sad2xs` logger: `sad2xs.set_log_level("debug")` exposes them. There are no per-function verbosity parameters; the tqdm progress bar in `track_sad` remains controlled by `with_progress`.
+Helpers are silent by default. Progress messages and SAD's own terminal output are emitted through the `sad2xs` logger, and `sad2xs.set_log_level("debug")` exposes them. There are no per-function verbosity parameters. The tqdm progress bar in `track_sad` remains controlled by `with_progress`.
 
-Most helpers run SAD through a shared runner (`run_sad` in `sad_helpers/_helpers.py`) which uses `subprocess.run(..., timeout=wall_time, check=True)`.
+Most helpers run SAD through a shared runner, `run_sad` in `sad_helpers/_helpers.py`, which uses `subprocess.run(..., timeout=wall_time, check=True)`.
 
 Current behaviour:
 
@@ -127,7 +127,9 @@ Current behaviour:
 - on success, SAD's terminal output is logged at debug level;
 - the temporary command file is removed on all exit paths.
 
-`track_sad` uses `subprocess.Popen` so that progress can be read while SAD is running. It checks elapsed wall time while reading SAD output, kills the process on timeout, and raises `RuntimeError` with the same conventions (SAD's output embedded on failure). This timeout approach is less robust if SAD stops producing output while still running.
+`track_sad` uses `subprocess.Popen` instead, so that progress can be read while SAD is running. It checks the elapsed wall time while reading SAD output, kills the process on timeout, and raises `RuntimeError` with the same conventions, embedding SAD's output on failure.
+
+This timeout approach is less robust than the shared runner's. It does not detect a SAD process that stops producing output while still running.
 
 Default wall times are currently short for optics-style helpers and longer for tracking:
 
@@ -137,11 +139,11 @@ Default wall times are currently short for optics-style helpers and longer for t
 
 ## Temporary files
 
-All helpers write UUID-named temporary files directly in the current working directory (e.g. `_sad_chrom_<uid>.sad`) and remove them in a `finally` block. Concurrent calls from the same working directory are safe, and files are cleaned up on both normal and error exits.
+All helpers write UUID-named temporary files directly in the current working directory, such as `_sad_chrom_<uid>.sad`, and remove them in a `finally` block. Concurrent calls from the same working directory are safe, and the files are cleaned up on both normal and error exits.
 
-`rebuild_sad_lattice` also writes a user-specified output lattice file; that file is intentionally persistent and is not cleaned up automatically.
+`rebuild_sad_lattice` also writes a user-specified output lattice file. That file is intentionally persistent and is not cleaned up automatically.
 
-Note: SAD resolves paths relative to the directory of the input script file, so temporary script files must be written to the same directory as the lattice file (i.e. the Python process cwd).
+Note that SAD resolves paths relative to the directory of the input script file. Temporary script files must therefore be written to the same directory as the lattice file, which is the working directory of the Python process.
 
 ## Current safeguards
 
