@@ -25,7 +25,7 @@ from sad2xs.sad_helpers import track_sad, transfer_matrix_sad, twiss_sad
 ################################################################################
 # Accepted parameters
 # MULT is the general multipole element — accepts all Kn/SKn, geometry,
-# and RF parameters (K. Oide: "almighty, even acceleration can be included").
+# and RF parameters.
 # See tests/sad/README.md's "Parameter matrix" for the full accepted/rejected
 # table this parametrization transcribes.
 ################################################################################

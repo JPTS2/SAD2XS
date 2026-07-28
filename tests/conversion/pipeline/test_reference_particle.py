@@ -134,18 +134,12 @@ def test_pipeline_reference_particle_explicit_mass_is_preserved(write_lattice):
 
 def test_pipeline_reference_particle_explicit_charge_is_used_directly(write_lattice):
     """
-    A SAD CHARGE != 1 is used directly as q0, not ignored.
+    A declared SAD CHARGE != 1 is used directly as q0, not ignored.
 
-    Oide confirmed (2026-06-27) that real historical SAD lattice files
-    (e.g. SuperKEKB HER, the KEKB linac) do not declare CHARGE=-1 even
-    though they represent electron species — a lattice-authoring convention
-    issue, for historical reasons. That is a different claim from "SAD's
-    computation engine ignores CHARGE when it IS present", which this test
-    (and tests/sad/test_reference_particle.py, verified against real SAD
-    with twiss_sad and track_sad) shows to be false: CHARGE=-1 gives the
-    exact sign-reversed physics. reverse_charge_sign=True remains available
-    as an explicit override for lattices (like HER) that don't declare their
-    species via CHARGE at all.
+    Converts a minimal lattice declaring CHARGE = -1 and asserts q0 on the
+    reference particle. SAD's own engine respects CHARGE, verified against
+    the real binary in tests/sad/test_reference_particle.py. Lattices that
+    omit CHARGE entirely are handled by reverse_charge_sign instead.
     """
     lattice_path = write_lattice(
         """\
