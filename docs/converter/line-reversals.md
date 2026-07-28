@@ -12,6 +12,16 @@ and the reference-particle `CHARGE` handling that interacts with all of them.
 
 ---
 
+**On this page:**
+
+- [Solenoid `ks` depends on the reference particle's charge](#solenoid-ks-depends-on-the-reference-particles-charge)
+- [`reverse_element_order`](#reverse_element_order)
+- [`reverse_charge_sign`](#reverse_charge_sign)
+- [`reverse_survey_horizontal`](#reverse_survey_horizontal)
+- [`reverse_survey_vertical`](#reverse_survey_vertical)
+- [SAD empirical verifications](#sad-empirical-verifications)
+- [Summary table](#summary-table)
+
 ## Solenoid `ks` depends on the reference particle's charge
 
 **Corrected 2026-07-01.** An earlier version of this document claimed the opposite

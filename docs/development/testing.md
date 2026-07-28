@@ -19,6 +19,22 @@ pytest tests/parser/ -v
 
 The test tree is documented in full in `tests/README.md`.
 
+**On this page:**
+
+- [Public Test Policy](#public-test-policy)
+- [Test Layers](#test-layers)
+- [SAD Syntax Assumption Tests](#sad-syntax-assumption-tests)
+- [pytest Configuration](#pytest-configuration)
+- [Regression Workflow](#regression-workflow)
+- [Known Failures](#known-failures)
+- [Accepted Physics Limitations](#accepted-physics-limitations)
+- [SAD Dependency](#sad-dependency)
+- [Temporary Files](#temporary-files)
+- [Diagnostics](#diagnostics)
+- [CI](#ci)
+- [Physics Edge Cases](#physics-edge-cases)
+- [Naming](#naming)
+
 ## Public Test Policy
 
 Public tests must use synthetic or publicly shareable inputs.

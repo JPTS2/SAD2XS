@@ -10,6 +10,18 @@ These helpers are separate from the core SAD-to-Xsuite converter. They are used 
 pip install sad2xs[sad-helpers]
 ```
 
+**On this page:**
+
+- [Requirements](#requirements)
+- [Public helper functions](#public-helper-functions)
+- [Typical use from Python](#typical-use-from-python)
+- [Twiss conventions in coupled regions (skew quads, solenoids, ...)](#twiss-conventions-in-coupled-regions-skew-quads-solenoids)
+- [Additional SAD commands](#additional-sad-commands)
+- [Output and error handling](#output-and-error-handling)
+- [Temporary files](#temporary-files)
+- [Current safeguards](#current-safeguards)
+- [Current limitations](#current-limitations)
+
 ## Requirements
 
 The helper functions require:

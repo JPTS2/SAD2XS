@@ -2,6 +2,16 @@
 
 This document records the development workflow used for the current release cycle.
 
+**On this page:**
+
+- [Branch model](#branch-model)
+- [Pull requests](#pull-requests)
+- [Releases and tags](#releases-and-tags)
+- [Commit style](#commit-style)
+- [Environment](#environment)
+- [Terminal output policy](#terminal-output-policy)
+- [Public issue policy](#public-issue-policy)
+
 ## Branch model
 
 `main` is the stable branch.

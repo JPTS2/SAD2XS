@@ -6,6 +6,17 @@ the steps in order.
 [Contributing](contributing.md) describes the branch and tag policy. This page
 describes the release itself.
 
+**On this page:**
+
+- [Before you start](#before-you-start)
+- [Step 1: Check the release branch](#step-1-check-the-release-branch)
+- [Step 2: Set the new version](#step-2-set-the-new-version)
+- [Step 3: Check the citation metadata](#step-3-check-the-citation-metadata)
+- [Step 4: Verify the package builds](#step-4-verify-the-package-builds)
+- [Step 5: Merge and tag](#step-5-merge-and-tag)
+- [Step 6: Confirm the Zenodo record](#step-6-confirm-the-zenodo-record)
+- [Step 7: Publish to PyPI](#step-7-publish-to-pypi)
+
 ## Before you start
 
 You need:

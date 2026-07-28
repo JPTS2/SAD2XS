@@ -4,6 +4,15 @@ The core SAD2XS design choice is that Xsuite is the canonical intermediate repre
 
 SAD input is parsed and converted into Xsuite objects. After conversion, the Xsuite `Environment`, `Line`, and element objects are the source of truth for writer output and later processing.
 
+**On this page:**
+
+- [Why Xsuite is canonical](#why-xsuite-is-canonical)
+- [Conversion pipeline](#conversion-pipeline)
+- [Parser behaviour](#parser-behaviour)
+- [Element conversion](#element-conversion)
+- [Writer behaviour](#writer-behaviour)
+- [Boundaries](#boundaries)
+
 ## Why Xsuite is canonical
 
 Raw SAD definitions are not always authoritative after conversion.

@@ -22,7 +22,7 @@ parser test areas.
 
 ## Coverage
 
-### `test_release_metadata.py` — 8 tests, all expected to pass
+### `test_release_metadata.py` — 9 tests, all expected to pass
 
 Reads installed package metadata via `importlib.metadata` and verifies
 structural correctness. Does not pin specific values — it tests format and
@@ -32,12 +32,13 @@ presence so the checks remain valid across version bumps.
 |------|-----------------|
 | `test_release_metadata_package_name_is_a_non_empty_string` | `Name` field exists and is a non-empty string |
 | `test_release_metadata_version_follows_semver_format` | `Version` matches `^\d+\.\d+\.\d+` |
-| `test_release_metadata_author_field_is_a_non_empty_string` | `Author` field exists and is non-empty |
+| `test_release_metadata_author_name_is_declared` | `Author-email` declares a name in `Name <address>` form |
 | `test_release_metadata_author_email_contains_at_symbol` | `Author-email` contains `@` |
-| `test_release_metadata_license_field_is_a_non_empty_string` | `License` field exists and is non-empty |
-| `test_release_metadata_xsuite_is_listed_as_a_dependency` | A current coherent `xsuite` bundle appears in `install_requires` |
-| `test_release_metadata_numpy_is_listed_as_a_dependency` | `numpy` appears in `install_requires` |
-| `test_release_metadata_tfs_is_an_optional_extra_not_a_hard_dependency` | `tfs-pandas` is listed under `extras_require`, not `install_requires` |
+| `test_release_metadata_license_expression_is_a_non_empty_string` | `License-Expression` exists and is a non-empty SPDX expression |
+| `test_release_metadata_xsuite_is_listed_as_a_dependency` | A current coherent `xsuite` bundle appears in the dependencies |
+| `test_release_metadata_numpy_is_listed_as_a_dependency` | `numpy` appears in the dependencies |
+| `test_release_metadata_scipy_is_listed_as_a_dependency` | `scipy` appears in the dependencies |
+| `test_release_metadata_tfs_is_an_optional_extra_not_a_hard_dependency` | `tfs-pandas` is listed under an optional extra, not a hard dependency |
 
 ### `test_import_boundaries.py` — 9 tests, all expected to pass
 

@@ -4,6 +4,16 @@ This file is a lightweight decision log. It records project-level choices that s
 
 Decisions about how specific SAD physics is modelled live with the feature they concern, in the [converter documentation](../converter/README.md): [fringe models](../converter/fringes.md), [solenoids](../converter/solenoids.md), [models and integrators](../converter/models-integrators.md), and [element conversion](../converter/elements.md).
 
+**On this page:**
+
+- [Xsuite is the canonical intermediate model](#xsuite-is-the-canonical-intermediate-model)
+- [Public tests must be shareable](#public-tests-must-be-shareable)
+- [SAD helpers are optional](#sad-helpers-are-optional)
+- [Keep SAD2XS as one package for now](#keep-sad2xs-as-one-package-for-now)
+- [Writer should become reusable](#writer-should-become-reusable)
+- [Configuration must not change semantics accidentally](#configuration-must-not-change-semantics-accidentally)
+- [Parser hardening is staged, not a full grammar rewrite](#parser-hardening-is-staged-not-a-full-grammar-rewrite)
+
 ## Xsuite is the canonical intermediate model
 
 Decision: after SAD input is parsed and converted, Xsuite objects are the source of truth.
