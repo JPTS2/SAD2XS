@@ -41,20 +41,18 @@ parse SAD input
 
 When `_test_mode=True`, the function returns the converted line before writing and reloading output files.
 
-Next release target: this layer should stay thin where possible. Conversion details should live in converter modules, writer details should live in output writer modules, and external SAD helper logic should stay separate.
+Conversion details live in converter modules. Writer details live in output writer modules. External SAD helper logic stays separate.
 
 ## Public import surface
 
-The current top-level package import exposes:
+The top-level package exposes:
 
 - `convert_sad_to_xsuite`;
 - `write_lattice`;
 - `write_optics`;
 - `sad_helpers`.
 
-This is the practical public surface today.
-
-Next release target: future changes should reduce import-time coupling to `sad_helpers`, because helper functionality depends on an external SAD installation and additional Python packages.
+`sad_helpers` is imported lazily, on first access (PEP 562). It depends on an external SAD installation and extra Python packages, so importing the core converter does not load it.
 
 ## Configuration and shared types
 
@@ -78,17 +76,17 @@ Key responsibilities:
 - `_008_offset_markers.py`: install offset marker structures.
 - `_009_write_lattice.py` and `_010_write_optics.py`: writer entry points that assemble output from the `sad2xs/output_writer/` modules.
 
-Next release target: the converter should produce a valid Xsuite model and should not rely on the writer to repair conversion semantics.
+Conversion semantics are the converter's responsibility. The writer serialises the model that the converter built; it does not repair it.
 
 ## Output writer subsystem
 
 The output writer modules in `sad2xs/output_writer/` generate Python lattice and optics files from the converted Xsuite model.
 
-Current status: the writer accepts an `xt.Line` at the main `write_lattice` entry point and can fill some missing global variables from `line.particle_ref`.
+The writer accepts an `xt.Line` at the main `write_lattice` entry point. It fills some missing global variables from `line.particle_ref`.
 
-Long-term direction: the writer should become a more complete reusable serializer for Xsuite lattices, not only the final step of a SAD2XS conversion. This matters because a user may rematch or modify an Xsuite lattice after conversion and still want readable SAD2XS-style output.
+Writer output is generated from the Xsuite `Environment`, `Line`, and element objects rather than from raw SAD data.
 
-Next release target: writer output should prefer information from the Xsuite `Environment`, `Line`, and element objects over raw SAD data. Any remaining dependency on SAD-specific conversion context should be explicit.
+The writer is not a general Xsuite serialiser. It still carries SAD2XS-specific assumptions, and it writes deferred (xdeps) expressions as literal floats. Both are tracked in the [issue tracker](https://github.com/JPTS2/sad2xs/issues).
 
 ## SAD helper subsystem
 
@@ -96,9 +94,7 @@ The modules in `sad2xs/sad_helpers/` call external SAD tools for operations such
 
 These helpers are valuable for validation and comparison, but they depend on an external SAD installation.
 
-Current status: the top-level package re-exports `sad_helpers`, so import-time coupling to helper dependencies may still exist.
-
-Next release target: importing and using the core converter should not require SAD helper dependencies to be available.
+The core converter does not require them. `sad_helpers` is imported lazily, so importing and using the converter works without the helper dependencies installed. `tests/packaging/test_import_boundaries.py` protects this boundary.
 
 ## Public and private validation
 

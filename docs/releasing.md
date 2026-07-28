@@ -79,6 +79,9 @@ see.
 Merge the release branch into `main`. Tag `main` as `vX.Y.Z`. Publish the
 GitHub release.
 
+Write release notes describing the user-visible changes. The GitHub release
+page is the project's changelog, and Zenodo archives it alongside the source.
+
 Merging a pull request into a release branch does not close the linked issue.
 Close the milestone issues by hand.
 

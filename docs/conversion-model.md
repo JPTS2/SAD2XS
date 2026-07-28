@@ -2,9 +2,7 @@
 
 The core SAD2XS design choice is that Xsuite is the canonical intermediate representation.
 
-SAD input is parsed and converted into Xsuite objects.
-
-Next release target: after conversion, the Xsuite `Environment`, `Line`, and element objects should be the source of truth for writer output and later processing.
+SAD input is parsed and converted into Xsuite objects. After conversion, the Xsuite `Environment`, `Line`, and element objects are the source of truth for writer output and later processing.
 
 ## Why Xsuite is canonical
 
@@ -18,7 +16,7 @@ Reasons include:
 - Users may later rematch or modify the Xsuite lattice and still want readable regenerated outputs.
 - Current Xsuite APIs can change, so the converter must target the active Xsuite object model rather than preserve stale SAD syntax.
 
-For these reasons, SAD2XS should not treat parsed SAD text as the primary model once conversion has happened.
+For these reasons, SAD2XS does not treat parsed SAD text as the primary model once conversion has happened.
 
 ## Conversion pipeline
 
@@ -41,51 +39,52 @@ For these reasons, SAD2XS should not treat parsed SAD text as the primary model 
 16. Reload the generated files and return the rebuilt Xsuite line.
 ```
 
-This describes the current high-level orchestration. Some individual steps need cleanup to fully satisfy the design decisions in this documentation.
+## Parser behaviour
 
-## Parser expectations
+The parser turns SAD text into structured data without losing information that later conversion stages need.
 
-Next release target: the parser should turn SAD text into structured data without losing information that later conversion stages need.
+Specifically:
 
-Important parser expectations for the next release include:
-
-- comments should not affect semicolon-based section splitting;
-- globals and expressions should be available to later element conversion;
+- comments do not affect semicolon-based section splitting;
+- globals and expressions are available to later element conversion;
 - SAD user-defined function definitions (`f[x_] := expr`) are explicitly rejected with a clear error rather than silently misparsed — see the parser-hardening decision in `docs/design-decisions.md`;
 - parse errors cite the source line number of the offending statement;
-- line definitions should support supported SAD syntax variants, including comma-separated components;
-- arithmetic in element parameters should not depend on fragile whitespace handling.
+- line definitions support the supported SAD syntax variants, including comma-separated components;
+- arithmetic in element parameters does not depend on fragile whitespace handling.
 
-## Element conversion expectations
+## Element conversion
 
-Next release target: element conversion should preserve the physics information that Xsuite can represent.
+Element conversion preserves the physics information that Xsuite can represent.
 
-Important cases for the next release include:
+Specific cases:
 
-- RF cavities should use the current Xsuite phase and harmonic conventions.
-- Coordinate transforms should use current Xsuite transform elements such as translations, rotations, and time delays.
-- Thin and zero-length magnetic elements need a documented policy, likely using `xt.Multipole` where appropriate.
-- Combined multipole components should be preserved when a base element includes higher-order corrections.
-- Aperture conversion should support equivalent SAD aperture parameter forms where the meaning is clear.
-- Solenoid-region conversion should follow SAD's inserted-element rules: between
+- RF cavities use the current Xsuite phase and harmonic conventions.
+- Coordinate transforms use current Xsuite transform elements, such as translations, rotations, and time delays.
+- Magnetic elements with no length, or zero length, convert to `xt.Multipole`.
+- Combined multipole components are preserved when a base element includes higher-order corrections.
+- Aperture conversion supports the equivalent SAD aperture parameter forms where the meaning is clear.
+- Solenoid-region conversion follows SAD's inserted-element rules. Between
   SOL boundary elements, SAD supports DRIFT, straight BEND, QUAD, and MULT.
-  Direct SEXT and OCT elements should not be treated as supported inserted
-  elements in that region; higher-order content should be represented through
-  MULT where appropriate.
+  Direct SEXT and OCT elements are not supported inserted elements in that
+  region; higher-order content is represented through MULT.
 
-Unsupported cases should fail clearly. Silent loss of physics information is worse than a loud error.
+Unsupported cases fail clearly. Silent loss of physics information is worse than a loud error.
 
-## Writer expectations
+## Writer behaviour
 
-Next release target: the writer should serialize the Xsuite model that SAD2XS actually built.
+The writer serialises the Xsuite model that SAD2XS built, not the original SAD text.
 
 This means:
 
-- writer output should reflect converted and reversed Xsuite elements;
-- writer output should not require the original SAD text to remain authoritative;
-- regenerated lattices should compile and reproduce the intended Xsuite model;
+- writer output reflects converted and reversed Xsuite elements;
+- writer output does not require the original SAD text to remain authoritative;
+- regenerated lattices compile and rebuild the line from base elements.
 
-Long-term direction: the writer should accept a general Xsuite line or environment, not only a direct SAD2XS conversion result.
+The writer is not yet a general Xsuite serialiser. It accepts an `xt.Line`, but
+it still carries SAD2XS-specific assumptions, and it writes deferred (xdeps)
+expressions as literal floats rather than preserving them. See the
+[issue tracker](https://github.com/JPTS2/sad2xs/issues) for the current
+limitations and planned work.
 
 ## Boundaries
 

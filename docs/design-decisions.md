@@ -24,9 +24,7 @@ Decision: external SAD helper functionality should remain optional for the core 
 
 Reasoning: helper functions are useful for validation and comparison, but they depend on an external SAD installation. Users should be able to import and use the converter without setting up every helper dependency.
 
-Consequence: helper imports should not make core conversion imports fail. The public test suite itself is SAD-capable and requires SAD, but package import-boundary tests should still protect core imports from unnecessary helper coupling.
-
-Current status: this is not fully implemented. The top-level package still re-exports `sad_helpers`, so import-time coupling should be reduced in a future packaging change.
+Consequence: helper imports do not make core conversion imports fail. `sad_helpers` is imported lazily on first access (PEP 562), so the core converter loads without the helper dependencies. The public test suite itself is SAD-capable and requires SAD; `tests/packaging/test_import_boundaries.py` protects core imports from helper coupling.
 
 ## Keep SAD2XS as one package for now
 
