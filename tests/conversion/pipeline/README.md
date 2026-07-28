@@ -20,7 +20,7 @@ should stay focused on pipeline orchestration and public user options.
 | `test_convert_sad_to_xsuite.py` | 23 | 0 | — |
 | `test_excluded_elements.py` | 9 | 0 | — |
 | `test_multipole_replacements.py` | 5 | 0 | — |
-| `test_offset_markers.py` | 7 | 0 | — |
+| `test_offset_markers.py` | 10 | 0 | — |
 | `test_reference_particle.py` | 10 | 0 | — |
 | `test_reverse_survey_horizontal.py` | 12 | 0 | — |
 | `test_reverse_survey_vertical.py` | 13 | 0 | — |
@@ -30,33 +30,41 @@ should stay focused on pipeline orchestration and public user options.
 
 ### `test_convert_sad_to_xsuite.py` note
 
-Covers the entry-point contract in detail: output file creation, output
-filename defaults, line name selection, suppressed-element handling,
-`_test_mode` behaviour, and line name defaulting. All 23 tests pass.
+Covers the entry-point contract: output file creation, output filename
+defaults, line name selection and defaulting, suppressed-element handling, and
+`_test_mode` behaviour.
 
 ### `test_offset_markers.py` note
 
-Covers offset marker installation: dict format, s-position values, multiple
-markers, marker names, and symbolic s-position expressions (`l0` as a named
-variable), which are resolved through the line's `xt.Environment` rather than
-bare `eval()`. All 7 pass.
+Covers offset marker resolution and installation:
+
+- markers with no `OFFSET` parameter are left alone;
+- `MARK` and `MONI` are moved to the computed `s` position;
+- an `OFFSET` at or below 1 is a no-op, so the marker stays in place;
+- a reversed `-NAME` reference walks the offset in the opposite direction;
+- multiple offset markers are all moved, and non-offset markers survive
+  alongside them;
+- an excluded solenoid removes its marker permanently;
+- symbolic `s` expressions resolve through the line's `xt.Environment`, not
+  through a bare `eval()`.
 
 ### `test_reverse_charge_sign.py` note
 
-Covers `reverse_charge_sign=True` and species-aware reference particle setup.
-Tests: default positron species, proton mass → proton species, charge sign
-reversal (positron → electron, proton → antiproton), p0c/mass0 isolation, and
-UserWarning emission when `CHARGE != 1` is found in the SAD file. All 6 pass.
+Covers `reverse_charge_sign` and species-aware reference-particle setup:
+default positron species, proton mass giving a proton species, charge-sign
+reversal to electron and antiproton, `p0c`/`mass0` isolation, and the
+`UserWarning` raised for `CHARGE != 1` in the SAD file.
 
 ### `test_reversed_component_syntax.py` note
 
-Covers SAD's per-element `-NAME` reversal syntax (`create_reversed_component`,
-distinct from the whole-line `-LINE`/`reverse_element_order` path covered by
-`test_reverse_element_order.py`): direction-symmetric reuse (drift, quad),
-solenoid ks negation, bend edge-angle swap, bend fringe-field (fint/hgap)
-swap, and two tracking comparisons against real SAD's own per-element-reversed
-line (poleface angle and soft-edge fringe, isolated from each other). All 7
-pass.
+Covers SAD's per-element `-NAME` reversal syntax, through
+`create_reversed_component`. This is a separate path from the whole-line
+`-LINE` reversal covered by `test_reverse_element_order.py`.
+
+It covers direction-symmetric reuse for drifts and quadrupoles, solenoid `ks`
+negation, the bend edge-angle swap, and the bend `fint`/`hgap` swap. Two
+tracking comparisons run against SAD's own per-element-reversed line, with the
+poleface angle and the soft-edge fringe isolated from each other.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

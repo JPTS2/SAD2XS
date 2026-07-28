@@ -61,20 +61,23 @@ is tested as either accepted or rejected — nothing is left untested either way
 
 ### Effect on Twiss / effect on tracking
 
-For every element with a defining strength parameter, physics coverage follows one
-consistent pattern — a Twiss-side test and a tracking-side test, not whichever one
-happened to work:
+Every element with a defining strength parameter gets both a Twiss-side test and a
+tracking-side test, rather than whichever one happened to work.
 
-- **Linear elements (QUAD's K1, BEND's ANGLE/K1, MULT's K1)**: the parameter changes
-  linear optics (Twiss betx) *and* gives a direct kick in tracking. Both are asserted.
-- **Nonlinear elements (SEXT's K2, OCT's K3, MULT's K2/K3)**: the parameter has *no*
-  effect on Twiss at zero orbit (asserted as a positive fact, not left as a gap — the
-  reference particle stays at x=0, so the field's Jacobian there is the identity
-  regardless of field strength), but gives a quadratic/cubic kick in tracking.
-- **Pure orbit-kick elements (BEND's/MULT's K0)**: no *linear* effect on Twiss betx —
-  though for BEND's K0 specifically, a small residual was found that scales as K0²
-  (confirmed by checking the scaling, not assumed); tracking shows the direct kick.
-  This is why BEND's K0 test asserts a scaling ratio rather than exact invariance.
+- **Linear elements**, meaning QUAD's K1, BEND's ANGLE and K1, and MULT's K1. The
+  parameter changes the linear optics, seen in Twiss `betx`, and gives a direct kick
+  in tracking. Both are asserted.
+- **Nonlinear elements**, meaning SEXT's K2, OCT's K3, and MULT's K2 and K3. The
+  parameter has *no* effect on Twiss at zero orbit, and that is asserted as a positive
+  fact rather than left as a gap. The reference particle stays at x=0, where the
+  field's Jacobian is the identity whatever the field strength. Tracking shows the
+  quadratic or cubic kick.
+- **Pure orbit-kick elements**, meaning BEND's and MULT's K0. There is no *linear*
+  effect on Twiss `betx`, and tracking shows the direct kick.
+
+  BEND's K0 carries a small residual that scales as K0². This was confirmed by
+  checking the scaling, not assumed, which is why BEND's K0 test asserts a scaling
+  ratio rather than exact invariance.
 - **MULT's K0/SK0 dipole fringe (transfer-matrix ground truth)**: a K0-only MULT's
   default linear map carries the fringe term m43 = −K0²/L *exactly*; SK0 mirrors it
   as m21. The element-level `FRINGE` switch controls the term: `FRINGE=1` removes the
@@ -86,27 +89,29 @@ happened to work:
   reproduce the same fringe formula as the equivalent K0-only BEND — confirmed
   directly (`test_mult_k0_fringe_with_nonzero_fb_does_not_match_equivalent_bend`);
   MULT's fringe treatment is out of scope for the BEND fringe import below.
-- **MULT's F1/F2 quad-style soft-edge fringe (`test_mult.py`)**: a MULT with `K1`
-  content applies the identical linear fringe QUAD does (`F1`/`F2`, per-side
-  `F1K1F`/`F2K1F`/`F1K1B`/`F2K1B`) — confirmed to give bit-identical pinned
-  values to the equivalent QUAD (`test_mult_k1_f1_f2_matches_sad_reference_values`),
-  since a `K1`-only MULT with no other order content is physically a QUAD.
-  Gated by `FRINGE` using QUAD's `{1,2,3}` numbering (0=neither, 1=entrance,
-  2=exit, 3=both) — confirmed against the real binary
+- **MULT's F1/F2 quad-style soft-edge fringe** (`test_mult.py`). A MULT carrying
+  `K1` applies the identical linear fringe that QUAD does, through `F1`/`F2` and
+  the per-side `F1K1F`/`F2K1F`/`F1K1B`/`F2K1B`. It gives bit-identical pinned
+  values to the equivalent QUAD, because a `K1`-only MULT with no other order
+  content is physically a QUAD
+  (`test_mult_k1_f1_f2_matches_sad_reference_values`).
+
+  `FRINGE` gates it using QUAD's `{1,2,3}` numbering: 0 for neither edge, 1 for
+  entrance, 2 for exit, 3 for both. Confirmed against the real binary
   (`test_mult_k1_fringe_mode_gates_entrance_exit`), including the same
-  reversed-`-LINE` mode-permutation as QUAD
+  reversed-`-LINE` mode permutation as QUAD
   (`test_mult_reversed_line_fringe_mode_permutes`).
-- **MULT's FB1/FB2 dipole-style soft-edge fringe (`test_mult.py`)**: a MULT
-  with `ANGLE`/`K0` content also has BEND-style `FB1`/`FB2` fringe, but
-  gated by the **same `{1,2,3}` FRINGE numbering as the `K1` fringe above,
-  NOT BEND's own sign-based scheme** (`-1`/`-2`/positive) — confirmed
-  against the real binary with asymmetric `FB1 != FB2`
-  (`test_mult_fb1_fb2_fringe_mode_gates_entrance_exit`), and pinned
-  (`test_mult_fb1_fb2_matches_sad_reference_values`). This explains why
-  `test_mult_k0_fringe_with_nonzero_fb_does_not_match_equivalent_bend`
-  above finds a real difference at `FRINGE=1`: BEND's `FRINGE=1` (a
-  positive value) means "both edges active", while MULT's `FRINGE=1`
-  means "entrance-only".
+- **MULT's FB1/FB2 dipole-style soft-edge fringe** (`test_mult.py`). A MULT
+  carrying `ANGLE` or `K0` also has BEND-style `FB1`/`FB2` fringe. It is gated by
+  the **same `{1,2,3}` numbering as the `K1` fringe above, not by BEND's own
+  sign-based scheme**. Confirmed against the real binary with asymmetric
+  `FB1 != FB2` (`test_mult_fb1_fb2_fringe_mode_gates_entrance_exit`) and pinned
+  (`test_mult_fb1_fb2_matches_sad_reference_values`).
+
+  This explains the real difference at `FRINGE=1` found by
+  `test_mult_k0_fringe_with_nonzero_fb_does_not_match_equivalent_bend` above.
+  BEND reads `FRINGE=1` as a positive value, meaning both edges active. MULT
+  reads it as entrance-only.
 - **MULT's default hard-edge fringe, and its interaction with FRINGE
   (`test_mult.py`)**: the same generic hard-edge kick BEND/QUAD/SEXT/OCT
   use, gated by `DISFRIN` (default `0`/enabled, strictly boolean, pinned
@@ -333,14 +338,12 @@ than assumed to follow from ROTATE):
 - **APERT: missing ellipse axis is not treated as infinite.** An `APERT` with only
   `AX` set (`AY` entirely omitted) rejects even a dead-centre particle, contradicting
   the documented "absent axis = infinite" rule. See
-  `test_apert_missing_ellipse_axis_behavior`, and
-  `dev/apert_mwe_missing_axis_infinite.sad` for a standalone SAD-only reproduction
-  ready to send to the SAD author. Not yet resolved.
+  `test_apert_missing_ellipse_axis_behavior`. A standalone SAD-only reproduction
+  exists for the SAD side. Not yet resolved.
 - **APERT: an earlier reading of the DX/rectangle formula was wrong, not SAD.** DX
   recentres *both* the elliptical and rectangular clauses (`min(DX1,DX2) < (x-DX) <
-  max(DX1,DX2)`), not just the ellipse. Resolved — see
-  `test_apert_offset_shifts_both_ellipse_and_rectangle` and
-  `dev/apert_mwe_offset_shifts_rectangle.sad`.
+  max(DX1,DX2)`), not just the ellipse. Resolved: see
+  `test_apert_offset_shifts_both_ellipse_and_rectangle`.
 - **BEND reversal: small linear-in-angle residual, cause not identified.** See
   `test_reversed_line_bend_angle_sign_matches_converter_assumption`'s docstring —
   confirmed not to be a sign error or numerical noise (scales cleanly as
@@ -350,10 +353,10 @@ than assumed to follow from ROTATE):
   `test_cavi_volt_gives_nonzero_energy_deviation_in_tracking`'s docstring; the tests
   use the known-working PHI=pi/4 setup from `test_reference_particle.py` instead.
   Not investigated further.
-- **The LimitRectEllipse converter/Xsuite question is separate** from all of the
-  above and is blocked on an upstream Xsuite discussion (whether `xt.LimitRectEllipse`
-  can be extended to support `min_x`/`min_y`), not on SAD-side testing — see
-  `dev/codebase_review_2026-07-01.md`.
+- **The LimitRectEllipse question is separate** from everything above. It is
+  blocked on an upstream Xsuite discussion, over whether `xt.LimitRectEllipse` can
+  be extended to support `min_x` and `min_y`. It is not blocked on SAD-side
+  testing.
 
 ## Elements not tested and why
 

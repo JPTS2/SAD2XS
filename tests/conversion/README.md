@@ -34,13 +34,18 @@ line, and how converted lines compare with SAD optics or tracking.
   particles, line selection, generated-file import, write/reload behaviour,
   line reversal, reverse charge, and user options.
 
-Top-level files cover cross-cutting behaviour: `test_converter_helpers.py`
-(converter helper functions), `test_xsuite_api_compatibility.py` (Xsuite APIs
-the converter relies on), and `test_coupled_twiss_convention.py` (the
-coupled-twiss comparison convention against SAD — proves SAD reports
-Edwards-Teng optics and `R / sqrt(1 + det R)` coupling matrices, validates
-`tests/support/coupled_optics.py`, and anchors each case with SAD-vs-Xsuite
-transfer-matrix equality; see `docs/helpers/sad-helpers.md`).
+Top-level files cover cross-cutting behaviour:
+
+| File | Covers |
+|------|--------|
+| `test_converter_helpers.py` | converter helper functions |
+| `test_xsuite_api_compatibility.py` | Xsuite APIs the converter relies on |
+| `test_coupled_twiss_convention.py` | the coupled-twiss comparison convention against SAD |
+
+`test_coupled_twiss_convention.py` does three things. It proves SAD reports
+Edwards-Teng optics and `R / sqrt(1 + det R)` coupling matrices. It validates
+`tests/support/coupled_optics.py`. It anchors each case with SAD-vs-Xsuite
+transfer-matrix equality. See `docs/helpers/sad-helpers.md`.
 
 ## Element Test Shape
 
@@ -54,9 +59,9 @@ Element files should prefer this order when practical:
 - edge cases that are specific to that element family.
 
 Large element families may need more internal sections. Solenoid handling is
-intentionally extensive because bound solenoid regions, reference transforms,
-and supported inserted elements interact in ways that are difficult to express
-as small isolated tests.
+deliberately extensive. Bound solenoid regions, reference transforms, and
+supported inserted elements interact, and those interactions are difficult to
+express as small isolated tests.
 
 ## Shared Fixtures
 

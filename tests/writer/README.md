@@ -30,22 +30,17 @@ The reloaded line should preserve the writer-supported parts of the input:
 Assertion messages should name the element and field being compared so CI
 failures are useful without inspecting generated files.
 
-## Test Layers
-
-- `pipeline/`: whole-line writer contracts, file generation, reload behaviour,
-  and supported-element policy.
-- `elements/`: focused serialisation tests per element family. One file per
-  Xsuite element type, covering all supported fields including strengths,
-  offsets, rotations, skew components, combined-function combinations, and
-  element-specific features such as RF parameters and offset marker output.
-
-Start with element-level coverage to isolate failures by element type, then
-use pipeline tests to verify whole-line behaviour.
-
 ## Subfolders
 
-- `elements/`: element-specific serialisation, one file per element family.
-- `pipeline/`: whole-writer entry points and supported-element policy.
+- `elements/`: serialisation per element family, one file per Xsuite element
+  type. Covers every supported field, including strengths, offsets, rotations,
+  skew components, and combined-function combinations, plus element-specific
+  features such as RF parameters and offset marker output.
+- `pipeline/`: whole-line writer contracts, file generation, reload behaviour,
+  and the supported-element policy.
+
+Start with element-level coverage, which isolates a failure by element type.
+Then use the pipeline tests to verify whole-line behaviour.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

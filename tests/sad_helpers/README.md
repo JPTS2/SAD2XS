@@ -25,13 +25,32 @@ in `tests/conversion/`.
 All shared lattice-writing helpers live in `tests/support/lattices.py`. Import
 from there rather than defining local copies.
 
-- **Transfer-line** (`write_minimal_transfer_lattice`): `MOMENTUM = 1.0 GEV`, single `DRIFT TEST_DRIFT = (L = 1.0)`, `START`/`END` markers, `LINE TEST_LINE`.
-- **Bend lattice** (`write_minimal_bend_lattice`): same structure with `BEND TEST_BEND = (L = 1.0 ANGLE = 0.1)`.
-- **Vertical bend lattice** (`write_minimal_vertical_bend_lattice`): same structure with `BEND TEST_BEND = (L = 1.0 ANGLE = 0.1 ROTATE = pi/2)`, giving non-zero vertical (rather than horizontal) dispersion/survey content, used for `reverse_survey_vertical` sign-flip tests.
-- **FODO ring** (`write_fodo_ring`): 4 cells × 2 bends of 45° (π/4 rad, ρ = 1 m), `K1 = ±0.2`, `DRIFT D = (L = 0.5)`, `CAVI FREQ = 18 MHz`. Used by both emit and chromaticity tests — the cavity is required by emit and harmless for chromaticity (a transverse optics quantity unaffected by longitudinal RF). Element parameters use SAD's whitespace-separated syntax.
-- **Asymmetric closed ring** (`write_asymmetric_closed_ring`): a deliberately asymmetric ring (bend `E1 != E2` with `F1`/`FRINGE`, K0-only corrector with `FB1 != FB2`, two opposite-sign quads) with both a `FWD` line and a native SAD-reversed `REV` line (`LINE REV = (-FWD)`). Used to verify `reverse_element_order=True` against SAD's own native reversal independently of the code path under test.
+- **Transfer-line** (`write_minimal_transfer_lattice`): `MOMENTUM = 1.0 GEV`, a
+  single `DRIFT TEST_DRIFT = (L = 1.0)`, `START`/`END` markers, and
+  `LINE TEST_LINE`.
+- **Bend lattice** (`write_minimal_bend_lattice`): the same structure, with
+  `BEND TEST_BEND = (L = 1.0 ANGLE = 0.1)`.
+- **Vertical bend lattice** (`write_minimal_vertical_bend_lattice`): the same
+  structure, with `ROTATE = pi/2` added to the bend. This gives vertical rather
+  than horizontal dispersion and survey content, for the
+  `reverse_survey_vertical` sign-flip tests.
+- **FODO ring** (`write_fodo_ring`): 4 cells of 2 bends at 45 degrees, with
+  rho = 1 m, `K1 = +-0.2`, `DRIFT D = (L = 0.5)`, and `CAVI FREQ = 18 MHz`.
 
-`test_track_sad.py` also uses a local marker-only lattice (two markers, no physical elements) that is unique to tracking edge-case tests and is not shared.
+  Both the emit and the chromaticity tests use it. Emit requires the cavity.
+  Chromaticity is a transverse optics quantity, so the cavity is harmless
+  there. Element parameters use SAD's whitespace-separated syntax.
+- **Asymmetric closed ring** (`write_asymmetric_closed_ring`): a deliberately
+  asymmetric ring, carrying a bend with `E1 != E2` and `F1`/`FRINGE`, a K0-only
+  corrector with `FB1 != FB2`, and two opposite-sign quadrupoles.
+
+  It defines both a `FWD` line and a native SAD-reversed `REV` line. This
+  verifies `reverse_element_order` against SAD's own reversal, independently of
+  the code path under test.
+
+`test_track_sad.py` also uses a local marker-only lattice, with two markers and
+no physical elements. It is unique to the tracking edge-case tests and is not
+shared.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
