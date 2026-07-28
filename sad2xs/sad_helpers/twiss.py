@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-28
 ================================================================================
 """
 
@@ -233,7 +233,7 @@ def twiss_sad(
         nominal/reference momentum is carried along the line by
         accelerating elements, rather than held fixed at the line's
         initial MOMENTUM. Independent of rfsw/rad/radcod -- see
-        docs/sad-behaviour.md for the physics this controls. Defaults
+        docs/reference/sad-behaviour.md for the physics this controls. Defaults
         to False.
     rfsw : bool, optional
         Enable RF cavities (SAD's RFSW flag). Defaults to True.
@@ -291,7 +291,7 @@ def twiss_sad(
     cmd_file = f"_sad_twiss_{uid}.sad"
     out_file = f"_sad_twiss_{uid}.tfs"
 
-    # Native SAD reversal via a live ExtractBeamLine[] -- see docs/sad-behaviour.md.
+    # Native SAD reversal via a live ExtractBeamLine[] -- see docs/reference/sad-behaviour.md.
     reversal_commands = ""
     if reverse_element_order:
         use_line_name = f"REV{uid.upper()}"

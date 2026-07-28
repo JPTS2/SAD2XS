@@ -694,7 +694,7 @@ def test_pipeline_reverse_element_order_solenoid_physics_matches_sad_with_charge
     sad2xs/converter/_004_element_converter.py's convert_solenoids and
     dev/sad_charge/*.sad) still match real SAD after ALSO reversing element
     order (which negates ks a second time, for a different, independent
-    reason — see docs/line-reversals.md)?
+    reason — see docs/converter/line-reversals.md)?
 
     Identical to test_pipeline_reverse_element_order_solenoid_physics_matches_sad
     above except for one added line (CHARGE = -1;). If the two ks negations

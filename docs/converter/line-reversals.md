@@ -89,7 +89,7 @@ Xsuite line.  Both give identical final `y` and `py`.
 ### 2. Bend fringe fields (fint/hgap)
 
 The soft-edge fringe fields imported from SAD's `F1`/`FB1`/`FB2` (see
-`docs/sad-behaviour.md`'s `BEND` `F1`/`FRINGE` section) are entry/exit-face
+`docs/reference/sad-behaviour.md`'s `BEND` `F1`/`FRINGE` section) are entry/exit-face
 quantities exactly like the poleface angles above: `edge_entry_fint`/
 `edge_entry_hgap` and `edge_exit_fint`/`edge_exit_hgap` are exchanged
 alongside `edge_entry_angle`/`edge_exit_angle` in the same per-bend loop,

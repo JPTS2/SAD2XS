@@ -29,7 +29,7 @@ import sad2xs
 def test_no_print_calls_in_package():
     """
     No sad2xs module may call print(): use the module logger instead
-    (see docs/contributing.md, "Terminal output policy").
+    (see docs/development/contributing.md, "Terminal output policy").
     """
     package_root = pathlib.Path(sad2xs.__file__).parent
 

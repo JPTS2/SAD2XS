@@ -74,7 +74,7 @@ result = track_sad(
 
 SAD and Xsuite report coupled optics (`betx`/`bety`/`alfx`/`alfy` through a
 skew quad, solenoid, or other coupled region) in different conventions by
-default — see `docs/sad-behaviour.md` for the full empirically-established
+default — see `docs/reference/sad-behaviour.md` for the full empirically-established
 convention map. Practical takeaway: use `tests/support/coupled_optics.py`'s
 Edwards-Teng helper to compare against SAD through a coupled region, not
 Xsuite's plain `twiss4d()` columns:

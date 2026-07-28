@@ -271,7 +271,7 @@ def test_corrector_without_length_k0_gives_orbit_kick(tmp_path):
         "K0 in a no-L corrector should produce a nonzero horizontal orbit kick.")
 
 ################################################################################
-# F1/FRINGE soft-edge fringe (ground truth) -- see docs/sad-behaviour.md
+# F1/FRINGE soft-edge fringe (ground truth) -- see docs/reference/sad-behaviour.md
 ################################################################################
 def _track_bend_probe(tmp_path, lattice_body, name, y_vals, delta_vals):
     """
@@ -333,7 +333,7 @@ def test_bend_fringe_1_activates_f1(tmp_path):
 
 def test_bend_fringe_mode_gates_entrance_exit(tmp_path):
     """
-    FRMD_BEND gating grid against real SAD -- see docs/sad-behaviour.md
+    FRMD_BEND gating grid against real SAD -- see docs/reference/sad-behaviour.md
     ("BEND F1/FRINGE soft-edge fringe") for the semantic. FB1 != FB2
     makes entrance-only/exit-only/both/neither all numerically distinct.
     """
@@ -461,7 +461,7 @@ def test_corrector_fringe_matches_sad_reference_values(tmp_path):
             "reference lattice was altered unintentionally."))
 
 ################################################################################
-# DISFRIN hard-edge fringe (ground truth) -- see docs/sad-behaviour.md
+# DISFRIN hard-edge fringe (ground truth) -- see docs/reference/sad-behaviour.md
 ################################################################################
 def test_bend_disfrin_default_matches_explicit_zero(tmp_path):
     """

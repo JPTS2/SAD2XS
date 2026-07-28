@@ -168,7 +168,7 @@ def test_oct_without_length_k3_gives_cubic_kick(tmp_path):
         "(integrated kick proportional to K3*x^3).")
 
 ################################################################################
-# Hard-edge fringe field (DISFRIN) -- see docs/sad-behaviour.md
+# Hard-edge fringe field (DISFRIN) -- see docs/reference/sad-behaviour.md
 ################################################################################
 def _track_oct_probe(tmp_path, k3, disfrin_suffix, name):
     """

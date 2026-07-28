@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-24
+Date:       2026-07-28
 ================================================================================
 """
 
@@ -190,7 +190,7 @@ def convert_sad_to_xsuite(
     ############################################################################
     # Convert Elements
     ############################################################################
-    # Must run before reverse_charge_sign below -- see docs/line-reversals.md.
+    # Must run before reverse_charge_sign below -- see docs/converter/line-reversals.md.
     log_section_heading("Converting Elements", mode = "section")
 
     convert_elements(

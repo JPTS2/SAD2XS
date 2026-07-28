@@ -164,8 +164,8 @@ Current examples:
   assert a further, separate SAD-side coupling artifact found combined
   with `ROTATE`.
 
-See `docs/sad-behaviour.md` for the corresponding SAD physics and convention
-notes, and `docs/design-decisions.md` for the resulting converter decisions.
+See `docs/reference/sad-behaviour.md` for the corresponding SAD physics and convention
+notes, and `docs/development/design-decisions.md` for the resulting converter decisions.
 
 ## SAD Dependency
 

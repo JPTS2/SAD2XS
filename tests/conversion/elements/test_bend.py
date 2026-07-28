@@ -228,7 +228,7 @@ def _assert_bend_tracking_matches_or_diverges(
     Like _assert_bend_tracking_matches_sad, except every coordinate named
     in diverging_coordinates is asserted to diverge beyond tolerance
     instead of match -- the accepted-limitation coordinates of a
-    documented SAD-side reference-orbit artifact (docs/sad-behaviour.md).
+    documented SAD-side reference-orbit artifact (docs/reference/sad-behaviour.md).
     """
     tolerances = _bend_tracking_tolerances()
     failed_coordinates = []
@@ -318,10 +318,10 @@ def _assert_bend_twiss_matches_or_diverges(
     Like _assert_bend_twiss_matches_sad, except every column named in
     diverging_columns is asserted to diverge beyond tolerance instead of
     match -- the accepted-limitation columns of a documented SAD-side
-    reference-orbit/coupling artifact (docs/sad-behaviour.md). A column
+    reference-orbit/coupling artifact (docs/reference/sad-behaviour.md). A column
     that unexpectedly matches is just as much a failure here as one that
     unexpectedly diverges: either means the accepted limitation's shape
-    has changed and docs/sad-behaviour.md needs review.
+    has changed and docs/reference/sad-behaviour.md needs review.
     """
     tolerances = _bend_twiss_tolerances()
     failed_values = []
@@ -1106,7 +1106,7 @@ def test_bend_conversion_matches_sad_twiss_for_thin_bend_element_offsets(
 
     A DX offset on a thin bend is not tested here: it reproduces the same
     reference-orbit-convention residual as the thick case (see
-    docs/sad-behaviour.md), locked in as a passing, quantified test by
+    docs/reference/sad-behaviour.md), locked in as a passing, quantified test by
     test_bend_offset_thin_bend_dispersion_residual_is_angle_squared_order
     rather than as a "should match" failure.
     """
@@ -1187,7 +1187,7 @@ def test_bend_offset_thin_bend_dispersion_residual_is_angle_squared_order(
     """
     The thin-bend counterpart of
     test_bend_offset_orbit_residual_is_angle_squared_order
-    (docs/sad-behaviour.md): the same reference-orbit residual shows up
+    (docs/reference/sad-behaviour.md): the same reference-orbit residual shows up
     in the dispersion (dx) column instead of the orbit (x) column, since a
     thin bend carries no separate orbit column of its own at zero length.
     Xsuite reproduces none of it; SAD's dx scales as ANGLE^2, matching
@@ -1276,7 +1276,7 @@ def test_bend_offset_thin_bend_dispersion_residual_is_angle_squared_order(
             "NOT be zero -- the accepted limitation is a real dispersion "
             "difference. If this now matches, the reference-orbit "
             "convention changed in one of the codes and "
-            "docs/sad-behaviour.md needs review.")
+            "docs/reference/sad-behaviour.md needs review.")
         assert diff == pytest.approx(
                 -dx * (1 - np.cos(angle)), rel = 0.01), (
             "The offset thin-bend dispersion residual should equal "
@@ -1285,7 +1285,7 @@ def test_bend_offset_thin_bend_dispersion_residual_is_angle_squared_order(
         assert zeta_diff != 0.0, (
             "zeta should also diverge from SAD alongside dx for a thin "
             "offset bend -- the same reference-orbit effect surfaces on "
-            "both columns. If this now matches, docs/sad-behaviour.md "
+            "both columns. If this now matches, docs/reference/sad-behaviour.md "
             "needs review.")
 
     assert dx_diffs[1] / dx_diffs[0] == pytest.approx(4.0, rel = 0.01), (
@@ -1541,7 +1541,7 @@ def test_bend_conversion_matches_sad_twiss_for_element_offsets(
 
     A DX offset (or combined DX+DY) is not tested here: it reproduces a
     real, quantified reference-orbit-convention residual (see
-    docs/sad-behaviour.md), locked in as a passing test by
+    docs/reference/sad-behaviour.md), locked in as a passing test by
     test_bend_offset_orbit_residual_is_angle_squared_order rather than as a
     "should match" failure. A rotated bend with an offset is covered
     separately by test_bend_conversion_matches_sad_twiss_for_rotated_element_offsets
@@ -1623,7 +1623,7 @@ def test_bend_offset_orbit_residual_is_angle_squared_order(
         dx,
         dy):
     """
-    The DX-offset reference-orbit residual (docs/sad-behaviour.md) is
+    The DX-offset reference-orbit residual (docs/reference/sad-behaviour.md) is
     real, reproducible, and quantified: SAD's orbit shows a nonzero shift
     that scales as ANGLE^2 (matching DX*(1-cos(ANGLE)) to ~1%), while Xsuite
     reproduces none of it (h stays fixed to the unshifted design orbit).
@@ -1657,7 +1657,7 @@ def test_bend_offset_orbit_residual_is_angle_squared_order(
     px's divergence is specifically the offset residual, not a symptom of
     the separate, already-documented Xsuite-bend-edge ANGLE^2+ANGLE^4 vs
     SAD's ANGLE^2-only fringe-order mismatch (see the MULT K0/SK0 fringe
-    entry in docs/sad-behaviour.md for that unrelated effect): confirmed
+    entry in docs/reference/sad-behaviour.md for that unrelated effect): confirmed
     empirically that a DX=DY=0 bend at these same three angles matches
     SAD on all 15 columns with no divergence anywhere, so nothing here is
     conflating the two effects -- an unambiguous, angle-independent
@@ -1733,7 +1733,7 @@ def test_bend_offset_orbit_residual_is_angle_squared_order(
                 diverging_columns   = diverging_columns,
                 notes               = [
                     "zeta, dx, betx, bety, alfx, alfy diverge alongside x "
-                    "for an offset curved bend (docs/sad-behaviour.md); "
+                    "for an offset curved bend (docs/reference/sad-behaviour.md); "
                     "s, y, py, delta, dpx, dpy should still match at this "
                     "angle. px and dy are excluded from this check "
                     "entirely (see docstring): both are real but only "
@@ -1747,7 +1747,7 @@ def test_bend_offset_orbit_residual_is_angle_squared_order(
             "The SAD-vs-Xsuite offset-bend orbit residual should NOT be "
             "zero -- the accepted limitation is a real orbit difference. If "
             "this now matches, the reference-orbit convention changed in "
-            "one of the codes and docs/sad-behaviour.md needs review.")
+            "one of the codes and docs/reference/sad-behaviour.md needs review.")
         assert diff == pytest.approx(
                 dx * (1 - np.cos(angle)), rel = 0.01), (
             "The offset-bend orbit residual should equal DX*(1-cos(ANGLE)) "
@@ -1931,7 +1931,7 @@ def test_bend_conversion_matches_sad_tracking_for_thin_bend_element_offsets(
     test_bend_offset_thin_bend_dispersion_residual_diverges_in_tracking
     for the tracking-mode divergence lock-in, and
     test_bend_offset_thin_bend_dispersion_residual_is_angle_squared_order
-    for the quantified twiss-side residual (docs/sad-behaviour.md).
+    for the quantified twiss-side residual (docs/reference/sad-behaviour.md).
     """
     dx, dy = 0.0, -1.0E-3
     x_init, px_init, y_init, py_init, zeta_init, delta_init = \
@@ -2105,7 +2105,7 @@ def test_bend_offset_thin_bend_dispersion_residual_diverges_in_tracking(
         parameters              = {"dx": dx, "dy": dy},
         diverging_coordinates   = diverging_coordinates,
         notes                   = [
-            "The thin-bend dispersion residual (docs/sad-behaviour.md) "
+            "The thin-bend dispersion residual (docs/reference/sad-behaviour.md) "
             "surfaces in tracking as a divergence on x/y/zeta; px/py/delta "
             "still match.",
         ])
@@ -2393,7 +2393,7 @@ def test_bend_conversion_matches_sad_tracking_for_element_offsets(
     test_bend_offset_orbit_residual_diverges_in_tracking for the
     tracking-mode divergence lock-in, and
     test_bend_offset_orbit_residual_is_angle_squared_order for the
-    quantified twiss-side residual (docs/sad-behaviour.md).
+    quantified twiss-side residual (docs/reference/sad-behaviour.md).
     """
     dx, dy = 0.0, -1.0E-3
     x_init, px_init, y_init, py_init, zeta_init, delta_init = \
@@ -2563,7 +2563,7 @@ def test_bend_offset_orbit_residual_diverges_in_tracking(
         parameters              = {"dx": dx, "dy": dy},
         diverging_coordinates   = diverging_coordinates,
         notes                   = [
-            "The DX-offset reference-orbit residual (docs/sad-behaviour.md) "
+            "The DX-offset reference-orbit residual (docs/reference/sad-behaviour.md) "
             "surfaces in tracking as a divergence on x/px/zeta; y/py/delta "
             "still match.",
         ])
@@ -2672,7 +2672,7 @@ def test_bend_conversion_matches_sad_twiss_for_rotated_element_offsets(
         diverging_columns   = diverging_columns,
         notes               = [
             "betx/bety/alfx/alfy always diverge for a rotated, offset, "
-            "curved bend (docs/sad-behaviour.md); y/py/zeta/dy diverge "
+            "curved bend (docs/reference/sad-behaviour.md); y/py/zeta/dy diverge "
             "only when DY is nonzero (the in-plane component); dx "
             "diverges only when DX and DY are both nonzero together.",
         ])
@@ -2710,7 +2710,7 @@ def test_bend_conversion_matches_sad_tracking_for_rotated_element_offsets(
     sign, with or without a simultaneous DX component. See
     test_bend_offset_rotated_coupling_is_a_sad_side_artifact for the
     further, separate twiss-side coupling artifact this combination also
-    triggers (docs/sad-behaviour.md); tracking alone does not compute
+    triggers (docs/reference/sad-behaviour.md); tracking alone does not compute
     twiss parameters, so that artifact has no coordinate to surface on
     here.
     """
@@ -2820,7 +2820,7 @@ def test_bend_offset_rotated_coupling_is_a_sad_side_artifact(write_lattice, tmp_
 
     This is accepted as a SAD-side characteristic, not a converter bug and
     not something sad2xs should try to reproduce -- see
-    docs/sad-behaviour.md for the summary. It was investigated in much
+    docs/reference/sad-behaviour.md for the summary. It was investigated in much
     more depth than is committed here (an Edwards-Teng/Mais-Ripken
     convention mismatch and a converter bug were both ruled out, and the
     trigger was isolated to curvature specifically), but the responsible
@@ -2889,7 +2889,7 @@ def test_bend_offset_rotated_coupling_is_a_sad_side_artifact(write_lattice, tmp_
 
             assert abs(sad_r1 - np.sin(rotation)) < 1.0E-3, (
                 "SAD's R1 should sit on sin(ROTATE) once the bend is "
-                "offset (docs/sad-behaviour.md) -- if this no longer "
+                "offset (docs/reference/sad-behaviour.md) -- if this no longer "
                 "holds, the SAD-side artifact's characterisation has "
                 f"changed and needs re-investigating. Got R1="
                 f"{sad_r1:.6f} at dx={dx:.0e}.")
@@ -2924,7 +2924,7 @@ def test_bend_offset_rotated_coupling_is_a_sad_side_artifact(write_lattice, tmp_
 
 ################################################################################
 # F1/FRINGE soft-edge fringe import (_import_sad_bend_fringes) -- see
-# docs/sad-behaviour.md and docs/design-decisions.md
+# docs/reference/sad-behaviour.md and docs/development/design-decisions.md
 ################################################################################
 def test_bend_fringe_import_defaults_on(write_lattice, tmp_path):
     """
@@ -3010,7 +3010,7 @@ def test_bend_fringe_import_fringe_gates_single_edge(
         write_lattice, tmp_path, fringe, entry_active, exit_active):
     """
     FRINGE gates entry/exit fringe import per the FRMD_BEND grid in
-    docs/sad-behaviour.md.
+    docs/reference/sad-behaviour.md.
     """
     lattice_text = f"""\
     MOMENTUM    = 1.0 GEV;
@@ -3059,7 +3059,7 @@ def test_bend_fringe_import_matches_sad_on_momentum(write_lattice, tmp_path, del
     With _import_sad_bend_fringes=True, on-momentum (delta=0) tracking
     through a converted ANGLE!=0 BEND should match SAD closely -- the
     fh=F1/12 mapping is a derived closed form here, not an approximation
-    (docs/sad-behaviour.md).
+    (docs/reference/sad-behaviour.md).
     """
     L, ANGLE, F1 = 1.2, 0.08, 0.04
     y0 = 0.002
@@ -3126,8 +3126,8 @@ def test_bend_fringe_import_matches_sad_on_momentum(write_lattice, tmp_path, del
 def test_bend_fringe_import_off_momentum_residual_is_bounded(write_lattice, tmp_path, delta):
     """
     Off-momentum, Xsuite's native fint/hgap fringe formula scales the
-    wrong way with delta relative to SAD (docs/sad-behaviour.md,
-    docs/design-decisions.md) -- a known, characterised limitation, not a
+    wrong way with delta relative to SAD (docs/reference/sad-behaviour.md,
+    docs/development/design-decisions.md) -- a known, characterised limitation, not a
     converter bug. This asserts the CURRENT bounded residual explicitly:
     if Xsuite/MAD-NG's upstream formula ever changes, this test should
     start failing (residual outside the asserted band) and surface for

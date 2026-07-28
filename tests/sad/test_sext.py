@@ -173,7 +173,7 @@ def test_sext_without_length_k2_gives_quadratic_kick(tmp_path):
         "(integrated kick proportional to K2*x^2).")
 
 ################################################################################
-# Hard-edge fringe field (DISFRIN) -- see docs/sad-behaviour.md
+# Hard-edge fringe field (DISFRIN) -- see docs/reference/sad-behaviour.md
 ################################################################################
 def _track_sext_probe(tmp_path, k2, disfrin_suffix, name):
     """

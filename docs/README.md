@@ -12,27 +12,44 @@ SAD2XS tests from the ground up: the test suite first verifies what SAD itself d
 
 ## Contents
 
-### Design and structure
+Start with [Architecture](architecture.md) for a map of the whole repository.
 
-- [Architecture](architecture.md): package layout, subsystem responsibilities, and boundaries between parser, converter, writer, and SAD helper code.
-- [Conversion model](conversion-model.md): the SAD-to-Xsuite conversion pipeline and the decision to treat the converted Xsuite model as the canonical representation.
-- [Design decisions](design-decisions.md): project-level decisions that guide future development.
+### Using SAD2XS
 
-### Subsystems
+- [Supported elements](usage/supported-elements.md): which SAD element types convert, what each becomes in Xsuite, and which parameters are accepted or rejected.
+- [Conversion options](usage/conversion-options.md): every option accepted by `convert_sad_to_xsuite`.
+- [Limitations](usage/limitations.md): where a converted lattice does not reproduce SAD.
 
-- [SAD helpers](sad-helpers.md): Python wrappers around external SAD calculations, including entry points, subprocess handling, timeouts, optionality target, and current limitations.
-- [Xsuite helpers](xsuite-helpers.md): Python utilities operating purely on an `xt.Line`, independent of SAD — currently reference-energy bookkeeping for accelerating lines.
+### The converter
+
+- [Conversion model](converter/README.md): the SAD-to-Xsuite pipeline, and the decision to treat the converted Xsuite model as canonical.
+- [Parsing and expressions](converter/parsing.md): how SAD text becomes structured data.
+- [Element conversion](converter/elements.md): how each SAD element family is converted.
+- [Fringe models](converter/fringes.md): bend and quadrupole fringe field import.
+- [Solenoid conversion](converter/solenoids.md): solenoid regions, and how the SAD and Xsuite solenoid models differ.
+- [Models and integrators](converter/models-integrators.md): the tracking model, integrator, and kick count chosen per element type.
+- [Line reversals](converter/line-reversals.md): sign conventions behind the line-transformation flags and the reference-particle `CHARGE` handling they interact with.
+- [Offset markers](converter/offset-markers.md): how offset markers are installed and what they are for.
+
+### Output writer
+
+- [Output writer](writer/README.md): how the converted Xsuite model is serialised into lattice and optics files.
+
+### Helpers
+
+- [SAD helpers](helpers/sad-helpers.md): Python wrappers around external SAD calculations, including entry points, subprocess handling, timeouts, and current limitations.
+- [Xsuite helpers](helpers/xsuite-helpers.md): utilities operating purely on an `xt.Line`, independent of SAD.
 
 ### Reference
 
-- [SAD behaviour notes](sad-behaviour.md): empirically-established facts about how SAD itself behaves — physics conventions, quirks, and limitations discovered while building and testing the converter, independent of any SAD2XS decision made in response.
-- [Line reversals](line-reversals.md): the sign conventions, empirical verifications, and design decisions behind the line-transformation flags (`reverse_element_order`, `reverse_charge_sign`, `reverse_survey_horizontal`, `reverse_survey_vertical`) and the reference-particle `CHARGE` handling they interact with.
+- [SAD behaviour notes](reference/sad-behaviour.md): empirically-established facts about how SAD itself behaves — physics conventions, quirks, and limitations discovered while building and testing the converter, independent of any SAD2XS decision made in response.
 
-### Process
+### Development
 
-- [Testing](testing.md): public test policy, regression workflow, CI structure (master and per-folder workflows), known failure groups, and SAD dependency handling.
-- [Contributing](contributing.md): branch naming, pull request expectations, release workflow, and public issue policy.
-- [Releasing](releasing.md): the step-by-step procedure for publishing a release, covering version bumps, citation metadata, package build checks, tagging, the Zenodo archive, and PyPI upload.
+- [Design decisions](development/design-decisions.md): project-level decisions that guide future development.
+- [Testing](development/testing.md): public test policy, regression workflow, CI structure, known failure groups, and SAD dependency handling.
+- [Contributing](development/contributing.md): branch naming, pull request expectations, and public issue policy.
+- [Releasing](development/releasing.md): the step-by-step release procedure, covering version bumps, citation metadata, package build checks, tagging, the Zenodo archive, and PyPI upload.
 
 ## Scope
 

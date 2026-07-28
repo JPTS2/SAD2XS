@@ -20,7 +20,7 @@ failing instances from the test run, not failing functions. For non-parametrised
 files these are equal; for heavily parametrised files (sol, corrector, bend)
 the fail instance count exceeds the failing function count.
 
-See `docs/testing.md`'s Known Failures section for the `known_issue` marker
+See `docs/development/testing.md`'s Known Failures section for the `known_issue` marker
 mechanism.
 
 SAD-comparison tracking and Twiss checks uniformly use `rfsw=True` and compare
@@ -56,8 +56,8 @@ reports Mais-Ripken mode projections), not a GEO-exit-transform bug —
 `_sol_xsuite_optics_values()` now computes Edwards-Teng values via
 `tests/support/coupled_optics.py`, locked in by
 `tests/conversion/test_coupled_twiss_convention.py`. See
-`docs/sad-behaviour.md` for the full convention explanation and
-`docs/sad-helpers.md` for the worked usage example.
+`docs/reference/sad-behaviour.md` for the full convention explanation and
+`docs/helpers/sad-helpers.md` for the worked usage example.
 
 Adding `zeta` to the tracking/twiss comparisons here (see the `Coverage`
 section above) surfaced a genuine converter bug in
@@ -65,14 +65,14 @@ section above) surfaced a genuine converter bug in
 parametrisations with a reversed line orientation and a `DPX`/`DPY`/`DX+DY`
 reference-transform combination diverged from SAD on `zeta` only — `x`, `y`,
 `px`, and `py` all matched. Root cause and fix are documented in
-`docs/line-reversals.md` (new "Solenoid GEO reference-transform rotation
+`docs/converter/line-reversals.md` (new "Solenoid GEO reference-transform rotation
 order" section). All 168 instances in this file now pass.
 
 This file also has a solenoid `DISFRIN` (fringe kick) limitation test —
 `test_sol_disfrin_off_diverges_from_xsuite_in_tracking` — which is not a
 failing test: it asserts the genuine, accepted divergence from not
-modelling SAD's solenoid fringe kick (see `docs/sad-behaviour.md` for what
-it is, `docs/design-decisions.md` for the converter decision). Deliberately
+modelling SAD's solenoid fringe kick (see `docs/reference/sad-behaviour.md` for what
+it is, `docs/development/design-decisions.md` for the converter decision). Deliberately
 not in `known_issues.py`.
 
 ### `test_corrector.py` note
@@ -105,12 +105,12 @@ found and fixed two separate converter bugs, plus a twiss-convention mismatch:
 - **Resolved**: `SK1` alone appeared to disagree with SAD by `~1.9e-5` on
   `betx`/`bety`/`alfx`/`alfy` — not a physics or rotation-convention bug
   (4×4 transfer matrices agreed to `~5e-11`), but the Edwards-Teng-vs-
-  Mais-Ripken twiss-parametrisation mismatch (see `docs/sad-behaviour.md`).
+  Mais-Ripken twiss-parametrisation mismatch (see `docs/reference/sad-behaviour.md`).
   The twiss comparisons in this file now use `tests/support/coupled_optics.py`;
   the earlier `ROTATE`/`xt.Rotation` hypothesis is dead.
 - **Accepted limitation**: `K0`/`SK0` dipole-only `MULT` elements have a SAD
   fringe convention Xsuite's Bend/corrector edge models don't reproduce
-  exactly (see `docs/sad-behaviour.md` for the formula). SAD-side ground
+  exactly (see `docs/reference/sad-behaviour.md` for the formula). SAD-side ground
   truth is pinned in `tests/sad/test_mult.py`, the converter warning is
   covered here, and `test_mult_k0_dipole_fringe_difference_is_theta_fourth_order`
   locks in the expected `theta^4` residual as a passing accepted-limitation
@@ -161,9 +161,9 @@ residual:
   coupling artifact on top of the same residual, confirmed to affect
   `betx`/`bety`/`alfx`/`alfy` regardless of which axis carries the offset)
 
-See `docs/sad-behaviour.md` for the full empirical characterisation (the
+See `docs/reference/sad-behaviour.md` for the full empirical characterisation (the
 `ANGLE^2` orbit/dispersion residual and its full column map, and the
-`ROTATE`-combined `R1`/`R4` discontinuity) and `docs/design-decisions.md`
+`ROTATE`-combined `R1`/`R4` discontinuity) and `docs/development/design-decisions.md`
 for the resulting converter decision.
 
 ### `test_bend.py`/`test_corrector.py` fringe import note
@@ -181,9 +181,9 @@ and a `..._off_momentum_residual_is_bounded` test asserting the known,
 currently-characterised residual explicitly rather than skipping it — a
 future upstream Xsuite/MAD-NG momentum-scaling fix should make this test
 fail (residual outside the asserted band) and surface for review, not
-silently pass. See `docs/sad-behaviour.md` ("`BEND` `F1`/`FRINGE`
+silently pass. See `docs/reference/sad-behaviour.md` ("`BEND` `F1`/`FRINGE`
 soft-edge fringe") for the derivation and full gating grid, and
-`docs/design-decisions.md` ("`BEND` `F1`/`FRINGE` fringe import is
+`docs/development/design-decisions.md` ("`BEND` `F1`/`FRINGE` fringe import is
 private, default-on" section) for why the flag is private and the
 off-momentum caveat that comes with it.
 

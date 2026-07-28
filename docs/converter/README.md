@@ -47,7 +47,7 @@ Specifically:
 
 - comments do not affect semicolon-based section splitting;
 - globals and expressions are available to later element conversion;
-- SAD user-defined function definitions (`f[x_] := expr`) are explicitly rejected with a clear error rather than silently misparsed — see the parser-hardening decision in `docs/design-decisions.md`;
+- SAD user-defined function definitions (`f[x_] := expr`) are explicitly rejected with a clear error rather than silently misparsed — see the parser-hardening decision in `docs/development/design-decisions.md`;
 - parse errors cite the source line number of the offending statement;
 - line definitions support the supported SAD syntax variants, including comma-separated components;
 - arithmetic in element parameters does not depend on fragile whitespace handling.
@@ -92,7 +92,7 @@ SAD2XS is not expected to preserve every SAD syntax detail. It is expected to pr
 
 Where SAD and Xsuite have different physics models or naming conventions, the converter should document the choice and test the expected behaviour with synthetic examples.
 
-One concrete case of this: SAD's solenoid fringe kick (a nonlinear hard-edge term, distinct from the solenoid's main linear field) has no Xsuite equivalent and is not modelled — every converted solenoid behaves as if fringe kicks were disabled, regardless of the source file. This is a documented, accepted boundary rather than an open bug — see `docs/sad-behaviour.md` for the physics and `docs/design-decisions.md` for the converter decision. The converter warns once per lattice when a solenoid's source parameters don't match that assumption.
+One concrete case of this: SAD's solenoid fringe kick (a nonlinear hard-edge term, distinct from the solenoid's main linear field) has no Xsuite equivalent and is not modelled — every converted solenoid behaves as if fringe kicks were disabled, regardless of the source file. This is a documented, accepted boundary rather than an open bug — see `docs/reference/sad-behaviour.md` for the physics and `docs/development/design-decisions.md` for the converter decision. The converter warns once per lattice when a solenoid's source parameters don't match that assumption.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

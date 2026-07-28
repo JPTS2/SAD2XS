@@ -133,7 +133,7 @@ happened to work:
   (a BEND with no ANGLE) — both pinned against real SAD binary output
   (`test_bend_angle_nonzero_f1_fringe_matches_sad_reference_values`,
   `test_corrector_fringe_matches_sad_reference_values`). See
-  `docs/sad-behaviour.md` for the closed-form mapping onto Xsuite's native edge
+  `docs/reference/sad-behaviour.md` for the closed-form mapping onto Xsuite's native edge
   model this enables.
 - **BEND's default hard-edge fringe (`test_bend.py`)**: a separate,
   `K1`-dependent nonlinear kick, gated by `DISFRIN` — unrelated to `FRINGE`
@@ -145,7 +145,7 @@ happened to work:
   (`test_bend_disfrin_hard_edge_matches_sad_reference_values`). On the
   `ANGLE == 0` K0-only corrector path this is structurally moot — SAD
   doesn't allow a corrector to carry a nonzero K1 alongside K0 at all (a
-  separate, confirmed SAD bug, see `docs/sad-behaviour.md`), so there is no
+  separate, confirmed SAD bug, see `docs/reference/sad-behaviour.md`), so there is no
   quadrupole content for DISFRIN to gate on a real corrector
   (`test_corrector_disfrin_has_no_effect_without_k1`).
 - **QUAD's F1/F2/FRINGE soft-edge fringe (`test_quad.py`)**: a genuinely
@@ -188,7 +188,7 @@ happened to work:
   via `configure_quadrupole_model(edge='full')`, mirroring how bend edges are
   configured, though it does not yet read each QUAD's own `DISFRIN` value
   individually (open converter-side gap, out of scope for this ground-truth
-  pass). See `docs/sad-behaviour.md` and `tests/conversion/elements/test_quad.py`.
+  pass). See `docs/reference/sad-behaviour.md` and `tests/conversion/elements/test_quad.py`.
 - **SEXT/OCT reject FRINGE entirely (`test_sext.py`/`test_oct.py`)**: unlike
   BEND/QUAD/MULT, SEXT and OCT have no `FRMD`/soft-edge-fringe keyword at
   all — `FRINGE`, `F1`, `F2`, `FB1`, `FB2`, `F1K1F`, `F2K1F`, `F1K1B`,
@@ -235,7 +235,7 @@ happened to work:
   (`REJECTED_PARAMS`). Unlike those elements, SOL *does* accept `F1`, but
   it is a red herring for tracking/optics — SAD's own documentation
   states `F1` only affects the emittance/radiation calculation, not the
-  orbital kick (see `docs/sad-behaviour.md`, "Solenoid fringe kick"). The
+  orbital kick (see `docs/reference/sad-behaviour.md`, "Solenoid fringe kick"). The
   real orbital hard-edge fringe is gated by `DISFRIN` alone: default `0`
   (enabled), strictly boolean, pinned against real SAD binary output
   (`test_sol_disfrin_default_matches_explicit_zero`/

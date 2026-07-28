@@ -7,7 +7,7 @@ they are what SAD does, verified against the real SAD binary (or, for the
 Xsuite side, against an independent computation), not assumed from
 documentation. Where a fact here led to a SAD2XS decision (a converter
 warning, a config default, an accepted test limitation), the decision
-itself and its reasoning live in `docs/design-decisions.md`, which points
+itself and its reasoning live in `docs/development/design-decisions.md`, which points
 back here for the underlying evidence.
 
 ## Contents
@@ -64,7 +64,7 @@ power is unchanged by `DISFRIN`, so the fringe kick explains the coupling
 gap (below) but not the radiation gap. That radiation discrepancy remains
 open and unexplained.
 
-See `docs/design-decisions.md` ("Solenoid fringe kick (DISFRIN) is not
+See `docs/development/design-decisions.md` ("Solenoid fringe kick (DISFRIN) is not
 modelled") for the resulting converter decision and warning.
 
 ## `MULT` `K0`/`SK0` dipole fringe
@@ -86,7 +86,7 @@ of `theta` — locked in by
 (`tests/conversion/elements/test_mult.py`). SAD-side ground truth for the
 fringe formula itself is pinned in `tests/sad/test_mult.py`.
 
-See `docs/design-decisions.md` ("Bend/Quadrupole/Sextupole/Octupole/
+See `docs/development/design-decisions.md` ("Bend/Quadrupole/Sextupole/Octupole/
 Multipole model and integrator retune") for the converter warning this
 motivated.
 
@@ -114,7 +114,7 @@ This is a real, large effect on real magnets — up to +20% error on the
 vertical kick even on-momentum for `ANGLE != 0` sector bends, and up to
 100% error for `K0`-only correctors (their kick is exactly zero without
 any fringe treatment). It is not modelled unless
-`_import_sad_bend_fringes` is enabled (`docs/design-decisions.md`).
+`_import_sad_bend_fringes` is enabled (`docs/development/design-decisions.md`).
 
 Xsuite's native `edge_entry_model="full"` (`fint`/`hgap` on `xt.Bend`)
 turns out to already be structurally capable of reproducing SAD's kick —
@@ -248,7 +248,7 @@ two coefficients, `a` and `b`, derived from the user-facing parameters
 and `-a` at the exit (same `b`, unchanged sign) — the reason a reversed
 element's surviving fringe side only flips `a`, not `b` or the frame angle
 `ROTATE + akang(K1)`. The exact kick is non-polynomial in `delta`
-(`exp(a/(1+delta))`, `1/(1+delta)^2`); see `docs/design-decisions.md`
+(`exp(a/(1+delta))`, `1/(1+delta)^2`); see `docs/development/design-decisions.md`
 for how SAD2XS represents it.
 
 ## `QUAD` `DISFRIN` hard-edge fringe
@@ -504,7 +504,7 @@ Correctors (`ANGLE == 0`) and `MULT`-derived dipoles (both the
 dipole-simplification path) never carry a nonzero curvature and are
 confirmed unaffected.
 
-See `docs/design-decisions.md` ("Bend element-offset (DX/DY) reference-
+See `docs/development/design-decisions.md` ("Bend element-offset (DX/DY) reference-
 orbit convention is not modelled") for the resulting converter warning.
 
 ### Combined with `ROTATE`: a further, separate coupling artifact
@@ -615,7 +615,7 @@ leakage terms in separate `betx2`/`bety1`/`alfx2`/`alfy1` columns. Xsuite
 can compute Edwards-Teng parameters natively (`coupling_edw_teng=True`),
 but only for periodic lines; `tests/support/coupled_optics.py` wraps
 Xtrack's open-line Edwards-Teng propagation so converted transfer lines can
-be compared against SAD through coupled regions — see `docs/sad-helpers.md`
+be compared against SAD through coupled regions — see `docs/helpers/sad-helpers.md`
 for the practical usage.
 
 The convention map, established empirically (each case anchored by SAD and

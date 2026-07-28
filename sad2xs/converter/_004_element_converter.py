@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-24
+Date:       2026-07-28
 ================================================================================
 """
 
@@ -253,7 +253,7 @@ def convert_elements(
             "This lattice contains "
             f"{len(cavity_names)} cavity element(s). SAD2XS's Xsuite Cavity "
             "elements do not model SAD's transverse RF-focusing kick -- see "
-            "docs/sad-behaviour.md for details.")
+            "docs/reference/sad-behaviour.md for details.")
         logger.debug(
             "Cavity elements: "
             + ", ".join(cavity_names))
@@ -385,7 +385,7 @@ def _bend_fringe_edge_kwargs(ele_vars: dict[str, SadValue], config: ConfigLike) 
     entrance-only, FRINGE = -2 is exit-only, any positive value enables
     both edges unconditionally. The closed form (edge_*_fint = F1 +
     FB1/FB2, edge_*_hgap = 1/12) and the full FRINGE gating grid are
-    documented in docs/sad-behaviour.md.
+    documented in docs/reference/sad-behaviour.md.
 
     Parameters
     ----------
@@ -2033,7 +2033,7 @@ def convert_solenoids(
     """
 
     # environment["q0"] must be the imported charge here, not a
-    # reverse_charge_sign-corrected one -- see docs/line-reversals.md.
+    # reverse_charge_sign-corrected one -- see docs/converter/line-reversals.md.
     p0j     = environment["p0c"] * qe / clight
     brho    = p0j / (qe * environment["q0"])
 

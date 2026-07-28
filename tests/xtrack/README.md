@@ -11,7 +11,7 @@ silently invalidating an assumption baked into sad2xs.
 sad2xs warns that its Xsuite `Cavity` elements do not model the transverse RF-focusing
 kick that SAD's own tracking applies whenever `RFSW` is on and `VOLT != 0`
 (Rosenzweig & Serafini, *Phys. Rev. E* **49**, 1599 (1994); see
-`docs/sad-behaviour.md`). That claim is a statement about `xtrack`, not about sad2xs's
+`docs/reference/sad-behaviour.md`). That claim is a statement about `xtrack`, not about sad2xs's
 own code, so it needs its own ground-truth test rather than being asserted from memory
 or from reading the source once. If xtrack ever adds this term, this test fails loudly
 and the warning (and the docs entry) need revisiting.

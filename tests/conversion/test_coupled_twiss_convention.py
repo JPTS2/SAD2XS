@@ -30,7 +30,7 @@ from tests.support.coupled_optics import (
     normalized_r_matrix)
 
 # Agreement and disagreement are both asserted so the convention map cannot
-# silently drift. See docs/sad-helpers.md for the derivation and table.
+# silently drift. See docs/helpers/sad-helpers.md for the derivation and table.
 # Observed agreements are <= 9e-10 (SAD TFS output carries ~10 digits);
 # observed disagreements are >= 9e-6. The tolerances sit well clear of both.
 ET_VS_SAD_ATOL          = 5.0E-9

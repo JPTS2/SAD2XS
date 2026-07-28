@@ -24,7 +24,7 @@ import xtrack as xt
 #
 # Low reference momentum, strong VOLT (a large fraction of the reference
 # energy in a single element) -- the regime where SAD's own RF-focusing
-# kick (see docs/sad-behaviour.md) is not negligible, so its absence in
+# kick (see docs/reference/sad-behaviour.md) is not negligible, so its absence in
 # Xsuite is unambiguous rather than lost in numerical noise.
 ################################################################################
 MOMENTUM_GEV = 0.05
@@ -38,7 +38,7 @@ FREQUENCY    = 2.856E9
 # Parametrised over RF phase (on-crest and zero-crossing) to pair with
 # tests/sad/test_mult.py's ground truth: SAD's own RF-focusing kick is
 # present at both phases (nonzero even at the zero-crossing, larger nearer
-# the crest -- see tests/sad/test_mult.py and docs/sad-behaviour.md).
+# the crest -- see tests/sad/test_mult.py and docs/reference/sad-behaviour.md).
 # Xsuite's Cavity gives zero coupling at every phase, since the coupling
 # calculation is disabled entirely, independent of the phase value passed.
 ################################################################################
@@ -48,13 +48,13 @@ def test_xsuite_cavity_has_no_transverse_rf_focusing_coupling(phase):
     """
     Xsuite's Cavity element applies zero transverse (x/y) coupling in its
     energy kick, at every RF phase -- confirmed here by tracking, not just
-    by reading the source (see docs/sad-behaviour.md for the mechanism and
+    by reading the source (see docs/reference/sad-behaviour.md for the mechanism and
     for SAD's own, nonzero response in the equivalent element).
 
     A particle entering with a pure x offset (px=0) should leave with
     exactly zero px. If this test ever fails, xtrack has gained this term
     and the warning in sad2xs.converter._004_element_converter.convert_elements
-    (and the docs/sad-behaviour.md entry) need revisiting.
+    (and the docs/reference/sad-behaviour.md entry) need revisiting.
     """
     env = xt.Environment()
     env.particle_ref = xt.Particles(

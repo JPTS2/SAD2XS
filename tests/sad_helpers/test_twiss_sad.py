@@ -455,7 +455,7 @@ def test_twiss_sad_trpt_carries_reference_momentum_through_acceleration(
     at the end of a strongly-accelerating element is reported relative to
     the fixed initial momentum and is not close to zero; with it, the
     reference tracks the acceleration and delta is close to zero. See
-    docs/sad-behaviour.md for the underlying physics.
+    docs/reference/sad-behaviour.md for the underlying physics.
     """
     lattice = tmp_path / "trpt_probe.sad"
     lattice.write_text(

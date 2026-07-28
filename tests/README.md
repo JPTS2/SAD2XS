@@ -20,7 +20,7 @@ pytest tests/writer/ -v
 pytest tests/conversion/elements/ -v
 ```
 
-See `docs/testing.md` for `pytest.ini`'s configuration (`testpaths` order,
+See `docs/development/testing.md` for `pytest.ini`'s configuration (`testpaths` order,
 `--import-mode=importlib`) and why it matters.
 
 Deprecation warnings are shown by default. Do not suppress them — they often
@@ -30,7 +30,7 @@ signal upstream Xsuite or SAD API changes that require attention.
 
 `run_tests.yml` (one job, two sequential steps: blocking regression, then
 non-blocking known-issue) plus per-folder `workflow_dispatch` workflows for
-targeted re-runs — see `docs/testing.md`'s CI section for the full
+targeted re-runs — see `docs/development/testing.md`'s CI section for the full
 description.
 
 ## Folder Map
@@ -56,7 +56,7 @@ description.
 | `support/` | — | Reusable support modules — not test files |
 | `artifacts/` | — | Generated Markdown diagnostic reports (git-ignored) |
 
-See `docs/testing.md` for filename conventions.
+See `docs/development/testing.md` for filename conventions.
 
 ## Diagnostic Artifacts
 
@@ -73,16 +73,16 @@ Artifact paths should mirror the test area that produced them, for example
 
 `KNOWN_ISSUES` in `tests/support/known_issues.py` is the live source of truth
 for what is currently known-failing (it is empty as often as not) — see
-`docs/testing.md`'s Known Failures section for the marker mechanism and CI
+`docs/development/testing.md`'s Known Failures section for the marker mechanism and CI
 routing. Never modify a failing test to make it pass artificially; fix the
 root cause. If you add a test that documents a known bug, record it in the
 relevant folder README.
 
 Most discrepancies found so far have, on investigation, turned out to be
 either a converter bug (fixed) or a fully characterised, documented, and
-quantified difference rather than an open bug — see `docs/testing.md`'s
+quantified difference rather than an open bug — see `docs/development/testing.md`'s
 Accepted Physics Limitations section for that pattern and the current list
-of examples, and `docs/sad-behaviour.md` for the underlying SAD physics and
+of examples, and `docs/reference/sad-behaviour.md` for the underlying SAD physics and
 convention notes behind each one (solenoid `DISFRIN` fringe kick, `MULT`
 `K0`/`SK0` dipole fringe, bend element-offset reference-orbit convention,
 Edwards-Teng/Mais-Ripken twiss conventions in coupled regions).

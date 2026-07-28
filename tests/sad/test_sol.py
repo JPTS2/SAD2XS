@@ -254,7 +254,7 @@ def test_sol_bz_gives_nonzero_xy_coupling_in_tracking(tmp_path):
         "during tracking.")
 
 ################################################################################
-# Hard-edge fringe field (DISFRIN) -- see docs/sad-behaviour.md
+# Hard-edge fringe field (DISFRIN) -- see docs/reference/sad-behaviour.md
 ################################################################################
 def _track_sol_disfrin_probe(tmp_path, bz, disfrin_suffix, name):
     """

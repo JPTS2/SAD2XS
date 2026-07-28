@@ -40,7 +40,7 @@ the converter relies on), and `test_coupled_twiss_convention.py` (the
 coupled-twiss comparison convention against SAD — proves SAD reports
 Edwards-Teng optics and `R / sqrt(1 + det R)` coupling matrices, validates
 `tests/support/coupled_optics.py`, and anchors each case with SAD-vs-Xsuite
-transfer-matrix equality; see `docs/sad-helpers.md`).
+transfer-matrix equality; see `docs/helpers/sad-helpers.md`).
 
 ## Element Test Shape
 
