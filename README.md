@@ -124,13 +124,13 @@ With thanks also to FCCIS and EAJADE for their support and funding to enable thi
 ### EAJADE
 This work was partially supported by the European Union's Horizon Europe Marie Sklodowska-Curie Staff Exchanges programme under grant agreement no. 101086276.
 
-![EAJADE Logo](README/EAJADE.png)
+<img src="README/EAJADE.png" alt="EAJADE Logo" height="80">
 
 ### FCCIS
 This project has received funding from the European Union's Horizon 2020 research and innovation programme under grant agreement No 951754.
 
-![EU Logo](README/eu.png)
-![FCC Logo](README/fcc.png)
+<img src="README/eu.png" alt="EU Logo" height="80">
+<img src="README/fcc.png" alt="FCC Logo" height="80">
 
 ### SAD
 With thanks to all the developers of SAD.
