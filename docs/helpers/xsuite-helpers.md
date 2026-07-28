@@ -39,6 +39,9 @@ nothing extra.
   agrees within per-column tolerance.
 - `check_symplecticity`: check a line's one-turn R matrix is symplectic,
   falling back to an element-by-element check if it isn't.
+- `compute_s_sad`: recover SAD's own `s`, the real path length, from an
+  Xsuite twiss table, whose `s` is the nominal design length. See
+  [the derivation below](#compute_s_sad-derivation).
 
 ## Why this exists
 

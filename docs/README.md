@@ -16,7 +16,7 @@ Start with [Architecture](architecture.md) for a map of the whole repository.
 
 ### Using SAD2XS
 
-- [Supported elements](usage/supported-elements.md): which SAD element types convert, what each becomes in Xsuite, and which parameters are accepted or rejected.
+- [Supported elements](usage/supported-elements.md): the two separate questions behind "is my element supported?" — what the converter reads, and what survives a write and reload.
 - [Conversion options](usage/conversion-options.md): every option accepted by `convert_sad_to_xsuite`.
 - [Limitations](usage/limitations.md): where a converted lattice does not reproduce SAD.
 

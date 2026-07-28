@@ -57,7 +57,11 @@ The top-level package exposes:
 - `convert_sad_to_xsuite`;
 - `write_lattice`;
 - `write_optics`;
+- `set_log_level`, the single user-facing logging control;
+- `xsuite_helpers`;
 - `sad_helpers`.
+
+`xsuite_helpers` has no optional dependencies, so it is imported eagerly.
 
 `sad_helpers` is imported lazily, on first access (PEP 562). It depends on an external SAD installation and extra Python packages, so importing the core converter does not load it.
 

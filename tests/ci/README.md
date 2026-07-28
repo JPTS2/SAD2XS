@@ -79,17 +79,17 @@ Parametrised over all 10 per-folder workflows (`test_packaging.yml`,
 - Has `workflow_dispatch` trigger
 - Uses `actions/checkout@v7`
 
-### `test_workflow_test_targets.py` — 3 test functions × 9 workflows = 27 instances, all expected to pass
+### `test_workflow_test_targets.py` — 3 test functions × 10 workflows = 30 instances, all expected to pass
 
-Parametrised over the same 9 per-folder workflows. Parses each workflow's
+Parametrised over the same 10 per-folder workflows. Parses each workflow's
 `test_files:` block (stripping blank lines and comment lines, matching the
 template's own normalisation logic).
 
 | Test | Expected result | What it checks |
 |------|----------------|----------------|
-| `test_ci_folder_workflow_lists_at_least_one_test_target` | 9 PASS | Each workflow has a non-empty `test_files:` block |
-| `test_ci_folder_workflow_test_targets_all_exist` | 9 PASS | Each listed path (`tests/<folder>`) exists as a directory |
-| `test_ci_folder_workflow_test_targets_are_under_tests_directory` | 9 PASS | All paths start with `tests/` |
+| `test_ci_folder_workflow_lists_at_least_one_test_target` | 10 PASS | Each workflow has a non-empty `test_files:` block |
+| `test_ci_folder_workflow_test_targets_all_exist` | 10 PASS | Each listed path (`tests/<folder>`) exists as a directory |
+| `test_ci_folder_workflow_test_targets_are_under_tests_directory` | 10 PASS | All paths start with `tests/` |
 
 ### `test_pytest_ini_testpaths.py` — 2 test functions, all expected to pass
 

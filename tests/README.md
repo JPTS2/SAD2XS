@@ -9,7 +9,7 @@ narrowest folder that describes the behaviour being protected.
 ## Requirements
 
 The full suite expects an environment with the SAD executable and the Python
-project dependencies (`xtrack`, `numpy`, `pyyaml`) available, even though not
+project dependencies (`xsuite`, `numpy`, `scipy`, `pyyaml`) available, even though not
 every folder invokes SAD (see the Folder Map's Requires SAD column) — this
 keeps local and CI runs consistent.
 
