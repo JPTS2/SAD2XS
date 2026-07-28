@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-06
+Date:       2026-07-28
 ================================================================================
 """
 ################################################################################
@@ -22,6 +22,7 @@ import xtrack as xt
 # Edwards-Teng propagation. The convention tests pin the semantics against
 # native periodic Xtrack columns, uncoupled lines, and SAD.
 from xtrack.twiss import _propagate_edwards_teng
+import xtrack.linear_normal_form as lnf
 
 ################################################################################
 # Background
@@ -145,3 +146,109 @@ def linear_transfer_matrix_4d(
                 - getattr(particles_minus, out_coordinate)[0]) / (2 * delta)
 
     return matrix
+
+
+################################################################################
+# SAD couplings from a periodic 4D twiss
+################################################################################
+# Symplectic unit, used by the one-turn-matrix decoupling below.
+_J = np.array([[0, 1], [-1, 0]], dtype = np.float64)
+
+
+def couplings_sad_4d(twiss, validity_tol = 1E-6):
+    """
+    Calculate SAD's R1-R4 coupling parameters from a closed 4D twiss.
+
+    This is an independent route to the same quantity `edwards_teng_optics`
+    plus `normalized_r_matrix` produce. Rather than propagating Edwards-Teng
+    optics along the line, it decouples the one-turn matrix directly at every
+    element.
+
+    The one-turn matrix M = [[P, T], [S, Q]] is decoupled via M = U^-1 D U,
+    with U = [[aI, -H], [R, aI]] where H is the symplectic conjugate of R
+    (a^2 + det(R) = 1 for U to be symplectic). Solving for R gives
+    R = -sign(trace_diff) / (a * sqrt(d)) * symplectic_conjugate(T + symplectic_conjugate(S)).
+
+    Verified against a synthetic one-turn matrix built from a known (a, R)
+    pair: this formula recovers the known R to machine precision.
+
+    A naive reading of "J^T T J" off the SAD reference slide -- a bare,
+    untransposed conjugation -- does NOT reproduce the known R. That was a
+    dead end; the transpose in `_J.T @ H.transpose(0, 2, 1) @ _J` matters.
+
+    Parameters
+    ----------
+    twiss : xtrack TwissTable
+        A closed 4D twiss of the line to analyse.
+    validity_tol : float, optional
+        Tolerance on the symplecticity check `a^2 + det(R) == 1`.
+
+    Returns
+    -------
+    xtrack TwissTable
+        The same table, with `R1`, `R2`, `R3`, `R4` columns added
+        (R1-R4 == R11, R12, R21, R22).
+
+    Raises
+    ------
+    ValueError
+        If `twiss` is not a closed 4D twiss, or if the symplecticity check
+        fails.
+    """
+    try:
+        qx = twiss.qx
+        qy = twiss.qy
+    except AttributeError as exc:
+        raise ValueError("Closed 4D twiss required") from exc
+
+    if twiss.method != "4d":
+        raise ValueError("Closed 4D twiss required")
+
+    ########################################
+    # One-turn rotation in normalised coordinates
+    ########################################
+    rotation                = np.zeros((4, 4), dtype = np.float64)
+    rotation[0:2, 0:2]      = lnf.Rot2D(2 * np.pi * qx)
+    rotation[2:4, 2:4]      = lnf.Rot2D(2 * np.pi * qy)
+
+    ########################################
+    # One-turn map, element by element
+    ########################################
+    w_matrix    = twiss.W_matrix[:, 0:4, 0:4].astype(np.float64, copy = True)
+    one_turn    = w_matrix @ rotation @ np.linalg.inv(w_matrix)
+
+    p_block = one_turn[:, 0:2, 0:2]
+    t_block = one_turn[:, 0:2, 2:4]
+    s_block = one_turn[:, 2:4, 0:2]
+    q_block = one_turn[:, 2:4, 2:4]
+
+    trace_diff = (np.trace(p_block, axis1 = 1, axis2 = 2)
+                  - np.trace(q_block, axis1 = 1, axis2 = 2))
+
+    ########################################
+    # H = T + symplectic_conjugate(S)
+    ########################################
+    h_matrix    = t_block + _J.T @ s_block.transpose(0, 2, 1) @ _J
+    discriminant = trace_diff**2 + 4 * np.linalg.det(h_matrix)
+    a_coeff     = np.sqrt(
+        0.5 * (1 + np.abs(trace_diff) / np.sqrt(discriminant)))
+
+    h_conjugate = _J.T @ h_matrix.transpose(0, 2, 1) @ _J
+    r_sad       = -h_conjugate * (
+        np.sign(trace_diff) / (a_coeff * np.sqrt(discriminant)))[:, None, None]
+
+    ########################################
+    # U must be symplectic: a^2 + det(R) == 1
+    ########################################
+    validity = a_coeff**2 + np.linalg.det(r_sad)
+    if not np.allclose(validity, 1, atol = validity_tol):
+        raise ValueError(
+            f"Inconsistent coupling calculation: a^2 = {a_coeff**2}, "
+            f"det(R) = {np.linalg.det(r_sad)}")
+
+    twiss["R1"] = r_sad[:, 0, 0]
+    twiss["R2"] = r_sad[:, 0, 1]
+    twiss["R3"] = r_sad[:, 1, 0]
+    twiss["R4"] = r_sad[:, 1, 1]
+
+    return twiss

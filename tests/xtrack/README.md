@@ -16,6 +16,10 @@ own code, so it needs its own ground-truth test rather than being asserted from 
 or from reading the source once. If xtrack ever adds this term, this test fails loudly
 and the warning (and the docs entry) need revisiting.
 
+The same applies to xtrack behaviour that sad2xs's own defaults rest on: the `adaptive`
+model resolving to the expanded map, and yoshida4 batching kicks in groups of seven. Both
+are the stated reasons for choices in `docs/converter/models-integrators.md`.
+
 ## Test harness
 
 Tests build a minimal `xt.Line` directly (no SAD lattice, no sad2xs conversion) and
@@ -28,6 +32,7 @@ Does not require the SAD binary.
 | File | Functions | Fail | Failure root cause |
 |------|-----------|------|--------------------|
 | `test_cavity.py` | 1 (2 parametrised instances) | 0 | — |
+| `test_model_defaults.py` | 4 (7 parametrised instances) | 0 | — |
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
