@@ -17,7 +17,7 @@ conversion) and call the helpers on it.
 
 Does not require the SAD binary.
 
-| File | Functions | Fail | Failure root cause |
+| File | Tests | Fail | Failure root cause |
 |------|-----------|------|--------------------|
 | `test_reference_energy.py` | 14 | 0 | — |
 | `test_symplecticity.py` | 4 | 0 | — |

@@ -12,12 +12,12 @@ live under `tests/examples/lattices/`.
 
 ## Coverage
 
-- `test_example_lattices.py` (1 test, 3 parametrized instances) — conversion
+- `test_example_lattices.py` (3 tests) — conversion
   smoke tests for synthetic FCC-style lattices (`fcc_h_dummy.sad`,
   `fcc_tt_coll_dummy.sad`, `fcc_sol_dummy.sad`). Checks that each converts to
   an `xt.Line` with `start`/`end` markers and a reference particle.
 
-- `test_public_examples.py` (4 tests) — covers the full public example
+- `test_public_examples.py` (14 tests) — covers the full public example
   workflow. Committed example lattices are auto-discovered from
   `examples/lattices/*.sad` (excluding `*_rebuilt.sad`), currently
   `fccee_zh.sad`, `fccee_tt_collimation.sad`, `fccee_sol.sad`, and

@@ -42,7 +42,7 @@ string `"on"`. All trigger access uses a `_triggers(data)` helper that checks
 
 ## Coverage
 
-### `test_workflow_checkout_refs.py` — 22 test functions, ~52 instances, all expected to pass
+### `test_workflow_checkout_refs.py` — 49 tests, all expected to pass
 
 **Template tests (7, not parametrised):**
 - Template has `workflow_call` trigger (required for per-folder delegation)
@@ -79,7 +79,7 @@ Parametrised over all 10 per-folder workflows (`test_packaging.yml`,
 - Has `workflow_dispatch` trigger
 - Uses `actions/checkout@v7`
 
-### `test_workflow_test_targets.py` — 3 test functions × 10 workflows = 30 instances, all expected to pass
+### `test_workflow_test_targets.py` — 30 tests (3 functions x 10 workflows), all expected to pass
 
 Parametrised over the same 10 per-folder workflows. Parses each workflow's
 `test_files:` block (stripping blank lines and comment lines, matching the
@@ -91,7 +91,7 @@ template's own normalisation logic).
 | `test_ci_folder_workflow_test_targets_all_exist` | 10 PASS | Each listed path (`tests/<folder>`) exists as a directory |
 | `test_ci_folder_workflow_test_targets_are_under_tests_directory` | 10 PASS | All paths start with `tests/` |
 
-### `test_pytest_ini_testpaths.py` — 2 test functions, all expected to pass
+### `test_pytest_ini_testpaths.py` — 2 tests, all expected to pass
 
 Runs `pytest --collect-only` as a subprocess twice (once bare, using
 `pytest.ini`'s `testpaths`; once against `tests/` directly) and compares the

@@ -16,25 +16,24 @@ formatting, or SAD helper command construction. Those behaviours belong in
 
 ## Coverage
 
-**Functions** is the count of `def test_` entries in the file. **Fail** is
-actual failing instances from the test run. `test_errors.py` is parametrised
-(one function contributes 3 instances for the protected-name cases), so its
-instance count exceeds its function count.
+**Tests** is the number of test instances pytest collects, which counts each
+parametrisation separately. **Fail** is actual failing instances from the test
+run.
 
-| File | Functions | Fail | Notes |
+| File | Tests | Fail | Notes |
 |------|-----------|------|-------|
 | `test_preprocessing.py` | 6 | 0 | — |
 | `test_comments.py` | 10 | 0 | — |
-| `test_globals.py` | 12 | 0 | — |
-| `test_units.py` | 7 | 0 | — |
+| `test_globals.py` | 22 | 0 | — |
+| `test_units.py` | 15 | 0 | — |
 | `test_lines.py` | 6 | 0 | — |
 | `test_line_names.py` | 3 | 0 | — |
-| `test_element_parameters.py` | 13 | 0 | — |
+| `test_element_parameters.py` | 26 | 0 | — |
 | `test_element_expressions.py` | 8 | 0 | — |
 | `test_deferred_expressions.py` | 17 | 0 | — |
 | `test_functions.py` | 2 | 0 | — |
 | `test_repeated_definitions.py` | 9 | 0 | — |
-| `test_errors.py` | 14 | 0 | — |
+| `test_errors.py` | 16 | 0 | — |
 
 ### `test_preprocessing.py` note
 

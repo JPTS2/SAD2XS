@@ -15,13 +15,17 @@ should stay focused on pipeline orchestration and public user options.
 
 ## Coverage
 
-| File | Functions | Fail | Failure root cause |
+**Tests** is the number of test instances pytest collects, which counts
+each parametrisation separately.
+
+| File | Tests | Fail | Failure root cause |
 |------|-----------|------|--------------------|
-| `test_convert_sad_to_xsuite.py` | 23 | 0 | — |
+| `test_convert_sad_to_xsuite.py` | 45 | 0 | — |
+| `test_math_function_expressions.py` | 7 | 0 | — |
 | `test_excluded_elements.py` | 9 | 0 | — |
-| `test_multipole_replacements.py` | 5 | 0 | — |
+| `test_multipole_replacements.py` | 8 | 0 | — |
 | `test_offset_markers.py` | 10 | 0 | — |
-| `test_reference_particle.py` | 10 | 0 | — |
+| `test_reference_particle.py` | 11 | 0 | — |
 | `test_reverse_survey_horizontal.py` | 12 | 0 | — |
 | `test_reverse_survey_vertical.py` | 13 | 0 | — |
 | `test_reverse_charge_sign.py` | 6 | 0 | — |

@@ -36,7 +36,7 @@ filename; SAD's shell wrapper requires a relative path in the working directory.
 
 ## Coverage
 
-455 tests across 16 files. All require the SAD binary.
+472 tests across 16 files. All require the SAD binary.
 
 ### Parameter matrix (accept/reject)
 

@@ -57,6 +57,13 @@ rather than one serialised element or feature.
   `MAGNET_LENGTH_PRECISION` stay on distinct base-element lengths, i.e. are
   not over-merged (2 tests). All 5 tests expected to pass.
 
+- `test_writer_observability.py` (3 tests) — the writer respects the logging
+  policy: silent at the default level, progress narrative only when the level
+  is raised.
+
+- `test_writer_preserves_input_line.py` (3 tests) — neither `write_lattice` nor
+  `write_optics` mutates the `xt.Line` it is given.
+
 ## Expected Failures
 
 None. All writer pipeline tests are expected to pass.

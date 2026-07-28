@@ -33,6 +33,34 @@ non-blocking known-issue) plus per-folder `workflow_dispatch` workflows for
 targeted re-runs — see `docs/development/testing.md`'s CI section for the full
 description.
 
+## Suite Total
+
+**2132 tests**, counted as instances collected by pytest, so each
+parametrisation counts separately.
+
+| Folder | Tests |
+|--------|-------|
+| `conversion/elements/` | 596 |
+| `sad/` | 472 |
+| `writer/elements/` | 344 |
+| `conversion/pipeline/` | 145 |
+| `parser/` | 140 |
+| `conversion/` (top level) | 85 |
+| `sad_helpers/` | 83 |
+| `ci/` | 81 |
+| `writer/pipeline/` | 61 |
+| `xsuite_helpers/` | 49 |
+| `observability/` | 18 |
+| `packaging/` | 18 |
+| `examples/` | 17 |
+| `installation/` | 14 |
+| `xtrack/` | 9 |
+| **Total** | **2132** |
+
+Each folder README gives the per-file breakdown, and those per-file counts sum
+to the folder totals above. Reproduce any of these with
+`pytest --collect-only -q`.
+
 ## Folder Map
 
 | Folder | Requires SAD | Contents |

@@ -14,11 +14,9 @@ Shared fixtures live in `conftest.py`. Cross-file support belongs in
 
 ## Coverage
 
-**Functions** is the count of `def test_` entries in the file. Parametrised
-tests expand to more instances at runtime — the **Fail** column is actual
-failing instances from the test run, not failing functions. For non-parametrised
-files these are equal; for heavily parametrised files (sol, corrector, bend)
-the fail instance count exceeds the failing function count.
+**Tests** is the number of test instances pytest collects, which counts each
+parametrisation separately. **Fail** is actual failing instances from the test
+run.
 
 See `docs/development/testing.md`'s Known Failures section for the `known_issue` marker
 mechanism.
@@ -30,23 +28,23 @@ original pattern. Files with only a raw `s`/length check via `line.get_table()`
 `test_moni.py`) are the exception — they have no twiss/tracking comparison
 to extend.
 
-| File | Functions | Fail | Failure root cause |
+| File | Tests | Fail | Failure root cause |
 |------|-----------|------|--------------------|
-| `test_apert.py` | 24 | 0 | — |
+| `test_apert.py` | 26 | 0 | — |
 | `test_beambeam.py` | 5 | 0 | — |
-| `test_bend.py` | 43 | 0 | — |
-| `test_cavi.py` | 10 | 0 | — |
-| `test_coord.py` | 10 | 0 | — |
-| `test_corrector.py` | 25 | 0 | — |
-| `test_drift.py` | 7 | 0 | — |
+| `test_bend.py` | 91 | 0 | — |
+| `test_cavi.py` | 19 | 0 | — |
+| `test_coord.py` | 22 | 0 | — |
+| `test_corrector.py` | 55 | 0 | — |
+| `test_drift.py` | 9 | 0 | — |
 | `test_map.py` | 6 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
-| `test_mult.py` | 26 | 0 | — |
-| `test_oct.py` | 18 | 0 | — |
-| `test_quad.py` | 27 | 0 | — |
-| `test_sext.py` | 18 | 0 | — |
-| `test_sol.py` | 26 | 0 | — |
+| `test_mult.py` | 50 | 0 | — |
+| `test_oct.py` | 41 | 0 | — |
+| `test_quad.py` | 50 | 0 | — |
+| `test_sext.py` | 41 | 0 | — |
+| `test_sol.py` | 171 | 0 | — |
 
 ### `test_sol.py` note
 
