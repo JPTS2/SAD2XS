@@ -29,6 +29,7 @@ Avoid describing target behaviour as if it already exists.
 - [SAD behaviour notes](sad-behaviour.md): empirically-established facts about how SAD itself behaves — physics conventions, quirks, and limitations discovered while building and testing the converter, independent of any SAD2XS decision made in response.
 - [Testing](testing.md): public test policy, regression workflow, CI structure (master and per-folder workflows), known failure groups, and SAD dependency handling.
 - [Contributing](contributing.md): branch naming, pull request expectations, release workflow, and public issue policy.
+- [Releasing](releasing.md): the step-by-step procedure for publishing a release, covering version bumps, citation metadata, package build checks, tagging, the Zenodo archive, and PyPI upload.
 - [Design decisions](design-decisions.md): project-level decisions that should guide future development.
 
 ## Scope

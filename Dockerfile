@@ -8,7 +8,7 @@
 #
 # Authors:    John P. T. Salvesen
 # Email:      john.salvesen@cern.ch
-# Date:       2026-07-20
+# Date:       2026-07-27
 # ==============================================================================
 
 ################################################################################
@@ -149,7 +149,7 @@ RUN set -eux; \
 WORKDIR /opt/app
 
 # Copy build metadata first for better layer caching
-COPY setup.py README* LICENSE* /opt/app/
+COPY pyproject.toml README* LICENSE* /opt/app/
 
 # Copy the package sources
 COPY sad2xs /opt/app/sad2xs

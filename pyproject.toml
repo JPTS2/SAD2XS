@@ -1,0 +1,67 @@
+################################################################################
+# Package Configuration
+################################################################################
+# SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+#
+# This file is part of the SAD2XS project, licensed under the Apache License
+# Version 2.0. See LICENSE for details.
+#
+# Authors:  John P. T. Salvesen
+# Email:    john.salvesen@cern.ch
+# Date:     2026-07-27
+################################################################################
+
+[build-system]
+# PEP 639 license expressions require setuptools 77 or newer
+requires        = ["setuptools>=77"]
+build-backend   = "setuptools.build_meta"
+
+[project]
+name            = "sad2xs"
+version         = "0.3.0"
+description     = "Conversion of SAD lattices to Xtrack format"
+readme          = "README.md"
+license         = "Apache-2.0"
+license-files   = ["LICENSE"]
+requires-python = ">=3.13"
+
+authors = [
+    {name = "John P. T. Salvesen", email = "john.salvesen@cern.ch"}]
+
+keywords = [
+    "accelerator-physics",
+    "lattice",
+    "sad",
+    "xsuite",
+    "xtrack"]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Physics"]
+
+dependencies = [
+    "numpy>=1.0",
+    "pyyaml>=6.0",
+    "scipy>=1.0",
+    "xsuite>=0.53.2"]
+
+[project.optional-dependencies]
+# Required for sad2xs.sad_helpers in addition to a working SAD executable
+sad-helpers = ["tfs-pandas", "tqdm"]
+# Required for sad2xs.xsuite_helpers.plot_xsuite_sad_comparison
+plotting    = ["matplotlib"]
+
+[project.urls]
+"Homepage"      = "https://github.com/JPTS2/SAD2XS"
+"Source Code"   = "https://github.com/JPTS2/SAD2XS"
+"Bug Tracker"   = "https://github.com/JPTS2/SAD2XS/issues"
+"Documentation" = "https://github.com/JPTS2/SAD2XS/blob/main/README.md"
+
+[tool.setuptools.packages.find]
+include = ["sad2xs*"]
+
+[tool.setuptools]
+include-package-data = true

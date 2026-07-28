@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-27
 ================================================================================
 """
 ################################################################################
@@ -55,13 +55,16 @@ def test_release_metadata_version_follows_semver_format():
 ################################################################################
 # Author
 ################################################################################
-def test_release_metadata_author_field_is_a_non_empty_string():
+def test_release_metadata_author_name_is_declared():
     """
-    The Author metadata field should be present and non-empty.
+    The author name should be present and non-empty. PEP 621 metadata carries
+    the name inside `Author-email` as `Name <address>`, and emits no separate
+    `Author` field, so the name is read from there.
     """
-    author = _META["Author"]
-    assert isinstance(author, str) and len(author) > 0, (
-        "Package `Author` metadata field should be a non-empty string.")
+    author_email = _META["Author-email"]
+    assert re.match(r"^\s*\S.*<[^>]+>\s*$", author_email or ""), (
+        f"Package `Author-email` field `{author_email}` should declare an "
+        "author name in `Name <address>` form.")
 
 
 def test_release_metadata_author_email_contains_at_symbol():
@@ -77,15 +80,17 @@ def test_release_metadata_author_email_contains_at_symbol():
 ################################################################################
 # License
 ################################################################################
-def test_release_metadata_license_field_is_a_non_empty_string():
+def test_release_metadata_license_expression_is_a_non_empty_string():
     """
-    The License metadata field should be present and non-empty. An absent
-    license blocks publication to PyPI and causes ambiguity for downstream
-    users about redistribution rights.
+    The license should be present and non-empty. An absent license blocks
+    publication to PyPI and causes ambiguity for downstream users about
+    redistribution rights. PEP 639 metadata declares it as a SPDX expression
+    in `License-Expression` and emits no legacy `License` field.
     """
-    license_field = _META["License"]
+    license_field = _META["License-Expression"]
     assert isinstance(license_field, str) and len(license_field) > 0, (
-        "Package `License` metadata field should be a non-empty string.")
+        "Package `License-Expression` metadata field should be a non-empty "
+        "SPDX license expression.")
 
 
 ################################################################################
@@ -108,6 +113,18 @@ def test_release_metadata_numpy_is_listed_as_a_dependency():
     """
     assert any("numpy" in req for req in _REQUIRES), (
         "Package install_requires should list `numpy`. "
+        f"Current requires: {_REQUIRES}")
+
+
+def test_release_metadata_scipy_is_listed_as_a_dependency():
+    """
+    scipy is a hard runtime dependency. `sad2xs.converter` imports
+    `scipy.constants` at module level, so a core conversion fails on import
+    without it. Xsuite happens to pull scipy in today, but relying on a
+    transitive dependency breaks as soon as Xsuite drops it.
+    """
+    assert any("scipy" in req for req in _REQUIRES), (
+        "Package dependencies should list `scipy`. "
         f"Current requires: {_REQUIRES}")
 
 

@@ -45,7 +45,9 @@ GitHub releases and version tags should be used for actual published versions, n
 
 Do not tag issue branches or intermediate cleanup states. When the active release branch is complete, it should be merged to `main`, tagged as the released version, and published as a GitHub release.
 
-Before publishing a package release, update all package version metadata to the released version. At minimum, check `setup.py`; if future packaging files are added, such as `pyproject.toml` or a dedicated version module, they must be updated consistently as part of the release branch before tagging.
+Before publishing a package release, update all package version metadata to the released version. The version is carried in `pyproject.toml` and `CITATION.cff`. Update both consistently as part of the release branch, before tagging.
+
+[Releasing](releasing.md) gives the full step-by-step procedure, including the package build checks and the Zenodo archive.
 
 ## Commit style
 
