@@ -36,11 +36,11 @@ line, and how converted lines compare with SAD optics or tracking.
 
 Top-level files cover cross-cutting behaviour:
 
-| File | Covers |
-|------|--------|
-| `test_converter_helpers.py` | converter helper functions |
-| `test_xsuite_api_compatibility.py` | Xsuite APIs the converter relies on |
-| `test_coupled_twiss_convention.py` | the coupled-twiss comparison convention against SAD |
+| File | Tests | Fail | Covers |
+|------|-------|------|--------|
+| `test_converter_helpers.py` | 53 | 0 | converter helper functions |
+| `test_xsuite_api_compatibility.py` | 23 | 0 | Xsuite APIs the converter relies on |
+| `test_coupled_twiss_convention.py` | 9 | 0 | the coupled-twiss comparison convention against SAD |
 
 `test_coupled_twiss_convention.py` does three things. It proves SAD reports
 Edwards-Teng optics and `R / sqrt(1 + det R)` coupling matrices. It validates

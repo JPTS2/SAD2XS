@@ -22,7 +22,14 @@ parser test areas.
 
 ## Coverage
 
-### `test_release_metadata.py` — 9 tests, all expected to pass
+Does not require the SAD binary.
+
+| File | Tests | Fail | Failure root cause |
+|------|-------|------|--------------------|
+| `test_release_metadata.py` | 9 | 0 | — |
+| `test_import_boundaries.py` | 9 | 0 | — |
+
+### `test_release_metadata.py`
 
 Reads installed package metadata via `importlib.metadata` and verifies
 structural correctness. Does not pin specific values — it tests format and
@@ -40,7 +47,7 @@ presence so the checks remain valid across version bumps.
 | `test_release_metadata_scipy_is_listed_as_a_dependency` | `scipy` appears in the dependencies |
 | `test_release_metadata_tfs_is_an_optional_extra_not_a_hard_dependency` | `tfs-pandas` is listed under an optional extra, not a hard dependency |
 
-### `test_import_boundaries.py` — 9 tests, all expected to pass
+### `test_import_boundaries.py`
 
 Imports `sad2xs` and verifies the public API surface. Checks presence and
 type of each public symbol. Does not test that internal submodules are hidden

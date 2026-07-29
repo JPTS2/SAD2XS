@@ -12,14 +12,21 @@ reused across unrelated test areas.
 
 ## Coverage
 
-- `test_macos_installer.py` (13 tests) — macOS installer internals via
+Requires the SAD binary for the executable smoke test.
+
+| File | Tests | Fail | Failure root cause |
+|------|-------|------|--------------------|
+| `test_macos_installer.py` | 13 | 0 | — |
+| `test_sad_executable.py` | 1 | 0 | — |
+
+- `test_macos_installer.py` — macOS installer internals via
   monkeypatching: `_run` error handling and non-zero return codes, brew cask
   flag, brew prefix with missing formula, executable name resolution,
   `ensure_command_exists` skip and install paths, X11 header detection,
   dependency installation order, conda environment variable stripping and
   toolchain setup, launcher file writing, shell RC deduplication and creation.
 
-- `test_sad_executable.py` (1 test) — SAD executable smoke check: verifies the
+- `test_sad_executable.py` — SAD executable smoke check: verifies the
   `sad` command is on PATH and runs the committed installation test lattice
   (`sad_installation_test.sad`) to completion with returncode 0.
 

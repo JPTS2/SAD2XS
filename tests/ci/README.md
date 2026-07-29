@@ -42,7 +42,15 @@ string `"on"`. All trigger access uses a `_triggers(data)` helper that checks
 
 ## Coverage
 
-### `test_workflow_checkout_refs.py` — 55 tests, all expected to pass
+Does not require the SAD binary.
+
+| File | Tests | Fail | Failure root cause |
+|------|-------|------|--------------------|
+| `test_workflow_checkout_refs.py` | 58 | 0 | — |
+| `test_workflow_test_targets.py` | 39 | 0 | — |
+| `test_pytest_ini_testpaths.py` | 2 | 0 | — |
+
+### `test_workflow_checkout_refs.py`
 
 **Template tests (7, not parametrised):**
 - Template has `workflow_call` trigger (required for per-folder delegation)
@@ -78,7 +86,7 @@ without a matching workflow fails these tests instead of passing silently.
 - Has `workflow_dispatch` trigger
 - Uses `actions/checkout@v7`
 
-### `test_workflow_test_targets.py` — 36 tests (3 functions x 12 workflows), all expected to pass
+### `test_workflow_test_targets.py`
 
 Parametrised over the same 12 per-folder workflows. Parses each workflow's
 `test_files:` block (stripping blank lines and comment lines, matching the
@@ -90,7 +98,7 @@ template's own normalisation logic).
 | `test_ci_folder_workflow_test_targets_all_exist` | 12 PASS | Each listed path (`tests/<folder>`) exists as a directory |
 | `test_ci_folder_workflow_test_targets_are_under_tests_directory` | 12 PASS | All paths start with `tests/` |
 
-### `test_pytest_ini_testpaths.py` — 2 tests, all expected to pass
+### `test_pytest_ini_testpaths.py`
 
 Runs `pytest --collect-only` as a subprocess twice (once bare, using
 `pytest.ini`'s `testpaths`; once against `tests/` directly) and compares the

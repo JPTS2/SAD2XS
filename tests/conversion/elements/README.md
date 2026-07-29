@@ -182,9 +182,8 @@ future upstream Xsuite/MAD-NG momentum-scaling fix should make this test
 fail (residual outside the asserted band) and surface for review, not
 silently pass. See `docs/reference/sad-behaviour.md` ("`BEND` `F1`/`FRINGE`
 soft-edge fringe") for the derivation and full gating grid, and
-`docs/converter/fringes.md` ("`BEND` `F1`/`FRINGE` fringe import is
-private, default-on" section) for why the flag is private and the
-off-momentum caveat that comes with it.
+`docs/converter/fringes.md` ("Soft-edge accuracy, and the off-momentum
+residual" section) for the off-momentum caveat that comes with it.
 
 The converter warns once per lattice when it finds an `ANGLE != 0` bend with
 a nonzero `DX`/`DY` (`test_bend_converter_warns_once_for_lattice_with_offset_angled_bends`

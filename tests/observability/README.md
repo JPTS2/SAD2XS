@@ -32,7 +32,15 @@ correctness belongs in `tests/conversion/`.
 
 ## Coverage
 
-### `test_quiet_converter_output.py` — 7 tests, all expected to pass
+Mixed: the SAD helper output tests require the SAD binary; the rest do not.
+
+| File | Tests | Fail | Failure root cause |
+|------|-------|------|--------------------|
+| `test_quiet_converter_output.py` | 7 | 0 | — |
+| `test_no_print_statements.py` | 1 | 0 | — |
+| `test_sad_helper_output_controls.py` | 10 | 0 | — |
+
+### `test_quiet_converter_output.py`
 
 Tests the converter output policy. Uses minimal in-memory SAD lattices
 written to `tmp_path` — does not call the SAD executable. Placed in the
@@ -48,7 +56,7 @@ written to `tmp_path` — does not call the SAD executable. Placed in the
 | `test_set_log_level_rejects_unknown_level` | invalid level raises `ValueError` |
 | `test_formatter_prefixes_warnings_but_not_narrative` | `SAD2XS <LEVEL>:` prefix on WARNING/ERROR only |
 
-### `test_no_print_statements.py` — 1 test, expected to pass
+### `test_no_print_statements.py`
 
 An AST source scan of every `sad2xs/**/*.py` file, asserting zero `print()`
 call nodes.
@@ -58,7 +66,7 @@ This scan closes the gap for every other path. Generated-file string templates
 pass naturally, because a string literal is not a call node. Placed in the
 **SAD-free** CI job.
 
-### `test_sad_helper_output_controls.py` — 10 tests, all expected to pass
+### `test_sad_helper_output_controls.py`
 
 Two categories.
 

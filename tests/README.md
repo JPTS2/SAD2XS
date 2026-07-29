@@ -35,7 +35,7 @@ description.
 
 ## Suite Total
 
-**2132 tests**, counted as instances collected by pytest, so each
+**2159 tests**, counted as instances collected by pytest, so each
 parametrisation counts separately.
 
 | Folder | Tests |
@@ -47,7 +47,7 @@ parametrisation counts separately.
 | `parser/` | 140 |
 | `conversion/` (top level) | 85 |
 | `sad_helpers/` | 83 |
-| `ci/` | 81 |
+| `ci/` | 99 |
 | `writer/pipeline/` | 61 |
 | `xsuite_helpers/` | 49 |
 | `observability/` | 18 |
@@ -55,7 +55,8 @@ parametrisation counts separately.
 | `examples/` | 17 |
 | `installation/` | 14 |
 | `xtrack/` | 9 |
-| **Total** | **2132** |
+| `docs/` | 9 |
+| **Total** | **2159** |
 
 Each folder README gives the per-file breakdown, and those per-file counts sum
 to the folder totals above. Reproduce any of these with
@@ -80,6 +81,7 @@ to the folder totals above. Reproduce any of these with
 | `installation/` | Yes | macOS installer, SAD executable smoke test |
 | `packaging/` | No | Package metadata format and public API surface |
 | `ci/` | No | GitHub Actions workflow structural and target-path contracts |
+| `docs/` | No | Documentation consistency with the codebase — links, cited sections, config tables, test counts |
 | `observability/` | Mixed | Converter quiet mode (no SAD); helper output policy (SAD required) |
 | `support/` | — | Reusable support modules — not test files |
 | `artifacts/` | — | Generated Markdown diagnostic reports (git-ignored) |
