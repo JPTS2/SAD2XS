@@ -64,7 +64,7 @@ SAD has several distinct fringe mechanisms. Two are imported: the bend soft-edge
 
 The rest are not imported. Most importantly, **`DISFRIN` is not read for bends or quadrupoles**. A lattice that deliberately disables the hard-edge fringe still gets that fringe after conversion. This limitation is silent: no warning is raised.
 
-The imported bend fringe carries a known bounded off-momentum residual, a few percent on realistic magnet parameters, until an upstream Xsuite fix reaches a released version.
+The imported bend fringe once carried an off-momentum residual of a few percent. Xsuite 0.57.0 corrected the momentum scaling that caused it, and that release is the supported minimum, so the residual no longer applies.
 
 If quadrupole fringe import is enabled, the fringe is modelled as a thin second-order Taylor map. This reproduces the optics correctly, but whether the map radiates is untested. Treat radiation results through quadrupole fringes with caution.
 

@@ -61,20 +61,20 @@ This applies on both bend paths: the sector-bend path where `ANGLE != 0`, and th
 
 The writer serialises these four fields whenever they are non-zero. A bend or corrector that carries only `fint` and `hgap`, and is otherwise at its defaults, does not qualify for the compact one-line output form. This matters: such an element would otherwise be written with every extra attribute silently dropped.
 
-### Soft-edge accuracy, and the off-momentum residual
+### Soft-edge accuracy
 
-On-momentum, the closed form is essentially exact. Tracking and Twiss comparisons against SAD match to a fraction of a percent.
+The closed form matches SAD both on-momentum and off-momentum. Measured agreement on the tested geometries is `5e-7` on-momentum for a bend, rising to `8e-6` at `delta = +-0.05`. The corrector sits at `2.4e-5`, near-constant in `delta`.
 
-Off-momentum, there is a known bounded residual: a few percent on realistic magnet parameters, growing with `delta` and with magnet strength.
-
-The cause is not in SAD2XS. Xsuite's native edge fringe formula scaled the wrong way with `delta` relative to SAD. That was established rather than assumed:
+This was not always so. Xsuite's native edge fringe formula scaled the wrong way with `delta` relative to SAD, leaving a residual of a few percent that grew with `delta` and with magnet strength. The cause was never in SAD2XS, and that was established rather than assumed:
 
 - an independent from-scratch derivation, following Forest's PTC paper (KEK Preprint 2005-109, §B), reproduces SAD's closed form, not Xsuite's;
 - real compiled PTC, driven through `cpymad`, confirms it — PTC implements the same paper's *other* formula, the one that historically matched Xsuite and MAD-NG.
 
-The upstream fix correcting the momentum scaling has been merged. This is a closing gap, not a permanent formalism difference. Until it reaches a released Xsuite version, the residual applies.
+The upstream fix landed in Xsuite 0.57.0, which is therefore the minimum supported version. The residual it removed was large: a bend that read `3.46%` at `delta = -0.03` now reads `0.001%`.
 
-The residual is asserted explicitly rather than skipped, in `test_bend_fringe_import_off_momentum_residual_is_bounded` and its corrector equivalent. When the upstream fix lands, those tests will **fail**, because the residual moves outside the asserted band. That failure is intentional: it surfaces the change for review, at which point this closed-form workaround can likely be retired.
+`test_bend_fringe_import_matches_sad_off_momentum` and its corrector equivalent now assert agreement to `1e-4` relative, so a regression in the momentum scaling fails rather than passing quietly.
+
+What remains is a small offset, not a scaling error. The corrector's `2.4e-5` barely moves with `delta`, so it is not momentum-dependent at all. The earlier percent-level error had masked it.
 
 The writer round-trip is covered separately, by the `fint`/`hgap` tests in `test_bend_writer.py` and `test_corr_writer.py`. Conversion-level tests track the in-memory line directly, so they would not catch a writer serialisation gap.
 
