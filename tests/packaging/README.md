@@ -28,6 +28,20 @@ Does not require the SAD binary.
 |------|-------|------|--------------------|
 | `test_release_metadata.py` | 9 | 0 | — |
 | `test_import_boundaries.py` | 9 | 0 | — |
+| `test_environment_matches_pyproject.py` | 3 | 0 | — |
+
+### `test_environment_matches_pyproject.py`
+
+`pyproject.toml` and `environment.yml` declare the same dependencies. The
+duplication is deliberate: `environment.yml` stays installable on its own, so
+it cannot simply defer to the package metadata. These tests are what stop the
+two drifting.
+
+Checks that every dependency appears in both files, that neither lists a
+package the other omits, and that no `environment.yml` floor admits a version
+`pyproject.toml` forbids. Extras are covered as well as core dependencies,
+because `environment.yml` is meant to produce a working development
+environment.
 
 ### `test_release_metadata.py`
 

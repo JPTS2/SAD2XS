@@ -73,7 +73,21 @@ Document Xsuite model as canonical conversion layer
 
 ## Environment
 
-Use a Python environment with the SAD2XS development dependencies installed. The repository environment file can be used if a conda environment is preferred.
+Install the development dependencies from a checkout:
+
+```bash
+pip install -e ".[dev]"
+```
+
+The `dev` extra pulls in `sad-helpers`, `plotting`, and `test`, which together cover everything the test suite imports.
+
+`environment.yml` builds the same set through conda, if a conda environment is preferred:
+
+```bash
+micromamba env create -f environment.yml
+```
+
+Both files declare the same packages. `tests/packaging/test_environment_matches_pyproject.py` fails if they drift apart, so a dependency added to one must be added to the other.
 
 ```bash
 pytest

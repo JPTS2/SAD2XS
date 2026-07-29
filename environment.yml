@@ -8,7 +8,7 @@
 #
 # Authors:    John P. T. Salvesen
 # Email:      john.salvesen@cern.ch
-# Date:       2026-07-27
+# Date:       2026-07-29
 # ==============================================================================
 
 name: sad2xs
@@ -20,12 +20,14 @@ dependencies:
   # PEP 639 license expressions require setuptools 77 or newer
   - setuptools>=77
   - wheel
+  # Mirrors the `dev` extra of pyproject.toml
+  # `test_environment_matches_pyproject.py` fails if the two drift apart.
   - pip:
-      - pytest
+      - numpy>=2.1
       - pyyaml>=6.0
-      - xsuite
-      - numpy
-      - scipy
-      - pandas
-      - tfs-pandas
-      - matplotlib
+      - scipy>=1.14
+      - xsuite>=0.57.0
+      - tfs-pandas>=3.8
+      - tqdm>=4.66
+      - matplotlib>=3.9
+      - pytest>=8.0

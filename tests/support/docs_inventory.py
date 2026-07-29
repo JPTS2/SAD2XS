@@ -159,9 +159,9 @@ def links(path: Path) -> list[tuple[str, int]]:
 _CITED_PATH     = re.compile(
     r"`((?:docs|tests|sad2xs|examples|\.github)/[\w/.\-]+\.(?:md|py|sad|yml))`")
 
-# Workflows are cited by bare filename, without their folder, so they need
-# their own pattern: `run_tests.yml` rather than `.github/workflows/run_tests.yml`.
-_CITED_WORKFLOW = re.compile(r"`([\w.\-]+\.yml)`")
+# YAML files are cited by bare filename, without their folder: `run_tests.yml`
+# rather than `.github/workflows/run_tests.yml`.
+_CITED_YAML = re.compile(r"`([\w.\-]+\.yml)`")
 
 # Two prose forms name a section of another document:
 #   `path.md` ("Section Name")        -- parenthetical, may wrap a line
@@ -183,20 +183,30 @@ def cited_paths(path: Path) -> list[tuple[str, int]]:
     """
     Every backticked repository file path in a document.
 
-    A bare `*.yml` filename is resolved against `.github/workflows/`, because
-    workflows are always cited without their folder.
+    A bare `*.yml` filename is resolved by basename against the tracked files,
+    because YAML files are cited without their folder and do not all live in
+    the same one: workflows sit under `.github/workflows/`, `environment.yml`
+    at the repository root.
 
     Returns
     -------
     list of tuple
         `(cited_path, line_number)`.
     """
+    tracked = tracked_files()
+    by_name = {name.rsplit("/", 1)[-1]: name for name in tracked}
+
     found = []
     for number, line in enumerate(path.read_text().splitlines(), start = 1):
         found.extend((match.group(1), number) for match in _CITED_PATH.finditer(line))
-        for match in _CITED_WORKFLOW.finditer(line):
-            if "/" not in match.group(1):
-                found.append((f".github/workflows/{match.group(1)}", number))
+        for match in _CITED_YAML.finditer(line):
+            name = match.group(1)
+            if "/" in name:
+                continue                    # already matched by _CITED_PATH
+            # Unresolvable names keep the workflow folder, so the failure
+            # message names a plausible location rather than a bare filename.
+            found.append(
+                (by_name.get(name, f".github/workflows/{name}"), number))
     return found
 
 
