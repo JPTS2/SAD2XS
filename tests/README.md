@@ -35,7 +35,7 @@ description.
 
 ## Suite Total
 
-**2164 tests**, counted as instances collected by pytest, so each
+**2181 tests**, counted as instances collected by pytest, so each
 parametrisation counts separately.
 
 | Folder | Tests |
@@ -43,7 +43,7 @@ parametrisation counts separately.
 | `conversion/elements/` | 596 |
 | `sad/` | 472 |
 | `writer/elements/` | 344 |
-| `conversion/pipeline/` | 145 |
+| `conversion/pipeline/` | 162 |
 | `parser/` | 140 |
 | `conversion/` (top level) | 85 |
 | `sad_helpers/` | 83 |
@@ -56,7 +56,7 @@ parametrisation counts separately.
 | `installation/` | 14 |
 | `xtrack/` | 9 |
 | `docs/` | 11 |
-| **Total** | **2164** |
+| **Total** | **2181** |
 
 Each folder README gives the per-file breakdown, and those per-file counts sum
 to the folder totals above. Reproduce any of these with

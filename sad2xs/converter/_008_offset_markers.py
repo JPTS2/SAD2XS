@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-24
+Date:       2026-07-29
 ================================================================================
 """
 
@@ -116,6 +116,39 @@ def _element_length(name: str, parsed_elements: dict, line: xt.Line) -> float:
             return length
     return 0.0
 
+def _regions_of_multiply_defined_s(
+        cumulative_s: np.ndarray) -> list[tuple[float, float]]:
+    """
+    Regions of s that more than one element occupies.
+
+    A negative-length element makes the s table non-monotonic. The elements
+    after it then cover s that an earlier element already covered. Each such
+    region is found by comparing every element's start against the largest s
+    reached so far. The lengths come from SAD's own sequence, not from the
+    converted line.
+
+    Parameters
+    ----------
+    cumulative_s : np.ndarray
+        Cumulative s at each element boundary, length `n_elements + 1`.
+
+    Returns
+    -------
+    list of tuple
+        `(start, end)` of each region, in s order.
+    """
+    regions         = []
+    furthest_s      = cumulative_s[0]
+
+    for index in range(len(cumulative_s) - 1):
+        start, end  = cumulative_s[index], cumulative_s[index + 1]
+        if start < furthest_s:
+            regions.append((float(start), float(min(end, furthest_s))))
+        furthest_s  = max(furthest_s, end)
+
+    return regions
+
+
 ################################################################################
 # Conversion Function
 ################################################################################
@@ -147,9 +180,14 @@ def convert_offset_markers(
     against SAD's native `-LINE` reversal, which gives an identical
     offset-marker s.
 
-    A marker whose target is a UniformSolenoid is permanently excluded
-    (warning logged), since slicing a solenoid is not supported. Every
-    moved marker (excluded or not) is removed from `line` here; a
+    No element type is excluded as a target. A marker is skipped for
+    one reason only: a negative-length element makes two elements cover
+    its s, so the position does not name a unique insertion point.
+    These regions come from SAD's own cumulative lengths. Finding them
+    here keeps an unplaceable marker out of the generated file's single
+    batched insertion, where one failure would cost every other marker.
+
+    Every moved marker (skipped or not) is removed from `line` here; a
     surviving one is only re-inserted later, when the lattice file is
     generated (`sad2xs.output_writer._016_offset_markers`) -- `line`
     itself never gets it back.
@@ -235,6 +273,14 @@ def convert_offset_markers(
     ########################################
     offset_marker_locations = {}
     unmoved_markers         = set()
+    skipped_markers         = []
+
+    # Found once from SAD's own lengths, before any insertion is attempted.
+    ambiguous_regions       = _regions_of_multiply_defined_s(cumulative_s)
+    if ambiguous_regions:
+        logger.debug(
+            f"{len(ambiguous_regions)} region(s) of multiply-defined s, from "
+            f"negative-length elements: {ambiguous_regions}")
 
     for marker in inserted_markers:
 
@@ -308,14 +354,18 @@ def convert_offset_markers(
                 s_to_insert = cumulative_s[-1] - s_to_insert
 
             ########################################
-            # Exclude slicing solenoids
+            # Skip markers landing where s is defined twice
             ########################################
-            target_name_bare = target_name[1:] if target_name.startswith("-") else target_name
-            if target_name_bare in parsed_elements.get("sol", {}):
-                logger.warning(
-                    f"Offset marker {base_marker} not installed at "
-                    f"s = {s_to_insert}: slicing solenoid elements "
-                    "is not supported")
+            region = next(
+                ((start, end) for start, end in ambiguous_regions
+                 if start <= s_to_insert <= end), None)
+            if region is not None:
+                skipped_markers.append(base_marker)
+                logger.debug(
+                    f"Offset marker {base_marker} resolves to s = "
+                    f"{s_to_insert} in target {target_name}. Two elements "
+                    f"cover s from {region[0]} to {region[1]}, so this "
+                    "position does not name a unique insertion point.")
                 continue
 
         # Produce a dictionary of the s locations that markers are inserted at
@@ -346,12 +396,23 @@ def convert_offset_markers(
         f"Converted {len(offset_marker_locations)} offset markers "
         f"({n_locations} insertion points)")
 
-    # `line` never gets these markers back -- only the generated lattice
-    # file's "Install Markers" step re-adds them.
+    # A relocated marker belongs only in the generated lattice file, so this is
+    # progress information, not a warning. The names go to DEBUG because on a
+    # real lattice the list runs to dozens.
     if offset_marker_locations:
-        logger.warning(
+        logger.info(
             f"{len(offset_marker_locations)} relocated offset marker(s) are "
-            "absent from the returned line (present only in the generated "
-            f"lattice file): {sorted(offset_marker_locations)}")
+            "present only in the generated lattice file, not the returned line")
+        logger.debug(
+            f"Relocated offset markers: {sorted(offset_marker_locations)}")
+
+    # Skipping a requested marker loses data, so it warns. The count goes here,
+    # the names to DEBUG, and each marker's own reason is logged above.
+    if skipped_markers:
+        logger.warning(
+            f"{len(skipped_markers)} offset marker(s) were not placed: their "
+            "positions fall where a negative-length element makes s "
+            "multiply-defined")
+        logger.debug(f"Skipped offset markers: {sorted(set(skipped_markers))}")
 
     return line, offset_marker_locations

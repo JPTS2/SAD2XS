@@ -9,14 +9,19 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-15
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
 # Required Packages
 ################################################################################
+import ast
+import re
+
 import pytest
 import sad2xs as s2x
+
+from sad2xs.config import Config
 
 ################################################################################
 # Default Behaviour
@@ -393,31 +398,132 @@ def test_pipeline_offset_marker_reversed_reference_moved_to_computed_s_position(
 
 
 ################################################################################
-# Solenoid Exclusion
+# Helpers
 ################################################################################
-def test_pipeline_offset_marker_solenoid_exclusion_removes_marker_permanently(
-        write_lattice, tmp_path):
+def _marker_positions(output_dir, filename):
     """
-    When the Case 2 target element (floor(OFFSET) elements ahead) is an
-    xt.UniformSolenoid, the marker is excluded from offset_marker_locations and
-    is not reinserted. The solenoid itself is not affected. This tests the
-    production guard that prevents slicing of solenoid elements.
+    The `MARKER_POSITIONS` block of a generated lattice file, as a dict.
+
+    `filename` is the generated file's stem, which defaults to the source
+    lattice's own basename.
+
+    An offset marker is always removed from the returned line, whether it was
+    relocated or skipped, so `line.element_names` cannot tell the two apart.
+    The generated file is where the distinction is visible.
+    """
+    content = (output_dir / f"{filename}.py").read_text(encoding = "utf-8")
+    match   = re.search(r"MARKER_POSITIONS = (\{.*?\})", content, re.S)
+    return ast.literal_eval(match.group(1)) if match else {}
+
+
+################################################################################
+# Target Element Types
+################################################################################
+# A minimal SAD definition per supported element type. Thin types carry no
+# length, so a marker lands alongside them rather than slicing them, which is
+# equally valid. An empty MAP converts to a Marker, as the converter requires.
+TARGET_DEFINITIONS = {
+    "apert":    "APERT       T1      = (DX1 = 0.01 DY1 = 0.01);",
+    "beambeam": "BEAMBEAM    T1      = ();",
+    "bend":     "BEND        T1      = (L = 2.0 ANGLE = 0.1);",
+    "cavi":     "CAVI        T1      = (L = 2.0 VOLT = 1E6 FREQ = 500E6);",
+    "coord":    "COORD       T1      = (DX = 0.001);",
+    "drift":    "DRIFT       T1      = (L = 2.0);",
+    "map":      "MAP         T1      = ();",
+    "mark":     "MARK        T1      = ();",
+    "moni":     "MONI        T1      = ();",
+    "mult":     "MULT        T1      = (L = 2.0 K1 = 0.1);",
+    "oct":      "OCT         T1      = (L = 2.0 K3 = 0.1);",
+    "quad":     "QUAD        T1      = (L = 2.0 K1 = 0.1);",
+    "sext":     "SEXT        T1      = (L = 2.0 K2 = 0.1);",
+    "sol":      "SOL         T1      = (L = 2.0 BZ = 0.1);"}
+
+def test_pipeline_offset_marker_every_supported_element_type_is_covered():
+    """
+    Every SAD element type the parser accepts has a target definition.
+
+    Drives the parametrisation below from `Config.SAD_ALLOWED_ELEMENTS`, so a
+    newly supported element type fails here rather than quietly going untested.
+    """
+    supported = Config().SAD_ALLOWED_ELEMENTS
+    missing   = sorted(supported - set(TARGET_DEFINITIONS))
+    stale     = sorted(set(TARGET_DEFINITIONS) - supported)
+
+    assert not missing and not stale, (
+        "TARGET_DEFINITIONS must cover exactly the parsed element types in "
+        f"Config.SAD_ALLOWED_ELEMENTS. Missing: {missing}. Stale: {stale}.")
+
+
+@pytest.mark.parametrize(
+    "element_type", sorted(Config().SAD_ALLOWED_ELEMENTS))
+def test_pipeline_offset_marker_target_element_type_is_never_excluded(
+        write_lattice, tmp_path, element_type):
+    """
+    A marker is relocated whatever element type it lands in.
+
+    No element type is excluded from relocation. Slicing a solenoid was once
+    unsupported in Xsuite, which is why one type used to be special-cased.
+    Parametrising over every supported type asserts the general rule rather
+    than re-encoding that exception.
     """
     lattice_path = write_lattice(
-        """\
+        f"""\
         MOMENTUM    = 1.0 GEV;
 
         DRIFT       D1      = (L = 2.0);
-        SOL         S1      = (L = 2.0 BZ = 0.1);
+        DRIFT       D2      = (L = 2.0);
+        {TARGET_DEFINITIONS[element_type]}
 
         MARK        M1      = (OFFSET = 1.5);
 
         MARK        START   = ()
                     END     = ();
 
-        LINE        TEST_LINE = (START D1 M1 S1 END);
+        LINE        TEST_LINE = (START D1 M1 T1 D2 END);
         """,
-        filename = "offset_marker_solenoid.sad")
+        filename = f"offset_marker_target_{element_type}.sad")
+
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+
+    s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = str(output_dir),
+        _verbose         = False)
+
+    positions = _marker_positions(output_dir, f"offset_marker_target_{element_type}")
+    assert "m1" in positions, (
+        f"An offset marker targeting a {element_type.upper()} should be "
+        f"relocated, not skipped. MARKER_POSITIONS: {positions}.")
+
+
+################################################################################
+# End Of Line
+################################################################################
+def test_pipeline_offset_marker_resolving_to_line_end_is_appended(
+        write_lattice, tmp_path):
+    """
+    A marker resolving to the end of the line is appended, not inserted.
+
+    There is nothing downstream to split, so the generated lattice file appends
+    the marker instead of placing it at an s. That path is separate from the
+    batched insertion every other marker takes.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        DRIFT       D1      = (L = 2.0);
+        DRIFT       D2      = (L = 2.0);
+
+        MARK        M1      = (OFFSET = 2.0);
+
+        MARK        START   = ()
+                    END     = ();
+
+        LINE        TEST_LINE = (START D1 M1 D2 END);
+        """,
+        filename = "offset_marker_line_end.sad")
 
     output_dir = tmp_path / "output"
     output_dir.mkdir()
@@ -427,13 +533,95 @@ def test_pipeline_offset_marker_solenoid_exclusion_removes_marker_permanently(
         output_directory = str(output_dir),
         _verbose         = False)
 
-    assert "m1" not in list(line.element_names), (
-        "An offset marker whose Case 2 target is a solenoid should be excluded "
-        "from offset_marker_locations and not reinserted in the line. "
+    assert "m1" in list(line.element_names), (
+        "A marker resolving to the end of the line should be appended to it. "
         f"Got: {list(line.element_names)}.")
-    assert "s1" in list(line.element_names), (
-        "The solenoid S1 should remain in the line after the offset marker is "
-        f"excluded. Got: {list(line.element_names)}.")
+
+
+################################################################################
+# Multiply-Defined s
+################################################################################
+def test_pipeline_offset_marker_in_multiply_defined_s_is_skipped(
+        write_lattice, tmp_path):
+    """
+    A marker resolving where two elements cover the same s is skipped.
+
+    A negative-length drift makes the s table non-monotonic, so two elements
+    occupy the same s, so the position does not name a unique insertion
+    point. The region is found from SAD's own cumulative lengths, before any
+    insertion is attempted.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        DRIFT       D1      = (L =  1.0);
+        DRIFT       DNEG    = (L = -0.2);
+        DRIFT       D2      = (L =  1.0);
+
+        MARK        M1      = (OFFSET = 2.1);
+
+        MARK        START   = ()
+                    END     = ();
+
+        LINE        TEST_LINE = (START D1 M1 DNEG D2 END);
+        """,
+        filename = "offset_marker_multiply_defined_s.sad")
+
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+
+    s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = str(output_dir),
+        _verbose         = False)
+
+    positions = _marker_positions(output_dir, "offset_marker_multiply_defined_s")
+    assert "m1" not in positions, (
+        "An offset marker resolving into a region of multiply-defined s should "
+        f"be skipped, not written for insertion. MARKER_POSITIONS: {positions}.")
+
+
+def test_pipeline_offset_markers_outside_multiply_defined_s_survive(
+        write_lattice, tmp_path):
+    """
+    One skipped marker does not take the others with it.
+
+    Every marker is written into a single batched insertion, so a marker that
+    cannot be placed used to abort the whole batch. Markers resolving outside
+    the ambiguous region must still be relocated.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        DRIFT       D1      = (L =  1.0);
+        DRIFT       DNEG    = (L = -0.2);
+        DRIFT       D2      = (L =  1.0);
+        DRIFT       D3      = (L =  1.0);
+
+        MARK        M1      = (OFFSET = 2.1);
+        MARK        M2      = (OFFSET = 1.5);
+
+        MARK        START   = ()
+                    END     = ();
+
+        LINE        TEST_LINE = (START D1 M1 DNEG D2 M2 D3 END);
+        """,
+        filename = "offset_marker_partial_skip.sad")
+
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+
+    s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = str(output_dir),
+        _verbose         = False)
+
+    positions = _marker_positions(output_dir, "offset_marker_partial_skip")
+    assert "m2" in positions, (
+        "A marker resolving outside the ambiguous region should still be "
+        f"relocated when another marker is skipped. MARKER_POSITIONS: {positions}.")
 
 
 ################################################################################
