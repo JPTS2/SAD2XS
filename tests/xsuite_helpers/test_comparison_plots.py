@@ -19,10 +19,14 @@ import matplotlib
 matplotlib.use("Agg")
 
 import numpy as np
+import pytest
 import xtrack as xt
 
 from sad2xs.xsuite_helpers import plot_xsuite_sad_comparison
-from sad2xs.xsuite_helpers.comparison_plots import AVAILABLE_GROUPS
+from sad2xs.xsuite_helpers.comparison_plots import (
+    AVAILABLE_GROUPS,
+    _scale_exponent,
+    _scaled_label)
 
 ################################################################################
 # Helpers
@@ -214,7 +218,7 @@ def test_default_figsize_is_larger_than_matplotlib_default():
 
     fig, _  = plot_xsuite_sad_comparison(xsuite, sad, groups = ["beta"])["beta"]
 
-    assert tuple(fig.get_size_inches()) == (10.0, 8.0)
+    assert tuple(fig.get_size_inches()) == (12.0, 8.0)
 
 def test_second_group_axis_autoscales_to_real_data_not_ribbon_scale():
     """
@@ -242,41 +246,122 @@ def test_second_group_axis_autoscales_to_real_data_not_ribbon_scale():
     assert hi >= xsuite_line.get_ydata().max()
     assert betx_ax.get_ylabel() != ""  # not hidden on an axis("off") twin
 
-def test_diff_axis_offset_text_is_folded_into_ylabel():
+def _near_constant_orbit_pair():
     """
-    Regression test: matplotlib's own y-axis offset/scientific-notation
-    text for a diff row sits flush against the row above it (hspace=0
-    overlay/diff pairs), with nothing to stop it overlapping that row's
-    own ticks -- it must be hidden and folded into the ylabel instead.
+    A near-constant 1 mm orbit on both sides. Adaptive scaling puts this
+    in mm, leaving a pure baseline offset -- which is a shift, not a
+    scale, so no amount of rescaling removes it.
     """
     env = xt.Environment()
     env.particle_ref   = xt.Particles(p0c = 1.0E9)
     line    = env.new_line(components = [
-        env.new("q1", xt.Quadrupole, k1 = 0.3, length = 0.5, at = 1.0),
-        env.new("b1", xt.Bend, angle = 0.05, length = 1.0, at = 3.0)])
+        env.new("d1", xt.Drift, length = 1.0, at = 1.0),
+        env.new("d2", xt.Drift, length = 1.0, at = 3.0)])
     line.build_tracker()
-    xsuite  = line.twiss4d(betx = 5.0, bety = 5.0)
+    xsuite  = line.twiss4d(betx = 10.0, bety = 10.0, x = 1.0E-3, y = 1.0E-3)
 
-    # A near-perfect match -- tiny, per-element-varying residual -- is the
-    # realistic case this fold-in targets. A uniform (element-independent)
-    # offset is a separate, rarer case where matplotlib's own offset text
-    # is itself an unclear concatenation of scale and baseline; not covered
-    # here.
-    tiny_residual   = np.linspace(-1E-12, 1E-12, len(xsuite))
+    tiny_residual   = np.linspace(0, 1E-12, len(xsuite))
     sad     = xt.Table({
         "name": np.array(xsuite.name),
         "s":    np.array(xsuite.s),
-        "betx": np.array(xsuite.betx) + tiny_residual,
-        "bety": np.array(xsuite.bety) + tiny_residual})
+        "x":    np.array(xsuite.x) + tiny_residual,
+        "y":    np.array(xsuite.y) + tiny_residual})
+    return xsuite, sad
+
+def test_offset_text_is_folded_into_ylabel():
+    """
+    Regression test: matplotlib's own y-axis offset text sits flush
+    against the row below it (hspace=0 overlay/diff pairs), with nothing
+    to stop it overlapping that row's own ticks -- it must be hidden and
+    folded into the ylabel instead.
+
+    Adaptive scaling removes the scientific-notation case, so the
+    surviving trigger is a baseline offset on a near-constant quantity.
+    """
+    xsuite, sad = _near_constant_orbit_pair()
 
     fig, axs    = plot_xsuite_sad_comparison(
-        xsuite, sad, groups = ["beta"])["beta"]
-    diff_ax     = axs[1]  # betx's diff row
-    offset_text = diff_ax.yaxis.get_offset_text()
+        xsuite, sad, groups = ["orbit_xy"])["orbit_xy"]
+    overlay_ax  = axs[0]  # x's overlay row
+    offset_text = overlay_ax.yaxis.get_offset_text()
 
     assert offset_text.get_text() != ""
     assert offset_text.get_visible() is False
-    assert offset_text.get_text() in diff_ax.get_ylabel()
+    assert offset_text.get_text() in overlay_ax.get_ylabel()
+
+################################################################################
+# plot_xsuite_sad_comparison -- axis scaling and layout
+################################################################################
+def test_all_rows_share_one_axis_width():
+    """
+    Every row must be exactly as wide as every other, whatever its tick
+    labels. Nested subgridspecs break this: constrained layout equalises
+    widths only within a single gridspec column, so a row with wider tick
+    labels ends up with a narrower axis.
+    """
+    xsuite, sad = _aligned_pair()
+
+    fig, axs    = plot_xsuite_sad_comparison(
+        xsuite, sad, groups = ["beta"])["beta"]
+    fig.canvas.draw()
+
+    widths  = {round(ax.get_position().width, 6) for ax in axs}
+    assert len(widths) == 1, f"axis widths differ: {sorted(widths)}"
+
+@pytest.mark.parametrize(("values", "label", "expected"), [
+    ([1.2E-6],  r"$x$ [m]",             r"$x$ [μm]"),
+    ([2.0E-6],  r"$p_x$ [1]",           r"$p_x$ [1] ($\times 10^{-6}$)"),
+    ([2.0E3],   r"$\beta_x$ [m]",       r"$\beta_x$ [m]"),
+    ([0.0],     r"$x$ [m]",             r"$x$ [m]"),
+    ([1.0E-2],  r"$\Delta \beta$ [%]",  r"$\Delta \beta$ [%]"),
+    ([2.0E-11], r"$\Delta \beta$ [%]",  r"$\Delta \beta$ [%] ($\times 10^{-12}$)")])
+def test_axis_scaling_rules(values, label, expected):
+    """
+    Each row picks its own unit: metres take an SI prefix, dimensionless
+    quantities keep `[1]` and state the factor, large values and readable
+    percentages stay as they are.
+    """
+    exponent    = _scale_exponent(np.array(values), label)
+
+    assert _scaled_label(label, exponent) == expected, \
+        f"{values} in {label} scaled to the wrong unit"
+
+def test_matching_sides_give_a_flat_zero_difference():
+    """
+    Where the two sides agree, the difference is float noise. zero_tol
+    must flatten it to exactly zero rather than let it be magnified into
+    a meaningless scaled residual.
+    """
+    # Agreeing to ~1 ulp, not bit-identically: the difference must be real
+    # float noise, or zero_tol has nothing to do.
+    xsuite, sad = _aligned_pair()
+    sad         = sad.rows[:]
+    sad["betx"] = np.array(xsuite.betx) * (1 + 1E-15)
+    sad["bety"] = np.array(xsuite.bety) * (1 + 1E-15)
+
+    fig, axs    = plot_xsuite_sad_comparison(
+        xsuite, sad, groups = ["beta"])["beta"]
+    diff_ax     = axs[1]
+
+    assert not np.any(diff_ax.lines[0].get_ydata())
+    assert diff_ax.get_ylabel() == r"$\Delta \beta_x / \beta_x$ [%]"
+
+def test_difference_axis_always_includes_zero():
+    """
+    A residual is read against zero. Without zero in range, a
+    near-constant difference makes matplotlib zoom into the float noise
+    riding on it.
+    """
+    xsuite, sad = _aligned_pair()
+    sad         = sad.rows[:]
+    sad["betx"] = np.array(xsuite.betx) * 1.0001
+    sad["bety"] = np.array(xsuite.bety) * 1.0001
+
+    fig, axs    = plot_xsuite_sad_comparison(
+        xsuite, sad, groups = ["beta"])["beta"]
+    lo, hi      = axs[1].get_ylim()
+
+    assert lo <= 0.0 <= hi
 
 ################################################################################
 # plot_xsuite_sad_comparison -- aligned=False

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-22
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -62,6 +62,8 @@ _QUANTITY_GROUPS    = {
 # -- everything else (alfx, dispersion, ...) can cross zero, where a relative
 # difference blows up.
 _RELATIVE_DIFF_COLUMNS  = {"betx", "bety"}
+
+_SI_PREFIXES    = {-3: "m", -6: "μ", -9: "n", -12: "p"}
 
 AVAILABLE_GROUPS    = tuple(_QUANTITY_GROUPS)
 
@@ -137,6 +139,64 @@ def _difference(xs_values: np.ndarray, sad_values: np.ndarray, sad_column: str) 
                 (xs_values - sad_values) / sad_values * 1E2,
                 np.nan)
     return xs_values - sad_values
+
+def _scale_exponent(values: np.ndarray, label: str) -> int:
+    """
+    Pick the engineering exponent (a multiple of 3) that brings
+    `values` into a readable range.
+
+    Large values stay unscaled: "2000 m" beats "2 km". Percent is
+    already human-scaled, so it is only scaled once unreadably small.
+
+    Parameters
+    ----------
+    values : array_like
+        The values to be scaled.
+    label : str
+        The quantity label, ending in a bracketed unit.
+
+    Returns
+    -------
+    int
+        A multiple of 3 in the range [-12, 0]. Zero means no scaling.
+    """
+    finite  = np.asarray(values, dtype = float)
+    finite  = finite[np.isfinite(finite)]
+    peak    = np.max(np.abs(finite)) if finite.size else 0.0
+    if peak == 0:
+        return 0
+
+    exponent    = int(np.clip(np.floor(np.log10(peak) / 3) * 3, -12, 0))
+    return 0 if label.endswith("[%]") and exponent >= -3 else exponent
+
+def _scaled_label(label: str, exponent: int) -> str:
+    """
+    Rewrite a quantity label to carry the scale applied to its data.
+
+    A metre label takes the matching SI prefix (`[m]` -> `[mm]`).
+    Anything else keeps its unit and gains an explicit factor. Note
+    `px`, `py` and `delta` are dimensionless in Xsuite, not angles, so
+    they never take an SI prefix.
+
+    Parameters
+    ----------
+    label : str
+        The quantity label, ending in a bracketed unit (e.g.
+        `"$x$ [m]"`).
+    exponent : int
+        The exponent the data was divided by.
+
+    Returns
+    -------
+    str
+        The label with its unit prefixed or a factor appended.
+        Unchanged if `exponent` is zero.
+    """
+    if exponent == 0:
+        return label
+    if label.endswith("[m]") and exponent in _SI_PREFIXES:
+        return f"{label[:-3]}[{_SI_PREFIXES[exponent]}m]"
+    return rf"{label} ($\times 10^{{{exponent}}}$)"
 
 def _window_one_table(
         table:      xt.Table,
@@ -336,6 +396,7 @@ def _plot_group(
         the two sides use different names.
     zero_tol : float
         Values with `abs(value) < zero_tol` are shown as exactly zero.
+        Applied to the plotted curves and to their difference.
     title_prefix : str or None
         Prepended to the figure's title as
         `"{title_prefix}: {title}"`.
@@ -351,7 +412,13 @@ def _plot_group(
     """
     # Constrained layout keeps legend/labels correctly spaced at any figsize.
     fig     = plt.figure(figsize = figsize, layout = "constrained")
-    outer   = fig.add_gridspec(len(quantities), 1, hspace = 0.4)
+
+    # Flat, not nested: constrained layout equalises axis widths only within
+    # one gridspec column. Spacer rows replace the per-group hspace.
+    row_ratios  = [3, 1, 0.4] if include_diff else [4, 0.4]
+    ratios      = (row_ratios * len(quantities))[:-1]
+    outer       = fig.add_gridspec(len(ratios), 1, height_ratios = ratios, hspace = 0)
+    stride      = len(row_ratios)
 
     axs                             = []
     first_ax                        = None
@@ -364,13 +431,24 @@ def _plot_group(
         y_sad   = _zero_small_values(getattr(sad_aligned, sad_col), zero_tol)
         y_xs    = _zero_small_values(getattr(xsuite_aligned, xs_col), zero_tol)
 
+        # Where the two sides agree the difference is pure float noise.
         if include_diff:
-            inner       = outer[i].subgridspec(2, 1, height_ratios = [3, 1], hspace = 0)
-            overlay_ax  = fig.add_subplot(inner[0], sharex = first_ax)
-            diff_ax     = fig.add_subplot(inner[1], sharex = overlay_ax)
-            plt.setp(overlay_ax.get_xticklabels(), visible = False)
+            diff_values = _zero_small_values(
+                _difference(y_xs, y_sad, sad_col), zero_tol)
+            diff_exp    = _scale_exponent(diff_values, diff_label)
+            diff_values = diff_values / 10.0 ** diff_exp
+            diff_label  = _scaled_label(diff_label, diff_exp)
+
+        # Both curves share one axis, so they must share one scale.
+        overlay_exp     = _scale_exponent(np.concatenate([y_sad, y_xs]), overlay_label)
+        y_sad           = y_sad / 10.0 ** overlay_exp
+        y_xs            = y_xs / 10.0 ** overlay_exp
+        overlay_label   = _scaled_label(overlay_label, overlay_exp)
+
+        overlay_ax  = fig.add_subplot(outer[i * stride], sharex = first_ax)
+        if include_diff:
+            diff_ax     = fig.add_subplot(outer[i * stride + 1], sharex = overlay_ax)
         else:
-            overlay_ax  = fig.add_subplot(outer[i], sharex = first_ax)
             diff_ax     = None
         first_ax    = first_ax or overlay_ax
 
@@ -387,6 +465,11 @@ def _plot_group(
         else:
             plot_ax, lattice_handles, lattice_labels  = overlay_ax, [], []
 
+        # The ribbon hands back its own axis, with its own tick labels to hide.
+        if diff_ax is not None:
+            for ax in {overlay_ax, plot_ax}:
+                plt.setp(ax.get_xticklabels(), visible = False)
+
         sad_line,       = plot_ax.plot(s_sad, y_sad, color = "r", label = "SAD", zorder = 3)
         xsuite_line,    = plot_ax.plot(s_xs, y_xs, color = "b", ls = "--", label = "Xsuite", zorder = 3)
         plot_ax.set_ylabel(overlay_label)
@@ -396,10 +479,16 @@ def _plot_group(
         axs.append(plot_ax)
 
         if diff_ax is not None:
-            diff_ax.plot(s_sad, _difference(y_xs, y_sad, sad_col), color = "k")
+            diff_ax.plot(s_sad, diff_values, color = "k")
             diff_ax.set_ylabel(diff_label)
+            # A residual is read against zero, not zoomed into its own noise.
+            lo, hi  = diff_ax.get_ylim()
+            diff_ax.set_ylim(min(lo, 0.0), max(hi, 0.0))
             axs.append(diff_ax)
 
+    # Every ribbon axis brings its own x label, landing mid-figure.
+    for ax in fig.axes:
+        ax.set_xlabel("")
     axs[-1].set_xlabel("s [m]")
     # A plain suptitle works correctly with constrained-layout spacing.
     fig.suptitle(f"{title_prefix}: {title}" if title_prefix else title)
@@ -444,7 +533,7 @@ def plot_xsuite_sad_comparison(
         groups:                     Iterable[str] | None    = None,
         ele_start:                  str | None              = None,
         ele_stop:                   str | None              = None,
-        figsize:                    tuple[float, float]     = (10, 8),
+        figsize:                    tuple[float, float]     = (12, 8),
         include_diff:               bool                    = True,
         xsuite_column_overrides:    dict[str, str] | None   = None,
         zero_tol:                   float                   = 1E-12,
@@ -492,6 +581,7 @@ def plot_xsuite_sad_comparison(
         coupled Edwards-Teng optics).
     zero_tol : float, optional
         Values with `abs(value) < zero_tol` are shown as exactly zero.
+        Applied to the plotted curves and to their difference.
     title_prefix : str, optional
         Prepended to each figure's title as `"{title_prefix}: {title}"`, e.g.
         to distinguish multiple calls for different twiss modes.

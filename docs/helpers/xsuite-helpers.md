@@ -200,6 +200,19 @@ plot_xsuite_sad_comparison(
     ele_stop    = "qf1.r4")
 ```
 
+Each row picks its own unit. A metre quantity takes the matching SI prefix,
+so a micron-scale orbit is drawn in microns. Dimensionless quantities have no
+prefix, so they keep `[1]` and state the factor in the label instead. Note
+`px` and `py` are dimensionless in Xsuite (`Px / (m/m0 * p0c)`), not angles,
+so they never get angular units. Large values stay unscaled: "2000 m" reads
+better than "2 km". Percentages stay unscaled while they still read
+naturally.
+
+A difference row always includes zero, because a residual is read against
+zero. Differences also pass through `zero_tol`, so where the two sides agree
+to floating-point precision the row is flat at exactly zero rather than a
+magnified view of the noise.
+
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
 SPDX-License-Identifier: Apache-2.0
