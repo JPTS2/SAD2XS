@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -233,6 +233,9 @@ def _write_lattice(line, output_dir, output_filename):
 
 
 def _write_optics(line, output_dir, output_filename):
+    """
+    Write a line's optics file into `output_dir`, quietly.
+    """
     s2x.write_optics(
         line              = line,
         output_filename   = output_filename,

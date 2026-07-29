@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -43,6 +43,11 @@ DELTA_DELTA_RTOL    = 1E-5
 # Test Values to scan over
 ################################################################################
 def generate_symlog_array(lower_power, upper_power, n_points):
+    """
+    Values spaced logarithmically over both signs, symmetric about zero.
+
+    An odd `n_points` places a zero at the centre.
+    """
     pos = np.logspace(upper_power, lower_power, n_points // 2)
     pos = pos[::-1]
     neg = -pos[::-1]
