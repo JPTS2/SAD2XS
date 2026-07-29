@@ -25,12 +25,12 @@ from tests.support.docs_inventory import REPO_ROOT, relative, tracked_files
 ################################################################################
 # Test Parameters
 #
-# Both checks walk every tracked Python file and report the complete list of
+# Each check walks every tracked Python file and reports the complete list of
 # violations, so one failure names every offender rather than the first.
 ################################################################################
 SOURCE_ROOTS = ("sad2xs/", "tests/")
 
-# The standard module header, as every file in the project carries it.
+# The standard module header carried by every file in the project.
 _HEADER_FIELDS = re.compile(
     r"Authors:\s*\S.*\nEmail:\s*\S.*\nDate:\s*(\S+)", re.M)
 
@@ -45,7 +45,7 @@ def _report(violations: list[str]) -> str:
     return "\n".join(f"  {line}" for line in violations)
 
 
-def source_files() -> list[Path]:
+def _source_files() -> list[Path]:
     """
     Every tracked Python file in the package and the test suite.
 
@@ -60,7 +60,7 @@ def source_files() -> list[Path]:
         if name.endswith(".py") and name.startswith(SOURCE_ROOTS))
 
 
-def documented_definitions(tree: ast.Module) -> list[ast.AST]:
+def _documented_definitions(tree: ast.Module) -> list[ast.AST]:
     """
     Every definition in a module that is required to carry a docstring.
 
@@ -102,7 +102,7 @@ def test_every_module_carries_the_standard_header():
     """
     violations = []
 
-    for source in source_files():
+    for source in _source_files():
         docstring = ast.get_docstring(ast.parse(source.read_text()))
         if docstring is None:
             violations.append(f"{relative(source)}: no module docstring")
@@ -124,7 +124,7 @@ def test_every_module_header_date_is_an_iso_date():
     """
     violations = []
 
-    for source in source_files():
+    for source in _source_files():
         docstring = ast.get_docstring(ast.parse(source.read_text())) or ""
         match     = _HEADER_FIELDS.search(docstring)
         if match is None:
@@ -146,15 +146,14 @@ def test_every_definition_has_a_docstring():
     """
     Every top-level function, class, and method carries a docstring.
 
-    Nested functions are exempt. Test bodies are the other large exemption:
-    a test's own docstring is checked here, but the helpers defined inside it
-    are not.
+    Nested functions are exempt, so a test's own docstring is checked but a
+    helper defined inside it is not.
     """
     violations = []
 
-    for source in source_files():
+    for source in _source_files():
         tree = ast.parse(source.read_text())
-        for node in documented_definitions(tree):
+        for node in _documented_definitions(tree):
             if ast.get_docstring(node) is None:
                 violations.append(
                     f"{relative(source)}:{node.lineno}: {node.name}")
