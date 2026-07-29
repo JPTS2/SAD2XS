@@ -1216,6 +1216,9 @@ def test_quad_conversion_matches_sad_tracking_for_element_rotation(
 # _import_sad_bend_fringes.
 ################################################################################
 def _quad_fringe_lattice_text(fringe_params, k1 = 0.3):
+    """
+    A single-quadrupole lattice carrying the given fringe parameters.
+    """
     return f"""\
     MOMENTUM    = 1.0 GEV;
 

@@ -25,6 +25,8 @@ measured values are reviewed by people, not by this folder.
   names.
 - Agreement between a documented table and the constant it restates.
 - Coverage completeness: every test file named in its folder README.
+- Docstrings on every top-level definition, and the standard header on every
+  module.
 - Declared test counts matching what pytest collects.
 - Declared failure counts matching the `known_issue` markers.
 - Coverage tables all having the same column shape.
@@ -45,6 +47,7 @@ rather than stopping at the first.
 | File | Tests | Fail | Failure root cause |
 |------|-------|------|--------------------|
 | `test_documentation.py` | 11 | 0 | — |
+| `test_docstrings.py` | 3 | 0 | — |
 
 ### Reference integrity
 
@@ -115,6 +118,22 @@ if it were the real total.
 Each Suite Total substitution must match exactly once. A pattern matching twice
 would overwrite an unrelated number elsewhere in the file, so the updater
 refuses to write anything instead.
+
+### Docstrings and module headers
+
+`test_docstrings.py` walks every tracked `.py` file in `sad2xs/` and `tests/`.
+
+| Test | What it asserts |
+|------|-----------------|
+| `test_every_module_carries_the_standard_header` | every module docstring has an `Authors`/`Email`/`Date` block |
+| `test_every_module_header_date_is_an_iso_date` | every header `Date` parses as `YYYY-MM-DD` |
+| `test_every_definition_has_a_docstring` | every top-level function, class, and method has a docstring |
+
+Nested functions are exempt. Fixtures and closures are read together with the
+code around them, so a docstring on each one adds words without adding meaning.
+
+The `Date` check is format only. The field is maintained by hand, and whether a
+date is *correct* is not something the repository can know.
 
 ## Known Limitations
 
