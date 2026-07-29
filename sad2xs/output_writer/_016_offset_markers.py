@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-23
+Date:       2026-07-29
 ================================================================================
 """
 
@@ -35,10 +35,9 @@ def create_offset_marker_lattice_file_information(
     s-positions), then, if `config._install_offset_markers` is set,
     installs each marker via `env.place`/`line.insert` -- or, if a
     marker's position is within `config.MARKER_INSERTION_TOLERANCE` of
-    the line's end, via `line.append_element` instead, since
+    the line's end, via `line.append` instead, since
     `line.insert` cannot place an element exactly at the end. Any
-    marker `line.insert` fails to place (most often because a
-    negative drift makes the requested s-position unreachable) is
+    marker `line.insert` still fails to place is
     reported with a `print()` at runtime, naming exactly which markers
     were lost, rather than failing the whole reload silently.
 
@@ -133,7 +132,7 @@ for marker, insert_at_s_values in MARKER_POSITIONS.items():
                 env.place(name = marker, at = insert_at_s))
             attempted_markers.append(marker)
         else:
-            line.append_element(name = marker)
+            line.append(marker)
 try:
     line.insert(marker_insertions, s_tol = {config.MARKER_INSERTION_TOLERANCE:.2E})
 except AssertionError as err:
@@ -144,8 +143,9 @@ except AssertionError as err:
         output_string += """\
     missing_markers = sorted(set(attempted_markers) - set(line.element_names))
     print(
-        f"Couldn't insert {len(missing_markers)} offset marker(s), usually "
-        f"because of negative drifts: {missing_markers}")
+        f"Couldn't insert {len(missing_markers)} offset marker(s). Positions "
+        "are checked for multiply-defined s before being written here, so "
+        f"this is unexpected: {missing_markers}")
     print(err)
 """
 

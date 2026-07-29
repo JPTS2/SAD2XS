@@ -48,9 +48,19 @@ s -> (total line length) - s
 
 This was cross-checked against SAD's native `-LINE` reversal, which produces an identical offset-marker `s`.
 
+## When a marker cannot be placed
+
+No element type is excluded as a target. A marker is skipped for one reason only: its `s` falls where a negative-length element makes the `s` table non-monotonic, so two elements occupy the same `s` and "insert at `s`" has no unique answer.
+
+These regions are found from SAD's own cumulative lengths, before any insertion is attempted. That matters because the generated lattice file inserts every marker in one batched call. A marker that cannot be placed would otherwise abort the batch and cost every other marker with it.
+
+A skipped marker is warned about, with its own position and region logged at debug level.
+
+SAD's `OFFSET` is unambiguous here, because it names an element and a fraction through it. The ambiguity appears only when SAD2XS collapses that to an absolute `s`, which the generated file's insertion format requires.
+
 ## Where the marker goes
 
-Every moved marker is removed from the line at this stage, whether it was excluded or not.
+Every moved marker is removed from the line at this stage, whether it was skipped or not.
 
 A surviving marker is re-inserted only when the lattice file is generated. The in-memory line never gets it back. `convert_offset_markers` returns an `offset_marker_locations` dictionary, mapping each moved marker's base name to the list of `s`-positions it should be re-inserted at.
 

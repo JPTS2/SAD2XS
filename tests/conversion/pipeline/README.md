@@ -24,7 +24,7 @@ each parametrisation separately.
 | `test_math_function_expressions.py` | 7 | 0 | — |
 | `test_excluded_elements.py` | 9 | 0 | — |
 | `test_multipole_replacements.py` | 8 | 0 | — |
-| `test_offset_markers.py` | 10 | 0 | — |
+| `test_offset_markers.py` | 27 | 0 | — |
 | `test_reference_particle.py` | 11 | 0 | — |
 | `test_reverse_survey_horizontal.py` | 12 | 0 | — |
 | `test_reverse_survey_vertical.py` | 13 | 0 | — |
@@ -48,7 +48,11 @@ Covers offset marker resolution and installation:
 - a reversed `-NAME` reference walks the offset in the opposite direction;
 - multiple offset markers are all moved, and non-offset markers survive
   alongside them;
-- an excluded solenoid removes its marker permanently;
+- every supported element type is a valid target, parametrised from
+  `Config.SAD_ALLOWED_ELEMENTS` so a new type cannot go untested;
+- a marker resolving to the end of the line is appended rather than inserted;
+- a marker landing where a negative-length element makes `s` multiply-defined
+  is skipped, and the other markers still survive;
 - symbolic `s` expressions resolve through the line's `xt.Environment`, not
   through a bare `eval()`.
 
