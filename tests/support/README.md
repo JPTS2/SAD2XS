@@ -17,6 +17,7 @@ should not run SAD, perform assertions, or have side effects at import time.
 | `coupled_optics.py` | Edwards-Teng beta/alpha helpers for coupled SAD comparisons, SAD `R1`-`R4` normalisation, one-turn-matrix decoupling as an independent route to `R1`-`R4`, and finite-difference 4×4 transfer matrices |
 | `diagnostics.py` | Diagnostic report writers invoked by failing physics-equivalence tests to produce readable `.md` artefacts under `tests/artifacts/` |
 | `known_issues.py` | Central test-node to known-issue mapping used by the regression and known-issue CI selections |
+| `repo_inventory.py` | Repository structure discovery: `testpath_folders` and `folder_workflow_names`, derived from `pytest.ini` so a folder without a per-folder workflow cannot pass unnoticed |
 | `lattices.py` | Shared SAD lattice-writing helpers for SAD helper tests: `write_minimal_transfer_lattice`, `write_minimal_bend_lattice`, `write_minimal_vertical_bend_lattice`, `write_asymmetric_closed_ring`, `write_fodo_ring` |
 | `writer_helpers.py` | Shared write+reload mechanics for `tests/writer/elements/`: `write_and_load`, `writer_roundtrip` |
 | `tracking_helpers.py` | Shared Xsuite particle build+track mechanics for `tests/conversion/elements/`: `track_xsuite_particles` |

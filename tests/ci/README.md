@@ -42,7 +42,7 @@ string `"on"`. All trigger access uses a `_triggers(data)` helper that checks
 
 ## Coverage
 
-### `test_workflow_checkout_refs.py` — 49 tests, all expected to pass
+### `test_workflow_checkout_refs.py` — 55 tests, all expected to pass
 
 **Template tests (7, not parametrised):**
 - Template has `workflow_call` trigger (required for per-folder delegation)
@@ -51,12 +51,11 @@ string `"on"`. All trigger access uses a `_triggers(data)` helper that checks
 - Run job uses `actions/checkout@v7` with no `ref` override (checks out triggering commit)
 - Run job matrix strategy has `fail-fast: false`
 
-**Per-folder workflow tests (3 functions × 10 workflows = 30 instances):**
+**Per-folder workflow tests (3 functions x 12 workflows = 36 instances):**
 
-Parametrised over all 10 per-folder workflows (`test_packaging.yml`,
-`test_ci.yml`, `test_parser.yml`, `test_writer.yml`, `test_observability.yml`,
-`test_sad.yml`, `test_conversion.yml`, `test_sad_helpers.yml`,
-`test_examples.yml`, `test_installation.yml`).
+Parametrised over every per-folder workflow. The list is derived from
+`pytest.ini`'s `testpaths`, not hard-coded, so a folder added to `testpaths`
+without a matching workflow fails these tests instead of passing silently.
 
 - Each workflow has a `workflow_dispatch` trigger for manual re-runs
 - Each workflow delegates to `_test_template.yml` via `uses:`
@@ -79,17 +78,17 @@ Parametrised over all 10 per-folder workflows (`test_packaging.yml`,
 - Has `workflow_dispatch` trigger
 - Uses `actions/checkout@v7`
 
-### `test_workflow_test_targets.py` — 30 tests (3 functions x 10 workflows), all expected to pass
+### `test_workflow_test_targets.py` — 36 tests (3 functions x 12 workflows), all expected to pass
 
-Parametrised over the same 10 per-folder workflows. Parses each workflow's
+Parametrised over the same 12 per-folder workflows. Parses each workflow's
 `test_files:` block (stripping blank lines and comment lines, matching the
 template's own normalisation logic).
 
 | Test | Expected result | What it checks |
 |------|----------------|----------------|
-| `test_ci_folder_workflow_lists_at_least_one_test_target` | 10 PASS | Each workflow has a non-empty `test_files:` block |
-| `test_ci_folder_workflow_test_targets_all_exist` | 10 PASS | Each listed path (`tests/<folder>`) exists as a directory |
-| `test_ci_folder_workflow_test_targets_are_under_tests_directory` | 10 PASS | All paths start with `tests/` |
+| `test_ci_folder_workflow_lists_at_least_one_test_target` | 12 PASS | Each workflow has a non-empty `test_files:` block |
+| `test_ci_folder_workflow_test_targets_all_exist` | 12 PASS | Each listed path (`tests/<folder>`) exists as a directory |
+| `test_ci_folder_workflow_test_targets_are_under_tests_directory` | 12 PASS | All paths start with `tests/` |
 
 ### `test_pytest_ini_testpaths.py` — 2 tests, all expected to pass
 
