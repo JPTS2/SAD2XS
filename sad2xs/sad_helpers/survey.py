@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-29
 ================================================================================
 """
 
@@ -142,7 +142,7 @@ def survey_sad(
     Xsuite's convention (X = -GY, Y = -GZ, Z = +GX; theta = -GCHI1,
     phi = -GCHI2, psi = +GCHI3). `reverse_element_order` uses SAD's
     own `-ExtractBeamLine[]` to reverse natively rather than
-    reimplementing reversal in Python (see docs/sad-behaviour.md).
+    reimplementing reversal in Python (see docs/reference/sad-behaviour.md).
 
     Parameters
     ----------
@@ -203,7 +203,7 @@ def survey_sad(
     cmd_file = f"_sad_survey_{uid}.sad"
     out_file = f"_sad_survey_{uid}.tfs"
 
-    # Native SAD reversal via a live ExtractBeamLine[] -- see docs/sad-behaviour.md.
+    # Native SAD reversal via a live ExtractBeamLine[] -- see docs/reference/sad-behaviour.md.
     reversal_commands = ""
     if reverse_element_order:
         use_line_name = f"REV{uid.upper()}"

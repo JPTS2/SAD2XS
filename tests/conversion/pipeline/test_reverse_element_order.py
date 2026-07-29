@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-24
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -222,23 +222,13 @@ def test_pipeline_reverse_element_order_swaps_bend_fint_hgap(write_lattice):
 ################################################################################
 def test_pipeline_reverse_element_order_preserves_coord_dx_and_dy(write_lattice):
     """
-    reverse_element_order=True must NOT negate the shift_x / shift_y of a
-    Translation produced by a SAD COORD element.
+    reverse_element_order must not negate shift_x or shift_y on a Translation
+    built from a SAD COORD element.
 
-    A COORD offset is a geometric property of the beampipe at a fixed physical
-    location — it does not change sign when the beam traverses the lattice in
-    the opposite direction.  This is in contrast to the solenoid GEO reference-
-    frame translations (named *_dxy), which are entry/exit shifts that must swap
-    sign when element order is reversed.
-
-    SAD ground truth (verified with LINE TESTREV = (-TEST)):
-      Forward  SAD, COORD(DX=0.001), DRIFT: final x = -0.001
-      Reversed SAD, COORD(DX=0.001), DRIFT: final x = -0.001  (identical)
-
-    The Xsuite Translation convention is shift_x is SUBTRACTED from x, so
-    Translation(shift_x=+0.001) moves x to -0.001.  Negating shift_x in the
-    reversed line would give Translation(shift_x=-0.001) → x=+0.001, which
-    contradicts SAD.  The shift must therefore be left unchanged.
+    Asserts the shift attributes directly. A COORD offset is a fixed geometric
+    property of the beampipe, so it does not change sign with beam direction.
+    Solenoid GEO translations, named *_dxy, are negated instead. The physics is
+    checked by test_pipeline_reverse_element_order_translation_physics_matches_sad.
     """
     lattice_path = write_lattice(
         """\
@@ -440,15 +430,13 @@ def test_pipeline_reverse_element_order_does_not_change_oct_k3(write_lattice):
 ################################################################################
 def test_pipeline_reverse_element_order_tracking_matches_sad_reversed_line(tmp_path):
     """
-    Xsuite tracking through a line converted with reverse_element_order=True
-    should match SAD tracking through the native SAD-reversed line
-    (LINE TESTREV = (-TEST)).
+    A reversed conversion matches SAD tracking through its own native reversed
+    line.
 
-    Two correctors with different K0 strengths (C1=0.01, C2=0.02) are separated
-    by a 1 m drift. The order in which kicks are applied relative to the drift
-    determines the final x coordinate, so the forward and reversed lines give
-    distinct x values. The Xsuite reversal must reproduce what SAD computes for
-    the reversed line, not merely negate the forward result.
+    Two correctors of different strength are separated by a 1 m drift, so the
+    order of kicks relative to the drift changes the final x. The reversal must
+    reproduce what SAD computes for the reversed line, not merely negate the
+    forward result.
     """
     lattice_content = (
         "MOMENTUM = 1.0 GEV;\n"
@@ -612,19 +600,13 @@ def test_pipeline_reverse_element_order_corrector_fringe_physics_matches_sad(
 
 def test_pipeline_reverse_element_order_solenoid_physics_matches_sad(tmp_path):
     """
-    Reversing a bound solenoid line negates ks and correctly handles the GEO
-    reference-frame translations produced by the SAD GEO mechanism.
+    Reversing a bound solenoid line negates ks and handles the GEO
+    reference-frame translations correctly.
 
-    SAD computes GEO reference shifts at runtime (Twiss/INS), so the lattice
-    must be rebuilt before Xsuite conversion to bake those shifts in as explicit
-    Translation elements.  We then verify that:
-
-    1. Xsuite reversed matches SAD forward (orbit should be on-axis: x≈0).
-    2. Xsuite reversed matches SAD reversed (coupling direction: sign of y).
-
-    A DX=0.001 offset is included to exercise the sol_in_dxy / sol_out_dxy
-    Translation elements that are produced by the GEO mechanism, ensuring that
-    the reversal logic handles them correctly.
+    SAD computes GEO shifts at runtime, so the lattice is rebuilt before
+    conversion to make them explicit Translation elements. Asserts the reversed
+    Xsuite line matches SAD forward on x, and SAD reversed on the sign of y. The
+    DX=0.001 offset exercises the sol_in_dxy and sol_out_dxy elements.
     """
     lattice_content = """\
 MOMENTUM    = 1.0 GEV;
@@ -689,19 +671,13 @@ LINE        TESTREV     = (-TEST);
 def test_pipeline_reverse_element_order_solenoid_physics_matches_sad_with_charge_minus_one(
         tmp_path):
     """
-    Composability check: does a genuine CHARGE=-1 lattice (which now bakes
-    the reference charge into solenoid ks — see
-    sad2xs/converter/_004_element_converter.py's convert_solenoids and
-    dev/sad_charge/*.sad) still match real SAD after ALSO reversing element
-    order (which negates ks a second time, for a different, independent
-    reason — see docs/line-reversals.md)?
+    The two independent ks negations compose correctly.
 
-    Identical to test_pipeline_reverse_element_order_solenoid_physics_matches_sad
-    above except for one added line (CHARGE = -1;). If the two ks negations
-    (charge-dependent base value, then direction-reversal) don't compose
-    correctly, this is the test that would catch it — verified against real
-    SAD's own "-LINE" reversal of the same CHARGE=-1 lattice, not just
-    internal converter self-consistency.
+    Identical to
+    test_pipeline_reverse_element_order_solenoid_physics_matches_sad except for
+    an added CHARGE = -1. One negation comes from the reference charge, the
+    other from the direction reversal. Verified against SAD's own -LINE
+    reversal of the same lattice. See docs/converter/line-reversals.md.
     """
     lattice_content = """\
 MOMENTUM    = 1.0 GEV;
@@ -770,41 +746,13 @@ LINE        TESTREV     = (-TEST);
 
 def test_pipeline_reverse_element_order_translation_physics_matches_sad(tmp_path):
     """
-    A standalone COORD element converts to an Xsuite Translation.  When the
-    element order is reversed, that Translation's shift_x must NOT change sign.
+    A reversed standalone COORD gives the same final x as SAD's own reversed
+    line.
 
-    Physical reasoning
-    ------------------
-    A COORD offset is a geometric property of the beampipe at a fixed location.
-    The pipe is at the same physical position regardless of which direction the
-    beam travels, so the reference-frame shift seen by the beam is identical in
-    both the forward and the reversed line.
-
-    SAD ground truth — empirically verified with LINE TESTREV = (-TEST)
-    ----------------------------------------------------------------------
-    Lattice: COORD C1 (DX=0.001) → DRIFT D1 (L=1.0)
-    Particle: x=0, px=0 at entrance
-
-      Forward  SAD (C1 → D1): final x = -0.001
-      Reversed SAD (D1 → C1): final x = -0.001   ← sign is the SAME
-
-    Xsuite convention: Translation(shift_x=s) subtracts s from x, so
-    Translation(shift_x=+0.001) → x = 0 − 0.001 = −0.001.
-
-    In the reversed Xsuite line the COORD still has shift_x=+0.001 (no
-    negation), D1 comes first (no change to x), then the Translation gives
-    x = −0.001, matching SAD.
-
-    Negating shift_x to −0.001 would give x = 0 − (−0.001) = +0.001, which
-    contradicts SAD and is incorrect.
-
-    Note on solenoid GEO translations
-    ----------------------------------
-    Translations produced by the solenoid GEO mechanism (named *_dxy) ARE
-    negated under element-order reversal because they represent entry/exit
-    frame shifts that must swap roles when the line is mirrored.  This test
-    uses a plain COORD element, which has no *_dxy suffix, to isolate the
-    standalone-COORD behaviour.
+    Tracks through COORD(DX=0.001) then a 1 m drift, forward and reversed, and
+    compares against SAD's LINE TESTREV = (-TEST). Both give x = -0.001:
+    negating the shift would give +0.001 and contradict SAD. The attribute-level
+    check is test_pipeline_reverse_element_order_preserves_coord_dx_and_dy.
     """
     lattice_content = (
         "MOMENTUM = 1.0 GEV;\n"
@@ -878,27 +826,13 @@ def test_pipeline_reverse_element_order_translation_physics_matches_sad(tmp_path
 ################################################################################
 def test_pipeline_reverse_element_order_quad_fringe_matches_sad_reversed_line(tmp_path):
     """
-    Xsuite tracking through a reverse_element_order=True conversion of a
-    QUAD with asymmetric F1K1F/F1K1B (FRINGE=1, entrance-only) should
-    match SAD tracking through the native SAD-reversed line
-    (LINE TESTREV = (-TEST)). This is the strongest available check on
-    the reversal fix-up: it only passes if BOTH the F1K1F<->F1K1B
-    parameter swap AND the FRINGE mode permutation (1<->2) are applied
-    together -- see tests/sad/test_quad.py's
-    test_quad_reversed_line_fringe_mode_permutes for the SAD-only ground
-    truth this mirrors.
+    A reversed QUAD with asymmetric fringe matches SAD's own reversed line.
 
-    `x`'s tolerance is widened for a known, separate reason, not the
-    reversal fixup: rebuilding the reversed element independently (a
-    from-scratch forward FRINGE=2 build with F1K1F/F1K1B swapped) gives
-    bit-identical results, so that logic is exact. The ~3e-9 residual
-    instead comes from the QUAD body -- present at the same size for a
-    plain K1-only QUAD with no fringe at all, independent of
-    num_multipole_kicks, and tracking SAD's DISFRIN hard-edge kick almost
-    exactly (toggling either side shifts the result by the same ~1.2e-9).
-    QUAD conversion doesn't gate its edge model on DISFRIN yet -- a
-    separate gap to close alongside MULT/cavity model work, not a
-    reversal bug.
+    Tracks a FRINGE=1 QUAD with asymmetric F1K1F/F1K1B against SAD's
+    LINE TESTREV = (-TEST). It passes only if both the parameter swap and the
+    FRINGE mode permutation are applied together. SAD ground truth:
+    test_quad_reversed_line_fringe_mode_permutes. x uses a widened tolerance
+    for a ~3e-9 residual from the QUAD body, not the reversal.
     """
     lattice_content = (
         "MOMENTUM = 1.0 GEV;\n"

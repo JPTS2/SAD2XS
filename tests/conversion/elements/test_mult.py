@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -1151,7 +1151,7 @@ def test_mult_conversion_matches_sad_twiss_for_combined_orders(
             "Combined-order MULT optics coverage checks normal and skew "
             "components in a true Xsuite Multipole.",
             "Xsuite beta/alpha values use SAD's Edwards-Teng convention; "
-            "see docs/sad-helpers.md.",
+            "see docs/helpers/sad-helpers.md.",
         ])
 
 ########################################
@@ -1178,7 +1178,7 @@ def test_mult_conversion_matches_sad_twiss_for_single_order(
 
     Isolates each order individually so a single-order discrepancy is not
     masked or amplified by combining it with other orders. See
-    tests/README.md and docs/sad-behaviour.md for what this found.
+    tests/README.md and docs/reference/sad-behaviour.md for what this found.
     """
     cwd = os.getcwd()
     os.chdir(tmp_path)
@@ -1240,7 +1240,7 @@ def test_mult_conversion_matches_sad_twiss_for_single_order(
             "Single-order MULT optics coverage — each order (K1-K3, SK1-SK3) "
             "in isolation, no combination with any other order.",
             "Xsuite beta/alpha values use SAD's Edwards-Teng convention; "
-            "see docs/sad-helpers.md.",
+            "see docs/helpers/sad-helpers.md.",
         ])
 
 ########################################

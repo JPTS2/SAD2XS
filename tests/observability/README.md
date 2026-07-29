@@ -32,7 +32,15 @@ correctness belongs in `tests/conversion/`.
 
 ## Coverage
 
-### `test_quiet_converter_output.py` — 7 tests, all expected to pass
+Mixed: the SAD helper output tests require the SAD binary; the rest do not.
+
+| File | Tests | Fail | Failure root cause |
+|------|-------|------|--------------------|
+| `test_quiet_converter_output.py` | 7 | 0 | — |
+| `test_no_print_statements.py` | 1 | 0 | — |
+| `test_sad_helper_output_controls.py` | 10 | 0 | — |
+
+### `test_quiet_converter_output.py`
 
 Tests the converter output policy. Uses minimal in-memory SAD lattices
 written to `tmp_path` — does not call the SAD executable. Placed in the
@@ -48,23 +56,30 @@ written to `tmp_path` — does not call the SAD executable. Placed in the
 | `test_set_log_level_rejects_unknown_level` | invalid level raises `ValueError` |
 | `test_formatter_prefixes_warnings_but_not_narrative` | `SAD2XS <LEVEL>:` prefix on WARNING/ERROR only |
 
-### `test_no_print_statements.py` — 1 test, expected to pass
+### `test_no_print_statements.py`
 
-AST source scan of every `sad2xs/**/*.py` file asserting zero `print()`
-call nodes: runtime silence tests only cover the code paths their lattices
-exercise, so this closes the gap for all other paths. Generated-file string
-templates pass naturally (string literals are not call nodes). Placed in
-the **SAD-free** CI job.
+An AST source scan of every `sad2xs/**/*.py` file, asserting zero `print()`
+call nodes.
 
-### `test_sad_helper_output_controls.py` — 10 tests, all expected to pass
+The runtime silence tests only cover the code paths their lattices exercise.
+This scan closes the gap for every other path. Generated-file string templates
+pass naturally, because a string literal is not a call node. Placed in the
+**SAD-free** CI job.
 
-Two categories. Signature checks (7 tests) guard the single-mechanism
-design: helper verbosity is controlled by `sad2xs.set_log_level`, so a
-`_verbose` parameter appearing on any helper means a second, parallel
-output mechanism was introduced. Behaviour tests (3 tests) confirm helpers
-are silent by default and expose SAD's terminal output at debug level.
-Uses a minimal transfer-line lattice and requires the SAD executable.
-Placed in the **SAD-required** CI job.
+### `test_sad_helper_output_controls.py`
+
+Two categories.
+
+Signature checks, 7 tests, guard the single-mechanism design.
+`sad2xs.set_log_level` is the only control over helper verbosity, so a
+`_verbose` parameter on any helper means a second, parallel output mechanism
+has been introduced.
+
+Behaviour tests, 3 tests, confirm the helpers are silent by default and expose
+SAD's terminal output at debug level.
+
+Uses a minimal transfer-line lattice and requires the SAD executable. Placed in
+the **SAD-required** CI job.
 
 | Test | What it asserts |
 |------|-----------------|

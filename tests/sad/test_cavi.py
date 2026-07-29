@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-23
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -86,7 +86,7 @@ def test_cavi_rejects(sad_rejects, params):
     (K0-K4/SK0-SK4/BZ) field parameters, and the QUAD/BEND/MULT-style
     linear soft-edge fringe parameters (F1/F2/FB1/FB2/F1K1x) -- CAVI's own
     fringe is a distinct mechanism gated by FRINGE/DISFRIN alone (see
-    docs/sad-behaviour.md).
+    docs/reference/sad-behaviour.md).
     """
     sad_rejects(
         f"CAVI C1 = ({params});\n"
@@ -172,7 +172,7 @@ def test_cavi_volt_gives_nonzero_energy_deviation_in_tracking(tmp_path):
 
 ################################################################################
 # FRINGE/DISFRIN RF edge-focusing kick (ground truth) -- see
-# docs/sad-behaviour.md
+# docs/reference/sad-behaviour.md
 ################################################################################
 def _track_cavi_probe(tmp_path, extra, name):
     """
@@ -229,7 +229,7 @@ def test_cavi_disfrin_is_boolean(tmp_path):
 
 def test_cavi_fringe_mode_gates_entrance_exit(tmp_path):
     """
-    CAVI's FRINGE mode grid against real SAD -- see docs/sad-behaviour.md
+    CAVI's FRINGE mode grid against real SAD -- see docs/reference/sad-behaviour.md
     ("CAVI FRINGE/DISFRIN RF edge-focusing kick") for the numbering, a
     third distinct system from BEND's and QUAD's/MULT's.
     """

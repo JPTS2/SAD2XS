@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-24
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -29,7 +29,7 @@ _REPEAT_SUFFIX_RE  = re.compile(r"^(.*)\.(\d+)$")
 
 # Suffixes for a SAD element split into several Xsuite placements
 # (solenoid boundary, quad linear fringe) that _collapse_slicing folds
-# back into one; see docs/xsuite-helpers.md.
+# back into one; see docs/helpers/xsuite-helpers.md.
 _COMPOUND_SUFFIXES  = {"bound", "dxy", "dz", "rot", "fringe_in", "fringe_out"}
 _COMPOUND_SUFFIX_RE = re.compile(
     r"_(?:" + "|".join(_COMPOUND_SUFFIXES) + r")(\.\d+)?$")
@@ -92,7 +92,7 @@ def compute_s_sad(xsuite_twiss: xt.TwissTable) -> np.ndarray | None:
     TimeDelay's artificial `zeta` jump (bookkeeping for a real geometric
     offset SAD's own `s` already includes); that jump is added back into
     `s` here. `zeta`'s evolution everywhere else is real physics and is
-    left alone. Full derivation: docs/xsuite-helpers.md.
+    left alone. Full derivation: docs/helpers/xsuite-helpers.md.
 
     Parameters
     ----------
@@ -147,7 +147,7 @@ def align_xsuite_twiss_with_sad_twiss(
     Matched by name in three passes (exact name, dot-suffixed family name,
     solenoid-interior rename), each only tried for elements still
     unmatched and always checked against `s_tol`. Full pass-by-pass
-    rationale: docs/xsuite-helpers.md.
+    rationale: docs/helpers/xsuite-helpers.md.
 
     Parameters
     ----------

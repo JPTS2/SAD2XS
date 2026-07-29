@@ -2,6 +2,16 @@
 
 This document records the development workflow used for the current release cycle.
 
+**On this page:**
+
+- [Branch model](#branch-model)
+- [Pull requests](#pull-requests)
+- [Releases and tags](#releases-and-tags)
+- [Commit style](#commit-style)
+- [Environment](#environment)
+- [Terminal output policy](#terminal-output-policy)
+- [Public issue policy](#public-issue-policy)
+
 ## Branch model
 
 `main` is the stable branch.
@@ -79,7 +89,7 @@ gh issue list
 
 ## Terminal output policy
 
-All package terminal output goes through the `sad2xs` logger hierarchy. Never call `print()` in `sad2xs/` — a source-scan test (`tests/observability/test_no_print_statements.py`) fails on any print call. Get a logger at module level with `logger = logging.getLogger(__name__)`.
+All package terminal output goes through the `sad2xs` logger hierarchy. Never call `print()` in `sad2xs/`. A source-scan test, `tests/observability/test_no_print_statements.py`, fails on any print call. Get a logger at module level with `logger = logging.getLogger(__name__)`.
 
 Level semantics:
 
@@ -88,9 +98,9 @@ Level semantics:
 - **info**: the progress narrative. Section headings (`log_section_heading`) plus one result line per stage stating what was done ("Converted 42 bend definitions"). Off by default;
 - **debug**: per-element decisions (simplifications, absorbed rotations, redefinitions) and external SAD terminal output.
 
-The single user-facing control is `sad2xs.set_log_level("debug" | "info" | "warning" | "error")`; `_verbose=True` on the converter is shorthand that raises the level to info. Do not add per-function verbosity parameters — the observability tests enforce their absence on the SAD helpers.
+The single user-facing control is `sad2xs.set_log_level("debug" | "info" | "warning" | "error")`. `_verbose=True` on the converter is shorthand that raises the level to info. Do not add per-function verbosity parameters. The observability tests enforce their absence on the SAD helpers.
 
-Quiet mode (the default) must produce **no output at all** for a warning-free conversion, including progress bars from dependencies. This is enforced end-to-end by `tests/observability/test_quiet_converter_output.py`; if you add a stage that can emit output on lattices the test lattice does not cover, extend the test lattice.
+Quiet mode, which is the default, must produce **no output at all** for a warning-free conversion. This includes progress bars from dependencies. `tests/observability/test_quiet_converter_output.py` enforces this end to end. If you add a stage that can emit output on lattices the test lattice does not cover, extend the test lattice.
 
 ## Public issue policy
 

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-06
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -24,13 +24,14 @@ import xtrack as xt
 
 from sad2xs.sad_helpers import transfer_matrix_sad, twiss_sad
 from tests.support.coupled_optics import (
+    couplings_sad_4d,
     edwards_teng_optics,
     edwards_teng_optics_at,
     linear_transfer_matrix_4d,
     normalized_r_matrix)
 
 # Agreement and disagreement are both asserted so the convention map cannot
-# silently drift. See docs/sad-helpers.md for the derivation and table.
+# silently drift. See docs/helpers/sad-helpers.md for the derivation and table.
 # Observed agreements are <= 9e-10 (SAD TFS output carries ~10 digits);
 # observed disagreements are >= 9e-6. The tolerances sit well clear of both.
 ET_VS_SAD_ATOL          = 5.0E-9
@@ -234,6 +235,38 @@ def test_edwards_teng_propagation_matches_native_periodic_ring():
             f"Propagated Edwards-Teng {key} should reproduce xtrack's "
             "native periodic Edwards-Teng column at every element. Max "
             f"difference: {np.max(np.abs(propagated[key] - native_column)):.3e}")
+
+def test_couplings_sad_4d_matches_native_edwards_teng_r_matrix():
+    """
+    Two independent routes to SAD's R1-R4 must agree on a coupled ring.
+
+    `couplings_sad_4d` decouples the one-turn matrix directly
+    (M = U^-1 D U). xtrack's native Edwards-Teng columns, normalised by
+    `normalized_r_matrix`, reach the same quantity by propagating optics.
+    Agreement is evidence for both, since neither shares an implementation
+    with the other.
+    """
+    ring    = _tune_split_coupled_ring()
+    tw_ring = ring.twiss4d(coupling_edw_teng = True)
+
+    tw_sad  = couplings_sad_4d(ring.twiss4d())
+
+    for index in range(len(tw_ring.name)):
+        expected = normalized_r_matrix(
+            tw_ring.r11_edw_teng[index], tw_ring.r12_edw_teng[index],
+            tw_ring.r21_edw_teng[index], tw_ring.r22_edw_teng[index])
+        actual = np.array([
+            [tw_sad.R1[index], tw_sad.R2[index]],
+            [tw_sad.R3[index], tw_sad.R4[index]]])
+
+        assert np.allclose(
+            np.abs(actual), np.abs(expected),
+            rtol = 0.0, atol = R_MATRIX_VS_SAD_ATOL), (
+            "One-turn-matrix decoupling and normalised Edwards-Teng "
+            f"propagation should give the same R1-R4 at element "
+            f"{tw_ring.name[index]}. Got {actual.tolist()} against "
+            f"{expected.tolist()}.")
+
 
 def test_edwards_teng_propagation_reduces_to_plain_twiss_when_uncoupled():
     """

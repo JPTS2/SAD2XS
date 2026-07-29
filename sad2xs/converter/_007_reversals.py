@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-24
+Date:       2026-07-29
 ================================================================================
 """
 
@@ -212,8 +212,8 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
 ################################################################################
 def reverse_line_survey_horizontal(line: xt.Line) -> xt.Line:
     """
-    Flip a line's horizontal bend direction (mirror the survey through
-    the horizontal plane), without reversing element order.
+    Flip a line's horizontal bend direction: mirror the survey
+    through the y-z plane (x -> -x), without reversing element order.
 
     Every element keeps its position in the line, but each bending/
     field-carrying element has its horizontal-plane quantities
@@ -222,8 +222,8 @@ def reverse_line_survey_horizontal(line: xt.Line) -> xt.Line:
     and even knl/odd ksl orders negate, quadrupole/sextupole/
     octupole/multipole field orders negate by the same even/odd
     parity rule, and every element's shift_x/rot_s_rad negate while
-    shift_y stays unchanged (a reflection through the horizontal
-    plane). Solenoids additionally get their x0/y0 recomputed from
+    shift_y stays unchanged (a reflection through the y-z plane).
+    Solenoids additionally get their x0/y0 recomputed from
     the new shift/rotation. Standalone Translation/Rotation
     reference-shift elements follow the same pattern: Translation's
     shift_x negates and shift_y is unchanged; Rotation's rot_y_rad and
@@ -470,8 +470,8 @@ def reverse_line_survey_horizontal(line: xt.Line) -> xt.Line:
 ################################################################################
 def reverse_line_survey_vertical(line: xt.Line) -> xt.Line:
     """
-    Flip a line's vertical bend direction (mirror the survey through
-    the horizontal plane), without reversing element order.
+    Flip a line's vertical bend direction: mirror the survey through
+    the x-z plane (y -> -y), without reversing element order.
 
     The vertical counterpart of `reverse_line_survey_horizontal`:
     every element keeps its position in the line, but each bending/

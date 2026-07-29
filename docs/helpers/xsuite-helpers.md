@@ -14,6 +14,16 @@ function body — install it with the `plotting` extra
 (`pip install sad2xs[plotting]`) to use it; the rest of the package needs
 nothing extra.
 
+**On this page:**
+
+- [Public helper functions](#public-helper-functions)
+- [Why this exists](#why-this-exists)
+- [Typical use from Python](#typical-use-from-python)
+- [Prerequisites](#prerequisites)
+- [What counts as a cavity](#what-counts-as-a-cavity)
+- [Reference energy: current limitations](#reference-energy-current-limitations)
+- [SAD-vs-Xsuite comparison](#sad-vs-xsuite-comparison)
+
 ## Public helper functions
 
 - `install_reference_energy_updates`: insert one `ReferenceEnergyIncrease` +
@@ -29,6 +39,9 @@ nothing extra.
   agrees within per-column tolerance.
 - `check_symplecticity`: check a line's one-turn R matrix is symplectic,
   falling back to an element-by-element check if it isn't.
+- `compute_s_sad`: recover SAD's own `s`, the real path length, from an
+  Xsuite twiss table, whose `s` is the nominal design length. See
+  [the derivation below](#compute_s_sad-derivation).
 
 ## Why this exists
 

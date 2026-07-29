@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-11
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -24,7 +24,7 @@ import xtrack as xt
 #
 # Low reference momentum, strong VOLT (a large fraction of the reference
 # energy in a single element) -- the regime where SAD's own RF-focusing
-# kick (see docs/sad-behaviour.md) is not negligible, so its absence in
+# kick (see docs/reference/sad-behaviour.md) is not negligible, so its absence in
 # Xsuite is unambiguous rather than lost in numerical noise.
 ################################################################################
 MOMENTUM_GEV = 0.05
@@ -38,7 +38,7 @@ FREQUENCY    = 2.856E9
 # Parametrised over RF phase (on-crest and zero-crossing) to pair with
 # tests/sad/test_mult.py's ground truth: SAD's own RF-focusing kick is
 # present at both phases (nonzero even at the zero-crossing, larger nearer
-# the crest -- see tests/sad/test_mult.py and docs/sad-behaviour.md).
+# the crest -- see tests/sad/test_mult.py and docs/reference/sad-behaviour.md).
 # Xsuite's Cavity gives zero coupling at every phase, since the coupling
 # calculation is disabled entirely, independent of the phase value passed.
 ################################################################################
@@ -46,15 +46,13 @@ FREQUENCY    = 2.856E9
     "phase", [np.pi / 2, 0.0], ids = ["on_crest", "zero_crossing"])
 def test_xsuite_cavity_has_no_transverse_rf_focusing_coupling(phase):
     """
-    Xsuite's Cavity element applies zero transverse (x/y) coupling in its
-    energy kick, at every RF phase -- confirmed here by tracking, not just
-    by reading the source (see docs/sad-behaviour.md for the mechanism and
-    for SAD's own, nonzero response in the equivalent element).
+    Xsuite's Cavity applies zero transverse coupling in its energy kick, at
+    every RF phase.
 
-    A particle entering with a pure x offset (px=0) should leave with
-    exactly zero px. If this test ever fails, xtrack has gained this term
-    and the warning in sad2xs.converter._004_element_converter.convert_elements
-    (and the docs/sad-behaviour.md entry) need revisiting.
+    Tracks a particle entering with a pure x offset and px=0, and asserts it
+    leaves with exactly zero px. Confirmed by tracking, not by reading the
+    source. If this fails, xtrack has gained the term and both the converter
+    warning and docs/reference/sad-behaviour.md need revisiting.
     """
     env = xt.Environment()
     env.particle_ref = xt.Particles(

@@ -14,13 +14,11 @@ Shared fixtures live in `conftest.py`. Cross-file support belongs in
 
 ## Coverage
 
-**Functions** is the count of `def test_` entries in the file. Parametrised
-tests expand to more instances at runtime — the **Fail** column is actual
-failing instances from the test run, not failing functions. For non-parametrised
-files these are equal; for heavily parametrised files (sol, corrector, bend)
-the fail instance count exceeds the failing function count.
+**Tests** is the number of test instances pytest collects, which counts each
+parametrisation separately. **Fail** is actual failing instances from the test
+run.
 
-See `docs/testing.md`'s Known Failures section for the `known_issue` marker
+See `docs/development/testing.md`'s Known Failures section for the `known_issue` marker
 mechanism.
 
 SAD-comparison tracking and Twiss checks uniformly use `rfsw=True` and compare
@@ -30,23 +28,23 @@ original pattern. Files with only a raw `s`/length check via `line.get_table()`
 `test_moni.py`) are the exception — they have no twiss/tracking comparison
 to extend.
 
-| File | Functions | Fail | Failure root cause |
+| File | Tests | Fail | Failure root cause |
 |------|-----------|------|--------------------|
-| `test_apert.py` | 24 | 0 | — |
+| `test_apert.py` | 26 | 0 | — |
 | `test_beambeam.py` | 5 | 0 | — |
-| `test_bend.py` | 43 | 0 | — |
-| `test_cavi.py` | 10 | 0 | — |
-| `test_coord.py` | 10 | 0 | — |
-| `test_corrector.py` | 25 | 0 | — |
-| `test_drift.py` | 7 | 0 | — |
+| `test_bend.py` | 91 | 0 | — |
+| `test_cavi.py` | 19 | 0 | — |
+| `test_coord.py` | 22 | 0 | — |
+| `test_corrector.py` | 55 | 0 | — |
+| `test_drift.py` | 9 | 0 | — |
 | `test_map.py` | 6 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
-| `test_mult.py` | 26 | 0 | — |
-| `test_oct.py` | 18 | 0 | — |
-| `test_quad.py` | 27 | 0 | — |
-| `test_sext.py` | 18 | 0 | — |
-| `test_sol.py` | 26 | 0 | — |
+| `test_mult.py` | 50 | 0 | — |
+| `test_oct.py` | 41 | 0 | — |
+| `test_quad.py` | 50 | 0 | — |
+| `test_sext.py` | 41 | 0 | — |
+| `test_sol.py` | 171 | 0 | — |
 
 ### `test_sol.py` note
 
@@ -56,35 +54,36 @@ reports Mais-Ripken mode projections), not a GEO-exit-transform bug —
 `_sol_xsuite_optics_values()` now computes Edwards-Teng values via
 `tests/support/coupled_optics.py`, locked in by
 `tests/conversion/test_coupled_twiss_convention.py`. See
-`docs/sad-behaviour.md` for the full convention explanation and
-`docs/sad-helpers.md` for the worked usage example.
+`docs/reference/sad-behaviour.md` for the full convention explanation and
+`docs/helpers/sad-helpers.md` for the worked usage example.
 
-Adding `zeta` to the tracking/twiss comparisons here (see the `Coverage`
-section above) surfaced a genuine converter bug in
-`test_sol_reference_transform_restores_design_orbit_at_end`: several
-parametrisations with a reversed line orientation and a `DPX`/`DPY`/`DX+DY`
-reference-transform combination diverged from SAD on `zeta` only — `x`, `y`,
-`px`, and `py` all matched. Root cause and fix are documented in
-`docs/line-reversals.md` (new "Solenoid GEO reference-transform rotation
-order" section). All 168 instances in this file now pass.
+Adding `zeta` to the comparisons here surfaced a genuine converter bug in
+`test_sol_reference_transform_restores_design_orbit_at_end`.
+
+Several parametrisations with a reversed line orientation and a `DPX`, `DPY`,
+or `DX+DY` reference transform diverged from SAD on `zeta` alone. `x`, `y`,
+`px`, and `py` all matched, which is why it had gone unnoticed. The root cause
+and fix are in `docs/converter/line-reversals.md`, under "Solenoid GEO
+reference-transform rotation order".
 
 This file also has a solenoid `DISFRIN` (fringe kick) limitation test —
 `test_sol_disfrin_off_diverges_from_xsuite_in_tracking` — which is not a
 failing test: it asserts the genuine, accepted divergence from not
-modelling SAD's solenoid fringe kick (see `docs/sad-behaviour.md` for what
-it is, `docs/design-decisions.md` for the converter decision). Deliberately
+modelling SAD's solenoid fringe kick (see `docs/reference/sad-behaviour.md` for what
+it is, `docs/converter/solenoids.md` for the converter decision). Deliberately
 not in `known_issues.py`.
 
 ### `test_corrector.py` note
 
-Previously had 14 failing instances (horizontal kicks, rotated kicks, and
-element offsets, optics and tracking) from a `MODEL_BEND = 'mat-kick-mat'`
-bias — SAD zero-angle correctors convert to a plain `xt.Bend` with
-`angle=0`, so this affected them too. Fixed by retuning `sad2xs/config.py`'s
-Bend/Quadrupole/Sextupole/Octupole/Multipole model/integrator settings to
-match a systematic SAD-cross-validated study (`bend-kick-bend` for
-Bend/Corrector, `rot-kick-rot-high-order`/`yoshida4` for
-Quad/Sext/Oct/Mult). All 20 functions in this file now pass.
+14 instances here once failed on horizontal kicks, rotated kicks, and element
+offsets, in both optics and tracking. The cause was a `mat-kick-mat` bias on
+`MODEL_BEND`: a SAD zero-angle corrector converts to a plain `xt.Bend` with
+`angle=0`, so the bend model applies to correctors too.
+
+Retuning the model and integrator defaults in `sad2xs/config.py` closed it.
+`MODEL_BEND` is now `bend-kick-bend`. See
+`docs/converter/models-integrators.md` for the full reasoning and the current
+per-element defaults.
 
 ### `test_mult.py` note
 
@@ -105,12 +104,12 @@ found and fixed two separate converter bugs, plus a twiss-convention mismatch:
 - **Resolved**: `SK1` alone appeared to disagree with SAD by `~1.9e-5` on
   `betx`/`bety`/`alfx`/`alfy` — not a physics or rotation-convention bug
   (4×4 transfer matrices agreed to `~5e-11`), but the Edwards-Teng-vs-
-  Mais-Ripken twiss-parametrisation mismatch (see `docs/sad-behaviour.md`).
+  Mais-Ripken twiss-parametrisation mismatch (see `docs/reference/sad-behaviour.md`).
   The twiss comparisons in this file now use `tests/support/coupled_optics.py`;
   the earlier `ROTATE`/`xt.Rotation` hypothesis is dead.
 - **Accepted limitation**: `K0`/`SK0` dipole-only `MULT` elements have a SAD
   fringe convention Xsuite's Bend/corrector edge models don't reproduce
-  exactly (see `docs/sad-behaviour.md` for the formula). SAD-side ground
+  exactly (see `docs/reference/sad-behaviour.md` for the formula). SAD-side ground
   truth is pinned in `tests/sad/test_mult.py`, the converter warning is
   covered here, and `test_mult_k0_dipole_fringe_difference_is_theta_fourth_order`
   locks in the expected `theta^4` residual as a passing accepted-limitation
@@ -122,19 +121,19 @@ checking whether either value was a `float`, when it needed to check for
 `str` instead. A `MULT` with both `K0` and `SK0` given as deferred SAD
 expressions crashed with `TypeError` on `str ** int`; a `MULT` with numeric
 `K0`/`SK0` but a deferred `ROTATE` crashed with `TypeError` on `str + float`.
-While consolidating the fix, a second, pre-existing bug in the same branch
-was also found: the only-`SK0` path built its deferred rotation as
-`f"{rotation} - np.pi / 2"`, embedding the literal unresolved text `np.pi`
-rather than its numeric value — Xsuite's expression evaluator has no `np` or
-`pi` binding, so a `MULT` with only `SK0` set and a deferred `ROTATE` crashed
-with `KeyError: 'np.pi'`. Fixed the same way as the existing correct
-precedent at `_004_element_converter.py`'s cavity phi-offset handling
-(`f"{np.pi} + {phi_offset}"`, embedding the resolved float). Both fixes live
-in one extracted `combine_k0_sk0()` in `_000_helpers.py`, shared between both
-call sites, with direct unit coverage (evaluated through a real Xsuite
-environment, not just string comparison) in
-`tests/conversion/test_converter_helpers.py` and integration coverage here
-(`test_mult_converter_combines_deferred_k0_sk0`).
+Consolidating that fix found a second, pre-existing bug in the same branch.
+The only-`SK0` path built its deferred rotation as `f"{rotation} - np.pi / 2"`,
+embedding the literal text `np.pi` rather than its numeric value. Xsuite's
+expression evaluator has no `np` or `pi` binding, so a `MULT` with only `SK0`
+and a deferred `ROTATE` crashed with `KeyError: 'np.pi'`.
+
+Both follow the existing correct precedent in the cavity phi-offset handling of
+`_004_element_converter.py`, which embeds the resolved float. Both fixes now
+live in one extracted `combine_k0_sk0()` in `_000_helpers.py`, shared between
+the two call sites. Unit coverage evaluates it through a real Xsuite
+environment rather than comparing strings, in
+`tests/conversion/test_converter_helpers.py`. Integration coverage is here, in
+`test_mult_converter_combines_deferred_k0_sk0`.
 
 ### `test_bend.py` note
 
@@ -161,9 +160,9 @@ residual:
   coupling artifact on top of the same residual, confirmed to affect
   `betx`/`bety`/`alfx`/`alfy` regardless of which axis carries the offset)
 
-See `docs/sad-behaviour.md` for the full empirical characterisation (the
+See `docs/reference/sad-behaviour.md` for the full empirical characterisation (the
 `ANGLE^2` orbit/dispersion residual and its full column map, and the
-`ROTATE`-combined `R1`/`R4` discontinuity) and `docs/design-decisions.md`
+`ROTATE`-combined `R1`/`R4` discontinuity) and `docs/converter/elements.md`
 for the resulting converter decision.
 
 ### `test_bend.py`/`test_corrector.py` fringe import note
@@ -181,11 +180,10 @@ and a `..._off_momentum_residual_is_bounded` test asserting the known,
 currently-characterised residual explicitly rather than skipping it — a
 future upstream Xsuite/MAD-NG momentum-scaling fix should make this test
 fail (residual outside the asserted band) and surface for review, not
-silently pass. See `docs/sad-behaviour.md` ("`BEND` `F1`/`FRINGE`
+silently pass. See `docs/reference/sad-behaviour.md` ("`BEND` `F1`/`FRINGE`
 soft-edge fringe") for the derivation and full gating grid, and
-`docs/design-decisions.md` ("`BEND` `F1`/`FRINGE` fringe import is
-private, default-on" section) for why the flag is private and the
-off-momentum caveat that comes with it.
+`docs/converter/fringes.md` ("Soft-edge accuracy, and the off-momentum
+residual" section) for the off-momentum caveat that comes with it.
 
 The converter warns once per lattice when it finds an `ANGLE != 0` bend with
 a nonzero `DX`/`DY` (`test_bend_converter_warns_once_for_lattice_with_offset_angled_bends`

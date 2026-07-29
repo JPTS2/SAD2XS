@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-22
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -1212,7 +1212,7 @@ def test_quad_conversion_matches_sad_tracking_for_element_rotation(
 ################################################################################
 # Linear (F1/F2) fringe import (_import_sad_quad_fringes) -- see
 # tests/sad/test_quad.py for the ground truth this mirrors, and
-# docs/sad-behaviour.md. Experimental: defaults to False, unlike
+# docs/reference/sad-behaviour.md. Experimental: defaults to False, unlike
 # _import_sad_bend_fringes.
 ################################################################################
 def _quad_fringe_lattice_text(fringe_params, k1 = 0.3):

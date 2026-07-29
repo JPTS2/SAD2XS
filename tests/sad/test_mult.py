@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-23
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -25,7 +25,7 @@ from sad2xs.sad_helpers import track_sad, transfer_matrix_sad, twiss_sad
 ################################################################################
 # Accepted parameters
 # MULT is the general multipole element — accepts all Kn/SKn, geometry,
-# and RF parameters (K. Oide: "almighty, even acceleration can be included").
+# and RF parameters.
 # See tests/sad/README.md's "Parameter matrix" for the full accepted/rejected
 # table this parametrization transcribes.
 ################################################################################
@@ -329,7 +329,7 @@ def test_mult_k3_gives_cubic_kick(tmp_path):
 #
 # MULT (and CAVI) elements with VOLT != 0, tracked with RFSW on, apply an
 # explicit transverse x/y focusing kick on top of the ordinary multipole
-# kick (SAD's tmultiacc in tmulti.f) -- see docs/sad-behaviour.md. Unlike
+# kick (SAD's tmultiacc in tmulti.f) -- see docs/reference/sad-behaviour.md. Unlike
 # the net energy gain (which is exactly zero at PHI=0, SAD's RF
 # zero-crossing), this kick is present at every phase and grows further
 # away from the crossing.
@@ -511,7 +511,7 @@ def test_mult_sk0_dipole_fringe_mirrors_in_horizontal_plane(tmp_path):
 
 ################################################################################
 # K0 dipole fringe with a real nonzero FB1/FB2 -- see the "MULT is out of
-# scope" decision in docs/design-decisions.md
+# scope" decision in docs/converter/fringes.md
 ################################################################################
 def test_mult_k0_fringe_with_nonzero_fb_does_not_match_equivalent_bend(tmp_path):
     """
@@ -556,11 +556,11 @@ def test_mult_k0_fringe_with_nonzero_fb_does_not_match_equivalent_bend(tmp_path)
         "same FRINGE/FB1/FB2, should NOT give closely matching py(y) -- "
         f"got ratio={ratio:.4f}. If this now passes (ratio near 1), MULT "
         "may have started sharing BEND's fringe formula and "
-        "docs/design-decisions.md's MULT exclusion should be revisited.")
+        "docs/converter/fringes.md's MULT exclusion should be revisited.")
 
 ################################################################################
 # F1/F2/FRINGE quad-style soft-edge fringe (ground truth) -- see
-# docs/sad-behaviour.md
+# docs/reference/sad-behaviour.md
 ################################################################################
 def _track_mult_probe(tmp_path, lattice_body, name, x_vals, px_vals, y_vals, py_vals):
     """
@@ -711,7 +711,7 @@ def test_mult_reversed_line_fringe_mode_permutes(tmp_path):
 
 ################################################################################
 # FB1/FB2 dipole-style soft-edge fringe (ground truth) -- see
-# docs/sad-behaviour.md
+# docs/reference/sad-behaviour.md
 ################################################################################
 def test_mult_fb1_fb2_is_inert_without_fringe(tmp_path):
     """
@@ -779,7 +779,7 @@ def test_mult_fb1_fb2_matches_sad_reference_values(tmp_path):
 
 ################################################################################
 # DISFRIN hard-edge fringe, and its interaction with FRINGE (ground truth)
-# -- see docs/sad-behaviour.md
+# -- see docs/reference/sad-behaviour.md
 ################################################################################
 def test_mult_disfrin_default_matches_explicit_zero(tmp_path):
     """
@@ -829,7 +829,7 @@ def test_mult_disfrin_hard_edge_matches_sad_reference_values(tmp_path):
 
 def test_mult_fringe_mode_also_gates_hard_edge_fringe_sides(tmp_path):
     """
-    Same interaction as QUAD -- see docs/sad-behaviour.md. Unlike QUAD,
+    Same interaction as QUAD -- see docs/reference/sad-behaviour.md. Unlike QUAD,
     MULT has no FRINGE<=-4 master-disable for the hard-edge fringe.
     """
     def run(suffix, name):

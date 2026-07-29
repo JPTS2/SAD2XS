@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-23
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -171,7 +171,7 @@ def test_quad_without_length_k1_gives_linear_kick(tmp_path):
         "K1 in a no-L QUAD should deflect an off-axis particle (kick = -K1*x).")
 
 ################################################################################
-# F1/F2/FRINGE soft-edge fringe (ground truth) -- see docs/sad-behaviour.md
+# F1/F2/FRINGE soft-edge fringe (ground truth) -- see docs/reference/sad-behaviour.md
 ################################################################################
 def _track_quad_probe(tmp_path, lattice_body, name, x_vals, px_vals, y_vals, py_vals):
     """
@@ -231,7 +231,7 @@ def test_quad_fringe_3_activates_f1_f2(tmp_path):
 
 def test_quad_fringe_mode_gates_entrance_exit(tmp_path):
     """
-    QUAD's FRINGE mode grid against real SAD -- see docs/sad-behaviour.md
+    QUAD's FRINGE mode grid against real SAD -- see docs/reference/sad-behaviour.md
     ("QUAD F1/F2/FRINGE soft-edge fringe") for the {1,2,3} semantic, a
     different system from BEND's FRMD_BEND. Asymmetric F1K1F/F1K1B/
     F2K1F/F2K1B makes all cases numerically distinct.
@@ -271,7 +271,7 @@ def test_quad_fringe_mode_gates_entrance_exit(tmp_path):
 def test_quad_fringe_mode_also_gates_hard_edge_fringe_sides(tmp_path):
     """
     FRINGE also gates which side of the DISFRIN hard-edge fringe applies
-    -- see docs/sad-behaviour.md ("QUAD DISFRIN hard-edge fringe, and
+    -- see docs/reference/sad-behaviour.md ("QUAD DISFRIN hard-edge fringe, and
     its interaction with FRINGE"). No F1/F2/F1K1x set here, isolating the
     hard-edge effect alone.
     """
@@ -351,7 +351,7 @@ def test_quad_f1_f2_matches_sad_reference_values_negative_k1(tmp_path):
     Same as test_quad_f1_f2_matches_sad_reference_values but K1<0
     (defocusing) -- pins the sign-asymmetric case that requires SAD's
     internal ROTATE+akang(K1) frame rotation to reproduce (see
-    docs/sad-behaviour.md). L=1.0, K1=-0.3, F1=0.02, F2=0.01, FRINGE=3.
+    docs/reference/sad-behaviour.md). L=1.0, K1=-0.3, F1=0.02, F2=0.01, FRINGE=3.
     """
     x_vals  = np.array([1e-3, -2e-3, 3e-3, -1.5e-3])
     px_vals = np.array([2e-3, 1.5e-3, -1e-3, -0.5e-3])
@@ -443,7 +443,7 @@ def test_quad_asymmetric_f1k1_terms_differ_from_symmetric_f1(tmp_path):
 
 def test_quad_reversed_line_fringe_mode_permutes(tmp_path):
     """
-    Pinned reversal-permutation ground truth -- see docs/sad-behaviour.md
+    Pinned reversal-permutation ground truth -- see docs/reference/sad-behaviour.md
     ("QUAD F1/F2/FRINGE soft-edge fringe"): reversed FRINGE=1 must match
     forward FRINGE=2 with F1K1F/F1K1B (and F2K1F/F2K1B) swapped, not just
     the unswapped forward FRINGE=2 (a real ~1.3e-5 discrepancy, checked).
@@ -496,7 +496,7 @@ def test_quad_f1_f2_composes_additively_with_default_nonlinear_fringe(tmp_path):
     The linear F1/F2 fringe and the default nonlinear (DISFRIN) fringe
     compose (near-)additively at FRINGE=3, where the hard-edge fringe
     stays active on both sides (not true at FRINGE=1/2 -- see
-    docs/sad-behaviour.md). L=0.5, K1=0.4, F1=0.03, x0=px0=2E-2.
+    docs/reference/sad-behaviour.md). L=0.5, K1=0.4, F1=0.03, x0=px0=2E-2.
     """
     x_vals, px_vals = np.array([2e-2]), np.array([2e-2])
     y_vals, py_vals = np.array([0.0]), np.array([0.0])
@@ -520,7 +520,7 @@ def test_quad_f1_f2_composes_additively_with_default_nonlinear_fringe(tmp_path):
         "nonlinearly at scales this repo's converter needs to model.")
 
 ################################################################################
-# Hard-edge fringe field (DISFRIN) -- see docs/sad-behaviour.md
+# Hard-edge fringe field (DISFRIN) -- see docs/reference/sad-behaviour.md
 ################################################################################
 def test_quad_disfrin_default_matches_explicit_zero(tmp_path):
     """

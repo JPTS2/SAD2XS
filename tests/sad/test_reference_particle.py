@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-29
 
 Notes
 -----
@@ -142,8 +142,7 @@ def _run_twiss(tmp_path, lattice_text, name="test.sad"):
 # Default reference particle
 #
 # When CHARGE and MASS are not specified, SAD uses positron defaults
-# (CHARGE=+1, MASS=electron mass). Confirmed by Oide (SAD developer, 2026-06-27):
-# SAD has never properly supported CHARGE != 1; the convention is positron-only.
+# (CHARGE=+1, MASS=electron mass).
 ################################################################################
 
 def test_sad_default_reference_particle_matches_explicit_positron(tmp_path):

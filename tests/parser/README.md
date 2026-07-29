@@ -16,25 +16,24 @@ formatting, or SAD helper command construction. Those behaviours belong in
 
 ## Coverage
 
-**Functions** is the count of `def test_` entries in the file. **Fail** is
-actual failing instances from the test run. `test_errors.py` is parametrised
-(one function contributes 3 instances for the protected-name cases), so its
-instance count exceeds its function count.
+**Tests** is the number of test instances pytest collects, which counts each
+parametrisation separately. **Fail** is actual failing instances from the test
+run.
 
-| File | Functions | Fail | Notes |
+| File | Tests | Fail | Notes |
 |------|-----------|------|-------|
 | `test_preprocessing.py` | 6 | 0 | — |
 | `test_comments.py` | 10 | 0 | — |
-| `test_globals.py` | 12 | 0 | — |
-| `test_units.py` | 7 | 0 | — |
+| `test_globals.py` | 22 | 0 | — |
+| `test_units.py` | 15 | 0 | — |
 | `test_lines.py` | 6 | 0 | — |
 | `test_line_names.py` | 3 | 0 | — |
-| `test_element_parameters.py` | 13 | 0 | — |
+| `test_element_parameters.py` | 26 | 0 | — |
 | `test_element_expressions.py` | 8 | 0 | — |
 | `test_deferred_expressions.py` | 17 | 0 | — |
 | `test_functions.py` | 2 | 0 | — |
 | `test_repeated_definitions.py` | 9 | 0 | — |
-| `test_errors.py` | 14 | 0 | — |
+| `test_errors.py` | 16 | 0 | — |
 
 ### `test_preprocessing.py` note
 
@@ -56,12 +55,19 @@ without a debugger.
 
 ### `test_globals.py` note
 
-`CHARGE` is recognised as a protected global keyword so that SAD files
-containing it do not cause parse errors. However, SAD only supports positrons
-and silently ignores `CHARGE` at runtime (confirmed by K. Oide, 2026-06-27),
-so the parser does not store `CHARGE` in `q0`. Any `CHARGE != 1` line emits a
-`UserWarning` directing users to `reverse_charge_sign=True`. The `q0` global always
-defaults to `+1` regardless of what `CHARGE` is set to.
+`CHARGE` is a recognised protected global keyword, and the parser stores it
+directly as `q0`.
+
+SAD's own Twiss and tracking computations respect `CHARGE`. This was verified
+empirically against real SAD in `tests/sad/test_reference_particle.py`:
+`CHARGE=-1` gives the exact sign-reversed solenoid orbit and coupling. An earlier
+belief that SAD silently ignores non-unity `CHARGE` was disproved, and the parser
+was corrected to match. See
+[line reversals](../../docs/converter/line-reversals.md) for the full account.
+
+`q0` falls back to `+1` only when the SAD file declares no charge and the caller
+supplies none. `CHARGE = 0` is rejected with a `ValueError`, because a neutral
+reference particle is not physically meaningful here.
 
 ### `test_functions.py` note
 

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -326,22 +326,14 @@ def test_twiss_sad_reverse_element_order_matches_sad_native_reversed_line(
         tmp_path,
         monkeypatch):
     """
-    twiss_sad's reverse_element_order=True must match SAD's own native line
-    reversal (LINE REV = (-FWD)) row-for-row on a deliberately asymmetric
-    closed ring (bend E1 != E2 with F1/FRINGE, corrector FB1 != FB2,
-    opposite-sign quads) -- not merely put END before START.
+    twiss_sad's reverse_element_order matches SAD's own native line reversal
+    row for row, not merely END before START.
 
-    An earlier implementation computed the forward line's twiss and then
-    applied a Python-side transformation (sign flips + np.flip) to
-    approximate the reversed line. That approach mislabelled every row by
-    one element: relabelled row i numerically equalled native row i+1 (to
-    floating-point precision), because SAD's own table convention (row =
-    element's entrance) shifts which boundary point counts as an element's
-    entrance under reversal. This test compares twiss_sad's
-    reverse_element_order=True against a REV line defined directly in the
-    lattice file -- an independent SAD calculation that does not exercise
-    the reverse_element_order code path at all -- so a row-mislabelling
-    regression would be caught here.
+    Compares against a REV line defined directly in the lattice file, an
+    independent SAD calculation that does not use the reverse_element_order
+    path. The ring is deliberately asymmetric. This catches row-mislabelling,
+    where every row shifts by one element because SAD treats a row as its
+    element's entrance.
     """
     filename, fwd_name, rev_name = write_asymmetric_closed_ring(tmp_path)
     monkeypatch.chdir(tmp_path)
@@ -455,7 +447,7 @@ def test_twiss_sad_trpt_carries_reference_momentum_through_acceleration(
     at the end of a strongly-accelerating element is reported relative to
     the fixed initial momentum and is not close to zero; with it, the
     reference tracks the acceleration and delta is close to zero. See
-    docs/sad-behaviour.md for the underlying physics.
+    docs/reference/sad-behaviour.md for the underlying physics.
     """
     lattice = tmp_path / "trpt_probe.sad"
     lattice.write_text(

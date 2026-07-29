@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-29
 ================================================================================
 """
 
@@ -29,10 +29,6 @@ from typing import Iterable, Optional
 SAD_GIT_REPO_URL    = "https://github.com/KatsOide/SAD.git"
 
 HEADER              = "MacOS SAD Installation Script"
-AUTHOR              = "J.P.T. Salvesen"
-CONTACT_EMAIL       = "john.salvesen@cern.ch"
-VERSION             = "0.2.0"
-DATE                = "10/06/2026"
 
 ################################################################################
 # Setup
@@ -471,11 +467,6 @@ def main():
     ########################################
     print("#" * 80)
     print(f"{HEADER}")
-    print("#" * 80)
-    print(f"Author:     {AUTHOR}")
-    print(f"Contact:    {CONTACT_EMAIL}")
-    print(f"Version:    {VERSION}")
-    print(f"Date:       {DATE}")
     print("#" * 80 + "\n")
 
     ########################################

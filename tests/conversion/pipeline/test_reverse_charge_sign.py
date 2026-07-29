@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-30
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -56,20 +56,13 @@ import sad2xs as s2x
 ################################################################################
 def test_pipeline_reverse_charge_sign_does_not_change_solenoid_ks(write_lattice):
     """
-    reverse_charge_sign=True must NOT change the solenoid ks.
+    reverse_charge_sign must not change the solenoid ks.
 
-    SAD's BZ is a physical field strength [T], but the value in the file
-    already encodes the design assumption reverse_charge_sign is correcting
-    the species label for -- the field->strength conversion (ks = BZ/brho)
-    must always use the imported/as-parsed charge, never a
-    reverse_charge_sign-corrected charge. Only the final reference
-    particle's q0 changes.
-
-    (A genuinely-declared CHARGE in the SAD file is a different, legitimate
-    case: since that IS the imported charge, it correctly affects ks via
-    brho. See test_pipeline_declared_charge_and_reverse_charge_sign_are_independent
-    below for that case, and tests/conversion/pipeline/test_reverse_element_order.py
-    for CHARGE's effect verified against real SAD.)
+    Asserts ks is identical with and without the flag. The field-to-strength
+    conversion ks = BZ/brho always uses the charge as imported, because the BZ
+    in the file already encodes the design species. Only q0 changes. A declared
+    CHARGE is the separate case covered by
+    test_pipeline_declared_charge_and_reverse_charge_sign_are_independent.
     """
     lattice_path = write_lattice(
         """\
@@ -303,16 +296,13 @@ def test_pipeline_reverse_charge_sign_does_not_change_quad_k1(write_lattice):
 def test_pipeline_reverse_charge_sign_twiss_beta_functions_unchanged_without_solenoid(
         write_lattice):
     """
-    reverse_charge_sign=True on a lattice containing no solenoids must produce
-    identical 4D Twiss beta functions to the default conversion.
+    reverse_charge_sign leaves the 4D Twiss unchanged on a solenoid-free
+    lattice.
 
-    Without solenoids, the only element affected by the charge-dependent brho
-    normalisation is ks.  With no solenoid in the lattice, reverse_charge_sign
-    changes only q0 on the particle reference — element parameters are
-    completely unaffected — so the Twiss must be trivially identical.
-
-    This test serves as a regression guard: any unintended path that uses q0
-    during element conversion would show up here as a Twiss discrepancy.
+    Compares twiss4d beta functions with and without the flag. ks is the only
+    parameter affected by the charge-dependent brho normalisation, so with no
+    solenoid present only q0 changes. Guards against any path that uses q0
+    during element conversion.
     """
     lattice_path = write_lattice(
         """\
@@ -361,17 +351,13 @@ def test_pipeline_reverse_charge_sign_twiss_beta_functions_unchanged_without_sol
 def test_pipeline_reverse_charge_sign_twiss_beta_functions_unchanged_with_solenoid(
         write_lattice):
     """
-    reverse_charge_sign=True on a lattice containing a bound solenoid must produce
-    the same 4D Twiss beta functions as the default conversion.
+    reverse_charge_sign leaves the 4D Twiss unchanged on a bound-solenoid
+    lattice.
 
-    Since reverse_charge_sign=True does NOT change ks (brho is always computed
-    from the imported/as-parsed charge, never a reverse_charge_sign-corrected
-    one), element parameters are identical in both conversions. The Twiss
-    must therefore be trivially identical.
-
-    This test guards against any regression where ks is accidentally made
-    charge-dependent again.  A failure would indicate that the solenoid
-    converter is using q0 in the brho normalisation.
+    Compares twiss4d beta functions with and without the flag. Because the flag
+    does not change ks, every element parameter is identical in both
+    conversions. A failure means the solenoid converter has started using q0 in
+    the brho normalisation.
     """
     lattice_path = write_lattice(
         """\

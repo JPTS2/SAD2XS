@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-23
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -1316,7 +1316,7 @@ def test_corrector_conversion_matches_sad_tracking_for_element_offsets(
 
 ################################################################################
 # FB1/FB2 soft-edge fringe import (_import_sad_bend_fringes) -- same
-# mechanism as test_bend.py's F1/FRINGE section; see docs/sad-behaviour.md
+# mechanism as test_bend.py's F1/FRINGE section; see docs/reference/sad-behaviour.md
 ################################################################################
 def test_corrector_fringe_import_defaults_on(write_lattice, tmp_path):
     """
@@ -1402,7 +1402,7 @@ def test_corrector_fringe_import_fringe_gates_single_edge(
         write_lattice, tmp_path, fringe, entry_active, exit_active):
     """
     Same grid as test_bend.py's fringe_import_fringe_gates_single_edge,
-    for a K0-only corrector -- see docs/sad-behaviour.md.
+    for a K0-only corrector -- see docs/reference/sad-behaviour.md.
     """
     lattice_text = f"""\
     MOMENTUM    = 1.0 GEV;

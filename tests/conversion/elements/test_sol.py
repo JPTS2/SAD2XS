@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -1045,7 +1045,7 @@ def test_sol_optics_matches_sad_twiss_at_end(
             "This is an active-solenoid optics comparison, separate from "
             "orbit/reference-frame checks.",
             "Xsuite beta/alpha values use SAD's Edwards-Teng convention; "
-            "see docs/sad-helpers.md.",
+            "see docs/helpers/sad-helpers.md.",
         ])
 
 ########################################
@@ -1159,13 +1159,10 @@ def test_sol_disfrin_off_diverges_from_xsuite_in_tracking(write_lattice, tmp_pat
     Without DISFRIN=1, SAD's solenoid fringe kick diverges from Xsuite
     tracking beyond normal tolerance.
 
-    SAD2XS does not model this nonlinear fringe kick (see
-    docs/sad-behaviour.md for what it is, docs/design-decisions.md for the
-    converter decision): the converted lattice always behaves as if
-    DISFRIN=1 was set, regardless of the source SAD file. This locks in the
-    accepted, expected divergence at an offset large enough for the
-    (cubic-order) fringe kick to clear normal tracking tolerance, as a
-    regression guard for a documented limitation rather than an open bug.
+    Tracks at an offset large enough for the cubic-order kick to clear
+    tolerance. SAD2XS does not model this kick, so every converted lattice
+    behaves as if DISFRIN=1 were set. This is a documented limitation, not an
+    open bug. See docs/converter/solenoids.md.
     """
     bz = 2.0
     x_init     = np.array([0.1])
@@ -1235,7 +1232,7 @@ def test_sol_disfrin_off_diverges_from_xsuite_in_tracking(write_lattice, tmp_pat
         "coordinate: zeta/delta, for example, are conserved by this purely "
         "transverse kick and are expected to keep matching. If this now "
         "passes, the accepted limitation may have changed and "
-        "docs/sad-behaviour.md needs review.")
+        "docs/reference/sad-behaviour.md needs review.")
 
 ################################################################################
 # Reference Transform Physics
@@ -1430,16 +1427,13 @@ def test_sol_reference_transform_restores_design_orbit_at_end(
         orientation,
         line_expression):
     """
-    Bound GEO SOL transforms should return to the SAD design orbit at END.
+    Bound GEO SOL transforms return to the SAD design orbit at END.
 
-    This intentionally checks the END marker after the full solenoid region.
-    It is separate from the internal marker checks because failures here
-    diagnose exit restoration / element-order semantics, not the internal
-    zero-field transform.
-
-    Parametrised identically to test_sol_reference_transform_orbit_matches_sad_twiss
-    (same transforms, same geo placements, same line orientations) so the two
-    suites together give complete coverage of all 16 converter categories.
+    Checks the END marker after the full solenoid region, so a failure points
+    at exit restoration or element-order semantics rather than the internal
+    zero-field transform. Parametrised identically to
+    test_sol_reference_transform_orbit_matches_sad_twiss, so the two together
+    cover all 16 converter categories.
     """
     if geo_placement == "in":
         sol_in_parameters = f"GEO = 1 {transform_parameters}"
