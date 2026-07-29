@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-07-29
 ================================================================================
 """
 ################################################################################
@@ -20,24 +20,18 @@ from pathlib import Path
 import pytest
 import yaml
 
+from tests.support.repo_inventory import folder_workflow_names
+
 ################################################################################
 # Paths
 ################################################################################
 REPO_ROOT    = Path(__file__).resolve().parents[2]
 WORKFLOW_DIR = REPO_ROOT / ".github" / "workflows"
 
-FOLDER_WORKFLOW_NAMES = [
-    "test_packaging.yml",
-    "test_ci.yml",
-    "test_parser.yml",
-    "test_writer.yml",
-    "test_observability.yml",
-    "test_sad.yml",
-    "test_conversion.yml",
-    "test_sad_helpers.yml",
-    "test_examples.yml",
-    "test_installation.yml",
-]
+# Derived from pytest.ini's testpaths, not hard-coded: a folder added to
+# testpaths without a matching workflow must fail these tests, not pass
+# silently.
+FOLDER_WORKFLOW_NAMES = folder_workflow_names()
 
 ################################################################################
 # Helpers
