@@ -42,17 +42,22 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Physics"]
 
+# Floors are the oldest releases known to support Python 3.13
 dependencies = [
-    "numpy>=1.0",
+    "numpy>=2.1",
     "pyyaml>=6.0",
-    "scipy>=1.0",
+    "scipy>=1.14",
     "xsuite>=0.57.0"]
 
 [project.optional-dependencies]
 # Required for sad2xs.sad_helpers in addition to a working SAD executable
-sad-helpers = ["tfs-pandas", "tqdm"]
+sad-helpers = ["tfs-pandas>=3.8", "tqdm>=4.66"]
 # Required for sad2xs.xsuite_helpers.plot_xsuite_sad_comparison
-plotting    = ["matplotlib"]
+plotting    = ["matplotlib>=3.9"]
+# Required to run the test suite
+test        = ["pytest>=8.0"]
+# Everything needed to develop against a checkout
+dev         = ["sad2xs[sad-helpers,plotting,test]"]
 
 [project.urls]
 "Homepage"      = "https://github.com/JPTS2/SAD2XS"
