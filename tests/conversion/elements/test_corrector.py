@@ -1515,12 +1515,12 @@ def test_corrector_fringe_import_matches_sad_on_momentum(write_lattice, tmp_path
             "percent."))
 
 @pytest.mark.parametrize("delta", [0.03, -0.03])
-def test_corrector_fringe_import_off_momentum_residual_is_bounded(write_lattice, tmp_path, delta):
+def test_corrector_fringe_import_matches_sad_off_momentum(write_lattice, tmp_path, delta):
     """
-    Off-momentum residual, same known limitation as the ANGLE!=0 case
-    (see test_bend.py's equivalent test) -- asserted explicitly so an
-    upstream Xsuite/MAD-NG change surfaces as a failing test for review,
-    not a silent pass.
+    Off-momentum, the imported K0-only fringe matches SAD to 1e-4 relative.
+
+    The corrector counterpart of
+    `test_bend_fringe_import_matches_sad_off_momentum` in `test_bend.py`.
     """
     L, K0, FB1, FB2 = 0.4, 0.03, 0.025, 0.018
     y0 = 0.002
@@ -1578,14 +1578,12 @@ def test_corrector_fringe_import_off_momentum_residual_is_bounded(write_lattice,
     finally:
         os.chdir(cwd)
 
-    rel_err_pct = 100 * (xs_particles.py[0] - sad_particles["py"][0]) / sad_particles["py"][0]
-    # Measured residual at this geometry/delta: -0.11% (delta=+0.03),
-    # +0.11% (delta=-0.03) -- much smaller than the ANGLE!=0 case, since
-    # the corrector's body kick has no delta-dependence of its own.
-    expected_pct = {0.03: -0.11, -0.03: 0.11}[delta]
-    assert abs(rel_err_pct - expected_pct) < 0.1, (
-        f"Off-momentum residual for delta={delta} should stay near the "
-        f"currently-characterised {expected_pct}% (got {rel_err_pct:.3f}%). "
-        "A residual well outside this band means Xsuite's native fringe "
-        "momentum-scaling has changed -- worth reviewing whether the "
-        "off-momentum limitation this flag carries can now be relaxed.")
+    # Measured agreement at this geometry: 2.4e-5, near-constant in delta
+    # (2.7e-5 at delta = +-0.05). What remains is a small offset, not a
+    # momentum-scaling error, so the bound does not need to grow with delta.
+    np.testing.assert_allclose(
+        xs_particles.py, sad_particles["py"], rtol = 1E-4, atol = 1E-12,
+        err_msg = (
+            f"Off-momentum (delta={delta}) corrector fringe import should "
+            "match SAD to 1e-4 relative. A larger residual means Xsuite's "
+            "native fringe momentum-scaling has regressed."))

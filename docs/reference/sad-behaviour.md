@@ -169,11 +169,13 @@ between the two factors is free. SAD2XS sets `fint` to the raw SAD value,
 `F1+FB1` or `F1+FB2`, and fixes `hgap` at `1/12`. This keeps `fint` on a
 converted element directly traceable back to its SAD source.
 
-**Off-momentum, the two codes disagree on principle, not just in
-magnitude.** SAD's fringe-integral term scales as `1/(1+delta)`; Xsuite's
-native formula (faithfully ported from MAD-NG's own `bend_fringe`,
-confirmed variable-for-variable against MAD-NG's source) scales as
-`(1+delta)`, which is the opposite direction.
+**Off-momentum, the two codes once disagreed on principle, not just in
+magnitude.** SAD's fringe-integral term scales as `1/(1+delta)`. Xsuite's
+native formula (faithfully ported from MAD-NG's own `bend_fringe`, confirmed
+variable-for-variable against MAD-NG's source) scaled as `(1+delta)`, which
+is the opposite direction. Xsuite 0.57.0 adopted the `1/(1+delta)` form, and
+the two codes now agree. The rest of this section records why that was the
+right resolution, because the reasoning still applies to MAD-NG and PTC.
 
 The mechanism is understood. The two codes share an identical hard-edge
 contribution, driven by `px` from the bend's own dispersion. That part agrees
@@ -204,18 +206,19 @@ formula and agree with each other. This includes Xsuite's own second
 implementation, ported directly from PTC's Fortran source rather than from
 MAD-NG.
 
-This looks like one shared implementation choice, traceable to PTC's own
-Fortran source and reproduced repeatedly. It is not independent
-confirmation. It is also not a SAD2XS bug to work around: it is a genuine
-upstream formalism question, not yet raised with the Xsuite and MAD-NG
-maintainers.
+That looked like one shared implementation choice, traceable to PTC's own
+Fortran source and reproduced repeatedly, rather than independent
+confirmation. It was never a SAD2XS bug to work around: it was a genuine
+upstream formalism question.
 
-`test_bend_fringe_import_off_momentum_residual_is_bounded` and its corrector
+Xsuite resolved it in 0.57.0 by adopting the rigorous `1/(1+delta)` form.
+PTC and MAD-NG have not been re-checked since, so the comparison above
+describes them as they were measured, not necessarily as they are now.
+
+`test_bend_fringe_import_matches_sad_off_momentum` and its corrector
 equivalent (`tests/conversion/elements/test_bend.py`, `test_corrector.py`)
-lock this in. They assert an explicit bound on the current residual. The
-tests are not skipped, and they cannot silently pass while the residual is
-wrong. If the native formula of Xsuite or MAD-NG changes upstream, these
-tests fail and surface for review.
+lock the agreement in. They assert a match to `1e-4` relative, so a
+regression in the momentum scaling fails and surfaces for review.
 
 ## `BEND` `DISFRIN` hard-edge fringe
 

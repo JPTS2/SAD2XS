@@ -176,14 +176,13 @@ still be disabled; a `..._fringe_gates_single_edge` test covering the
 full FRINGE gating grid (0 or `<= -3` = neither edge, `-1`/`-2` =
 entrance-/exit-only, any positive value = both); a
 `..._matches_sad_on_momentum` test asserting a tight match at `delta=0`;
-and a `..._off_momentum_residual_is_bounded` test asserting the known,
-currently-characterised residual explicitly rather than skipping it — a
-future upstream Xsuite/MAD-NG momentum-scaling fix should make this test
-fail (residual outside the asserted band) and surface for review, not
-silently pass. See `docs/reference/sad-behaviour.md` ("`BEND` `F1`/`FRINGE`
-soft-edge fringe") for the derivation and full gating grid, and
-`docs/converter/fringes.md` ("Soft-edge accuracy, and the off-momentum
-residual" section) for the off-momentum caveat that comes with it.
+and a `..._matches_sad_off_momentum` test asserting a match to `1e-4`
+relative at `delta = +-0.03`. Xsuite 0.57.0 corrected the momentum scaling
+that used to leave a percent-level residual here, so these tests now assert
+agreement rather than a characterised discrepancy. See
+`docs/reference/sad-behaviour.md` ("`BEND` `F1`/`FRINGE` soft-edge fringe")
+for the derivation and full gating grid, and `docs/converter/fringes.md`
+("Soft-edge accuracy") for the measured agreement.
 
 The converter warns once per lattice when it finds an `ANGLE != 0` bend with
 a nonzero `DX`/`DY` (`test_bend_converter_warns_once_for_lattice_with_offset_angled_bends`

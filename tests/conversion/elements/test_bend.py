@@ -3025,16 +3025,14 @@ def test_bend_fringe_import_matches_sad_on_momentum(write_lattice, tmp_path, del
             "BEND fringe kick to a fraction of a percent."))
 
 @pytest.mark.parametrize("delta", [0.03, -0.03])
-def test_bend_fringe_import_off_momentum_residual_is_bounded(write_lattice, tmp_path, delta):
+def test_bend_fringe_import_matches_sad_off_momentum(write_lattice, tmp_path, delta):
     """
-    Off-momentum, Xsuite's native fint/hgap fringe formula scales the
-    wrong way with delta relative to SAD (docs/reference/sad-behaviour.md,
-    docs/converter/fringes.md) -- a known, characterised limitation, not a
-    converter bug. This asserts the CURRENT bounded residual explicitly:
-    if Xsuite/MAD-NG's upstream formula ever changes, this test should
-    start failing (residual outside the asserted band) and surface for
-    review, rather than silently continuing to pass or silently staying
-    wrong.
+    Off-momentum, the imported BEND fringe matches SAD to 1e-4 relative.
+
+    Xsuite's native fint/hgap formula once scaled the wrong way with delta,
+    leaving a residual of a few percent. The upstream fix removed it. Asserts
+    agreement rather than a characterised residual, so a regression in the
+    momentum scaling fails here. See `docs/converter/fringes.md`.
     """
     L, ANGLE, F1 = 1.2, 0.08, 0.04
     y0 = 0.002
@@ -3091,15 +3089,11 @@ def test_bend_fringe_import_off_momentum_residual_is_bounded(write_lattice, tmp_
     finally:
         os.chdir(cwd)
 
-    rel_err_pct = 100 * (xs_particles.py[0] - sad_particles["py"][0]) / sad_particles["py"][0]
-    # Measured residual at this geometry/delta: +1.65% (delta=+0.03),
-    # +3.46% (delta=-0.03). Bounded tightly around the measured value so
-    # an upstream fix (residual shrinking) surfaces for review, not a
-    # silent pass.
-    expected_pct = {0.03: 1.65, -0.03: 3.46}[delta]
-    assert abs(rel_err_pct - expected_pct) < 0.5, (
-        f"Off-momentum residual for delta={delta} should stay near the "
-        f"currently-characterised {expected_pct}% (got {rel_err_pct:.3f}%). "
-        "A residual well outside this band means Xsuite's native fringe "
-        "momentum-scaling has changed -- worth reviewing whether the "
-        "off-momentum limitation this flag carries can now be relaxed.")
+    # Measured agreement at this geometry: 5e-7 on-momentum, rising to 8e-6 at
+    # delta = +-0.05. The 1e-4 bound leaves room for that growth.
+    np.testing.assert_allclose(
+        xs_particles.py, sad_particles["py"], rtol = 1E-4, atol = 1E-12,
+        err_msg = (
+            f"Off-momentum (delta={delta}) BEND fringe import should match SAD "
+            "to 1e-4 relative. A larger residual means Xsuite's native fringe "
+            "momentum-scaling has regressed."))
