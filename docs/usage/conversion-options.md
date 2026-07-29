@@ -59,7 +59,7 @@ Four flags transform the line. They interact with each other and with the refere
 | `reverse_survey_vertical` | mirror the survey vertically, reversing bend directions |
 | `reverse_charge_sign` | flip the sign of the reference particle's charge |
 
-Read that page before combining them. The solenoid `ks` depends on the charge sign, so `reverse_charge_sign` is not independent of the others.
+Read that page before combining them. The solenoid `ks` depends on the charge declared in the SAD file, so the three survey and order flags each negate it. `reverse_charge_sign` does not: it relabels the reference particle and leaves every element parameter alone.
 
 ## Apertures
 

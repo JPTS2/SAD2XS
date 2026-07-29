@@ -10,15 +10,15 @@ in `tests/conversion/`.
 
 ## Coverage
 
-| File | Function(s) | Tests | Lattice fixture |
-|------|-------------|-------|-----------------|
-| `test_twiss_sad.py` | `twiss_sad`, `compute_second_order_dispersions`, `compute_chromatic_functions`, `generate_twiss_print_function` | 23 | Minimal transfer-line (1 m drift, START/END markers); minimal bend (0.1 rad BEND); minimal vertical bend (0.1 rad BEND, ROTATE = pi/2); accelerating MULT (VOLT/FREQ) for TRPT; asymmetric closed ring for native-reversal ground truth |
-| `test_survey_sad.py` | `survey_sad`, `generate_survey_print_function` | 17 | Same transfer-line, bend, and vertical bend lattices; asymmetric closed ring for native-reversal ground truth |
-| `test_emit_sad.py` | `emit_sad` | 6 | 4-cell FODO ring with RF (45° bends, ρ = 1 m, K1 = ±0.2) |
-| `test_chromaticity_sad.py` | `chromaticity_sad`, `generate_off_momentum_tune_function` | 11 | Same 4-cell FODO ring without RF |
-| `test_transfer_matrix_sad.py` | `transfer_matrix_sad` | 8 | Minimal transfer-line |
-| `test_track_sad.py` | `track_sad` | 12 | Minimal transfer-line |
-| `test_rebuild_lattice.py` | `rebuild_sad_lattice` | 6 | Minimal transfer-line |
+| File | Tests | Fail | Function(s) | Lattice fixture |
+|------|-------|------|-------------|-----------------|
+| `test_twiss_sad.py` | 23 | 0 | `twiss_sad`, `compute_second_order_dispersions`, `compute_chromatic_functions`, `generate_twiss_print_function` | Minimal transfer-line (1 m drift, START/END markers); minimal bend (0.1 rad BEND); minimal vertical bend (0.1 rad BEND, ROTATE = pi/2); accelerating MULT (VOLT/FREQ) for TRPT; asymmetric closed ring for native-reversal ground truth |
+| `test_survey_sad.py` | 17 | 0 | `survey_sad`, `generate_survey_print_function` | Same transfer-line, bend, and vertical bend lattices; asymmetric closed ring for native-reversal ground truth |
+| `test_emit_sad.py` | 6 | 0 | `emit_sad` | 4-cell FODO ring with RF (45° bends, ρ = 1 m, K1 = ±0.2) |
+| `test_chromaticity_sad.py` | 11 | 0 | `chromaticity_sad`, `generate_off_momentum_tune_function` | Same 4-cell FODO ring without RF |
+| `test_transfer_matrix_sad.py` | 8 | 0 | `transfer_matrix_sad` | Minimal transfer-line |
+| `test_track_sad.py` | 12 | 0 | `track_sad` | Minimal transfer-line |
+| `test_rebuild_lattice.py` | 6 | 0 | `rebuild_sad_lattice` | Minimal transfer-line |
 
 ## Lattice fixture notes
 

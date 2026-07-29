@@ -13,7 +13,7 @@ Does not require the SAD binary.
 | File | Tests | Fail | Failure root cause |
 |------|-------|------|--------------------|
 | `test_line_roundtrip.py` | 1 | 0 | — |
-| `test_supported_elements.py` | 17 | 0 | — |
+| `test_supported_elements.py` | 17 | 1 | `xt.SecondOrderTaylorMap` is not in the shipping xtrack release |
 | `test_lattice_writer.py` | 9 | 0 | — |
 | `test_optics_writer.py` | 23 | 0 | — |
 | `test_magnet_length_precision.py` | 5 | 0 | — |
@@ -32,7 +32,8 @@ Does not require the SAD binary.
   single-element line, calls `write_lattice` and `write_optics`, asserts the
   output file is created, and calls it via `env.call()` to confirm it is
   syntactically valid and loadable. Bend (h≠0) and corrector (h=0, k0 set) are
-  tested as distinct writer paths. All 17 tests expected to pass.
+  tested as distinct writer paths. The `xt.SecondOrderTaylorMap` case is a known
+  failure: the class is not in the shipping xtrack release yet.
 
 - `test_lattice_writer.py` — `write_lattice` entry point:
   - File creation, correct filename, `output_header` written to file,
@@ -78,7 +79,10 @@ Does not require the SAD binary.
 
 ## Expected Failures
 
-None. All writer pipeline tests are expected to pass.
+`test_supported_elements_writer_handles_second_order_taylor_map` fails until
+`xt.SecondOrderTaylorMap` reaches a released xtrack version. It carries the
+`known_issue` marker and is routed to the non-blocking CI job. Every other
+writer pipeline test is expected to pass.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

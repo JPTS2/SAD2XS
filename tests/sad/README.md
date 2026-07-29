@@ -38,24 +38,24 @@ filename; SAD's shell wrapper requires a relative path in the working directory.
 
 472 tests across 16 files. All require the SAD binary.
 
-| File | Tests | Element or behaviour covered |
-|------|-------|------------------------------|
-| `test_quad.py` | 43 | QUAD parameters, soft-edge and hard-edge fringe |
-| `test_sext.py` | 33 | SEXT parameters and hard-edge fringe |
-| `test_oct.py` | 33 | OCT parameters and hard-edge fringe |
-| `test_bend.py` | 43 | BEND parameters, soft-edge and hard-edge fringe |
-| `test_mult.py` | 56 | MULT parameters, every fringe sub-mechanism, RF content |
-| `test_cavi.py` | 39 | CAVI parameters, RF focusing, edge-focusing kick |
-| `test_sol.py` | 38 | SOL parameters and the solenoid fringe kick |
-| `test_drift.py` | 29 | DRIFT accepts length only |
-| `test_apert.py` | 39 | APERT bounds, offsets, and rotation |
-| `test_mark.py` | 30 | MARK parameters |
-| `test_moni.py` | 30 | MONI parameters |
-| `test_line.py` | 3 | LINE definition syntax |
-| `test_line_reversal.py` | 5 | native `-LINE` reversal sign conventions |
-| `test_reference_particle.py` | 15 | MOMENTUM, MASS, and CHARGE handling |
-| `test_angle_units.py` | 7 | ROTATE and ANGLE unit suffixes |
-| `test_parser_behaviors.py` | 29 | SAD parser quirks, including the comma bug |
+| File | Tests | Fail | Element or behaviour covered |
+|------|-------|------|------------------------------|
+| `test_quad.py` | 43 | 0 | QUAD parameters, soft-edge and hard-edge fringe |
+| `test_sext.py` | 33 | 0 | SEXT parameters and hard-edge fringe |
+| `test_oct.py` | 33 | 0 | OCT parameters and hard-edge fringe |
+| `test_bend.py` | 43 | 0 | BEND parameters, soft-edge and hard-edge fringe |
+| `test_mult.py` | 56 | 0 | MULT parameters, every fringe sub-mechanism, RF content |
+| `test_cavi.py` | 39 | 0 | CAVI parameters, RF focusing, edge-focusing kick |
+| `test_sol.py` | 38 | 0 | SOL parameters and the solenoid fringe kick |
+| `test_drift.py` | 29 | 0 | DRIFT accepts length only |
+| `test_apert.py` | 39 | 0 | APERT bounds, offsets, and rotation |
+| `test_mark.py` | 30 | 0 | MARK parameters |
+| `test_moni.py` | 30 | 0 | MONI parameters |
+| `test_line.py` | 3 | 0 | LINE definition syntax |
+| `test_line_reversal.py` | 5 | 0 | native `-LINE` reversal sign conventions |
+| `test_reference_particle.py` | 15 | 0 | MOMENTUM, MASS, and CHARGE handling |
+| `test_angle_units.py` | 7 | 0 | ROTATE and ANGLE unit suffixes |
+| `test_parser_behaviors.py` | 29 | 0 | SAD parser quirks, including the comma bug |
 
 ### Parameter matrix (accept/reject)
 

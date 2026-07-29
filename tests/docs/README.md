@@ -26,6 +26,8 @@ measured values are reviewed by people, not by this folder.
 - Agreement between a documented table and the constant it restates.
 - Coverage completeness: every test file named in its folder README.
 - Declared test counts matching what pytest collects.
+- Declared failure counts matching the `known_issue` markers.
+- Coverage tables all having the same column shape.
 
 ## What Does Not Belong Here
 
@@ -42,7 +44,7 @@ rather than stopping at the first.
 
 | File | Tests | Fail | Failure root cause |
 |------|-------|------|--------------------|
-| `test_documentation.py` | 9 | 0 | — |
+| `test_documentation.py` | 11 | 0 | — |
 
 ### Reference integrity
 
@@ -69,11 +71,20 @@ CI, and needs no folder name hard-coded into the test.
 
 | Test | What it asserts |
 |------|-----------------|
-| `test_every_test_file_appears_in_its_readme` | no test file is missing from its folder README |
+| `test_every_test_file_has_a_coverage_table_row` | no test file is missing from its folder README |
+| `test_coverage_tables_have_the_standard_shape` | every coverage table starts with the `File`, `Tests`, `Fail` columns |
 | `test_config_tables_match_config` | documented models, integrators, kick counts, and element lists match `Config` |
+| `test_declared_failure_counts_match_known_issues` | each `Fail` count matches `known_issues.py` |
 
 A file missing from a coverage table reads as untested. That is worse than a
 wrong count, because nothing signals the behaviour is protected at all.
+
+Every coverage table starts with the columns `File`, `Tests`, `Fail`. Later
+columns are free, so a folder can add whatever it needs. Counts are read from
+the fixed columns by position, which is why the shape is asserted: a table that
+swapped `Tests` and `Fail` would otherwise be misread rather than rejected. A
+table listing helper modules rather than test files is not a coverage table and
+is not held to the shape.
 
 ### Test counts
 
@@ -82,7 +93,7 @@ wrong count, because nothing signals the behaviour is protected at all.
 | `test_per_file_counts_match_collection` | each per-file count in a folder README matches collection |
 | `test_folder_and_suite_totals_match_collection` | the Suite Total table in `tests/README.md` matches collection |
 
-**Do not update these counts by hand.** Run:
+**Do not update these counts, or the `Fail` counts, by hand.** Run:
 
 ```bash
 python -m tests.support.docs_inventory --update-counts
@@ -95,6 +106,15 @@ the updater would write. This is the same arrangement as a formatter and its
 
 Counts come from `pytest --collect-only` in a subprocess. Collection imports
 test modules but runs no test, so the SAD executable is never invoked.
+
+A non-zero exit status from collection raises rather than counting what
+survived. A module that fails to import still lets pytest report every other
+test, so a partial collection would otherwise be written into the READMEs as
+if it were the real total.
+
+Each Suite Total substitution must match exactly once. A pattern matching twice
+would overwrite an unrelated number elsewhere in the file, so the updater
+refuses to write anything instead.
 
 ## Known Limitations
 

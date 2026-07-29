@@ -16,21 +16,21 @@ remain ordinary failures and are routed to the non-blocking CI job.
 Every file follows the roundtrip contract above. The table lists what each one
 serialises.
 
-| File | Tests | Xsuite class | Fields covered |
-|------|-------|--------------|----------------|
-| `test_drift_writer.py` | 8 | `xt.Drift` | length |
-| `test_bend_writer.py` | 34 | `xt.Bend`, `h != 0` | `angle` as a fixed literal, `k0` and `k1` as optics expressions, length, edge angles, edge `fint`/`hgap`, `shift_x`/`shift_y`, `knl`/`ksl` literal arrays, vertical and skew variants, multiple bends, shared base element |
-| `test_corr_writer.py` | 33 | `xt.Bend`, `h = 0` | `k0` as an optics expression set directly, not through angle x length; otherwise as the bend, plus precision |
-| `test_quad_writer.py` | 30 | `xt.Quadrupole` | `k1`, `k1s`, `shift_x`/`shift_y`, `rot_s_rad`, `knl`/`ksl` literal arrays |
-| `test_sext_writer.py` | 30 | `xt.Sextupole` | `k2`, `k2s`, `shift_x`/`shift_y`, `rot_s_rad`, `knl`/`ksl` literal arrays |
-| `test_oct_writer.py` | 30 | `xt.Octupole` | `k3`, `k3s`, `shift_x`/`shift_y`, `rot_s_rad`, `knl`/`ksl` literal arrays |
-| `test_mult_writer.py` | 25 | `xt.Multipole` | `knl`/`ksl` literal arrays, not optics variables; `shift_x`/`shift_y`, `rot_s_rad` |
-| `test_sol_writer.py` | 26 | `xt.UniformSolenoid` | `ks` as a literal number, `x0`/`y0` axis offsets, `knl`/`ksl`, `shift_x`/`shift_y`, `rot_s_rad` |
-| `test_cavi_writer.py` | 24 | `xt.Cavity` | voltage, frequency, and phase as optics expressions; the `fshift` global shift; harmonic mode writing `harm_{name}` instead of `freq_{name}` |
-| `test_refshift_writer.py` | 39 | `xt.Translation`, `xt.TimeDelay`, `xt.Rotation` | every shift and rotation field as an optics expression, zero `default_to_zero` behaviour, all five types in one line |
-| `test_aper_writer.py` | 33 | `xt.LimitEllipse`, `xt.LimitRect`, `xt.LimitRectEllipse` | bounds, offsets, asymmetric bounds, mixed types |
-| `test_marker_writer.py` | 11 | `xt.Marker` | type, name, order, multiple markers, start/end convention, offset marker insertion |
-| `test_taylor_maps_writer.py` | 21 | `xt.FirstOrderTaylorMap`, `xt.SecondOrderTaylorMap` | map arrays as full-precision literals, quad-fringe reversal metadata, minus-sign root-name cleanup, multiple maps in one line |
+| File | Tests | Fail | Xsuite class | Fields covered |
+|------|-------|------|--------------|----------------|
+| `test_drift_writer.py` | 8 | 0 | `xt.Drift` | length |
+| `test_bend_writer.py` | 34 | 0 | `xt.Bend`, `h != 0` | `angle` as a fixed literal, `k0` and `k1` as optics expressions, length, edge angles, edge `fint`/`hgap`, `shift_x`/`shift_y`, `knl`/`ksl` literal arrays, vertical and skew variants, multiple bends, shared base element |
+| `test_corr_writer.py` | 33 | 0 | `xt.Bend`, `h = 0` | `k0` as an optics expression set directly, not through angle x length; otherwise as the bend, plus precision |
+| `test_quad_writer.py` | 30 | 0 | `xt.Quadrupole` | `k1`, `k1s`, `shift_x`/`shift_y`, `rot_s_rad`, `knl`/`ksl` literal arrays |
+| `test_sext_writer.py` | 30 | 0 | `xt.Sextupole` | `k2`, `k2s`, `shift_x`/`shift_y`, `rot_s_rad`, `knl`/`ksl` literal arrays |
+| `test_oct_writer.py` | 30 | 0 | `xt.Octupole` | `k3`, `k3s`, `shift_x`/`shift_y`, `rot_s_rad`, `knl`/`ksl` literal arrays |
+| `test_mult_writer.py` | 25 | 0 | `xt.Multipole` | `knl`/`ksl` literal arrays, not optics variables; `shift_x`/`shift_y`, `rot_s_rad` |
+| `test_sol_writer.py` | 26 | 0 | `xt.UniformSolenoid` | `ks` as a literal number, `x0`/`y0` axis offsets, `knl`/`ksl`, `shift_x`/`shift_y`, `rot_s_rad` |
+| `test_cavi_writer.py` | 24 | 0 | `xt.Cavity` | voltage, frequency, and phase as optics expressions; the `fshift` global shift; harmonic mode writing `harm_{name}` instead of `freq_{name}` |
+| `test_refshift_writer.py` | 39 | 0 | `xt.Translation`, `xt.TimeDelay`, `xt.Rotation` | every shift and rotation field as an optics expression, zero `default_to_zero` behaviour, all five types in one line |
+| `test_aper_writer.py` | 33 | 0 | `xt.LimitEllipse`, `xt.LimitRect`, `xt.LimitRectEllipse` | bounds, offsets, asymmetric bounds, mixed types |
+| `test_marker_writer.py` | 11 | 0 | `xt.Marker` | type, name, order, multiple markers, start/end convention, offset marker insertion |
+| `test_taylor_maps_writer.py` | 21 | 13 | `xt.FirstOrderTaylorMap`, `xt.SecondOrderTaylorMap` | map arrays as full-precision literals, quad-fringe reversal metadata, minus-sign root-name cleanup, multiple maps in one line |
 
 ### `test_bend_writer.py` and `test_corr_writer.py` note
 

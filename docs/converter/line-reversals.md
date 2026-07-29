@@ -449,7 +449,7 @@ executable and inspecting output, to confirm assumptions used in the converter:
 | Flag | Changes q0 | Changes ks | Changes k0/k1 | Changes element order |
 |---|---|---|---|---|
 | `reverse_element_order` | No | Yes (negate, composes with charge-dependent base) | No | Yes (mirror) |
-| `reverse_charge_sign` | Yes | Yes (negate, since ks depends on q0) | No | No |
+| `reverse_charge_sign` | Yes | No (relabels the reference particle only) | No | No |
 | `reverse_survey_horizontal` | No | Yes (negate, composes with charge-dependent base) | Partial (see table) | No |
 | `reverse_survey_vertical` | No | Yes (negate, composes with charge-dependent base) | No (k0/k1 unchanged; direction of a rotated bend flips via rot_s_rad instead) | No |
 
