@@ -20,26 +20,22 @@ import subprocess
 import sys
 from pathlib import Path
 
+from tests.support.known_issues import known_issue_for
+
 ################################################################################
 # Paths
 ################################################################################
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TESTS_DIR = REPO_ROOT / "tests"
+WORKFLOW_DIR = REPO_ROOT / ".github" / "workflows"
 
 # Generated diagnostic reports: git-ignored, and not documentation.
 EXCLUDED_PREFIXES = ("tests/artifacts/",)
 
-################################################################################
-# External Names
-#
-# Backticked identifiers that are deliberately not defined in this repository.
-# Anything not listed here must resolve, so a renamed internal symbol fails the
-# documentation tests rather than going stale.
-################################################################################
-EXTERNAL_IDENTIFIERS = frozenset({
-    "copy_from_env", "cpymad", "ks_profile", "radiation_flag", "xfail",
-    "__cause__", "tcavfrin", "ttfrin", "tthin", "p_phi", "x_corr",
-    "alfx2", "alfy1", "betx2", "bety1"})
+# Every coverage table starts with these three columns, in this order. Later
+# columns are free. Fixing the order is what lets a count be read by position
+# instead of by "first cell that happens to be a number".
+STANDARD_COLUMNS = ("File", "Tests", "Fail")
 
 
 ################################################################################
@@ -161,7 +157,11 @@ def links(path: Path) -> list[tuple[str, int]]:
 # Citations
 ################################################################################
 _CITED_PATH     = re.compile(
-    r"`((?:docs|tests|sad2xs|examples)/[\w/.\-]+\.(?:md|py|sad))`")
+    r"`((?:docs|tests|sad2xs|examples|\.github)/[\w/.\-]+\.(?:md|py|sad|yml))`")
+
+# Workflows are cited by bare filename, without their folder, so they need
+# their own pattern: `run_tests.yml` rather than `.github/workflows/run_tests.yml`.
+_CITED_WORKFLOW = re.compile(r"`([\w.\-]+\.yml)`")
 
 # Two prose forms name a section of another document:
 #   `path.md` ("Section Name")        -- parenthetical, may wrap a line
@@ -183,6 +183,9 @@ def cited_paths(path: Path) -> list[tuple[str, int]]:
     """
     Every backticked repository file path in a document.
 
+    A bare `*.yml` filename is resolved against `.github/workflows/`, because
+    workflows are always cited without their folder.
+
     Returns
     -------
     list of tuple
@@ -191,6 +194,9 @@ def cited_paths(path: Path) -> list[tuple[str, int]]:
     found = []
     for number, line in enumerate(path.read_text().splitlines(), start = 1):
         found.extend((match.group(1), number) for match in _CITED_PATH.finditer(line))
+        for match in _CITED_WORKFLOW.finditer(line):
+            if "/" not in match.group(1):
+                found.append((f".github/workflows/{match.group(1)}", number))
     return found
 
 
@@ -234,64 +240,100 @@ def cited_test_names(path: Path) -> list[tuple[str, int]]:
 
 
 ################################################################################
-# Test Counts
+# Coverage Tables
 ################################################################################
-_README_COUNT_ROW = re.compile(r"^\s*\|\s*`(test_[a-z0-9_]+\.py)`\s*\|(.*)$")
+_TEST_FILE_CELL = re.compile(r"^`(test_[a-z0-9_]+\.py)`$")
 
 
-def collected_counts() -> dict[str, int]:
+def names_a_test_file(row: list[str]) -> bool:
     """
-    Test instances pytest collects, per test file.
+    Whether a table row's first cell names a test file.
 
-    Runs collection in a subprocess. Collection imports test modules but runs
-    no test, so the SAD executable is never invoked.
+    Distinguishes a coverage table from a table of helper modules, which
+    carries no counts and is not held to the coverage-table column shape.
+    """
+    return bool(row) and bool(_TEST_FILE_CELL.match(row[0]))
+
+
+def _cells(line: str) -> list[str]:
+    """
+    Cells of a Markdown table row, without the leading and trailing empties.
+    """
+    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+
+def coverage_tables(readme: Path) -> list[tuple[int, list[str], list[list[str]]]]:
+    """
+    Every coverage table in a folder README.
+
+    A coverage table is any Markdown table whose first column header is `File`.
+    Reading the header rather than guessing at column positions is what makes
+    a mis-ordered table a detectable error instead of a silent misparse.
 
     Returns
     -------
-    dict
-        Repository-relative test file path to instance count.
+    list of tuple
+        `(header_line_number, header_cells, data_rows)` for each table.
     """
-    result = subprocess.run(
-        [sys.executable, "-m", "pytest", "--collect-only", "-q"],
-        cwd             = REPO_ROOT,
-        capture_output  = True,
-        text            = True)
+    lines  = readme.read_text().splitlines()
+    tables = []
 
-    counts: dict[str, int] = {}
-    for line in result.stdout.splitlines():
-        if "::" not in line:
+    for index, line in enumerate(lines):
+        if not line.lstrip().startswith("|"):
             continue
-        counts[line.split("::")[0]] = counts.get(line.split("::")[0], 0) + 1
+        header = _cells(line)
+        if not header or header[0] != "File":
+            continue
 
-    if not counts:
-        raise RuntimeError(
-            "pytest collection returned no tests. Collection output:\n"
-            f"{result.stdout[-2000:]}\n{result.stderr[-2000:]}")
+        rows   = []
+        cursor = index + 2                              # skip the separator row
+        while cursor < len(lines) and lines[cursor].lstrip().startswith("|"):
+            rows.append(_cells(lines[cursor]))
+            cursor += 1
+        tables.append((index + 1, header, rows))
 
-    return counts
+    return tables
 
 
 def readme_counts(readme: Path) -> dict[str, int]:
     """
     Per-file test counts declared in a folder README's coverage table.
 
-    The count is the first numeric column of each table row naming a test
-    file, which is the Tests column in every folder README.
+    The count is read from the `Tests` column by position, which
+    `test_coverage_tables_have_the_standard_shape` pins to index 1.
 
     Returns
     -------
     dict
         Test file basename to declared count.
     """
+    return _column_values(readme, STANDARD_COLUMNS.index("Tests"))
+
+
+def readme_failure_counts(readme: Path) -> dict[str, int]:
+    """
+    Per-file known-failure counts declared in a folder README's coverage table.
+
+    Returns
+    -------
+    dict
+        Test file basename to declared failure count.
+    """
+    return _column_values(readme, STANDARD_COLUMNS.index("Fail"))
+
+
+def _column_values(readme: Path, column: int) -> dict[str, int]:
+    """
+    Integer values of one column, keyed by the test file each row names.
+    """
     declared = {}
-    for line in readme.read_text().splitlines():
-        match = _README_COUNT_ROW.match(line)
-        if not match:
+    for _, header, rows in coverage_tables(readme):
+        if len(header) <= column or header[column] != STANDARD_COLUMNS[column]:
             continue
-        numbers = [cell.strip() for cell in match.group(2).split("|")
-                   if cell.strip().isdigit()]
-        if numbers:
-            declared[match.group(1)] = int(numbers[0])
+        for row in rows:
+            match = _TEST_FILE_CELL.match(row[0]) if row else None
+            if match and len(row) > column and row[column].isdigit():
+                declared[match.group(1)] = int(row[column])
     return declared
 
 
@@ -310,48 +352,92 @@ def count_carrying_readmes() -> list[Path]:
 
 
 ################################################################################
-# Count Updating
+# Collection
 ################################################################################
-def update_counts() -> list[str]:
-    """
-    Rewrite every declared test count to match what pytest collects.
+_NODEIDS: list[str] | None = None
 
-    This is the writer half of `test_per_file_counts_match_collection`. Run it
-    after adding or removing a test, rather than counting by hand.
+
+def collect_nodeids() -> list[str]:
+    """
+    Every test node pytest collects, as a node id.
+
+    Runs collection in a subprocess. Collection imports test modules but runs
+    no test, so the SAD executable is never invoked. The result is cached, so
+    a test session runs collection once however many checks consume it.
+
+    A non-zero exit status is an error, not a smaller collection. A module that
+    fails to import still lets pytest report every other test, so without this
+    check the counts updater would quietly write the deflated numbers into the
+    READMEs and bake the breakage in.
 
     Returns
     -------
     list of str
-        Repository-relative paths of the files that changed.
+        Collected node ids.
     """
-    counts  = collected_counts()
-    changed = []
+    global _NODEIDS
+    if _NODEIDS is not None:
+        return _NODEIDS
 
-    for readme in count_carrying_readmes():
-        folder   = relative(readme.parent)
-        original = readme.read_text()
-        updated  = []
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "--collect-only", "-q"],
+        cwd             = REPO_ROOT,
+        capture_output  = True,
+        text            = True)
 
-        for line in original.splitlines(keepends = True):
-            match = _README_COUNT_ROW.match(line)
-            if match and f"{folder}/{match.group(1)}" in counts:
-                collected = counts[f"{folder}/{match.group(1)}"]
-                cells     = line.split("|")
-                for index, cell in enumerate(cells):
-                    if cell.strip().isdigit():
-                        cells[index] = cell.replace(cell.strip(), str(collected), 1)
-                        break
-                line = "|".join(cells)
-            updated.append(line)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"pytest collection failed with exit status {result.returncode}. "
+            "Fix collection before trusting or updating any test count. "
+            f"Output:\n{result.stdout[-2000:]}\n{result.stderr[-2000:]}")
 
-        if (text := "".join(updated)) != original:
-            readme.write_text(text)
-            changed.append(relative(readme))
+    nodeids = [line for line in result.stdout.splitlines() if "::" in line]
 
-    if _update_totals(counts):
-        changed.append("tests/README.md")
+    if not nodeids:
+        raise RuntimeError(
+            "pytest collection returned no tests. Collection output:\n"
+            f"{result.stdout[-2000:]}\n{result.stderr[-2000:]}")
 
-    return changed
+    _NODEIDS = nodeids
+    return _NODEIDS
+
+
+def collected_counts() -> dict[str, int]:
+    """
+    Test instances pytest collects, per test file.
+
+    Returns
+    -------
+    dict
+        Repository-relative test file path to instance count.
+    """
+    counts: dict[str, int] = {}
+    for nodeid in collect_nodeids():
+        path = nodeid.split("::")[0]
+        counts[path] = counts.get(path, 0) + 1
+    return counts
+
+
+def known_failure_counts() -> dict[str, int]:
+    """
+    Collected instances carrying a known-issue marker, per test file.
+
+    Counts collected instances rather than `KNOWN_ISSUES` entries, so a
+    parametrised known failure contributes once per parametrisation, which is
+    what a reader of a `Fail` column expects to see.
+
+    Returns
+    -------
+    dict
+        Repository-relative test file path to known-failure count.
+    """
+    counts: dict[str, int] = {}
+    for nodeid in collect_nodeids():
+        path = nodeid.split("::")[0]
+        counts.setdefault(path, 0)
+        if known_issue_for(nodeid) is not None:
+            counts[path] += 1
+    return counts
 
 
 def folder_totals(counts: dict[str, int]) -> dict[str, int]:
@@ -370,9 +456,79 @@ def folder_totals(counts: dict[str, int]) -> dict[str, int]:
     return totals
 
 
+################################################################################
+# Count Updating
+################################################################################
+def update_counts() -> list[str]:
+    """
+    Rewrite every declared test and failure count to match what pytest collects.
+
+    This is the writer half of `test_per_file_counts_match_collection` and
+    `test_declared_failure_counts_match_known_issues`. Run it after adding or
+    removing a test, rather than counting by hand.
+
+    Returns
+    -------
+    list of str
+        Repository-relative paths of the files that changed.
+    """
+    counts   = collected_counts()
+    failures = known_failure_counts()
+    changed  = []
+
+    for readme in count_carrying_readmes():
+        folder   = relative(readme.parent)
+        original = readme.read_text()
+        lines    = original.splitlines(keepends = True)
+
+        for index, line in enumerate(lines):
+            if not line.lstrip().startswith("|"):
+                continue
+            cells = _cells(line)
+            match = _TEST_FILE_CELL.match(cells[0]) if cells else None
+            if not match:
+                continue
+            key = f"{folder}/{match.group(1)}"
+            if key not in counts:
+                continue
+            lines[index] = _rewrite_row(
+                line, {
+                    STANDARD_COLUMNS.index("Tests"): counts[key],
+                    STANDARD_COLUMNS.index("Fail"):  failures.get(key, 0)})
+
+        if (text := "".join(lines)) != original:
+            readme.write_text(text)
+            changed.append(relative(readme))
+
+    if _update_totals(counts):
+        changed.append("tests/README.md")
+
+    return changed
+
+
+def _rewrite_row(line: str, values: dict[int, int]) -> str:
+    """
+    Replace numeric cells of a table row by column index, preserving padding.
+    """
+    parts = line.split("|")
+    # parts[0] is the text before the leading pipe, so data column N is at N+1.
+    for column, value in values.items():
+        position = column + 1
+        if position >= len(parts) or not parts[position].strip().isdigit():
+            continue
+        parts[position] = parts[position].replace(
+            parts[position].strip(), str(value), 1)
+    return "|".join(parts)
+
+
 def _update_totals(counts: dict[str, int]) -> bool:
     """
     Rewrite the Suite Total table in `tests/README.md`. Returns True if changed.
+
+    Every substitution here must match exactly once. A pattern that matched
+    nothing means the table was renamed and the total silently stopped being
+    maintained; a pattern that matched twice means the substitution is reaching
+    beyond the total it was written for and overwriting an unrelated number.
     """
     readme   = TESTS_DIR / "README.md"
     original = readme.read_text()
@@ -381,18 +537,37 @@ def _update_totals(counts: dict[str, int]) -> bool:
 
     for folder, number in totals.items():
         label = folder.removeprefix("tests/")
-        text  = re.sub(
+        text  = _substitute_once(
+            text,
             rf"(\| `{re.escape(label)}/`[^|]*\|\s*)\d+(\s*\|)",
-            rf"\g<1>{number}\g<2>", text)
+            rf"\g<1>{number}\g<2>",
+            f"Suite Total row for {label}/")
 
     total = sum(counts.values())
-    text  = re.sub(r"(\*\*)\d+( tests\*\*)", rf"\g<1>{total}\g<2>", text)
-    text  = re.sub(r"(\| \*\*Total\*\* \| \*\*)\d+(\*\* \|)", rf"\g<1>{total}\g<2>", text)
+    text  = _substitute_once(
+        text, r"(\*\*)\d+( tests\*\*)", rf"\g<1>{total}\g<2>",
+        "headline test total")
+    text  = _substitute_once(
+        text, r"(\| \*\*Total\*\* \| \*\*)\d+(\*\* \|)", rf"\g<1>{total}\g<2>",
+        "Suite Total table Total row")
 
     if text != original:
         readme.write_text(text)
         return True
     return False
+
+
+def _substitute_once(text: str, pattern: str, replacement: str, what: str) -> str:
+    """
+    Substitute a pattern that must occur exactly once in `tests/README.md`.
+    """
+    occurrences = len(re.findall(pattern, text))
+    if occurrences != 1:
+        raise RuntimeError(
+            f"The {what} in tests/README.md matched {occurrences} times, "
+            "expected exactly 1. Updating it would corrupt the file, so no "
+            "counts were written.")
+    return re.sub(pattern, replacement, text)
 
 
 ################################################################################

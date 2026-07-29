@@ -198,6 +198,33 @@ def test_every_test_file_has_a_coverage_table_row():
         "its folder README. Missing entries:\n" + _report(violations))
 
 
+def test_coverage_tables_have_the_standard_shape():
+    """
+    Every coverage table starts with the `File`, `Tests`, `Fail` columns.
+
+    Counts are read from these columns by position, so a table that reorders
+    or omits one would be misread rather than rejected. Reading `Fail` where
+    `Tests` was meant is a silent wrong number, which is the failure this test
+    exists to make loud.
+    """
+    violations = []
+
+    for readme in sorted(inventory.TESTS_DIR.rglob("README.md")):
+        for line, header, rows in inventory.coverage_tables(readme):
+            if not any(inventory.names_a_test_file(row) for row in rows):
+                continue                # a table of helper modules, not tests
+            actual = tuple(header[:len(inventory.STANDARD_COLUMNS)])
+            if actual != inventory.STANDARD_COLUMNS:
+                violations.append(
+                    f"{relative(readme)}:{line}: columns start "
+                    f"{list(actual)}, expected {list(inventory.STANDARD_COLUMNS)}")
+
+    assert not violations, (
+        "Every coverage table must start with the columns "
+        f"{list(inventory.STANDARD_COLUMNS)}. Non-standard tables:\n"
+        + _report(violations))
+
+
 ################################################################################
 # Agreement With The Code
 ################################################################################
@@ -290,6 +317,35 @@ def test_per_file_counts_match_collection():
 
     assert not violations, (
         "Declared test counts must match collection. Run "
+        "`python -m tests.support.docs_inventory --update-counts`. "
+        "Mismatches:\n" + _report(violations))
+
+
+def test_declared_failure_counts_match_known_issues():
+    """
+    Every `Fail` count in a folder README matches `known_issues.py`.
+
+    Counted from collected instances carrying the `known_issue` marker, so the
+    column tracks the markers instead of being maintained by hand. A README
+    once declared `0` for a file with a known failure, and stated "All tests
+    expected to pass" beside it, while the release waited on that same failure.
+    """
+    failures   = inventory.known_failure_counts()
+    violations = []
+
+    for readme in inventory.count_carrying_readmes():
+        folder = relative(readme.parent)
+        for name, declared in inventory.readme_failure_counts(readme).items():
+            collected = failures.get(f"{folder}/{name}")
+            if collected is None:
+                violations.append(f"{relative(readme)}: {name} is not collected")
+            elif collected != declared:
+                violations.append(
+                    f"{relative(readme)}: {name} declares {declared} known "
+                    f"failures, collection has {collected}")
+
+    assert not violations, (
+        "Declared failure counts must match the known_issue markers. Run "
         "`python -m tests.support.docs_inventory --update-counts`. "
         "Mismatches:\n" + _report(violations))
 
