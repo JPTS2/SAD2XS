@@ -24,7 +24,7 @@ Each of these is a known, characterised difference, not an open bug. Most raise 
 | Offset bend reference-orbit convention | bends with `ANGLE != 0` and `DX`/`DY` | yes |
 | `MULT` simplified to a bend | residual at `O(theta^4)` | yes |
 | Hard-edge fringe gating ignored | bends and quadrupoles with `DISFRIN` | **no** |
-| Quadrupole fringe radiation untested | quadrupole fringe, if enabled | no |
+| Quadrupole fringe radiation untested | quadrupole fringe | no |
 | Radiation against SAD | sextupole, octupole, multipole, solenoid | no |
 | Deferred expressions baked to floats | written lattice files | no |
 
@@ -60,13 +60,13 @@ See [element conversion](../converter/elements.md).
 
 ## Fringe fields
 
-SAD has several distinct fringe mechanisms. Two are imported: the bend soft-edge fringe, on by default, and the quadrupole linear fringe, off by default pending an Xsuite release.
+SAD has several distinct fringe mechanisms. Two are imported, both on by default: the bend soft-edge fringe and the quadrupole linear fringe.
 
 The rest are not imported. Most importantly, **`DISFRIN` is not read for bends or quadrupoles**. A lattice that deliberately disables the hard-edge fringe still gets that fringe after conversion. This limitation is silent: no warning is raised.
 
-The imported bend fringe once carried an off-momentum residual of a few percent. Xsuite 0.57.0 corrected the momentum scaling that caused it, and that release is the supported minimum, so the residual no longer applies.
+The imported bend fringe once carried an off-momentum residual of a few percent. Xsuite 0.57.0 corrected the momentum scaling that caused it, and it is below the supported minimum, so the residual no longer applies.
 
-If quadrupole fringe import is enabled, the fringe is modelled as a thin second-order Taylor map. This reproduces the optics correctly, but whether the map radiates is untested. Treat radiation results through quadrupole fringes with caution.
+The quadrupole fringe is modelled as a thin second-order Taylor map. This reproduces the optics correctly, but whether the map radiates is untested. Treat radiation results through quadrupole fringes with caution.
 
 See [fringe models](../converter/fringes.md).
 

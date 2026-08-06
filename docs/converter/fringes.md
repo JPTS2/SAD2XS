@@ -22,7 +22,7 @@ This page covers every fringe mechanism SAD applies. For what SAD itself does in
 | --- | --- | --- | --- |
 | `BEND`, `CORRECTOR` | soft-edge | `FRINGE`, `F1`, `FB1`, `FB2` | **imported** as `fint`/`hgap`, on by default |
 | `BEND` | hard-edge | `DISFRIN` | edge model applied unconditionally; `DISFRIN` not read |
-| `QUAD` | soft-edge, linear | `FRINGE`, `F1`, `F2`, `F1K1F`, `F1K1B`, `F2K1F`, `F2K1B` | **imported** as a Taylor map, off by default |
+| `QUAD` | soft-edge, linear | `FRINGE`, `F1`, `F2`, `F1K1F`, `F1K1B`, `F2K1F`, `F2K1B` | **imported** as a Taylor map, on by default |
 | `QUAD` | hard-edge | `DISFRIN`, plus `FRINGE` side gating | edge model applied unconditionally; neither read |
 | `MULT` | soft-edge and hard-edge | `FRINGE`, `DISFRIN`, `F1`/`F2`/`FB1`/`FB2` | not imported |
 | `MULT` | `K0`/`SK0` dipole fringe | — | not reproduced; converter warns |
@@ -30,7 +30,7 @@ This page covers every fringe mechanism SAD applies. For what SAD itself does in
 | `CAVI` | RF edge-focusing kick | `FRINGE`, `DISFRIN` | not modelled |
 | `SOL` | fringe kick | `DISFRIN` | not modelled; converter warns — see [solenoids](solenoids.md) |
 
-Two `Config` flags control the imports: `_import_sad_bend_fringes` defaults to `True`, `_import_sad_quad_fringes` defaults to `False`. Neither is a public documented feature yet.
+Two `Config` flags control the imports: `_import_sad_bend_fringes` and `_import_sad_quad_fringes`. Both default to `True`. Neither is a public documented feature yet.
 
 Every fringe parameter must be a concrete number. A deferred (symbolic) expression raises a clear error rather than silently producing wrong values.
 
@@ -70,7 +70,7 @@ This was not always so. Xsuite's native edge fringe formula scaled the wrong way
 - an independent from-scratch derivation, following Forest's PTC paper (KEK Preprint 2005-109, §B), reproduces SAD's closed form, not Xsuite's;
 - real compiled PTC, driven through `cpymad`, confirms it — PTC implements the same paper's *other* formula, the one that historically matched Xsuite and MAD-NG.
 
-The upstream fix landed in Xsuite 0.57.0, which is therefore the minimum supported version. The residual it removed was large: a bend that read `3.46%` at `delta = -0.03` now reads `0.001%`.
+The upstream fix landed in Xsuite 0.57.0, below the supported minimum. The residual it removed was large: a bend that read `3.46%` at `delta = -0.03` now reads `0.001%`.
 
 `test_bend_fringe_import_matches_sad_off_momentum` and its corrector equivalent now assert agreement to `1e-4` relative, so a regression in the momentum scaling fails rather than passing quietly.
 
@@ -135,11 +135,9 @@ Each fringe map stores the `(a, b, theta)` it was built from as plain attributes
 
 These are ordinary Python attributes, not xofields. Xsuite has no field for them, but the object carries them through line building and `line.mirror()`. This lets the reversal step rebuild each map's coefficients in place under `-LINE` or `reverse_element_order`. Only the surviving side's `a` flips sign; `b` and `theta` are unchanged.
 
-### Why the soft-edge import is off by default
+### Requires Xsuite 0.58.0
 
-The import is gated on an Xsuite build that is not yet released — the change enabling `SecondOrderTaylorMap` in `env.new` and `copy_from_env` is merged upstream but unreleased.
-
-Turning the default on before that ships would require every installation to run a development Xsuite. The physics is covered by ground-truth tests in `tests/sad/test_quad.py`; only the packaging gate keeps it off.
+The import builds an `xt.SecondOrderTaylorMap` through `env.new`. Xsuite 0.58.0 is the first release to support that, and it is the supported minimum.
 
 ### Hard-edge: applied unconditionally, and it does not compose additively
 
