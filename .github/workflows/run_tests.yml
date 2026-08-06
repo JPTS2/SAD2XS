@@ -8,7 +8,7 @@
 #
 # Authors:    John P. T. Salvesen
 # Email:      john.salvesen@cern.ch
-# Date:       2026-07-20
+# Date:       2026-08-06
 # ==============================================================================
 
 name: Run Tests
@@ -39,13 +39,14 @@ concurrency:
   cancel-in-progress: true
 
 ################################################################################
-# Single job: run the full test suite in the order defined by pytest.ini.
+# Single job: run the full test suite in two steps.
+#
+# Both steps pass `tests/` explicitly, so pytest ignores the `testpaths` order
+# in pytest.ini and collects in plain filesystem order. This changes only the
+# order failures are reported in, never pass or fail.
 #
 # Step 1 — regression tests (BLOCKING): all tests except known_issue markers.
-#   Runs the complete suite (installation → sad_helpers → sad → parser →
-#   conversion → writer → examples → packaging → observability → ci) so the
-#   order defined in pytest.ini is always respected and tests/sad/ runs before
-#   tests/conversion/. A failure here blocks the PR.
+#   Runs the complete suite. A failure here blocks the PR.
 #
 # Step 2 — known-issue tests (NON-BLOCKING): tests marked @known_issue(N).
 #   Failures are visible in the CI log but never block a merge. These tests

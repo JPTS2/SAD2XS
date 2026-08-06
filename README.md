@@ -71,7 +71,7 @@ See [examples](examples/) for complete conversion scripts.
 ## Documentation
 Project documentation lives in [docs](docs/README.md), covering the package architecture, the conversion model, SAD behaviour notes, the testing policy, the release procedure, and the design decisions behind the converter.
 
-The test suite covers parser, converter elements, conversion pipeline, writer, SAD helpers, examples, installation, packaging, and CI configuration — 2123 tests in total.
+The test suite covers parser, converter elements, conversion pipeline, writer, SAD helpers, examples, installation, packaging, and CI configuration.
 See [docs/development/testing.md](docs/development/testing.md) for full details.
 
 ## Limitations

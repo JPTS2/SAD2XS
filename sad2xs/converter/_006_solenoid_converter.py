@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-08-06
 ================================================================================
 """
 
@@ -457,7 +457,7 @@ def convert_solenoids(
                     logger.debug(
                         f"Converted Multipole {element} to solenoid with ks = {ks}")
                     continue
-                
+
                 # Known thin elements that don't need conversion
                 elif isinstance(
                     environment.element_dict[element],      # type: ignore
