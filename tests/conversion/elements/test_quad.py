@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-08-06
 ================================================================================
 """
 ################################################################################
@@ -1212,8 +1212,8 @@ def test_quad_conversion_matches_sad_tracking_for_element_rotation(
 ################################################################################
 # Linear (F1/F2) fringe import (_import_sad_quad_fringes) -- see
 # tests/sad/test_quad.py for the ground truth this mirrors, and
-# docs/reference/sad-behaviour.md. Experimental: defaults to False, unlike
-# _import_sad_bend_fringes.
+# docs/reference/sad-behaviour.md. Defaults to True, as
+# _import_sad_bend_fringes does.
 ################################################################################
 def _quad_fringe_lattice_text(fringe_params, k1 = 0.3):
     """
@@ -1230,15 +1230,14 @@ def _quad_fringe_lattice_text(fringe_params, k1 = 0.3):
     LINE        TEST_LINE   = (START TEST_QUAD END);
     """
 
-def test_quad_fringe_import_defaults_off(write_lattice):
+def test_quad_fringe_import_defaults_on(write_lattice):
     """
-    _import_sad_quad_fringes defaults to False -- F1/F2/FRINGE on a QUAD
-    should have no effect on the converted element without explicitly
-    passing the flag.
+    _import_sad_quad_fringes defaults to True -- F1/F2/FRINGE on a QUAD
+    should build the fringe subline without explicitly passing the flag.
     """
     lattice_path = write_lattice(
         _quad_fringe_lattice_text("F1=0.02 F2=0.01 FRINGE=3"),
-        filename = "quad_fringe_import_default_off.sad")
+        filename = "quad_fringe_import_default_on.sad")
 
     line = s2x.convert_sad_to_xsuite(
         sad_lattice_path    = str(lattice_path),
@@ -1246,15 +1245,22 @@ def test_quad_fringe_import_defaults_off(write_lattice):
         _verbose            = False,
         _test_mode          = True)
 
+    assert isinstance(line["test_quad_fringe_in"], xt.SecondOrderTaylorMap), (
+        "F1/F2/FRINGE should be imported by default "
+        "(_import_sad_quad_fringes defaults to True) -- the entrance "
+        "fringe element should be a SecondOrderTaylorMap.")
+    assert isinstance(line["test_quad_fringe_out"], xt.SecondOrderTaylorMap), (
+        "F1/F2/FRINGE should be imported by default "
+        "(_import_sad_quad_fringes defaults to True) -- the exit "
+        "fringe element should be a SecondOrderTaylorMap.")
     assert isinstance(line["test_quad"], xt.Quadrupole), (
-        "F1/F2/FRINGE should be ignored by default "
-        "(_import_sad_quad_fringes defaults to False) -- the converted "
-        "element should stay a bare Quadrupole, not a fringe subline.")
+        "The quadrupole body should still be a native Xsuite Quadrupole, "
+        "keeping the original SAD element name.")
 
 def test_quad_fringe_import_explicit_off(write_lattice):
     """
     With _import_sad_quad_fringes explicitly disabled, F1/F2/FRINGE on a
-    QUAD should have no effect, same as the default.
+    QUAD should have no effect, overriding the default import.
     """
     lattice_path = write_lattice(
         _quad_fringe_lattice_text("F1=0.02 F2=0.01 FRINGE=3"),
