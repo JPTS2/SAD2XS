@@ -1,0 +1,103 @@
+# ==============================================================================
+# CI Workflow: Run Tests (Pull Request and Scheduled)
+# ==============================================================================
+# SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+#
+# This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+# See LICENSE for details.
+#
+# Authors:    John P. T. Salvesen
+# Email:      john.salvesen@cern.ch
+# Date:       2026-08-06
+# ==============================================================================
+
+name: Run Tests
+
+# Triggers:
+#   - pull_request: catches regressions before any merge to main or a release
+#     branch, running the PR's own code against the current SAD/Xsuite image.
+#   - schedule (weekly): catches upstream breakage. SAD and Xsuite release
+#     independently of SAD2XS, so a new version of either can silently break
+#     the converter without any change on this side. Weekly runs surface that.
+#   - workflow_dispatch: manual re-run from the GitHub Actions UI.
+
+on:
+  pull_request:
+    branches:
+      - main
+      - 'release/**'
+  schedule:
+    - cron: '0 3 * * 1'   # every Monday at 03:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: run-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+################################################################################
+# Single job: run the full test suite in two steps.
+#
+# Both steps pass `tests/` explicitly, so pytest ignores the `testpaths` order
+# in pytest.ini and collects in plain filesystem order. This changes only the
+# order failures are reported in, never pass or fail.
+#
+# Step 1 — regression tests (BLOCKING): all tests except known_issue markers.
+#   Runs the complete suite. A failure here blocks the PR.
+#
+# Step 2 — known-issue tests (NON-BLOCKING): tests marked @known_issue(N).
+#   Failures are visible in the CI log but never block a merge. These tests
+#   document open bugs; they must remain ordinary failures, not xfail.
+################################################################################
+jobs:
+  run-tests:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Compute image name (lowercase owner)
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE=ghcr.io/${OWNER_LC}/sad2xs-sad:latest" >> "$GITHUB_ENV"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull SAD image
+        run: docker pull "$IMAGE"
+
+      - name: Run regression tests
+        env:
+          SKIP_SMOKE: "1"
+        run: |
+          docker run --rm \
+            -e SKIP_SMOKE \
+            -v "$GITHUB_WORKSPACE":/work -w /work \
+            "$IMAGE" \
+            bash -lc '
+              python -m pip install --no-cache-dir -e . &&
+              pytest -ra -q -m "not known_issue" tests/
+            '
+
+      - name: Run known-issue tests
+        continue-on-error: true
+        env:
+          SKIP_SMOKE: "1"
+        run: |
+          docker run --rm \
+            -e SKIP_SMOKE \
+            -v "$GITHUB_WORKSPACE":/work -w /work \
+            "$IMAGE" \
+            bash -lc '
+              python -m pip install --no-cache-dir -e . &&
+              pytest -ra -q -m "known_issue" tests/
+            '

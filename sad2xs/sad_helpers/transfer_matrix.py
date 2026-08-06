@@ -1,14 +1,31 @@
 """
-(Unofficial) SAD to XSuite Converter
+================================================================================
+SAD Helpers: Transfer Matrix
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
+Email:      john.salvesen@cern.ch
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
 # Required Packages
 ################################################################################
-import os
-import subprocess
 import ast
+import logging
+import os
+import uuid
+
 import numpy as np
+
+from ._helpers import run_sad, _check_mathematica_output
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # Calculate Transfer Matrix
@@ -21,7 +38,11 @@ def transfer_matrix_sad(
         wall_time:              int         = 30,
         sad_path:               str         = "sad") -> np.ndarray:
     """
-    Compute the transfer matrix of a SAD lattice between two elements.
+    Compute the 4D (transverse-only) transfer matrix of a SAD lattice
+    between two elements.
+
+    Runs SAD's CALC4D and reads back `TransferMatrix[...]`; the result
+    has no longitudinal/energy coupling terms.
 
     Parameters
     ----------
@@ -35,11 +56,27 @@ def transfer_matrix_sad(
     end_element : str | None, optional
         Name of the ending element for the transfer matrix calculation.
         If None, the end of the beamline is used.
-    
+    wall_time : int, optional
+        Timeout, in seconds, for the SAD subprocess. Defaults to 30.
+    sad_path : str, optional
+        Path to the SAD executable. Defaults to "sad".
+
     Returns
     -------
     np.ndarray
-        The transfer matrix as a NumPy array.
+        The 4x4 transfer matrix.
+
+    Raises
+    ------
+    ValueError
+        If exactly one of `start_element`/`end_element` is given (both
+        or neither are required), if SAD's output contains a
+        Mathematica undefined-symbol marker (see
+        `_check_mathematica_output`), or if no matrix is found in
+        SAD's output.
+    RuntimeError
+        If the SAD subprocess times out or exits non-zero (see
+        `run_sad`).
     """
 
     ########################################
@@ -50,10 +87,19 @@ def transfer_matrix_sad(
     if start_element is None and end_element is not None:
         raise ValueError("If end_element is provided, start_element must also be provided")
 
+    logger.debug("Creating SAD command")
+
     ########################################
-    # Generate the Transfer Matrix command
+    # SAD changes cwd to the directory of
+    # the input script, so the script must
+    # live in cwd (same dir as the lattice).
+    # Use uuid names to avoid collisions;
+    # try/finally ensures cleanup.
     ########################################
-    print("Creating SAD Command")
+    uid      = uuid.uuid4().hex[:12]
+    cmd_file = f"_sad_tmatrix_{uid}.sad"
+    out_file = f"_sad_tmatrix_{uid}.dat"
+
     if start_element is not None and end_element is not None:
         sad_command = f"""OFF ECHO;
 
@@ -76,11 +122,11 @@ CALC;
 TM = TransferMatrix["{start_element}", "{end_element}"];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Print to output
+! Write matrix to file in SAD native format
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-WriteString[6, "! START TM"];
-WriteString[6, TM];
-WriteString[6, "! END TM"];
+fn = OpenWrite["{out_file}"];
+WriteString[fn, TM];
+Close[fn];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -109,11 +155,11 @@ CALC;
 TM = TransferMatrix[1, -1];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Print to output
+! Write matrix to file in SAD native format
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-WriteString[6, "! START TM"];
-WriteString[6, TM];
-WriteString[6, "! END TM"];
+fn = OpenWrite["{out_file}"];
+WriteString[fn, TM];
+Close[fn];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -121,58 +167,29 @@ WriteString[6, "! END TM"];
 abort;
 """
 
-    ########################################
-    # Write the SAD command
-    ########################################
-    with open("temp_sad_tmatrix.sad", "w", encoding = "utf-8") as f:
-        f.write(sad_command)
-    del sad_command
-
-    ########################################
-    # Run the process
-    ########################################
     try:
-        process = subprocess.run(
-            [sad_path, "temp_sad_tmatrix.sad"],
-            capture_output  = True,
-            text            = True,
-            timeout         = wall_time,
-            check           = True)
-    except subprocess.TimeoutExpired:
-        print(f"SAD Twiss timed out at {wall_time}s")
-        if os.path.exists("temp_sad_tmatrix.sad"):
-            os.remove("temp_sad_tmatrix.sad")
-        raise
-    except subprocess.CalledProcessError as e:
-        print(f"SAD exited with non-zero status {e.returncode}")
-        print("stdout:", e.stdout)
-        print("stderr:", e.stderr)
-        if os.path.exists("temp_sad_tmatrix.sad"):
-            os.remove("temp_sad_tmatrix.sad")
-        raise
+        run_sad(
+            sad_command = sad_command,
+            cmd_file    = cmd_file,
+            task_name   = "transfer matrix",
+            wall_time   = wall_time,
+            sad_path    = sad_path)
+
+        with open(out_file, "r", encoding = "utf-8") as f:
+            raw = f.read()
+        _check_mathematica_output(raw)
+
+        start = raw.find("{{")
+        end   = raw.rfind("}}")
+        if start == -1 or end == -1:
+            raise ValueError("Matrix not found in output file")
+        matrix_str  = raw[start:end + 2]
+        cleaned     = matrix_str.replace("}", "]").replace("{", "[")
+        matrix_list = ast.literal_eval(cleaned)
+        rmatrix     = np.array(matrix_list, dtype = float)
+
     finally:
-        if os.path.exists("temp_sad_tmatrix.sad"):
-            os.remove("temp_sad_tmatrix.sad")
-
-    ########################################
-    # Read the output
-    ########################################
-    raw = process.stdout
-
-    ########################################
-    # Process the output
-    ########################################
-    start   = raw.find("{{")
-    end     = raw.rfind("}}")
-    if start == -1 or end == -1:
-        raise ValueError("Matrix not found in subprocess output")
-    matrix_str = raw[start:end + 2]
-
-    ########################################
-    # Convert to numpy array
-    ########################################
-    cleaned     = matrix_str.replace("}", "]").replace("{", "[")
-    matrix_list = ast.literal_eval(cleaned)
-    rmatrix     = np.array(matrix_list, dtype = float)
+        if os.path.exists(out_file):
+            os.remove(out_file)
 
     return rmatrix

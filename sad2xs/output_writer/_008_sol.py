@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Output Writer - Solenoids
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Output Writer: Solenoids
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-21
+================================================================================
 """
 
 ################################################################################
@@ -26,16 +33,34 @@ def create_solenoid_lattice_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_solenoid_lattice_file_information
-    
-    :param line: Description
-    :type line: xt.Line
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Generate the lattice-file source for every UniformSolenoid
+    element.
+
+    Groups solenoids by quantized length (from
+    `extract_multipole_information`), writes one base
+    `xt.UniformSolenoid` per length (with `config.MAX_KNL_ORDER`
+    slots), then clones every individual solenoid from its length's
+    base element with its ks, any combined knl/ksl field (from
+    elements absorbed into the solenoid region by
+    `convert_solenoids`), and any non-zero offset/rotation/x0/y0.
+    Unlike bend/quad/sext/oct, no separate optics file is written for
+    solenoids -- ks and any combined field are baked in as literals.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate solenoid source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration (`MAGNET_LENGTH_PRECISION`,
+        `MAX_KNL_ORDER`, `OUTPUT_STRING_LENGTH`).
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no solenoids.
     """
 
     ########################################
@@ -44,10 +69,11 @@ def create_solenoid_lattice_file_information(
     sols, unique_sol_names = extract_multipole_information(
         line        = line,
         line_table  = line_table,
-        mode        = "UniformSolenoid")
+        mode        = "UniformSolenoid",
+        config      = config)
 
     sol_lengths    = np.array(sorted(sols.keys()))
-    sol_names      = generate_magnet_for_replication_names(sols, "sol")
+    sol_names      = generate_magnet_for_replication_names(sols, "sol", config.MAGNET_LENGTH_PRECISION)
 
     ########################################
     # Ensure there are solenoids in the line
@@ -75,8 +101,8 @@ def create_solenoid_lattice_file_information(
     for sol_name, sol_length in zip(sol_names, sol_lengths):
         output_string += f"""
 env.new(
-    name                = '{sol_name}',
-    parent              = xt.UniformSolenoid,
+    name                = "{sol_name}",
+    prototype           = xt.UniformSolenoid,
     length              = {sol_length},
     order               = {config.MAX_KNL_ORDER})"""
 
@@ -118,8 +144,8 @@ env.new(
             # Basic information
             sol_generation = f"""
 env.new(
-    name        = '{replica_name}',
-    parent      = '{sol}'"""
+    name        = "{replica_name}",
+    prototype   = "{sol}\""""
 
             # Strength information
             if ks != 0:
@@ -130,34 +156,34 @@ env.new(
 {textwrap.fill(
     text                = f"knl         = {knl}",
     width               = config.OUTPUT_STRING_LENGTH,
-    initial_indent      = '    ',
-    subsequent_indent   = '        ',
+    initial_indent      = "    ",
+    subsequent_indent   = "        ",
     break_on_hyphens    = False)}"""
             if ksl != "[]":
                 sol_generation += f""",
 {textwrap.fill(
     text                = f"ksl         = {ksl}",
     width               = config.OUTPUT_STRING_LENGTH,
-    initial_indent      = '    ',
-    subsequent_indent   = '        ',
+    initial_indent      = "    ",
+    subsequent_indent   = "        ",
     break_on_hyphens    = False)}"""
 
             # Misalignments
             if shift_x != 0:
                 sol_generation += f""",
-    shift_x     = '{shift_x}'"""
+    shift_x     = "{shift_x}\""""
             if shift_y != 0:
                 sol_generation += f""",
-    shift_y     = '{shift_y}'"""
+    shift_y     = "{shift_y}\""""
             if rot_s_rad != 0:
                 sol_generation += f""",
-    rot_s_rad   = '{rot_s_rad}'"""
+    rot_s_rad   = "{rot_s_rad}\""""
             if x0 != 0:
                 sol_generation += f""",
-    x0          = '{x0}'"""
+    x0          = "{x0}\""""
             if y0 != 0:
                 sol_generation += f""",
-    y0          = '{y0}'"""
+    y0          = "{y0}\""""
 
             # Close the element definition
             sol_generation += """)"""

@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Output Writer - Correctors
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Output Writer: Correctors
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       2026-07-21
+================================================================================
 """
 
 ################################################################################
@@ -14,7 +21,7 @@ import xdeps as xd
 import numpy as np
 
 from ._000_helpers import extract_corrector_information, \
-    generate_magnet_for_replication_names, check_is_simple_bend_corr
+    generate_magnet_for_replication_names, check_is_simple_bend_corr, get_knl_string
 from ..types import ConfigLike
 
 ################################################################################
@@ -24,19 +31,48 @@ def create_corrector_lattice_file_information(
         line:       xt.Line,
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
+    """
+    Generate the lattice-file source for every corrector (h == 0
+    Bend) element.
 
+    Groups correctors by orientation (horizontal, vertical, or skew,
+    from `extract_corrector_information`) and quantized length, writes
+    one base `xt.Bend` per group, then clones every individual
+    corrector from its group's base element. A "simple" corrector
+    (see `check_is_simple_bend_corr`) is written as a single-line
+    clone with just k0; any other corrector is written with every
+    non-zero edge/offset/combined-multipole parameter listed
+    explicitly. k0/k1 are referenced as live optics variables
+    ("k0_<name>"/"k1_<name>"), not baked-in literals.
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate corrector source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration; only `MAGNET_LENGTH_PRECISION` is
+        used.
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no correctors.
+    """
 
     ########################################
     # Get information
     ########################################
-    hcorrs, vcorrs, scorrs, _, corr_name_dict = extract_corrector_information(line, line_table)
+    hcorrs, vcorrs, scorrs, _, corr_name_dict = extract_corrector_information(line, line_table, config)
 
     hcorr_lengths       = np.array(sorted(hcorrs.keys()))
-    hcorr_names         = generate_magnet_for_replication_names(hcorrs, "hcorr")
+    hcorr_names         = generate_magnet_for_replication_names(hcorrs, "hcorr", config.MAGNET_LENGTH_PRECISION)
     vcorr_lengths       = np.array(sorted(vcorrs.keys()))
-    vcorr_names         = generate_magnet_for_replication_names(vcorrs, "vcorr")
+    vcorr_names         = generate_magnet_for_replication_names(vcorrs, "vcorr", config.MAGNET_LENGTH_PRECISION)
     scorr_lengths       = np.array(sorted(scorrs.keys()))
-    scorr_names         = generate_magnet_for_replication_names(scorrs, "scorr")
+    scorr_names         = generate_magnet_for_replication_names(scorrs, "scorr", config.MAGNET_LENGTH_PRECISION)
 
     ########################################
     # Ensure there are correctors in the line
@@ -63,15 +99,15 @@ def create_corrector_lattice_file_information(
 
     for hcorr_name, hcorr_length in zip(hcorr_names, hcorr_lengths):
         output_string += f"""
-env.new(name = '{hcorr_name}', parent = xt.Bend, length = {hcorr_length})"""
+env.new(name = "{hcorr_name}", prototype = xt.Bend, length = {hcorr_length})"""
 
     for vcorr_name, vcorr_length in zip(vcorr_names, vcorr_lengths):
         output_string += f"""
-env.new(name = '{vcorr_name}', parent = xt.Bend, length = {vcorr_length}, rot_s_rad = +np.pi/2)"""
+env.new(name = "{vcorr_name}", prototype = xt.Bend, length = {vcorr_length}, rot_s_rad = +np.pi/2)"""
 
     for scorr_name, scorr_length in zip(scorr_names, scorr_lengths):
         output_string += f"""
-env.new(name = '{scorr_name}', parent = xt.Bend, length = {scorr_length})"""
+env.new(name = "{scorr_name}", prototype = xt.Bend, length = {scorr_length})"""
 
     output_string += "\n"
 
@@ -85,46 +121,75 @@ env.new(name = '{scorr_name}', parent = xt.Bend, length = {scorr_length})"""
 
     for hcorr, hcorr_length in zip(hcorr_names, hcorr_lengths):
         for replica_name in hcorrs[hcorr_length]:
-            replica_variable    = corr_name_dict[replica_name]
+            source_name         = replica_name
+            replica_variable    = corr_name_dict[source_name]
+            corr                = line[source_name]
+            edge_entry_angle    = corr.edge_entry_angle
+            edge_exit_angle     = corr.edge_exit_angle
 
             # Remove the minus sign if no non minus version exists
             if replica_name.startswith("-"):
-                root_name   = replica_name[1:]
-                if root_name not in hcorrs[hcorr_length]:
-                    replica_name        = root_name
+                root_name    = replica_name[1:]
+                source_names = hcorrs[hcorr_length]
+                if root_name not in source_names:
+                    replica_name = root_name
 
             # If simple try to make it more compact
-            if check_is_simple_bend_corr(line, replica_name):
+            if check_is_simple_bend_corr(line, source_name):
                 corr_generation = f"""
-env.new(name = '{replica_name}', parent = '{hcorr}', k0 = 'k0_{replica_variable}')"""
+env.new(name = "{replica_name}", prototype = "{hcorr}", k0 = "k0_{replica_variable}")"""
 
             # Otherwise do the full version
             else:
                 corr_generation = f"""
 env.new(
-    name                    = '{replica_name}',
-    parent                  = '{hcorr}',
-    k0                      = 'k0_{replica_variable}'"""
+    name                    = "{replica_name}",
+    prototype               = "{hcorr}",
+    k0                      = "k0_{replica_variable}\""""
+                if corr.k1 != 0:
+                    corr_generation += f""",
+    k1                      = "k1_{replica_variable}\""""
             # Append edge entry angles
-                if line[replica_name].edge_entry_angle != 0:
+                if corr.edge_entry_angle != 0:
                     corr_generation += f""",
-    edge_entry_angle        = {line[replica_name].edge_entry_angle}"""
-                if line[replica_name].edge_exit_angle != 0:
+    edge_entry_angle        = {edge_entry_angle}"""
+                if corr.edge_exit_angle != 0:
                     corr_generation += f""",
-    edge_exit_angle         = {line[replica_name].edge_exit_angle}"""
-                if line[replica_name].edge_entry_angle_fdown != 0:
+    edge_exit_angle         = {edge_exit_angle}"""
+                if corr.edge_entry_angle_fdown != 0:
                     corr_generation += f""",
-    edge_entry_angle_fdown  = {line[replica_name].edge_entry_angle_fdown}"""
-                if line[replica_name].edge_exit_angle_fdown != 0:
+    edge_entry_angle_fdown  = {corr.edge_entry_angle_fdown}"""
+                if corr.edge_exit_angle_fdown != 0:
                     corr_generation += f""",
-    edge_exit_angle_fdown   = {line[replica_name].edge_exit_angle_fdown}"""
+    edge_exit_angle_fdown   = {corr.edge_exit_angle_fdown}"""
+                if corr.edge_entry_fint != 0:
+                    corr_generation += f""",
+    edge_entry_fint         = {corr.edge_entry_fint:.24f}"""
+                if corr.edge_entry_hgap != 0:
+                    corr_generation += f""",
+    edge_entry_hgap         = {corr.edge_entry_hgap:.24f}"""
+                if corr.edge_exit_fint != 0:
+                    corr_generation += f""",
+    edge_exit_fint          = {corr.edge_exit_fint:.24f}"""
+                if corr.edge_exit_hgap != 0:
+                    corr_generation += f""",
+    edge_exit_hgap          = {corr.edge_exit_hgap:.24f}"""
                 # Append shifts if they exist
-                if line[replica_name].shift_x != 0:
+                if corr.shift_x != 0:
                     corr_generation += f""",
-    shift_x                 = '{line[replica_name].shift_x}'"""
-                if line[replica_name].shift_y != 0:
+    shift_x                 = "{corr.shift_x}\""""
+                if corr.shift_y != 0:
                     corr_generation += f""",
-    shift_y                 = '{line[replica_name].shift_y}'"""
+    shift_y                 = "{corr.shift_y}\""""
+                # Combined multipole components
+                knl_str = get_knl_string(np.asarray(corr.knl))
+                ksl_str = get_knl_string(np.asarray(corr.ksl))
+                if knl_str != "[]":
+                    corr_generation += f""",
+    knl                     = {knl_str}"""
+                if ksl_str != "[]":
+                    corr_generation += f""",
+    ksl                     = {ksl_str}"""
             # Append the missing parenthesis
                 corr_generation += """)"""
 
@@ -134,46 +199,75 @@ env.new(
 
     for vcorr, vcorr_length in zip(vcorr_names, vcorr_lengths):
         for replica_name in vcorrs[vcorr_length]:
-            replica_variable    = corr_name_dict[replica_name]
+            source_name         = replica_name
+            replica_variable    = corr_name_dict[source_name]
+            corr                = line[source_name]
+            edge_entry_angle    = corr.edge_entry_angle
+            edge_exit_angle     = corr.edge_exit_angle
 
             # Remove the minus sign if no non minus version exists
             if replica_name.startswith("-"):
-                root_name   = replica_name[1:]
-                if root_name not in vcorrs[vcorr_length]:
-                    replica_name        = root_name
+                root_name    = replica_name[1:]
+                source_names = vcorrs[vcorr_length]
+                if root_name not in source_names:
+                    replica_name = root_name
 
             # If simple try to make it more compact
-            if check_is_simple_bend_corr(line, replica_name):
+            if check_is_simple_bend_corr(line, source_name):
                 corr_generation = f"""
-env.new(name = '{replica_name}', parent = '{vcorr}', k0 = 'k0_{replica_variable}')"""
+env.new(name = "{replica_name}", prototype = "{vcorr}", k0 = "k0_{replica_variable}")"""
 
             # Otherwise do the full version
             else:
                 corr_generation = f"""
 env.new(
-    name                    = '{replica_name}',
-    parent                  = '{vcorr}',
-    k0                      = 'k0_{replica_variable}'"""
+    name                    = "{replica_name}",
+    prototype               = "{vcorr}",
+    k0                      = "k0_{replica_variable}\""""
+                if corr.k1 != 0:
+                    corr_generation += f""",
+    k1                      = "k1_{replica_variable}\""""
             # Append edge entry angles
-                if line[replica_name].edge_entry_angle != 0:
+                if corr.edge_entry_angle != 0:
                     corr_generation += f""",
-    edge_entry_angle        = {line[replica_name].edge_entry_angle}"""
-                if line[replica_name].edge_exit_angle != 0:
+    edge_entry_angle        = {edge_entry_angle}"""
+                if corr.edge_exit_angle != 0:
                     corr_generation += f""",
-    edge_exit_angle         = {line[replica_name].edge_exit_angle}"""
-                if line[replica_name].edge_entry_angle_fdown != 0:
+    edge_exit_angle         = {edge_exit_angle}"""
+                if corr.edge_entry_angle_fdown != 0:
                     corr_generation += f""",
-    edge_entry_angle_fdown  = {line[replica_name].edge_entry_angle_fdown}"""
-                if line[replica_name].edge_exit_angle_fdown != 0:
+    edge_entry_angle_fdown  = {corr.edge_entry_angle_fdown}"""
+                if corr.edge_exit_angle_fdown != 0:
                     corr_generation += f""",
-    edge_exit_angle_fdown   = {line[replica_name].edge_exit_angle_fdown}"""
+    edge_exit_angle_fdown   = {corr.edge_exit_angle_fdown}"""
+                if corr.edge_entry_fint != 0:
+                    corr_generation += f""",
+    edge_entry_fint         = {corr.edge_entry_fint:.24f}"""
+                if corr.edge_entry_hgap != 0:
+                    corr_generation += f""",
+    edge_entry_hgap         = {corr.edge_entry_hgap:.24f}"""
+                if corr.edge_exit_fint != 0:
+                    corr_generation += f""",
+    edge_exit_fint          = {corr.edge_exit_fint:.24f}"""
+                if corr.edge_exit_hgap != 0:
+                    corr_generation += f""",
+    edge_exit_hgap          = {corr.edge_exit_hgap:.24f}"""
                 # Append shifts if they exist
-                if line[replica_name].shift_x != 0:
+                if corr.shift_x != 0:
                     corr_generation += f""",
-    shift_x                 = '{line[replica_name].shift_x}'"""
-                if line[replica_name].shift_y != 0:
+    shift_x                 = "{corr.shift_x}\""""
+                if corr.shift_y != 0:
                     corr_generation += f""",
-    shift_y                 = '{line[replica_name].shift_y}'"""
+    shift_y                 = "{corr.shift_y}\""""
+                # Combined multipole components
+                knl_str = get_knl_string(np.asarray(corr.knl))
+                ksl_str = get_knl_string(np.asarray(corr.ksl))
+                if knl_str != "[]":
+                    corr_generation += f""",
+    knl                     = {knl_str}"""
+                if ksl_str != "[]":
+                    corr_generation += f""",
+    ksl                     = {ksl_str}"""
             # Append the missing parenthesis
                 corr_generation += """)"""
 
@@ -182,49 +276,79 @@ env.new(
 
     for scorr, scorr_length in zip(scorr_names, scorr_lengths):
         for replica_name in scorrs[scorr_length]:
-            replica_variable    = corr_name_dict[replica_name]
+            source_name         = replica_name
+            replica_variable    = corr_name_dict[source_name]
+            corr                = line[source_name]
+            edge_entry_angle    = corr.edge_entry_angle
+            edge_exit_angle     = corr.edge_exit_angle
+            rot_s_rad           = corr.rot_s_rad
 
             # Remove the minus sign if no non minus version exists
             if replica_name.startswith("-"):
-                root_name   = replica_name[1:]
-                if root_name not in scorrs[scorr_length]:
-                    replica_name        = root_name
+                root_name    = replica_name[1:]
+                source_names = scorrs[scorr_length]
+                if root_name not in source_names:
+                    replica_name = root_name
 
             # If simple try to make it more compact
-            if check_is_simple_bend_corr(line, replica_name):
+            if check_is_simple_bend_corr(line, source_name):
                 corr_generation = f"""
-env.new(name = '{replica_name}', parent = '{scorr}', k0 = 'k0_{replica_variable}', rot_s_rad = '{line[replica_name].rot_s_rad}')"""
+env.new(name = "{replica_name}", prototype = "{scorr}", k0 = "k0_{replica_variable}", rot_s_rad = "{rot_s_rad}")"""
 
             # Otherwise do the full version
             else:
                 corr_generation = f"""
 env.new(
-    name                    = '{replica_name}',
-    parent                  = '{scorr}',
-    k0                      = 'k0_{replica_variable}'"""
+    name                    = "{replica_name}",
+    prototype               = "{scorr}",
+    k0                      = "k0_{replica_variable}\""""
+                if corr.k1 != 0:
+                    corr_generation += f""",
+    k1                      = "k1_{replica_variable}\""""
             # Append edge entry angles
-                if line[replica_name].edge_entry_angle != 0:
+                if corr.edge_entry_angle != 0:
                     corr_generation += f""",
-    edge_entry_angle        = {line[replica_name].edge_entry_angle}"""
-                if line[replica_name].edge_exit_angle != 0:
+    edge_entry_angle        = {edge_entry_angle}"""
+                if corr.edge_exit_angle != 0:
                     corr_generation += f""",
-    edge_exit_angle         = {line[replica_name].edge_exit_angle}"""
-                if line[replica_name].edge_entry_angle_fdown != 0:
+    edge_exit_angle         = {edge_exit_angle}"""
+                if corr.edge_entry_angle_fdown != 0:
                     corr_generation += f""",
-    edge_entry_angle_fdown  = {line[replica_name].edge_entry_angle_fdown}"""
-                if line[replica_name].edge_exit_angle_fdown != 0:
+    edge_entry_angle_fdown  = {corr.edge_entry_angle_fdown}"""
+                if corr.edge_exit_angle_fdown != 0:
                     corr_generation += f""",
-    edge_exit_angle_fdown   = {line[replica_name].edge_exit_angle_fdown}"""
+    edge_exit_angle_fdown   = {corr.edge_exit_angle_fdown}"""
+                if corr.edge_entry_fint != 0:
+                    corr_generation += f""",
+    edge_entry_fint         = {corr.edge_entry_fint:.24f}"""
+                if corr.edge_entry_hgap != 0:
+                    corr_generation += f""",
+    edge_entry_hgap         = {corr.edge_entry_hgap:.24f}"""
+                if corr.edge_exit_fint != 0:
+                    corr_generation += f""",
+    edge_exit_fint          = {corr.edge_exit_fint:.24f}"""
+                if corr.edge_exit_hgap != 0:
+                    corr_generation += f""",
+    edge_exit_hgap          = {corr.edge_exit_hgap:.24f}"""
                 # Append shifts if they exist
-                if line[replica_name].shift_x != 0:
+                if corr.shift_x != 0:
                     corr_generation += f""",
-    shift_x                 = '{line[replica_name].shift_x}'"""
-                if line[replica_name].shift_y != 0:
+    shift_x                 = "{corr.shift_x}\""""
+                if corr.shift_y != 0:
                     corr_generation += f""",
-    shift_y                 = '{line[replica_name].shift_y}'"""
+    shift_y                 = "{corr.shift_y}\""""
             # In the case of a skew corrector, we need to add a rotation
                 corr_generation += f""",
-    rot_s_rad               = '{line[replica_name].rot_s_rad}'"""
+    rot_s_rad               = "{rot_s_rad}\""""
+                # Combined multipole components
+                knl_str = get_knl_string(np.asarray(corr.knl))
+                ksl_str = get_knl_string(np.asarray(corr.ksl))
+                if knl_str != "[]":
+                    corr_generation += f""",
+    knl                     = {knl_str}"""
+                if ksl_str != "[]":
+                    corr_generation += f""",
+    ksl                     = {ksl_str}"""
             # Append the missing parenthesis
                 corr_generation += """)"""
 
@@ -246,26 +370,45 @@ def create_corrector_optics_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Docstring for create_corrector_optics_file_information
-    
-    :param line: Description
-    :type line: xt.Line
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Generate the optics-file source assigning every corrector's k0/k1.
+
+    Writes one `k0_<name>`/`k1_<name> = <value>,` line per distinct
+    corrector optics-variable name, aligned to
+    `config.OUTPUT_STRING_SEP`, for use inside the generated
+    `env.vars.update(...)` call. Zero values are omitted (the writer's
+    `default_to_zero` setting covers them).
+
+    Parameters
+    ----------
+    line : xt.Line
+        The converted line to generate corrector optics source for.
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    config : ConfigLike
+        Converter configuration (`MAGNET_LENGTH_PRECISION`,
+        `OUTPUT_STRING_SEP`).
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no correctors.
+
+    Raises
+    ------
+    KeyError
+        If neither `corr_variable` nor its reversed form is found in
+        `line`.
     """
 
     ########################################
     # Get information
     ########################################
-    hcorrs, vcorrs, scorrs, unique_corr_variables, _ = extract_corrector_information(line, line_table)
+    hcorrs, vcorrs, scorrs, unique_corr_variables, _ = extract_corrector_information(line, line_table, config)
 
-    hcorr_names         = generate_magnet_for_replication_names(hcorrs, "hcorr")
-    vcorr_names         = generate_magnet_for_replication_names(vcorrs, "vcorr")
-    scorr_names         = generate_magnet_for_replication_names(scorrs, "scorr")
+    hcorr_names         = generate_magnet_for_replication_names(hcorrs, "hcorr", config.MAGNET_LENGTH_PRECISION)
+    vcorr_names         = generate_magnet_for_replication_names(vcorrs, "vcorr", config.MAGNET_LENGTH_PRECISION)
+    scorr_names         = generate_magnet_for_replication_names(scorrs, "scorr", config.MAGNET_LENGTH_PRECISION)
 
     ########################################
     # Ensure there are correctors in the line
@@ -284,21 +427,32 @@ def create_corrector_optics_file_information(
 
     for corr_variable in unique_corr_variables:
         k0 = None
+        k1 = None
 
         try:
-            k0  = line[corr_variable].k0
+            corr = line[corr_variable]
         except KeyError:
             try:
-                k0  = line[f"-{corr_variable}"].k0
-            except KeyError:
-                raise KeyError(f"Could not find bend variable {corr_variable} or -{corr_variable} in line.")
+                corr = line[f"-{corr_variable}"]
+            except KeyError as exc:
+                raise KeyError(
+                    f"Could not find corrector variable {corr_variable} or "
+                    f"-{corr_variable} in line.") from exc
+
+        k0 = corr.k0
+        k1 = corr.k1
 
         if k0 == 0:
             k0 = None
+        if k1 == 0:
+            k1 = None
 
         if k0 is not None:
             output_string += f"""
-    {f'k0_{corr_variable}'}{' ' * (config.OUTPUT_STRING_SEP - len(f'k0_{corr_variable}') + 4)}{'= '}{k0:.24f},"""
+    {f"k0_{corr_variable}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k0_{corr_variable}") + 4)}{"= "}{k0:.24f},"""
+        if k1 is not None:
+            output_string += f"""
+    {f"k1_{corr_variable}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k1_{corr_variable}") + 4)}{"= "}{k1:.24f},"""
 
     ########################################
     # Return

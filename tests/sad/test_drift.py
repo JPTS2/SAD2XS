@@ -1,0 +1,135 @@
+"""
+================================================================================
+SAD syntax assumptions: DRIFT element
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
+Email:      john.salvesen@cern.ch
+Date:       2026-07-23
+================================================================================
+"""
+################################################################################
+# Required Packages
+################################################################################
+import os
+
+import numpy as np
+import pytest
+
+from sad2xs.sad_helpers import track_sad, twiss_sad
+
+################################################################################
+# Rejected parameters
+# DRIFT accepts only L — no misalignment parameters. See tests/sad/README.md's
+# "Parameter matrix" for the full accepted/rejected table this parametrization
+# transcribes.
+################################################################################
+REJECTED_PARAMS = [
+    pytest.param("L=1.0 DX=0.001",   id = "dx"),
+    pytest.param("L=1.0 DY=0.001",   id = "dy"),
+    pytest.param("L=1.0 ROTATE=0.1", id = "rotate"),
+    pytest.param("L=1.0 ANGLE=0.01", id = "angle"),
+    pytest.param("L=1.0 K0=0.1",     id = "k0"),
+    pytest.param("L=1.0 SK0=0.1",    id = "sk0"),
+    pytest.param("L=1.0 K1=0.1",     id = "k1"),
+    pytest.param("L=1.0 SK1=0.1",    id = "sk1"),
+    pytest.param("L=1.0 K2=0.1",     id = "k2"),
+    pytest.param("L=1.0 SK2=0.1",    id = "sk2"),
+    pytest.param("L=1.0 K3=0.1",     id = "k3"),
+    pytest.param("L=1.0 SK3=0.1",    id = "sk3"),
+    pytest.param("L=1.0 K4=0.1",     id = "k4"),
+    pytest.param("L=1.0 SK4=0.1",    id = "sk4"),
+    pytest.param("L=1.0 BZ=0.1",     id = "bz"),
+    pytest.param("L=1.0 HARM=1000",  id = "harm"),
+    pytest.param("L=1.0 FREQ=400E6", id = "freq"),
+    pytest.param("L=1.0 FRINGE=1",   id = "fringe"),
+    pytest.param("L=1.0 DISFRIN=1",  id = "disfrin"),
+    pytest.param("L=1.0 F1=0.1",     id = "f1"),
+    pytest.param("L=1.0 F2=0.1",     id = "f2"),
+    pytest.param("L=1.0 FB1=0.1",    id = "fb1"),
+    pytest.param("L=1.0 FB2=0.1",    id = "fb2"),
+    pytest.param("L=1.0 F1K1F=0.1",  id = "f1k1f"),
+    pytest.param("L=1.0 F2K1F=0.1",  id = "f2k1f"),
+    pytest.param("L=1.0 F1K1B=0.1",  id = "f1k1b"),
+    pytest.param("L=1.0 F2K1B=0.1",  id = "f2k1b"),
+]
+
+@pytest.mark.parametrize("params", REJECTED_PARAMS)
+def test_drift_rejects(sad_rejects, params):
+    """
+    SAD's DRIFT element should reject every parameter except L, including
+    FRINGE/DISFRIN and every soft-edge fringe sub-parameter.
+    """
+    sad_rejects(
+        f"DRIFT D1 = ({params});\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START D1 END);")
+
+################################################################################
+# Effect on Twiss and tracking
+#
+# DRIFT's only parameter, L, determines the total line length in Twiss and
+# leaves a particle's transverse coordinates geometrically propagated (not
+# perturbed) in tracking.
+################################################################################
+def test_drift_length_matches_l_parameter(tmp_path):
+    """
+    A DRIFT's L parameter should determine the total Twiss s-coordinate.
+    """
+    lat = tmp_path / "test.sad"
+    lat.write_text(
+        "MOMENTUM = 1.0 GEV;\n"
+        "DRIFT D1 = (L=2.5);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START D1 END);\n")
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        tw = twiss_sad(
+            lattice_filepath    = lat.name,
+            line_name           = "TEST",
+            calc6d              = False,
+            closed              = False,
+            additional_commands = "")
+    finally:
+        os.chdir(cwd)
+    assert tw["s"][-1] == pytest.approx(2.5), (
+        "DRIFT L=2.5 should give a total line length of 2.5.")
+
+def test_drift_applies_correct_transverse_map_in_tracking(tmp_path):
+    """
+    A DRIFT should geometrically propagate a particle without perturbing it:
+    for x0=0, px0=1e-3 through a 1 m drift, x_final = x0 + px0*L = 1e-3 and
+    px is unchanged.
+    """
+    lat = tmp_path / "test.sad"
+    lat.write_text(
+        "MOMENTUM = 1.0 GEV;\n"
+        "DRIFT D1 = (L=1.0);\n"
+        "MARK START = ()\n     END   = ();\n"
+        "LINE TEST = (START D1 END);\n")
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        result = track_sad(
+            lattice_filepath    = lat.name,
+            line_name           = "TEST",
+            x_init              = np.array([0.0]),
+            px_init             = np.array([1e-3]),
+            y_init              = np.array([0.0]),
+            py_init             = np.array([0.0]),
+            zeta_init           = np.array([0.0]),
+            delta_init          = np.array([0.0]),
+            n_turns             = 1,
+            rfsw                = False,
+            with_progress       = False)
+    finally:
+        os.chdir(cwd)
+    assert result["x"][0] == pytest.approx(1e-3, abs=1e-9), (
+        "After a 1 m drift with px0=1e-3, x should be px0*L = 1e-3.")
+    assert result["px"][0] == pytest.approx(1e-3, abs=1e-12), (
+        "A drift should not change px.")

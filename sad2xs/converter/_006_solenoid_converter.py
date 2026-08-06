@@ -1,21 +1,29 @@
 """
-(Unofficial) SAD to XSuite Converter: Solenoid Converter
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Solenoid Converter
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-08-06
+================================================================================
 """
 
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
+
 import xtrack as xt
 import numpy as np
 
-from tqdm import tqdm
-
 from ..types import ConfigLike
-from ..helpers import print_section_heading
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # Conversion Function
@@ -25,14 +33,37 @@ def convert_solenoids(
         environment:            xt.Environment,
         config:                 ConfigLike) -> None:
     """
-    Docstring for convert_solenoids
-    
-    :param parsed_lattice_data: Description
-    :type parsed_lattice_data: dict
-    :param environment: Description
-    :type environment: xt.Environment
-    :param config: Description
-    :type config: ConfigLike
+    Convert non-solenoid elements inside bound solenoid regions into
+    equivalent UniformSolenoid elements carrying the local ks.
+
+    Between each pair of BOUND solenoid markers, every element picks
+    up the solenoidal field active at that point in the lattice (the
+    ks of the nearest preceding, or if reversed, nearest following,
+    boundary solenoid): Drifts convert directly; Bend/Quadrupole/
+    Sextupole/Octupole/Multipole elements convert to a UniformSolenoid
+    carrying both their own field (as knl/ksl) and ks, with x0/y0 set
+    to keep the transverse offset consistent under the field rotation.
+    Thin, field-free elements (Translation, TimeDelay, Rotation,
+    Marker, aperture limits, zero-length Cavity) are left alone; any
+    other thick element found inside a solenoid region is warned
+    about, not converted.
+
+    Parameters
+    ----------
+    parsed_lattice_data : dict
+        Parsed lattice data, as returned by `parse_sad_file`.
+    environment : xt.Environment
+        The Xsuite environment containing the lines and elements to
+        convert. Must already have every element and every line
+        created (including reversed lines).
+    config : ConfigLike
+        Converter configuration; only `MAX_KNL_ORDER` is used.
+
+    Raises
+    ------
+    ValueError
+        If BOUND solenoids in a line are not paired (an odd number in
+        entrance/exit order).
     """
 
     ########################################
@@ -44,10 +75,10 @@ def convert_solenoids(
     # Check if there are any solenoids
     ########################################
     if "sol" not in parsed_elements:
-        if config._verbose:
-            print_section_heading("No solenoids in line", mode = "subsection")
+        logger.info("No solenoids in lattice: skipping solenoid corrections")
         return
     solenoids   = parsed_elements["sol"]
+    n_converted = 0
 
     ########################################
     # Get bound and geo solenoids
@@ -117,7 +148,10 @@ def convert_solenoids(
                 bound_solenoid_pair_indicies.append(
                     (bound_solenoid_indicies[i], bound_solenoid_indicies[i + 1]))
             else:
-                raise ValueError("Unmatched solenoid found in the line.")
+                raise ValueError(
+                    f"Unmatched boundary solenoid {bound_sols_in_line[i]} in "
+                    f"line {line_name}: BOUND solenoids must come in "
+                    "entrance/exit pairs.")
 
         ########################################
         # Get the elements between bound solenoids
@@ -211,22 +245,23 @@ def convert_solenoids(
 
                     if new_element_name not in environment.element_dict:        # type: ignore
                         environment.new(
-                            name    = new_element_name,
-                            parent  = xt.UniformSolenoid,
-                            length  = length,
-                            ks      = ks)
+                            name      = new_element_name,
+                            prototype = xt.UniformSolenoid,
+                            length    = length,
+                            ks        = ks)
                     line.element_names[idx] = new_element_name
 
-                    if config._verbose:
-                        print(
-                            f"Converted drift {element} to solenoid " +\
-                            f"{new_element_name} with ks = {ks}")
+                    n_converted += 1
+                    logger.debug(
+                        f"Converted drift {element} to solenoid "
+                        f"{new_element_name} with ks = {ks}")
                     continue
 
                 # Bend conversion
                 elif isinstance(environment.element_dict[element], xt.Bend):        # type: ignore
 
-                    assert line[element].h == 0, "Bend with non-zero angle found between solenoids."
+                    assert line[element].h == 0, \
+                        f"Bend {element} with non-zero angle found between solenoids."
 
                     length      = line[element].length
                     k0          = line[element].k0
@@ -246,7 +281,7 @@ def convert_solenoids(
                     if new_element_name not in environment.element_dict:        # type: ignore
                         environment.new(
                             name        = new_element_name,
-                            parent      = xt.UniformSolenoid,
+                            prototype   = xt.UniformSolenoid,
                             length      = length,
                             ks          = ks,
                             knl         = knl,
@@ -259,10 +294,10 @@ def convert_solenoids(
 
                     line.element_names[idx] = new_element_name
 
-                    if config._verbose:
-                        print(
-                            f"Converted Bend {element} to solenoid " +\
-                            f"{new_element_name} with ks = {ks}")
+                    n_converted += 1
+                    logger.debug(
+                        f"Converted Bend {element} to solenoid "
+                        f"{new_element_name} with ks = {ks}")
                     continue
 
                 # Quadrupole conversion
@@ -287,7 +322,7 @@ def convert_solenoids(
                     if new_element_name not in environment.element_dict:        # type: ignore
                         environment.new(
                             name				= new_element_name,
-                            parent				= xt.UniformSolenoid,
+                            prototype			= xt.UniformSolenoid,
                             length				= length,
                             ks					= ks,
                             knl					= knl,
@@ -300,10 +335,10 @@ def convert_solenoids(
                             y0                  = y0)
                     line.element_names[idx] = new_element_name
 
-                    if config._verbose:
-                        print(
-                            f"Converted Quadrupole {element} to solenoid " +\
-                            f"{new_element_name} with ks = {ks}")
+                    n_converted += 1
+                    logger.debug(
+                        f"Converted Quadrupole {element} to solenoid "
+                        f"{new_element_name} with ks = {ks}")
                     continue
 
                 # Sextupole conversion
@@ -328,7 +363,7 @@ def convert_solenoids(
                     if new_element_name not in environment.element_dict:     # type: ignore
                         environment.new(
                             name				= new_element_name,
-                            parent				= xt.UniformSolenoid,
+                            prototype			= xt.UniformSolenoid,
                             length				= length,
                             ks					= ks,
                             knl					= knl,
@@ -341,10 +376,10 @@ def convert_solenoids(
                             y0                  = y0)
                     line.element_names[idx] = new_element_name
 
-                    if config._verbose:
-                        print(
-                            f"Converted Sextupole {element} to solenoid " + \
-                            f"{new_element_name} with ks = {ks}")
+                    n_converted += 1
+                    logger.debug(
+                        f"Converted Sextupole {element} to solenoid "
+                        f"{new_element_name} with ks = {ks}")
                     continue
 
                 # Octupole conversion
@@ -369,7 +404,7 @@ def convert_solenoids(
                     if new_element_name not in environment.element_dict:    # type: ignore
                         environment.new(
                             name				= new_element_name,
-                            parent				= xt.UniformSolenoid,
+                            prototype			= xt.UniformSolenoid,
                             length				= length,
                             ks					= ks,
                             knl					= knl,
@@ -382,10 +417,10 @@ def convert_solenoids(
                             y0                  = y0)
                     line.element_names[idx] = new_element_name
 
-                    if config._verbose:
-                        print(
-                            f"Converted Octupole {element} to solenoid " +\
-                            f"{new_element_name} with ks = {ks}")
+                    n_converted += 1
+                    logger.debug(
+                        f"Converted Octupole {element} to solenoid "
+                        f"{new_element_name} with ks = {ks}")
                     continue
 
                 # Multipole conversion
@@ -406,7 +441,7 @@ def convert_solenoids(
                     environment.element_dict.pop(element)                       # type: ignore
                     environment.new(
                         name				= element,
-                        parent				= xt.UniformSolenoid,
+                        prototype			= xt.UniformSolenoid,
                         length				= length,
                         ks					= ks,
                         knl					= knl,
@@ -418,24 +453,33 @@ def convert_solenoids(
                         x0                  = x0,
                         y0                  = y0)
 
-                    if config._verbose:
-                        print(f"Converted Multipole {element} to solenoid with ks = {ks}")
+                    n_converted += 1
+                    logger.debug(
+                        f"Converted Multipole {element} to solenoid with ks = {ks}")
                     continue
 
+                # Known thin elements that don't need conversion
                 elif isinstance(
                     environment.element_dict[element],      # type: ignore
                     (
-                        xt.XYShift,
-                        xt.ZetaShift,
-                        xt.XRotation,
-                        xt.YRotation,
-                        xt.SRotation,
+                        xt.Translation,
+                        xt.TimeDelay,
+                        xt.Rotation,
                         xt.Marker,
-                        xt.LimitEllipse)):  
-                    # Known elements that don"t need conversion
+                        xt.LimitEllipse,
+                        xt.LimitRect,
+                        xt.LimitRectEllipse)):
                     continue
-                elif config._verbose:
-                    print(f"Element {element} in line {line_name} has not been converted")
+                # Thin RF doesn't need conversion
+                elif isinstance(environment.element_dict[element], xt.Cavity) \
+                        and line[element].length == 0:
+                    continue
+                # Other potentially thick elements to warn on
+                else:
+                    logger.warning(
+                        f"Element {element} in line {line_name} has not been converted")
+
+    logger.info(f"Converted {n_converted} elements inside solenoid regions")
 
 ###############################################################################
 # Reference shift corrections
@@ -447,18 +491,45 @@ def solenoid_reference_shift_corrections(
         reverse_line:           bool,
         config:                 ConfigLike) -> None:
     """
-    Docstring for solenoid_reference_shift_corrections
-    
-    :param line: Description
-    :type line: xt.Line
-    :param parsed_lattice_data: Description
-    :type parsed_lattice_data: dict
-    :param environment: Description
-    :type environment: xt.Environment
-    :param reverse_line: Description
-    :type reverse_line: bool
-    :param config: Description
-    :type config: ConfigLike
+    Correct and reorder the reference-frame shift elements installed
+    by `convert_solenoids` for each bound solenoid boundary.
+
+    Each BOUND solenoid was converted (in
+    `_004_element_converter.convert_solenoids`) to a sub-line of
+    [UniformSolenoid, Translation, TimeDelay, Rotation] components in a
+    fixed generic order; this function fixes that
+    order and the sign of the Translation/Rotation parameters per
+    boundary, based on whether it is an inbound (entrance) or outbound
+    (exit) boundary, whether it is the GEO boundary of its pair, and
+    whether the inbound/outbound solenoids of the pair were
+    individually reversed (by line reversal). The correct sign
+    combinations were verified empirically against real SAD Twiss
+    output (see test_sol_reference_transform_orbit_matches_sad_twiss
+    and test_sol_reference_transform_restores_design_orbit_at_end).
+
+    Parameters
+    ----------
+    line : xt.Line
+        The line whose bound solenoid boundaries should be corrected.
+    parsed_lattice_data : dict
+        Parsed lattice data, as returned by `parse_sad_file`.
+    environment : xt.Environment
+        The Xsuite environment containing `line`'s elements.
+    reverse_line : bool
+        Not used directly by this function -- reversal is instead
+        detected per solenoid from its own name (a leading `-`).
+        Accepted for interface consistency with the conversion
+        pipeline's other line-level correction calls.
+    config : ConfigLike
+        Not used directly by this function. Accepted for interface
+        consistency with the conversion pipeline's other line-level
+        correction calls.
+
+    Raises
+    ------
+    ValueError
+        If BOUND solenoids in `line` are not paired, or if neither
+        solenoid in a pair is the GEO boundary.
     """
 
     ########################################
@@ -470,8 +541,8 @@ def solenoid_reference_shift_corrections(
     # Check if there are any solenoids
     ########################################
     if "sol" not in parsed_elements:
-        if config._verbose:
-            print_section_heading("No solenoids in line", mode = "subsection")
+        logger.debug(
+            "No solenoids in lattice: skipping reference shift corrections")
         return
     solenoids   = parsed_elements["sol"]
 
@@ -538,7 +609,9 @@ def solenoid_reference_shift_corrections(
             bound_solenoid_pairs.append(
                 (bound_sols_in_line[i], bound_sols_in_line[i + 1]))
         else:
-            raise ValueError("Unmatched solenoid found in the line.")
+            raise ValueError(
+                f"Unmatched boundary solenoid {bound_sols_in_line[i]}: "
+                "BOUND solenoids must come in entrance/exit pairs.")
 
     ############################################################################
     # Get the inbound and outbound boundary solenoids
@@ -581,12 +654,12 @@ def solenoid_reference_shift_corrections(
     geometric_solenoids     = sorted(geometric_solenoids)
     non_geometric_solenoids = sorted(non_geometric_solenoids)
 
-    if config._verbose:
-        print_section_heading("Reference Shift Solenoids:", mode = "subsection")
-        print(f"Inbound solenoids with ref transforms: {inbound_solenoids}")
-        print(f"Outbound solenoids with ref transforms: {outbound_solenoids}")
-        print(f"Geometric solenoids with ref transforms: {geometric_solenoids}")
-        print(f"Non-geometric solenoids with ref transforms: {non_geometric_solenoids}")
+    logger.debug(
+        "Reference shift solenoids:\n"
+        f"  inbound:       {inbound_solenoids}\n"
+        f"  outbound:      {outbound_solenoids}\n"
+        f"  geometric:     {geometric_solenoids}\n"
+        f"  non-geometric: {non_geometric_solenoids}")
 
     ############################################################################
     # DXY and CHI for all cases (inbound, geo, reverse_self, reverse_other)
@@ -686,42 +759,61 @@ def solenoid_reference_shift_corrections(
     outbound_nongeo_reverse_forward_solenoids   = list(set(outbound_nongeo_reverse_forward_solenoids))
     outbound_nongeo_reverse_reverse_solenoids   = list(set(outbound_nongeo_reverse_reverse_solenoids))
 
-    if config._verbose:
-        print(f"inbound_geo_forward_forward_solenoids     = {inbound_geo_forward_forward_solenoids}")
-        print(f"inbound_geo_forward_reverse_solenoids     = {inbound_geo_forward_reverse_solenoids}")
-        print(f"inbound_geo_reverse_forward_solenoids     = {inbound_geo_reverse_forward_solenoids}")
-        print(f"inbound_geo_reverse_reverse_solenoids     = {inbound_geo_reverse_reverse_solenoids}")
-        print(f"inbound_nongeo_forward_forward_solenoids  = {inbound_nongeo_forward_forward_solenoids}")
-        print(f"inbound_nongeo_forward_reverse_solenoids  = {inbound_nongeo_forward_reverse_solenoids}")
-        print(f"inbound_nongeo_reverse_forward_solenoids  = {inbound_nongeo_reverse_forward_solenoids}")
-        print(f"inbound_nongeo_reverse_reverse_solenoids  = {inbound_nongeo_reverse_reverse_solenoids}")
-        print(f"outbound_geo_forward_forward_solenoids    = {outbound_geo_forward_forward_solenoids}")
-        print(f"outbound_geo_forward_reverse_solenoids    = {outbound_geo_forward_reverse_solenoids}")
-        print(f"outbound_geo_reverse_forward_solenoids    = {outbound_geo_reverse_forward_solenoids}")
-        print(f"outbound_geo_reverse_reverse_solenoids    = {outbound_geo_reverse_reverse_solenoids}")
-        print(f"outbound_nongeo_forward_forward_solenoids = {outbound_nongeo_forward_forward_solenoids}")
-        print(f"outbound_nongeo_forward_reverse_solenoids = {outbound_nongeo_forward_reverse_solenoids}")
-        print(f"outbound_nongeo_reverse_forward_solenoids = {outbound_nongeo_reverse_forward_solenoids}")
-        print(f"outbound_nongeo_reverse_reverse_solenoids = {outbound_nongeo_reverse_reverse_solenoids}")
+    logger.debug(
+        "Reference shift solenoid classification:\n"
+        f"  inbound_geo_forward_forward_solenoids     = {inbound_geo_forward_forward_solenoids}\n"
+        f"  inbound_geo_forward_reverse_solenoids     = {inbound_geo_forward_reverse_solenoids}\n"
+        f"  inbound_geo_reverse_forward_solenoids     = {inbound_geo_reverse_forward_solenoids}\n"
+        f"  inbound_geo_reverse_reverse_solenoids     = {inbound_geo_reverse_reverse_solenoids}\n"
+        f"  inbound_nongeo_forward_forward_solenoids  = {inbound_nongeo_forward_forward_solenoids}\n"
+        f"  inbound_nongeo_forward_reverse_solenoids  = {inbound_nongeo_forward_reverse_solenoids}\n"
+        f"  inbound_nongeo_reverse_forward_solenoids  = {inbound_nongeo_reverse_forward_solenoids}\n"
+        f"  inbound_nongeo_reverse_reverse_solenoids  = {inbound_nongeo_reverse_reverse_solenoids}\n"
+        f"  outbound_geo_forward_forward_solenoids    = {outbound_geo_forward_forward_solenoids}\n"
+        f"  outbound_geo_forward_reverse_solenoids    = {outbound_geo_forward_reverse_solenoids}\n"
+        f"  outbound_geo_reverse_forward_solenoids    = {outbound_geo_reverse_forward_solenoids}\n"
+        f"  outbound_geo_reverse_reverse_solenoids    = {outbound_geo_reverse_reverse_solenoids}\n"
+        f"  outbound_nongeo_forward_forward_solenoids = {outbound_nongeo_forward_forward_solenoids}\n"
+        f"  outbound_nongeo_forward_reverse_solenoids = {outbound_nongeo_forward_reverse_solenoids}\n"
+        f"  outbound_nongeo_reverse_forward_solenoids = {outbound_nongeo_reverse_forward_solenoids}\n"
+        f"  outbound_nongeo_reverse_reverse_solenoids = {outbound_nongeo_reverse_reverse_solenoids}")
 
     ############################################################################
     # Flip the neccesary reference shifts
     ############################################################################
-    def flip_reference_shifts(solenoid, dxy_sign, chi_sign):
-        xy_shift_name   = f"{solenoid}_dxy"
-        chi1_shift_name = f"{solenoid}_chi1"
-        chi2_shift_name = f"{solenoid}_chi2"
-        chi3_shift_name = f"{solenoid}_chi3"
+    def flip_reference_shifts(solenoid: str, dxy_sign: int, chi_sign: int) -> None:
+        """
+        Flip the sign of a bound solenoid's reference-shift components.
 
-        line[xy_shift_name].dx      *= dxy_sign
-        line[xy_shift_name].dy      *= dxy_sign
+        Parameters
+        ----------
+        solenoid : str
+            The solenoid's base name (without the "_bound"/"_dxy"/
+            "_rot" suffix).
+        dxy_sign : int
+            Multiplies the `{solenoid}_dxy` Translation's
+            shift_x/shift_y.
+        chi_sign : int
+            Multiplies the `{solenoid}_rot` Rotation's
+            rot_y_rad/rot_x_rad/rot_s_rad.
+        """
+        translation_name = f"{solenoid}_dxy"
+        rot_name = f"{solenoid}_rot"
 
-        line[chi1_shift_name].angle *= chi_sign
-        line[chi2_shift_name].angle *= chi_sign
-        line[chi3_shift_name].angle *= chi_sign
+        line[translation_name].shift_x *= dxy_sign
+        line[translation_name].shift_y *= dxy_sign
+
+        line[rot_name].rot_y_rad *= chi_sign
+        line[rot_name].rot_x_rad *= chi_sign
+        line[rot_name].rot_s_rad *= chi_sign
+
+    # Signs verified by:
+    #   test_sol_reference_transform_orbit_matches_sad_twiss      (internal marker)
+    #   test_sol_reference_transform_restores_design_orbit_at_end (END restoration)
+    # dxy_sign controls Translation.shift_{x,y}; chi_sign controls Rotation.rot_{x,y,s}_rad.
 
     ########################################
-    # Inbound Geo Forward Forward Solenoids (Complete: test_003)
+    # Inbound Geo Forward Forward Solenoids
     ########################################
     for inbound_geo_forward_forward_solenoid in inbound_geo_forward_forward_solenoids:
         flip_reference_shifts(
@@ -730,7 +822,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = +1)
 
     ########################################
-    # Inbound Geo Forward Reverse Solenoids (Complete: test_003)
+    # Inbound Geo Forward Reverse Solenoids
     ########################################
     for inbound_geo_forward_reverse_solenoid in inbound_geo_forward_reverse_solenoids:
         flip_reference_shifts(
@@ -739,7 +831,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = +1)
 
     ########################################
-    # Inbound Geo Reverse Forward Solenoids (Complete: test_003)
+    # Inbound Geo Reverse Forward Solenoids
     ########################################
     for inbound_geo_reverse_forward_solenoid in inbound_geo_reverse_forward_solenoids:
         flip_reference_shifts(
@@ -748,7 +840,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Inbound Geo Reverse Reverse Solenoids (Complete: test_003)
+    # Inbound Geo Reverse Reverse Solenoids
     ########################################
     for inbound_geo_reverse_reverse_solenoid in inbound_geo_reverse_reverse_solenoids:
         flip_reference_shifts(
@@ -757,7 +849,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Inbound Non-Geo Forward Forward Solenoids (Complete: test_005)
+    # Inbound Non-Geo Forward Forward Solenoids
     ########################################
     for inbound_nongeo_forward_forward_solenoid in inbound_nongeo_forward_forward_solenoids:
         flip_reference_shifts(
@@ -766,7 +858,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Inbound Non-Geo Forward Reverse Solenoids (Complete: test_005)
+    # Inbound Non-Geo Forward Reverse Solenoids
     ########################################
     for inbound_nongeo_forward_reverse_solenoid in inbound_nongeo_forward_reverse_solenoids:
         flip_reference_shifts(
@@ -775,7 +867,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Inbound Non-Geo Reverse Forward Solenoids (Complete: test_005)
+    # Inbound Non-Geo Reverse Forward Solenoids
     ########################################
     for inbound_nongeo_reverse_forward_solenoid in inbound_nongeo_reverse_forward_solenoids:
         flip_reference_shifts(
@@ -784,7 +876,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Inbound Non-Geo Reverse Reverse Solenoids (Complete: test_005)
+    # Inbound Non-Geo Reverse Reverse Solenoids
     ########################################
     for inbound_nongeo_reverse_reverse_solenoid in inbound_nongeo_reverse_reverse_solenoids:
         flip_reference_shifts(
@@ -793,16 +885,16 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Outbound Geo Forward Forward Solenoids (Complete: test_006)
+    # Outbound Geo Forward Forward Solenoids
     ########################################
     for outbound_geo_forward_forward_solenoid in outbound_geo_forward_forward_solenoids:
         flip_reference_shifts(
             outbound_geo_forward_forward_solenoid,
-            dxy_sign    = +1,
+            dxy_sign    = -1,
             chi_sign    = -1)
 
     ########################################
-    # Outbound Geo Forward Reverse Solenoids (Complete: test_006)
+    # Outbound Geo Forward Reverse Solenoids
     ########################################
     for outbound_geo_forward_reverse_solenoid in outbound_geo_forward_reverse_solenoids:
         flip_reference_shifts(
@@ -811,25 +903,25 @@ def solenoid_reference_shift_corrections(
             chi_sign    = +1)
 
     ########################################
-    # Outbound Geo Reverse Forward Solenoids (Complete: test_006)
+    # Outbound Geo Reverse Forward Solenoids
     ########################################
     for outbound_geo_reverse_forward_solenoid in outbound_geo_reverse_forward_solenoids:
         flip_reference_shifts(
             outbound_geo_reverse_forward_solenoid,
             dxy_sign    = +1,
-            chi_sign    = +1)
+            chi_sign    = -1)
 
     ########################################
-    # Outbound Geo Reverse Reverse Solenoids (Complete: test_006)
+    # Outbound Geo Reverse Reverse Solenoids
     ########################################
     for outbound_geo_reverse_reverse_solenoid in outbound_geo_reverse_reverse_solenoids:
         flip_reference_shifts(
             outbound_geo_reverse_reverse_solenoid,
-            dxy_sign    = +1,
+            dxy_sign    = -1,
             chi_sign    = +1)
 
     ########################################
-    # Outbound Non-Geo Forward Forward Solenoids (Complete: test_004)
+    # Outbound Non-Geo Forward Forward Solenoids
     ########################################
     for outbound_nongeo_forward_forward_solenoid in outbound_nongeo_forward_forward_solenoids:
         flip_reference_shifts(
@@ -838,7 +930,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Outbound Non-Geo Forward Reverse Solenoids (Complete: test_004)
+    # Outbound Non-Geo Forward Reverse Solenoids
     ########################################
     for outbound_nongeo_forward_reverse_solenoid in outbound_nongeo_forward_reverse_solenoids:
         flip_reference_shifts(
@@ -847,7 +939,7 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Outbound Non-Geo Reverse Forward Solenoids (Complete: test_004)
+    # Outbound Non-Geo Reverse Forward Solenoids
     ########################################
     for outbound_nongeo_reverse_forward_solenoid in outbound_nongeo_reverse_forward_solenoids:
         flip_reference_shifts(
@@ -856,27 +948,13 @@ def solenoid_reference_shift_corrections(
             chi_sign    = -1)
 
     ########################################
-    # Outbound Non-Geo Reverse Reverse Solenoids (Complete: test_004)
+    # Outbound Non-Geo Reverse Reverse Solenoids
     ########################################
     for outbound_nongeo_reverse_reverse_solenoid in outbound_nongeo_reverse_reverse_solenoids:
         flip_reference_shifts(
             outbound_nongeo_reverse_reverse_solenoid,
             dxy_sign    = -1,
             chi_sign    = -1)
-
-    ############################################################################
-    # Move DZ Shifts onto the outbound solenoid (even when bound)
-    ############################################################################
-    for inbound_solenoid, outbound_solenoid in bound_solenoid_pairs:
-
-        # Should always be true, but just in case
-        if not inbound_solenoid.endswith("_bound"):
-            raise ValueError(f"Inbound solenoid {inbound_solenoid} doesn' end with bound?")
-        inbound_solenoid    = inbound_solenoid[:-6]
-
-        if not outbound_solenoid.endswith("_bound"):
-            raise ValueError(f"Outbound solenoid {outbound_solenoid} doesn't end with bound?")
-        outbound_solenoid   = outbound_solenoid[:-6]
 
     ############################################################################
     # Reorder the solenoid components
@@ -889,19 +967,28 @@ def solenoid_reference_shift_corrections(
         inbound_nongeo_forward_reverse_solenoids + \
         inbound_nongeo_reverse_forward_solenoids + \
         inbound_nongeo_reverse_reverse_solenoids
-    outbound_geo_solenoids      = outbound_geo_forward_forward_solenoids + \
-        outbound_geo_forward_reverse_solenoids + \
-        outbound_geo_reverse_forward_solenoids + \
-        outbound_geo_reverse_reverse_solenoids
-    outbound_nongeo_solenoids   = outbound_nongeo_forward_forward_solenoids + \
-        outbound_nongeo_forward_reverse_solenoids + \
-        outbound_nongeo_reverse_forward_solenoids + \
+    # Outbound solenoids: xt.Rotation's zeta shift is proportional to the
+    # transverse position (x/y) at the moment it runs (see xtrack's
+    # track_yrotation.h/track_xrotation.h). Rotating before the translation
+    # (inbound order, above) always runs at x=y=0, so it never picks up this
+    # term. Rotating after the translation (outbound order) only picks it up
+    # when inbound_reversed != outbound_reversed -- forward_forward and
+    # reverse_reverse pairs (inbound_reversed == outbound_reversed) keep the
+    # existing bound/dxy/dz/rot order; forward_reverse and reverse_forward
+    # pairs need rotation-first instead, same as inbound.
+    outbound_same_reversal_solenoids       = outbound_geo_forward_forward_solenoids + \
+        outbound_geo_reverse_reverse_solenoids + \
+        outbound_nongeo_forward_forward_solenoids + \
         outbound_nongeo_reverse_reverse_solenoids
-    
+    outbound_differing_reversal_solenoids  = outbound_geo_forward_reverse_solenoids + \
+        outbound_geo_reverse_forward_solenoids + \
+        outbound_nongeo_forward_reverse_solenoids + \
+        outbound_nongeo_reverse_forward_solenoids
+
     inbound_geo_solenoids       = list(set(inbound_geo_solenoids))
     inbound_nongeo_solenoids    = list(set(inbound_nongeo_solenoids))
-    outbound_geo_solenoids      = list(set(outbound_geo_solenoids))
-    outbound_nongeo_solenoids   = list(set(outbound_nongeo_solenoids))
+    outbound_same_reversal_solenoids       = list(set(outbound_same_reversal_solenoids))
+    outbound_differing_reversal_solenoids  = list(set(outbound_differing_reversal_solenoids))
 
     ########################################
     # Get the current order of the element names
@@ -911,10 +998,10 @@ def solenoid_reference_shift_corrections(
     ########################################
     # Reorder inbound geo solenoids
     ########################################
-    for inbound_geo_solenoid in tqdm(inbound_geo_solenoids):
+    for inbound_geo_solenoid in inbound_geo_solenoids:
 
         sol_start_ele   = f"{inbound_geo_solenoid}_bound"
-        sol_end_ele     = f"{inbound_geo_solenoid}_chi3"
+        sol_end_ele     = f"{inbound_geo_solenoid}_rot"
 
         # Get the start and end indices
         start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
@@ -926,9 +1013,7 @@ def solenoid_reference_shift_corrections(
             new_element_names   = []
             new_element_names   += element_names[:start_idx]
             bound_elements      = [
-                f"{inbound_geo_solenoid}_chi3",
-                f"{inbound_geo_solenoid}_chi2",
-                f"{inbound_geo_solenoid}_chi1",
+                f"{inbound_geo_solenoid}_rot",
                 f"{inbound_geo_solenoid}_dz",
                 f"{inbound_geo_solenoid}_dxy",
                 f"{inbound_geo_solenoid}_bound"]
@@ -940,48 +1025,10 @@ def solenoid_reference_shift_corrections(
     ########################################
     # Reorder inbound non-geo solenoids
     ########################################
-    for inbound_nongeo_solenoid in tqdm(inbound_nongeo_solenoids):
+    for inbound_nongeo_solenoid in inbound_nongeo_solenoids:
 
         sol_start_ele   = f"{inbound_nongeo_solenoid}_bound"
-        sol_end_ele     = f"{inbound_nongeo_solenoid}_chi3"
-
-        # Get the start and end indices
-        start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
-        end_idxs    = [i for i, name in enumerate(element_names) if name == sol_end_ele]
-
-        for start_idx, end_idx in zip(start_idxs, end_idxs):
-            assert start_idx < end_idx
-
-            new_element_names   = []
-            new_element_names   += element_names[:start_idx]
-            if not reverse_line:
-                bound_elements      = [
-                    f"{inbound_nongeo_solenoid}_chi1",
-                    f"{inbound_nongeo_solenoid}_chi2",
-                    f"{inbound_nongeo_solenoid}_chi3",
-                    f"{inbound_nongeo_solenoid}_dz",
-                    f"{inbound_nongeo_solenoid}_dxy",
-                    f"{inbound_nongeo_solenoid}_bound"]
-            else:
-                bound_elements      = [
-                    f"{inbound_nongeo_solenoid}_chi3",
-                    f"{inbound_nongeo_solenoid}_chi2",
-                    f"{inbound_nongeo_solenoid}_chi1",
-                    f"{inbound_nongeo_solenoid}_dz",
-                    f"{inbound_nongeo_solenoid}_dxy",
-                    f"{inbound_nongeo_solenoid}_bound"]
-            new_element_names   += bound_elements
-            new_element_names   += element_names[end_idx + 1:]
-
-            element_names       = new_element_names
-
-    ########################################
-    # Reorder outbound geo solenoids
-    ########################################
-    for outbound_geo_solenoid in tqdm(outbound_geo_solenoids):
-
-        sol_start_ele   = f"{outbound_geo_solenoid}_bound"
-        sol_end_ele     = f"{outbound_geo_solenoid}_chi3"
+        sol_end_ele     = f"{inbound_nongeo_solenoid}_rot"
 
         # Get the start and end indices
         start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
@@ -993,24 +1040,23 @@ def solenoid_reference_shift_corrections(
             new_element_names   = []
             new_element_names   += element_names[:start_idx]
             bound_elements      = [
-                f"{outbound_geo_solenoid}_bound",
-                f"{outbound_geo_solenoid}_dxy",
-                f"{outbound_geo_solenoid}_dz",
-                f"{outbound_geo_solenoid}_chi1",
-                f"{outbound_geo_solenoid}_chi2",
-                f"{outbound_geo_solenoid}_chi3"]
+                    f"{inbound_nongeo_solenoid}_rot",
+                    f"{inbound_nongeo_solenoid}_dz",
+                    f"{inbound_nongeo_solenoid}_dxy",
+                    f"{inbound_nongeo_solenoid}_bound"]
             new_element_names   += bound_elements
             new_element_names   += element_names[end_idx + 1:]
 
             element_names       = new_element_names
 
     ########################################
-    # Reorder outbound non-geo solenoids
+    # Reorder outbound solenoids (inbound_reversed == outbound_reversed):
+    # unchanged bound/dxy/dz/rot
     ########################################
-    for outbound_nongeo_solenoid in tqdm(outbound_nongeo_solenoids):
+    for outbound_same_reversal_solenoid in outbound_same_reversal_solenoids:
 
-        sol_start_ele   = f"{outbound_nongeo_solenoid}_bound"
-        sol_end_ele     = f"{outbound_nongeo_solenoid}_chi3"
+        sol_start_ele   = f"{outbound_same_reversal_solenoid}_bound"
+        sol_end_ele     = f"{outbound_same_reversal_solenoid}_rot"
 
         # Get the start and end indices
         start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
@@ -1022,12 +1068,38 @@ def solenoid_reference_shift_corrections(
             new_element_names   = []
             new_element_names   += element_names[:start_idx]
             bound_elements      = [
-                f"{outbound_nongeo_solenoid}_bound",
-                f"{outbound_nongeo_solenoid}_dxy",
-                f"{outbound_nongeo_solenoid}_dz",
-                f"{outbound_nongeo_solenoid}_chi1",
-                f"{outbound_nongeo_solenoid}_chi2",
-                f"{outbound_nongeo_solenoid}_chi3"]
+                f"{outbound_same_reversal_solenoid}_bound",
+                f"{outbound_same_reversal_solenoid}_dxy",
+                f"{outbound_same_reversal_solenoid}_dz",
+                f"{outbound_same_reversal_solenoid}_rot"]
+            new_element_names   += bound_elements
+            new_element_names   += element_names[end_idx + 1:]
+
+            element_names       = new_element_names
+
+    ########################################
+    # Reorder outbound solenoids (inbound_reversed != outbound_reversed):
+    # rotation-first, same as inbound
+    ########################################
+    for outbound_differing_reversal_solenoid in outbound_differing_reversal_solenoids:
+
+        sol_start_ele   = f"{outbound_differing_reversal_solenoid}_bound"
+        sol_end_ele     = f"{outbound_differing_reversal_solenoid}_rot"
+
+        # Get the start and end indices
+        start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
+        end_idxs    = [i for i, name in enumerate(element_names) if name == sol_end_ele]
+
+        for start_idx, end_idx in zip(start_idxs, end_idxs):
+            assert start_idx < end_idx
+
+            new_element_names   = []
+            new_element_names   += element_names[:start_idx]
+            bound_elements      = [
+                f"{outbound_differing_reversal_solenoid}_rot",
+                f"{outbound_differing_reversal_solenoid}_dz",
+                f"{outbound_differing_reversal_solenoid}_dxy",
+                f"{outbound_differing_reversal_solenoid}_bound"]
             new_element_names   += bound_elements
             new_element_names   += element_names[end_idx + 1:]
             element_names       = new_element_names
@@ -1036,3 +1108,7 @@ def solenoid_reference_shift_corrections(
     # Update the line
     ########################################
     line.element_names = element_names
+
+    logger.info(
+        f"Corrected reference shifts for {len(bound_solenoid_pairs)} "
+        "solenoid pairs")

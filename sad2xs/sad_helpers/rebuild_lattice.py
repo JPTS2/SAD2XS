@@ -1,12 +1,27 @@
 """
-(Unofficial) SAD to XSuite Converter
+================================================================================
+SAD Helpers: Rebuild Lattice
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
+Email:      john.salvesen@cern.ch
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
 # Required Packages
 ################################################################################
-import os
-import subprocess
+import logging
+import uuid
+
+from ._helpers import run_sad, _check_mathematica_output
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # Rebuild SAD lattice
@@ -17,7 +32,7 @@ def rebuild_sad_lattice(
         output_filepath:        str | None  = None,
         additional_commands:    str         = "",
         wall_time:              int         = 30,
-        sad_path:               str         = "sad"):
+        sad_path:               str         = "sad") -> None:
     """
     Output a rebuilt SAD lattice file after modifications.
 
@@ -27,11 +42,24 @@ def rebuild_sad_lattice(
         Path to the input SAD lattice file.
     line_name : str
         Name of the line in the SAD lattice file.
-    additional_commands : str, optional
-        Additional SAD commands to include before saving the lattice.
     output_filepath : str or None, optional
         Path to the output SAD lattice file. If None, appends "_rebuilt" to the
         input filename.
+    additional_commands : str, optional
+        Additional SAD commands to include before saving the lattice.
+    wall_time : int, optional
+        Timeout, in seconds, for the SAD subprocess. Defaults to 30.
+    sad_path : str, optional
+        Path to the SAD executable. Defaults to "sad".
+
+    Raises
+    ------
+    RuntimeError
+        If the SAD subprocess times out or exits non-zero (see
+        `run_sad`).
+    ValueError
+        If the rebuilt lattice contains a Mathematica undefined-symbol
+        marker (see `_check_mathematica_output`).
     """
 
     ########################################
@@ -43,7 +71,10 @@ def rebuild_sad_lattice(
     ########################################
     # Generate the twiss command
     ########################################
-    print("Creating SAD Command")
+    uid      = uuid.uuid4().hex[:12]
+    cmd_file = f"_sad_rebuild_{uid}.sad"
+
+    logger.debug("Creating SAD command")
     sad_command = f"""OFF ECHO;
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -74,6 +105,8 @@ SAVE ALL;
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 of  = OpenWrite["./{output_filepath}"];
 WriteString[of, "MOMENTUM = "//MOMENTUM//";\\n"];
+WriteString[of, "MASS = "//MASS//";\\n"];
+WriteString[of, "CHARGE = "//CHARGE//";\\n"];
 WriteString[of, "FSHIFT = "//FSHIFT//";\\n"];
 FFS["output "//of//" type"];
 WriteBeamLine[of, ExtractBeamLine[], Format->"MAIN", Name->{{"{line_name}"}}];
@@ -85,34 +118,15 @@ Close[of];
 abort;
 """
 
-    ########################################
-    # Write the SAD command
-    ########################################
-    with open("temp_sad_rebuild_lattice.sad", "w", encoding = "utf-8") as f:
-        f.write(sad_command)
+    run_sad(
+        sad_command = sad_command,
+        cmd_file    = cmd_file,
+        task_name   = "rebuild",
+        wall_time   = wall_time,
+        sad_path    = sad_path)
 
     ########################################
-    # Run the process
+    # Guard against degenerate SAD output in the rebuilt lattice
     ########################################
-    try:
-        subprocess.run(
-            [sad_path, "temp_sad_rebuild_lattice.sad"],
-            capture_output  = True,
-            text            = True,
-            timeout         = wall_time,
-            check           = True)
-    except subprocess.TimeoutExpired:
-        print(f"SAD Twiss timed out at {wall_time}s")
-        if os.path.exists("temp_sad_rebuild_lattice.sad"):
-            os.remove("temp_sad_rebuild_lattice.sad")
-        raise
-    except subprocess.CalledProcessError as e:
-        print(f"SAD exited with non-zero status {e.returncode}")
-        print("stdout:", e.stdout)
-        print("stderr:", e.stderr)
-        if os.path.exists("temp_sad_rebuild_lattice.sad"):
-            os.remove("temp_sad_rebuild_lattice.sad")
-        raise
-    finally:
-        if os.path.exists("temp_sad_rebuild_lattice.sad"):
-            os.remove("temp_sad_rebuild_lattice.sad")
+    with open(output_filepath, encoding = "utf-8") as f:
+        _check_mathematica_output(f.read())

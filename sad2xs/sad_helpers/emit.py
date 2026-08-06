@@ -1,12 +1,27 @@
 """
-(Unofficial) SAD to XSuite Converter
+================================================================================
+SAD Helpers: Emittance
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
+Email:      john.salvesen@cern.ch
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
 # Required Packages
 ################################################################################
-import os
-import subprocess
+import logging
+import uuid
+
+from ._helpers import run_sad, _check_mathematica_output
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # EMIT
@@ -20,7 +35,60 @@ def emit_sad(
         wall_time:              int         = 30,
         sad_path:               str         = "sad") -> dict:
     """
-    Generate a SAD command to compute the twiss parameters of a lattice.
+    Compute a lattice's 6D equilibrium emittance and radiation
+    parameters in real SAD.
+
+    Runs SAD's EMIT command (CALC6D + COD + CALC first) and parses
+    its terminal output block (captured between explicit
+    "! START EMIT"/"! END EMIT" markers) into a dictionary of physical
+    quantities, converting each value's printed unit suffix (mm/um/nm,
+    TeV/GeV/MeV/keV/eV, GHz/MHz/kHz/Hz, GV/MV/kV/V) to SI.
+
+    Parameters
+    ----------
+    lattice_filepath : str
+        Path to the SAD lattice file, relative to the current working
+        directory (SAD changes into the script's own directory, so
+        the lattice must be reachable from there).
+    line_name : str
+        The SAD line to USE.
+    radcod : bool, optional
+        Include radiation damping in the closed-orbit search (SAD's
+        RADCOD flag). Defaults to False.
+    radtaper : bool, optional
+        Enable RF/orbit tapering for radiation (SAD's RADTAPER flag).
+        Defaults to False.
+    additional_commands : str, optional
+        Extra SAD commands run after loading the line and before the
+        EMIT calculation. Defaults to "".
+    wall_time : int, optional
+        Timeout, in seconds, for the SAD subprocess. Defaults to 30.
+    sad_path : str, optional
+        Path to the SAD executable. Defaults to "sad".
+
+    Returns
+    -------
+    dict
+        Keys: design_momentum, revolution_frequency, eneloss_turn,
+        effective_voltage, equilibrium_zeta, momentum_compaction,
+        orbit_dilation, effective_harmonic, bucket_height,
+        synchrotron_frequency, imag_tune, real_tune, damping_turn,
+        damping_time, damping_partition, gemitt_x, gemitt_y,
+        gemitt_z, energy_spread, bunch_length -- each in SI units
+        (radians, metres, seconds, Hz, volts, eV as appropriate);
+        damping_turn/damping_time/damping_partition are always
+        (x, y, z), while imag_tune/real_tune have as many entries as
+        SAD prints on that line (typically (x, y) or (x, y, z)).
+
+    Raises
+    ------
+    RuntimeError
+        If the SAD subprocess times out or exits non-zero (see
+        `run_sad`).
+    ValueError
+        If SAD's output contains a Mathematica undefined-symbol
+        marker (see `_check_mathematica_output`), or an unrecognised
+        unit suffix is encountered while parsing a value.
     """
 
     ########################################
@@ -32,7 +100,10 @@ def emit_sad(
     ########################################
     # Generate the twiss command
     ########################################
-    print("Creating SAD Command")
+    uid      = uuid.uuid4().hex[:12]
+    cmd_file = f"_sad_emit_{uid}.sad"
+
+    logger.debug("Creating SAD command")
     sad_command = f"""OFF ECHO;
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -73,43 +144,17 @@ WriteString[6, "! END EMIT"];
 abort;
 """
 
-    ########################################
-    # Write the SAD command
-    ########################################
-    with open("temp_sad_emit.sad", "w", encoding = "utf-8") as f:
-        f.write(sad_command)
-    del sad_command
+    terminal_output = run_sad(
+        sad_command = sad_command,
+        cmd_file    = cmd_file,
+        task_name   = "emit",
+        wall_time   = wall_time,
+        sad_path    = sad_path)
 
     ########################################
-    # Run the process
+    # Check the terminal output
     ########################################
-    try:
-        process = subprocess.run(
-            [sad_path, "temp_sad_emit.sad"],
-            capture_output  = True,
-            text            = True,
-            timeout         = wall_time,
-            check           = True)
-    except subprocess.TimeoutExpired:
-        print(f"SAD Twiss timed out at {wall_time}s")
-        if os.path.exists("temp_sad_emit.sad"):
-            os.remove("temp_sad_emit.sad")
-        raise
-    except subprocess.CalledProcessError as e:
-        print(f"SAD exited with non-zero status {e.returncode}")
-        print("stdout:", e.stdout)
-        print("stderr:", e.stderr)
-        if os.path.exists("temp_sad_emit.sad"):
-            os.remove("temp_sad_emit.sad")
-        raise
-    finally:
-        if os.path.exists("temp_sad_emit.sad"):
-            os.remove("temp_sad_emit.sad")
-
-    ########################################
-    # Read the terminal output
-    ########################################
-    terminal_output = process.stdout
+    _check_mathematica_output(terminal_output)
 
     ########################################
     # Process the data
@@ -138,6 +183,24 @@ abort;
     # Data cleaning functions
     ############################################################################
     def convert_length(string: str) -> float:
+        """
+        Convert a SAD length value string to metres.
+
+        Parameters
+        ----------
+        string : str
+            A value with a unit suffix: " mm", " um", " nm", or " m".
+
+        Returns
+        -------
+        float
+            The value in metres.
+
+        Raises
+        ------
+        ValueError
+            If `string` has no recognised length unit suffix.
+        """
         if string.endswith(" mm"):
             return float(string.split(" mm")[0].strip()) * 1E-3
         if string.endswith(" um"):
@@ -149,6 +212,25 @@ abort;
         raise ValueError("Unknown length units")
 
     def convert_energy(string: str) -> float:
+        """
+        Convert a SAD energy value string to eV.
+
+        Parameters
+        ----------
+        string : str
+            A value with a unit suffix: " TeV", " GeV", " MeV",
+            " keV", or " eV".
+
+        Returns
+        -------
+        float
+            The value in eV.
+
+        Raises
+        ------
+        ValueError
+            If `string` has no recognised energy unit suffix.
+        """
         if string.endswith(" TeV"):
             return float(string.split(" TeV")[0].strip()) * 1E12
         if string.endswith(" GeV"):
@@ -162,6 +244,25 @@ abort;
         raise ValueError("Unknown energy units")
 
     def convert_frequency(string: str) -> float:
+        """
+        Convert a SAD frequency value string to Hz.
+
+        Parameters
+        ----------
+        string : str
+            A value with a unit suffix: " GHz", " MHz", " kHz", or
+            " Hz".
+
+        Returns
+        -------
+        float
+            The value in Hz.
+
+        Raises
+        ------
+        ValueError
+            If `string` has no recognised frequency unit suffix.
+        """
         if string.endswith(" GHz"):
             return float(string.split(" GHz")[0].strip()) * 1E9
         if string.endswith(" MHz"):
@@ -173,6 +274,24 @@ abort;
         raise ValueError("Unknown frequency units")
 
     def convert_voltage(string: str) -> float:
+        """
+        Convert a SAD voltage value string to volts.
+
+        Parameters
+        ----------
+        string : str
+            A value with a unit suffix: " GV", " MV", " kV", or " V".
+
+        Returns
+        -------
+        float
+            The value in volts.
+
+        Raises
+        ------
+        ValueError
+            If `string` has no recognised voltage unit suffix.
+        """
         if string.endswith(" GV"):
             return float(string.split(" GV")[0].strip()) * 1E9
         if string.endswith(" MV"):

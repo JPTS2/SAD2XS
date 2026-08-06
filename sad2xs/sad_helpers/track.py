@@ -1,17 +1,35 @@
 """
-(Unofficial) SAD to XSuite Converter
+================================================================================
+SAD Helpers: Tracking
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
+Email:      john.salvesen@cern.ch
+Date:       2026-07-21
+================================================================================
 """
 
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
 import os
 import subprocess
+import uuid
 import re
 import time
 import textwrap
+
 import numpy as np
 from tqdm import tqdm
+
+from ._helpers import _check_mathematica_output
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # Track Particles
@@ -37,7 +55,11 @@ def track_sad(
         wall_time:              int         = 24*60*60,
         sad_path:               str         = "sad") -> dict:
     """
-    Track particles in SAD
+    Track particles through a SAD lattice in real SAD.
+
+    Writes the initial coordinates as SAD arrays, tracks them for
+    `n_turns` with `TrackParticles`, and reads the result back from a
+    `Put[...]`-written data file.
 
     Parameters
     ----------
@@ -46,45 +68,62 @@ def track_sad(
     line_name : str
         Name of the line in the SAD file.
     x_init, px_init, y_init, py_init, zeta_init, delta_init : np.ndarray
-        Initial conditions for the particles.
+        Initial conditions for the particles; all must be the same
+        shape.
     n_turns : int
         Number of turns to track.
-    turn_by_turn_monitor : bool, default False
-        If True, return turn-by-turn data.
-    rfsw : bool, default True
-        If True, enable RF cavities.
-    rad : bool, default False
-        If True, enable radiation effects.
-    radcod : bool, default False
-        If True, enable radiation code.
-    fluc : bool, default False
-        If True, enable quantum radiation effects.
-    radtaper : bool, default False
-        If True, enable radiation tapering.
-    n_cores_max : int, default 1
-        Maximum number of cores to use.
-    with_progress : bool or int, default True
-        If True or int, show progress every "int" turns.
-    wall_time : int, default 86400
-        Maximum wall time in seconds for the SAD process.
-    sad_path : str, default "sad"
-        Path to the SAD executable.
-        If installed via SAD2XS install_sad_macos, this should be set to the alias "sad".
+    rfsw : bool, optional
+        Enable RF cavities (SAD's RFSW flag). Defaults to True.
+    rad : bool, optional
+        Enable radiation effects (SAD's RAD flag). Defaults to False.
+    fluc : bool, optional
+        Enable quantum-excitation (stochastic photon emission)
+        radiation effects (SAD's FLUC flag). Defaults to False.
+    radcod : bool, optional
+        Include radiation damping in the closed-orbit search (SAD's
+        RADCOD flag). Defaults to False.
+    radtaper : bool, optional
+        Enable RF/orbit tapering for radiation (SAD's RADTAPER flag).
+        Defaults to False.
+    turn_by_turn_monitor : bool, optional
+        If True, return coordinates at every turn instead of only the
+        final turn. Defaults to False.
+    with_progress : bool or int, optional
+        If True, print progress every 10 turns; if an int, print every
+        that many turns; if False, print no progress. Defaults to
+        True.
+    n_cores_max : int, optional
+        Maximum number of SAD parallel processes (NPARA) to use.
+        Defaults to 1.
+    wall_time : int, optional
+        Timeout, in seconds, for the SAD subprocess. Defaults to 86400
+        (24 hours).
+    sad_path : str, optional
+        Path to the SAD executable. Defaults to "sad".
 
     Returns
     -------
     dict
-        Dictionary containing the tracked particle data.
-        Entries are:
-        - "x", "px", "y", "py", "zeta", "delta", "state"
-        If turn_by_turn_monitor is True, each entry has shape (n_particles, n_turns + 1),
-        otherwise shape (n_particles,).
+        Keys: "x", "px", "y", "py", "zeta", "delta", "state". If
+        `turn_by_turn_monitor` is True, each entry has shape
+        (n_particles, n_turns + 1); otherwise shape (n_particles,).
+
+    Raises
+    ------
+    AssertionError
+        If the initial-condition arrays are not numpy arrays, are not
+        all the same shape, or if `n_particles` is 0 or exceeds 1E6.
+    RuntimeError
+        If the SAD process dies early, exits non-zero, or times out.
+    ValueError
+        If SAD's output contains a Mathematica undefined-symbol
+        marker (see `_check_mathematica_output`).
     """
 
     ########################################
     # Print
     ########################################
-    print("#" * 40 + "\n" + "Tracking in SAD" + "\n" + "#" * 40)
+    logger.info("Tracking in SAD")
 
     ########################################
     # Assertions
@@ -115,8 +154,8 @@ def track_sad(
     # Warn if monitoring turn-by-turn with many particle turns
     ########################################
     if turn_by_turn_monitor and n_particles * n_turns > 1E8:
-        print(
-            "WARNING: Tracking a large number of particle turns "
+        logger.warning(
+            "Tracking a large number of particle turns "
             "(n_particles * n_turns > 100 million) with "
             "turn_by_turn_monitor=True leads to high memory usage.")
 
@@ -132,7 +171,7 @@ def track_sad(
     ########################################
     # Make the arrays a single string comma separated
     ########################################
-    print("Creating particle arrays")
+    logger.debug("Creating particle arrays")
     x_init_str      = "{" + ", ".join([f"{x}" for x in x_init]) + "}"
     px_init_str     = "{" + ", ".join([f"{px}" for px in px_init]) + "}"
     y_init_str      = "{" + ", ".join([f"{y}" for y in y_init]) + "}"
@@ -149,7 +188,7 @@ def track_sad(
     py_init_str     = textwrap.fill(py_init_str, width = 100)
     zeta_init_str   = textwrap.fill(zeta_init_str, width = 100)
     delta_init_str  = textwrap.fill(delta_init_str, width = 100)
-    print("Particle arrays created")
+    logger.debug("Particle arrays created")
 
     ########################################
     # Progress tracking
@@ -160,7 +199,11 @@ def track_sad(
     ########################################
     # Generate the twiss command
     ########################################
-    print("Creating SAD Command")
+    uid      = uuid.uuid4().hex[:12]
+    cmd_file = f"_sad_track_{uid}.sad"
+    out_file = f"_sad_track_{uid}.dat"
+
+    logger.debug("Creating SAD command")
     sad_command = f"""OFF ECHO;
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -231,7 +274,7 @@ r       = Prepend[r1, r0];
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Save to file
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-Put[r, "temp_sad_track.dat"];
+Put[r, "{out_file}"];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -239,7 +282,7 @@ Put[r, "temp_sad_track.dat"];
 abort;
 """
     elif turn_by_turn_monitor and not with_progress:
-        sad_command += """
+        sad_command += f"""
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Store initial beam
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -265,7 +308,7 @@ r = Prepend[r1, r0];
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Save to file
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-Put[r, "temp_sad_track.dat"];
+Put[r, "{out_file}"];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -288,7 +331,7 @@ WriteString[6,"TRACKING COMPLETE \\n"];
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Save to file
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-Put[beam[[2]], "temp_sad_track.dat"];
+Put[beam[[2]], "{out_file}"];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -296,7 +339,7 @@ Put[beam[[2]], "temp_sad_track.dat"];
 abort;
 """
     else:
-        sad_command += """
+        sad_command += f"""
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Track particles
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -306,7 +349,7 @@ WriteString[6,"TRACKING COMPLETE \\n"];
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Save to file
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-Put[beam[[2]], "temp_sad_track.dat"];
+Put[beam[[2]], "{out_file}"];
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Close process
@@ -314,90 +357,96 @@ Put[beam[[2]], "temp_sad_track.dat"];
 abort;
 """
 
-    ########################################
-    # Write the SAD command
-    ########################################
-    print("Writing SAD Command")
-    with open("temp_sad_track.sad", "w", encoding = "utf-8") as f:
-        f.write(sad_command)
-    del sad_command
+    logger.debug("Writing SAD command")
+    try:
+        with open(cmd_file, "w", encoding = "utf-8") as f:
+            f.write(sad_command)
+        del sad_command
 
-    ########################################
-    # Set up progress bar
-    ########################################
-    print("Running SAD")
-    if with_progress:
-        progress_re = re.compile(r"PROGRESS:(\d+)")
-        pbar        = tqdm(total = n_turns)
-
-    ########################################
-    # Set up process
-    ########################################
-    stdout_lines    = []
-    start           = time.time()
-
-    process = subprocess.Popen(
-        [sad_path, "temp_sad_track.sad"],
-        stdout      = subprocess.PIPE,
-        stderr      = subprocess.STDOUT,
-        text        = True,
-        bufsize     = 1)
-
-    ########################################
-    # Run the process, reading lines for progress
-    ########################################
-    for line in process.stdout:                                 # type: ignore
-        stdout_lines.append(line)
-
-        if process.poll() is not None:
-            raise RuntimeError(f"Subprocess died early with code {process.returncode}")
-
-        if "TRACKING COMPLETE" in line:
-            if with_progress:
-                pbar.close()                                    # type: ignore
-            print("SAD tracking complete, writing output file")
-            break
-
-        # Check for progress lines
+        ########################################
+        # Set up progress bar
+        ########################################
+        logger.debug("Running SAD")
         if with_progress:
-            m = progress_re.search(line)                        # type: ignore
-            if m:
-                done    = int(m.group(1))
-                pbar.n  = done                                  # type: ignore
-                pbar.refresh()                                  # type: ignore
+            progress_re = re.compile(r"PROGRESS:(\d+)")
+            pbar        = tqdm(total = n_turns)
 
-        # Timeout handling
-        if time.time() - start > wall_time:
-            process.kill()
-            os.remove("temp_sad_track.sad")
-            raise TimeoutError("SAD tracking timed out")
+        ########################################
+        # Set up process
+        ########################################
+        stdout_lines    = []
+        start           = time.time()
 
-    ########################################
-    # Check the process exits correctly
-    ########################################
-    process.wait()
-    if process.returncode != 0:
-        raise RuntimeError(f"Subprocess exited with error code {process.returncode}")
+        process = subprocess.Popen(
+            [sad_path, cmd_file],
+            stdout      = subprocess.PIPE,
+            stderr      = subprocess.STDOUT,
+            text        = True,
+            bufsize     = 1)
 
-    ########################################
-    # Load the data
-    ########################################
-    print("Loading output file")
-    with open("temp_sad_track.dat", "r", encoding = "utf-8") as f:
-        raw_output  = f.read()
+        ########################################
+        # Run the process, reading lines for progress
+        ########################################
+        for line in process.stdout:                                 # type: ignore
+            stdout_lines.append(line)
 
-    ########################################
-    # Remove temporary data
-    ########################################
-    os.remove("temp_sad_track.sad")
-    os.remove("temp_sad_track.dat")
+            if process.poll() not in (None, 0):
+                raise RuntimeError(
+                    f"SAD tracking died early with code "
+                    f"{process.returncode}.\n"
+                    f"""--- SAD output ---\n{"".join(stdout_lines)}""")
+
+            if "TRACKING COMPLETE" in line:
+                if with_progress:
+                    pbar.close()                                    # type: ignore
+                logger.debug("SAD tracking complete, writing output file")
+                break
+
+            # Check for progress lines
+            if with_progress:
+                m = progress_re.search(line)                        # type: ignore
+                if m:
+                    done    = int(m.group(1))
+                    pbar.n  = done                                  # type: ignore
+                    pbar.refresh()                                  # type: ignore
+
+            # Timeout handling
+            if time.time() - start > wall_time:
+                process.kill()
+                raise RuntimeError(
+                    f"SAD tracking timed out after {wall_time}s")
+
+        ########################################
+        # Check the process exits correctly
+        ########################################
+        process.wait()
+        if process.returncode != 0:
+            raise RuntimeError(
+                f"SAD tracking exited with non-zero status "
+                f"{process.returncode}.\n"
+                f"""--- SAD output ---\n{"".join(stdout_lines)}""")
+
+        logger.debug(f"""SAD tracking terminal output:\n{"".join(stdout_lines)}""")
+
+        ########################################
+        # Load the data
+        ########################################
+        logger.debug("Loading output file")
+        with open(out_file, "r", encoding = "utf-8") as f:
+            raw_output  = f.read()
+        _check_mathematica_output(raw_output)
+
+    finally:
+        for path in [cmd_file, out_file]:
+            if os.path.exists(path):
+                os.remove(path)
 
     ########################################
     # Process the data
     ########################################
-    print("Processing outputs")
+    logger.debug("Processing outputs")
 
-    # Fix Mathematica"s ".00123" → "0.00123"
+    # Fix Mathematica's ".00123" → "0.00123"
     output  = re.sub(r"(?<![\d])\.(\d+)", r"0.\1", raw_output)
 
     # Extract all floats in a single pass

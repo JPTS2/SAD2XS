@@ -1,28 +1,72 @@
 """
-(Unofficial) SAD to XSuite Converter: Line Converter
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Line Converter
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-24
+================================================================================
 """
 
 ################################################################################
 # Required Packages
 ################################################################################
+import logging
+
 import xtrack as xt
+
+logger  = logging.getLogger(__name__)
 
 ################################################################################
 # Component Reversal
 ################################################################################
-def create_reversed_component(component, environment):
+def create_reversed_component(
+        component:              str,
+        environment:            xt.Environment,
+        offset_marker_names:    frozenset[str]  = frozenset()) -> str:
     """
-    Docstring for create_reversed_component
-    
-    :param component: Description
-    :param environment: Description
+    Create (or identify) the reversed counterpart of one line component.
+
+    A reversed component name always starts with `-`. For element
+    types whose physics genuinely differs under reversal (Bend:
+    entry/exit edge angles AND fringe fields (fint/hgap) swapped;
+    UniformSolenoid: ks negated; Translation/TimeDelay/Rotation: cloned
+    so the reversed line gets its own copy; Marker elements that are
+    SAD OFFSET markers: identified rather than cloned, so later
+    offset-marker handling can still find them by name), a genuinely
+    reversed clone is created.
+    Every other element type (Drift, Quadrupole, Sextupole, Octupole,
+    Multipole, Cavity, plain Marker, Aperture) is direction-symmetric,
+    so the `-` prefix is simply dropped and the original element
+    reused.
+
+    Parameters
+    ----------
+    component : str
+        The reversed component name, e.g. "-QF1" (must start with `-`).
+    environment : xt.Environment
+        The Xsuite environment containing `component[1:]`.
+    offset_marker_names : frozenset of str, optional
+        Lowercase names of MARK/MONI/BEAMBEAM elements that carry a SAD
+        OFFSET, used to distinguish an offset marker (identified, not
+        cloned) from an ordinary marker (reused as-is). Defaults to an
+        empty frozenset.
+
+    Returns
+    -------
+    str
+        The name to use for this component in the reversed line:
+        either the original `component` (if a genuine reversed clone
+        was created or identified) or `component[1:]` (if the element
+        is direction-symmetric).
     """
 
-    assert component.startswith("-"), "Component must start with '-' to be reversed"
+    assert component.startswith("-"), """Component must start with "-" to be reversed"""
 
     # Cannot overwrite elements, so must remove and recreate
     if component in environment.element_dict:
@@ -33,73 +77,69 @@ def create_reversed_component(component, environment):
     ########################################
     if isinstance(environment.element_dict[component[1:]], xt.Bend):
         environment.new(
-            name    = component,
-            parent  = component[1:],
-            mode    = "clone")
+            name      = component,
+            prototype = component[1:],
+            mode      = "clone")
         environment[component].edge_entry_angle  =\
             environment[component[1:]].edge_exit_angle
         environment[component].edge_exit_angle   =\
             environment[component[1:]].edge_entry_angle
+        environment[component].edge_entry_fint   =\
+            environment[component[1:]].edge_exit_fint
+        environment[component].edge_exit_fint    =\
+            environment[component[1:]].edge_entry_fint
+        environment[component].edge_entry_hgap   =\
+            environment[component[1:]].edge_exit_hgap
+        environment[component].edge_exit_hgap    =\
+            environment[component[1:]].edge_entry_hgap
 
     ########################################
     # Solenoid
     ########################################
     elif isinstance(environment.element_dict[component[1:]], xt.UniformSolenoid):
         environment.new(
-            name    = component,
-            parent  = component[1:],
-            mode    = "clone")
+            name      = component,
+            prototype = component[1:],
+            mode      = "clone")
         environment[component].ks  *= -1
 
     ########################################
     # Transverse Reference Shift
     ########################################
-    elif isinstance(environment.element_dict[component[1:]], xt.XYShift):
+    elif isinstance(environment.element_dict[component[1:]], xt.Translation):
         environment.new(
-            name    = component,
-            parent  = component[1:],
-            mode    = "clone")
+            name      = component,
+            prototype = component[1:],
+            mode      = "clone")
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
     # Longitudinal Reference Shift
     ########################################
-    elif isinstance(environment.element_dict[component[1:]], xt.ZetaShift):
+    elif isinstance(environment.element_dict[component[1:]], xt.TimeDelay):
         environment.new(
-            name    = component,
-            parent  = component[1:],
-            mode    = "clone")
+            name      = component,
+            prototype = component[1:],
+            mode      = "clone")
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
-    # X Rotation
+    # Rotation
     ########################################
-    elif isinstance(environment.element_dict[component[1:]], xt.XRotation):
+    elif isinstance(environment.element_dict[component[1:]], xt.Rotation):
         environment.new(
-            name    = component,
-            parent  = component[1:],
-            mode    = "clone")
+            name      = component,
+            prototype = component[1:],
+            mode      = "clone")
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
-    # Y Rotation
+    # Offset Marker (Mark, Moni, BeamBeam all convert to xt.Marker)
     ########################################
-    elif isinstance(environment.element_dict[component[1:]], xt.YRotation):
-        environment.new(
-            name    = component,
-            parent  = component[1:],
-            mode    = "clone")
-        # Here we need the - sign on the element to ID with solenoids
-
-    ########################################
-    # S Rotation
-    ########################################
-    elif isinstance(environment.element_dict[component[1:]], xt.SRotation):
-        environment.new(
-            name    = component,
-            parent  = component[1:],
-            mode    = "clone")
-        # Here we need the - sign on the element to ID with solenoids
+    elif isinstance(environment.element_dict[component[1:]], xt.Marker) \
+            and component[1:].lower() in offset_marker_names:
+        # Here we need the - sign on the element to ID offset markers
+        environment.element_dict[component] = environment.element_dict[component[1:]]
 
     ########################################
     # Drift, Quadrupole, Sextupole, Octupole, Multipole, Cavity, Marker, Aperture
@@ -116,23 +156,72 @@ def convert_lines(
         parsed_lattice_data:    dict,
         environment:            xt.Environment) -> None:
     """
-    Docstring for convert_lines
-    
-    :param parsed_lattice_data: Description
-    :type parsed_lattice_data: dict
-    :param environment: Description
-    :type environment: xt.Environment
+    Build every parsed SAD LINE as an Xsuite line, handling reversals.
+
+    A component referencing a quad-fringe compound (`{name}_compound`,
+    see `convert_quadrupoles`) is first redirected there from the bare
+    `{name}` SAD element name. Reversed line references (`-LINENAME`)
+    are then resolved in three passes: (1) reversed real (imported)
+    sublines have their element order reversed and every component
+    negated; (2) reversed generated sublines (e.g. solenoid/reference-
+    shift/thick-cavity sub-lines, which are never reordered) have
+    every component negated but keep their order; (3) any remaining
+    reversed component (a single element, not a subline) is resolved
+    directly via `create_reversed_component`. Reversed generated
+    sublines are deduplicated by name, so repeated references reuse
+    the same `*_reversed` line.
+
+    Parameters
+    ----------
+    parsed_lattice_data : dict
+        Parsed lattice data, as returned by `parse_sad_file`.
+    environment : xt.Environment
+        The Xsuite environment to build lines into. Must already have
+        every element and any generated sub-lines (solenoids,
+        reference shifts, etc.) created.
+
+    Raises
+    ------
+    ValueError
+        If a reversed subline reference survives both reversal passes
+        (an internal-consistency check -- indicates a SAD2XS bug), or
+        if any parsed line fails to convert.
     """
     ########################################
     # Get the required data
     ########################################
     parsed_lines    = parsed_lattice_data["lines"]
 
+    offset_marker_names = {
+        name.lower()
+        for marker_type in ("mark", "moni", "beambeam")
+        for name, marker in parsed_lattice_data["elements"].get(marker_type, {}).items()
+        if "offset" in marker}
+
     ########################################
     # Convert lines
     ########################################
     converted_lines = []
     for line, components in parsed_lines.items():
+
+        # Work on a copy: the passes below rewrite entries in place, and
+        # that must never leak back into parsed_lattice_data["lines"]
+        # -- other converter stages (offset markers) rely on it staying
+        # an unmutated record of what SAD actually declared.
+        components = list(components)
+
+        ########################################################################
+        # Handle quad-fringe compound references
+        ########################################################################
+        # convert_quadrupoles names a fringe/body compound's wrapping line
+        # "{name}_compound" so the quadrupole body can keep the bare SAD
+        # name -- redirect any component referencing "{name}" onto it.
+        for i, component in enumerate(components):
+            is_reversed     = component.startswith("-")
+            base_name       = component[1:] if is_reversed else component
+            compound_name   = f"{base_name}_compound"
+            if compound_name in environment.lines:
+                components[i] = f"-{compound_name}" if is_reversed else compound_name
 
         ########################################################################
         # Handle reversed real sublines
@@ -154,7 +243,7 @@ def convert_lines(
 
                 reverse_handled_components  = []
                 for component in reversed_line_elements:
-                    component   = create_reversed_component(component, environment)
+                    component   = create_reversed_component(component, environment, offset_marker_names)
                     reverse_handled_components.append(component)
 
                 environment.new_line(
@@ -180,7 +269,7 @@ def convert_lines(
 
                 reversed_line_name      = component[1:] + "_reversed"
 
-                # Check if the line hasn"t already been reversed (duplicate element)
+                # Check if the line hasn't already been reversed (duplicate element)
                 if reversed_line_name in environment.lines:
                     components[i] = reversed_line_name
                     continue
@@ -193,7 +282,7 @@ def convert_lines(
 
                 reverse_handled_components  = []
                 for component in reversed_line_elements:
-                    component   = create_reversed_component(component, environment)
+                    component   = create_reversed_component(component, environment, offset_marker_names)
                     reverse_handled_components.append(component)
 
                 environment.new_line(
@@ -209,11 +298,17 @@ def convert_lines(
         for component in components:
 
             if "-" in component:
-                # Reversed subline
+                # Reversed sublines were replaced by their *_reversed lines in
+                # the passes above; a remaining line reference here means that
+                # replacement logic missed a case.
                 if component[1:] in environment.lines:
-                    raise ValueError("How did you get here? This should be handled above.")
+                    raise ValueError(
+                        f"""Reversed subline "{component}" in line "{line}" """
+                        "survived the subline reversal passes. This is a "
+                        "SAD2XS internal error: please report it with the "
+                        "lattice file.")
                 reverse_handled_components.append(
-                    create_reversed_component(component, environment))
+                    create_reversed_component(component, environment, offset_marker_names))
             else:
                 reverse_handled_components.append(component)
 
@@ -223,5 +318,10 @@ def convert_lines(
         converted_lines.append(line)
 
     if len(converted_lines) < len(parsed_lines):
-        print(f"Converted {len(converted_lines)} lines out of {len(parsed_lines)}")
-        raise ValueError("Not all lines could be converted. Check the input data.")
+        unconverted = sorted(
+            line for line in parsed_lines if line not in converted_lines)
+        raise ValueError(
+            f"Converted {len(converted_lines)} lines out of {len(parsed_lines)}. "
+            f"Unconverted: {unconverted}")
+
+    logger.info(f"Converted {len(converted_lines)} lines")

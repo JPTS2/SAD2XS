@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Output Writer - Markers
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Output Writer: Markers
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-07-23
+================================================================================
 """
 
 ################################################################################
@@ -23,16 +30,35 @@ def create_marker_lattice_file_information(
         offset_marker_locations:    dict | None,
         config:                     ConfigLike) -> str:
     """
-    Docstring for create_marker_lattice_file_information
-    
-    :param line_table: Description
-    :type line_table: xd.table.Table
-    :param offset_marker_locations: Description
-    :type offset_marker_locations: dict | None
-    :param config: Description
-    :type config: ConfigLike
-    :return: Description
-    :rtype: str
+    Generate the lattice-file source for every Marker element (MARK,
+    MONI, BEAMBEAM, and any relocated offset markers).
+
+    All marker names are collected into a single `ALL_MARKERS` list
+    and installed in one loop, rather than one `env.new(...)` call
+    per marker, since markers carry no parameters to differentiate
+    them. Offset markers (whose target insertion points were resolved
+    by `convert_offset_markers`) are included here even though they
+    were removed from the in-memory line -- they get their real
+    positions from
+    `sad2xs.output_writer._016_offset_markers.create_offset_marker_lattice_file_information`
+    later in the file; this section only needs to declare them to
+    exist.
+
+    Parameters
+    ----------
+    line_table : xd.table.Table
+        `line.get_table(attr=True)`.
+    offset_marker_locations : dict or None
+        Resolved offset-marker insertion points, as returned by
+        `sad2xs.converter._008_offset_markers.convert_offset_markers`.
+    config : ConfigLike
+        Converter configuration; only `OUTPUT_STRING_LENGTH` is used.
+
+    Returns
+    -------
+    str
+        The generated Python source for this section, or "" if the
+        line has no markers (including offset markers).
     """
 
     ########################################
@@ -40,7 +66,7 @@ def create_marker_lattice_file_information(
     ########################################
     unique_marker_names    = []
 
-    for marker in line_table.rows[line_table.element_type == 'Marker'].name:
+    for marker in line_table.rows[line_table.element_type == "Marker"].name:
         parentname  = get_parentname(marker)
         if parentname not in unique_marker_names:
             unique_marker_names.append(parentname)
@@ -79,13 +105,13 @@ def create_marker_lattice_file_information(
     output_string   += f"""
 ALL_MARKERS = [
 {textwrap.fill(
-        text                = str(unique_marker_names)[1:-1],
+        text                = ", ".join(f"\"{name}\"" for name in unique_marker_names),
         width               = config.OUTPUT_STRING_LENGTH,
-        initial_indent      = '    ',
-        subsequent_indent   = '    ',
+        initial_indent      = "    ",
+        subsequent_indent   = "    ",
         break_on_hyphens    = False)}]
 for marker in ALL_MARKERS:
-    env.new(name = marker, parent = xt.Marker)"""
+    env.new(name = marker, prototype = xt.Marker)"""
 
     ########################################
     # Return

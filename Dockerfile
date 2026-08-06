@@ -1,9 +1,14 @@
 # ==============================================================================
-# Dockerfile to Build and Run SAD (Strategic Accelerator Design) Software
-# =============================================
-# Author(s):  John P T Salvesen
+# Docker Image: Build and Run SAD
+# ==============================================================================
+# SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+#
+# This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+# See LICENSE for details.
+#
+# Authors:    John P. T. Salvesen
 # Email:      john.salvesen@cern.ch
-# Date:       30-09-2025
+# Date:       2026-07-27
 # ==============================================================================
 
 ################################################################################
@@ -11,7 +16,7 @@
 ################################################################################
 ARG SAD_REPO_URL="https://github.com/KatsOide/SAD.git"
 ARG SAD_BRANCH="master"
-ARG SAD_SMOKE_PATH="tests/sad_installation_test.sad"
+ARG SAD_SMOKE_PATH="tests/installation/sad_installation_test.sad"
 
 ################################################################################
 # 1: Build SAD from source
@@ -144,7 +149,7 @@ RUN set -eux; \
 WORKDIR /opt/app
 
 # Copy build metadata first for better layer caching
-COPY setup.py README* LICENSE* /opt/app/
+COPY pyproject.toml README* LICENSE* /opt/app/
 
 # Copy the package sources
 COPY sad2xs /opt/app/sad2xs

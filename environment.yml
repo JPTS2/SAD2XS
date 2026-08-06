@@ -1,23 +1,33 @@
 # ==============================================================================
-# Environment file for sad2xs
-# =============================================
-# Author(s):  John P T Salvesen
+# Micromamba/Conda Environment Specification
+# ==============================================================================
+# SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+#
+# This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+# See LICENSE for details.
+#
+# Authors:    John P. T. Salvesen
 # Email:      john.salvesen@cern.ch
-# Date:       30-09-2025
+# Date:       2026-08-06
 # ==============================================================================
 
 name: sad2xs
 channels:
   - conda-forge
 dependencies:
-  - python=3.12
+  - python=3.13
   - pip
-  - setuptools
+  # PEP 639 license expressions require setuptools 77 or newer
+  - setuptools>=77
   - wheel
+  # Mirrors the `dev` extra of pyproject.toml
+  # `test_environment_matches_pyproject.py` fails if the two drift apart.
   - pip:
-      - pytest
-      - xsuite
-      - numpy
-      - pandas
-      - tfs-pandas
-      - matplotlib
+      - numpy>=2.1
+      - pyyaml>=6.0
+      - scipy>=1.14
+      - xsuite>=0.58.0
+      - tfs-pandas>=3.8
+      - tqdm>=4.66
+      - matplotlib>=3.9
+      - pytest>=8.0

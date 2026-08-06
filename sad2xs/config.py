@@ -1,15 +1,31 @@
 """
-(Unofficial) SAD to XSuite Converter: Configuration Defaults
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Configuration Defaults
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-12-2025
+Date:       2026-08-06
+================================================================================
 """
 
 ################################################################################
 # Required Modules
 ################################################################################
 from dataclasses import dataclass, field
+
+################################################################################
+# Protected Element Names
+#
+# Element names that collide with Xsuite environment variables created during
+# conversion. SAD itself accepts these names; SAD2XS rejects them early to
+# prevent silent corruption of the Xsuite environment.
+################################################################################
+PROTECTED_ELEMENT_NAMES: frozenset[str] = frozenset({"mass0", "p0c", "q0"})
 
 ################################################################################
 # Config Dataclass
@@ -23,10 +39,13 @@ class Config:
     ############################################################################
     # Hidden Flags
     ############################################################################
-    _verbose:                       bool            = True
+    # _verbose=True is shorthand for sad2xs.set_log_level("info")
+    _verbose:                       bool            = False
     _test_mode:                     bool            = False
     _replace_repeated_elements:     bool            = True
     _install_offset_markers:        bool            = True
+    _import_sad_bend_fringes:       bool            = True
+    _import_sad_quad_fringes:       bool            = True
 
     ############################################################################
     # Constants
@@ -72,10 +91,10 @@ class Config:
     ########################################
     SAD_ALLOWED_ELEMENTS:           set[str]        = field(
         default_factory = lambda: {
-            'drift',
-            'bend', 'quad', 'sext', 'oct', 'mult', 'sol',
-            'cavi', 'apert', 'coord',
-            'mark', 'moni', 'beambeam'})
+            "drift",
+            "bend", "quad", "sext", "oct", "mult", "sol",
+            "cavi", "apert", "coord",
+            "mark", "moni", "beambeam", "map"})
 
     ########################################
     # Reference Particle Defaults
@@ -89,11 +108,11 @@ class Config:
     ########################################
     COORD_SIGNS:                    dict[str, int]  = field(
         default_factory = lambda: {
-        'dx':         +1,
-        'dy':         +1,
-        'chi1':       -1,
-        'chi2':       +1,
-        'chi3':       -1})
+        "dx":         +1,
+        "dy":         +1,
+        "chi1":       -1,
+        "chi2":       +1,
+        "chi3":       -1})
 
     ########################################
     # Coordinate Transformation Tolerances
@@ -115,29 +134,34 @@ class Config:
     ########################################
     # Element Modelling Constants
     ########################################
-    MODEL_DRIFT:                    str             = 'exact'
-    MODEL_BEND:                     str             = 'mat-kick-mat'
-    MODEL_QUAD:                     str             = 'mat-kick-mat'
-    MODEL_SEXT:                     str             = 'mat-kick-mat'
-    MODEL_OCT:                      str             = 'mat-kick-mat'
-    MODEL_CAVI:                     str             = 'drift-kick-drift-exact'
+    MODEL_DRIFT:                    str             = "exact"
+    MODEL_BEND:                     str             = "bend-kick-bend"
+    MODEL_QUAD:                     str             = "mat-kick-mat"
+    MODEL_SEXT:                     str             = "mat-kick-mat"
+    MODEL_OCT:                      str             = "mat-kick-mat"
+    MODEL_MULT:                     str             = "mat-kick-mat"
+    MODEL_CAVI:                     str             = "drift-kick-drift-exact"
 
-    INTEGRATOR_BEND:                str             = 'uniform'
-    INTEGRATOR_QUAD:                str             = 'uniform'
-    INTEGRATOR_SEXT:                str             = 'uniform'
-    INTEGRATOR_OCT:                 str             = 'uniform'
-    INTEGRATOR_CAVI:                str             = 'yoshida4'
+    INTEGRATOR_BEND:                str             = "uniform"
+    INTEGRATOR_QUAD:                str             = "yoshida4"
+    INTEGRATOR_SEXT:                str             = "yoshida4"
+    INTEGRATOR_OCT:                 str             = "yoshida4"
+    INTEGRATOR_MULT:                str             = "yoshida4"
+    INTEGRATOR_CAVI:                str             = "yoshida4"
 
-    N_INTEGRATOR_KICKS_BEND:        int             = 3
-    N_INTEGRATOR_KICKS_QUAD:        int             = 3
-    N_INTEGRATOR_KICKS_SEXT:        int             = 3
-    N_INTEGRATOR_KICKS_OCT:         int             = 3
-    N_INTEGRATOR_KICKS_MULT:        int             = 3
-    N_INTEGRATOR_KICKS_SOL:         int             = 3
+    N_INTEGRATOR_KICKS_BEND:        int             = 20
+    N_INTEGRATOR_KICKS_QUAD:        int             = 14
+    N_INTEGRATOR_KICKS_SEXT:        int             = 14
+    N_INTEGRATOR_KICKS_OCT:         int             = 14
+    N_INTEGRATOR_KICKS_MULT:        int             = 14
+    N_INTEGRATOR_KICKS_SOL:         int             = 20
 
     ABSOLUTE_TIME_CAVI:             bool            = False
 
-    EDGE_MODEL_BEND:                str             = 'full'
+    N_SLICES_MULT_RF:               int             = 10
+
+    EDGE_MODEL_BEND:                str             = "full"
+    EDGE_MODEL_QUAD:                str             = "full"
 
     ########################################
     # Output Writer Constants
@@ -149,10 +173,16 @@ class Config:
         "Marker", "Drift",
         "Bend", "Quadrupole", "Sextupole", "Octupole", "Multipole",
         "UniformSolenoid",
-        "Cavity", "XYShift", "ZetaShift", "XRotation", "YRotation", "SRotation",
-        "LimitEllipse", "LimitRect"})
+        "Cavity", "Translation", "TimeDelay", "Rotation",
+        "LimitEllipse", "LimitRect", "LimitRectEllipse",
+        "FirstOrderTaylorMap", "SecondOrderTaylorMap"})
 
     ########################################
     # Marker Insertion Tolerance
     ########################################
     MARKER_INSERTION_TOLERANCE:     float           = 1E-9
+
+    ########################################
+    # Writer Magnet Length Precision
+    ########################################
+    MAGNET_LENGTH_PRECISION:        float           = 1E-9

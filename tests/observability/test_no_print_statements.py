@@ -1,0 +1,49 @@
+"""
+================================================================================
+Tests enforcing the SAD2XS terminal output policy at source level
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
+Email:      john.salvesen@cern.ch
+Date:       2026-07-29
+================================================================================
+
+See tests/observability/README.md ("test_no_print_statements.py") for the
+output policy and gap this source scan closes.
+"""
+################################################################################
+# Required Packages
+################################################################################
+import ast
+import pathlib
+
+import sad2xs
+
+################################################################################
+# Source Scan
+################################################################################
+def test_no_print_calls_in_package():
+    """
+    No sad2xs module may call print(): use the module logger instead
+    (see docs/development/contributing.md, "Terminal output policy").
+    """
+    package_root = pathlib.Path(sad2xs.__file__).parent
+
+    offenders = []
+    for path in sorted(package_root.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding = "utf-8"))
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == "print"):
+                offenders.append(
+                    f"{path.relative_to(package_root)}:{node.lineno}")
+
+    assert offenders == [], (
+        "print() calls found in the sad2xs package — route output through "
+        "the module logger (logging.getLogger(__name__)) instead: "
+        f"{offenders}")

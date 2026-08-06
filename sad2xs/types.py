@@ -1,9 +1,16 @@
 """
-(Unofficial) SAD to XSuite Converter: Types
-=============================================
-Author(s):  John P T Salvesen
+================================================================================
+Shared Type Definitions
+================================================================================
+SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
+
+This file is part of the SAD2XS project, licensed under the Apache License Version 2.0.
+See LICENSE for details.
+
+Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       09-10-2025
+Date:       2026-07-20
+================================================================================
 """
 
 ################################################################################
@@ -11,6 +18,15 @@ Date:       09-10-2025
 ################################################################################
 from __future__ import annotations
 from typing import Protocol
+
+################################################################################
+# Parsed SAD Value Type
+################################################################################
+# A parsed SAD parameter value: either numeric, or a deferred
+# expression string (an unresolved reference to a variable/expression
+# defined elsewhere in the lattice file) -- see
+# `converter._000_helpers.parse_expression`.
+SadValue = float | str
 
 ################################################################################
 # Config Type
@@ -28,7 +44,7 @@ class ConfigLike(Protocol):
     ASCII_LOGO:                     str
 
     SAD_ALLOWED_ELEMENTS:           set[str]
-        
+
     ref_particle_mass0:             float | None
     ref_particle_q0:                float | None
     ref_particle_p0c:               float | None
@@ -48,12 +64,14 @@ class ConfigLike(Protocol):
     MODEL_QUAD:                     str
     MODEL_SEXT:                     str
     MODEL_OCT:                      str
+    MODEL_MULT:                     str
     MODEL_CAVI:                     str
 
     INTEGRATOR_BEND:                str
     INTEGRATOR_QUAD:                str
     INTEGRATOR_SEXT:                str
     INTEGRATOR_OCT:                 str
+    INTEGRATOR_MULT:                str
     INTEGRATOR_CAVI:                str
 
     N_INTEGRATOR_KICKS_BEND:        int
@@ -65,10 +83,14 @@ class ConfigLike(Protocol):
 
     ABSOLUTE_TIME_CAVI:             bool
 
+    N_SLICES_MULT_RF:               int
+
     EDGE_MODEL_BEND:                str
-    
+    EDGE_MODEL_QUAD:                str
+
     OUTPUT_STRING_SEP:              int
     OUTPUT_STRING_LENGTH:           int
     ALLOWED_ELEMENTS:               set[str]
-    
+
     MARKER_INSERTION_TOLERANCE:     float
+    MAGNET_LENGTH_PRECISION:        float

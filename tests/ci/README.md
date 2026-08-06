@@ -1,0 +1,114 @@
+# CI Tests
+
+This folder contains tests for the repository's test-running configuration:
+the GitHub Actions workflows and `pytest.ini`.
+
+Most of these tests parse the YAML workflow files directly and assert on
+their structural and behavioural contracts; one parses `pytest.ini` and
+cross-checks it against a real collection of `tests/`. They are the canary
+for test-configuration misconfigurations: a broken checkout ref, a missing
+trigger, a stale test path, or a test directory silently absent from
+`testpaths` will be caught here before it silently affects a real run.
+
+This folder runs first (see `pytest.ini`'s `testpaths`), so a misconfigured
+`testpaths` list is caught before anything else runs, not after.
+
+## What Belongs Here
+
+- Template structural contracts (`workflow_call` trigger, required inputs,
+  checkout version, checkout ref, fail-fast policy).
+- Per-folder workflow contracts (`workflow_dispatch` trigger, template
+  delegation, non-empty `pull_tag`).
+- Master workflow trigger contracts (pull_request, schedule, workflow_dispatch
+  for `run_tests.yml`).
+- Test path validation (paths listed in per-folder workflows exist in the repo).
+- Docker build workflow trigger and naming contracts.
+- `pytest.ini`'s `testpaths` completeness (every test collected by a full
+  scan of `tests/` is also collected via `testpaths`, and vice versa).
+
+## What Does Not Belong Here
+
+- Converter physics, parser rules, or writer correctness.
+- Installation or package metadata.
+- Anything that requires actually running a workflow or the full test suite
+  for its own sake — these are static configuration checks.
+
+## Notes
+
+Both files use `pyyaml` (`import yaml`). GitHub Actions YAML uses `on:` as a
+top-level key, which PyYAML 5+ parses as the boolean `True` rather than the
+string `"on"`. All trigger access uses a `_triggers(data)` helper that checks
+`data.get(True)` first to handle this.
+
+## Coverage
+
+Does not require the SAD binary.
+
+| File | Tests | Fail | Failure root cause |
+|------|-------|------|--------------------|
+| `test_workflow_checkout_refs.py` | 58 | 0 | — |
+| `test_workflow_test_targets.py` | 39 | 0 | — |
+| `test_pytest_ini_testpaths.py` | 2 | 0 | — |
+
+### `test_workflow_checkout_refs.py`
+
+**Template tests (7, not parametrised):**
+- Template has `workflow_call` trigger (required for per-folder delegation)
+- Template `test_files` input is marked `required: true`
+- Discover job uses `actions/checkout@v7` with no `ref` override (checks out triggering commit)
+- Run job uses `actions/checkout@v7` with no `ref` override (checks out triggering commit)
+- Run job matrix strategy has `fail-fast: false`
+
+**Per-folder workflow tests (3 functions x 12 workflows = 36 instances):**
+
+Parametrised over every per-folder workflow. The list is derived from
+`pytest.ini`'s `testpaths`, not hard-coded, so a folder added to `testpaths`
+without a matching workflow fails these tests instead of passing silently.
+
+- Each workflow has a `workflow_dispatch` trigger for manual re-runs
+- Each workflow delegates to `_test_template.yml` via `uses:`
+- Each workflow passes a non-empty `pull_tag`
+
+**Run-all workflow tests (3, not parametrised):**
+- `run_tests.yml` has a `pull_request` trigger (catches regressions before merge)
+- `run_tests.yml` has a `schedule` trigger (weekly runs for upstream breakage)
+- `run_tests.yml` has a `workflow_dispatch` trigger (manual re-runs)
+
+**Regression-gate tests (5 functions, 5 instances):**
+- The `Run regression tests` step in the single `run-tests` job selects `not known_issue`
+- The `Run known-issue tests` step selects `known_issue` only and is non-blocking (`continue-on-error: true`)
+- The `run-tests` job itself remains blocking
+- The `run-tests` job checks out the triggering commit without a `ref` override
+
+**Docker build tests (4, not parametrised):**
+- `docker-build.yml` name is stable and documented
+- Triggers on push to `main`
+- Has `workflow_dispatch` trigger
+- Uses `actions/checkout@v7`
+
+### `test_workflow_test_targets.py`
+
+Parametrised over the same 12 per-folder workflows. Parses each workflow's
+`test_files:` block (stripping blank lines and comment lines, matching the
+template's own normalisation logic).
+
+| Test | Expected result | What it checks |
+|------|----------------|----------------|
+| `test_ci_folder_workflow_lists_at_least_one_test_target` | 12 PASS | Each workflow has a non-empty `test_files:` block |
+| `test_ci_folder_workflow_test_targets_all_exist` | 12 PASS | Each listed path (`tests/<folder>`) exists as a directory |
+| `test_ci_folder_workflow_test_targets_are_under_tests_directory` | 12 PASS | All paths start with `tests/` |
+
+### `test_pytest_ini_testpaths.py`
+
+Runs `pytest --collect-only` as a subprocess twice (once bare, using
+`pytest.ini`'s `testpaths`; once against `tests/` directly) and compares the
+collected test node ID sets.
+
+| Test | Expected result | What it checks |
+|------|----------------|----------------|
+| `test_testpaths_collects_every_test_under_the_tests_directory` | PASS | Every test found by a full scan of `tests/` is also collected via `testpaths` |
+| `test_testpaths_does_not_reference_stale_paths` | PASS | `testpaths` does not list a directory contributing no test a full scan finds |
+
+---
+Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
+SPDX-License-Identifier: Apache-2.0
