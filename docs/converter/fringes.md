@@ -135,9 +135,11 @@ Each fringe map stores the `(a, b, theta)` it was built from as plain attributes
 
 These are ordinary Python attributes, not xofields. Xsuite has no field for them, but the object carries them through line building and `line.mirror()`. This lets the reversal step rebuild each map's coefficients in place under `-LINE` or `reverse_element_order`. Only the surviving side's `a` flips sign; `b` and `theta` are unchanged.
 
-### Requires Xsuite 0.58.0
+### Requires Xsuite 0.59.0
 
-The import builds an `xt.SecondOrderTaylorMap` through `env.new`. Xsuite 0.58.0 is the first release to support that, and it is the supported minimum.
+The import builds an `xt.SecondOrderTaylorMap` through `env.new`. Xsuite 0.58.0 is the first release to support that.
+
+The supported minimum is higher. Xtrack 0.111.0, shipped in Xsuite 0.59.0, split `xtrack.twiss` from a module into a package, and the project tracks current Xsuite rather than pinning behind it.
 
 ### Hard-edge: applied unconditionally, and it does not compose additively
 

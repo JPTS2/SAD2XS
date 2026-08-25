@@ -42,6 +42,33 @@ nothing extra.
 - `compute_s_sad`: recover SAD's own `s`, the real path length, from an
   Xsuite twiss table, whose `s` is the nominal design length. See
   [the derivation below](#compute_s_sad-derivation).
+- `propagate_edwards_teng`: propagate Edwards-Teng optics along a twiss
+  table, element by element, so it works on an open transfer line.
+  See [Edwards-Teng coupled optics](#edwards-teng-coupled-optics).
+
+## Edwards-Teng coupled optics
+
+SAD reports coupled beta/alpha in Edwards-Teng form. Xsuite computes those
+columns natively, but only for periodic lines. Open-line SAD comparisons
+need explicit propagation, which `propagate_edwards_teng` provides.
+
+Watch out for a trap here. An open twiss still emits `betx_edw_teng` and
+friends, and they look reasonable. They carry no coupling: `g_edw_teng` is
+1 at every element, so `betx_edw_teng` equals `betx`. Taking them at face
+value on a coupled transfer line silently gives the uncoupled answer.
+
+`propagate_edwards_teng` assumes an uncoupled start unless given `rr_et0`
+and beta/alpha seeds. A comparison beginning inside a solenoid needs
+those seeds; nothing detects a coupled start.
+
+Its propagation routine is vendored from xtrack 0.111.4, where it was
+`xtrack.twiss.coupling_edw_teng._propagate_edwards_teng` (Apache-2.0, the
+same licence as this project). Xtrack 0.111.5 removed it in favour of a
+periodic-only route, leaving no upstream symbol to call. The algorithm is
+MAD-X's `twcptk` and `twcptk_twiss` (`madx/src/twiss.f90`).
+
+The two agree to machine precision where both apply, pinned in
+`tests/conversion/test_coupled_twiss_convention.py`.
 
 ## Why this exists
 
