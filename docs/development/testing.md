@@ -223,8 +223,10 @@ summaries. The artifact path mirrors the test area that produced it.
 ## CI
 
 **`run_tests.yml`** is the master workflow. It triggers on pull requests to
-`main` and `release/**`, and on a weekly schedule. The weekly run catches
-upstream SAD and Xsuite breakage independently of any SAD2XS change.
+`main` and `release/**`, and nightly at 03:00 UTC. The nightly run catches
+upstream SAD and Xsuite breakage independently of any SAD2XS change. It runs
+an hour after `docker-build.yml`, so it tests against an image built from
+that night's upstream releases.
 
 It has one job, `run-tests`, with two sequential steps:
 
@@ -245,8 +247,20 @@ give one workflow per test folder. All are triggerable manually through
 `workflow_dispatch`. They allow targeted re-runs of one area without waiting for
 the full suite.
 
-**`docker-build.yml`** builds the SAD Docker image on push to `main`, and on
-demand. The SAD image packages the SAD executable and all Python dependencies.
+**`docker-build.yml`** builds the SAD Docker image on push to `main` or a
+`release/**` branch, nightly, and on demand. The SAD image packages the
+SAD executable and all Python dependencies.
+
+The image carries a branch's Python and dependency versions, while the tests
+run the checked-out branch. One shared image therefore tests a release branch
+against main's environment, and fails whenever the two declare different
+requirements. Each branch gets its own tag instead: `main` publishes
+`:latest` and `:main`, and `release/0.4.0` publishes `:release-0.4.0`.
+
+The test workflows pull the tag matching the branch under test, which on a
+pull request means the base branch, and fall back to `:latest` when no such
+image exists. A scheduled build fires only on the default branch, so it fans
+out over main and every release branch explicitly.
 
 ## Physics Edge Cases
 
