@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-08-25
 ================================================================================
 """
 ################################################################################
@@ -388,14 +388,60 @@ def test_ci_docker_build_has_workflow_dispatch_trigger():
 
 def test_ci_docker_build_uses_checkout_v7():
     """
-    The Docker build job must use actions/checkout@v7.
+    Every Docker build job must use actions/checkout@v7.
+
+    Checked across all jobs rather than the first one: the workflow gained a
+    branch-discovery job ahead of the build job, and checking only the first
+    would stop covering the build itself.
     """
-    data  = _load(DOCKER_PATH)
-    jobs  = data["jobs"]
-    job   = jobs[list(jobs.keys())[0]]
-    step  = _checkout_step(job["steps"])
-    assert step is not None, (
-        "docker-build.yml should have a checkout step.")
-    assert step["uses"] == "actions/checkout@v7", (
-        f"docker-build.yml checkout should use actions/checkout@v7. "
-        f"""Got: {step["uses"]!r}""")
+    data = _load(DOCKER_PATH)
+    for job_name, job in data["jobs"].items():
+        step = _checkout_step(job["steps"])
+        assert step is not None, (
+            f"docker-build.yml job `{job_name}` should have a checkout step.")
+        assert step["uses"] == "actions/checkout@v7", (
+            f"docker-build.yml job `{job_name}` checkout should use "
+            f"""actions/checkout@v7. Got: {step["uses"]!r}""")
+
+
+def test_ci_docker_build_triggers_on_release_branches():
+    """
+    The Docker build must trigger on pushes to release branches.
+
+    The image carries a branch's Python and dependency versions while the
+    tests run the checked-out branch. Building only from main means a release
+    branch that changes either is tested against the wrong environment.
+    """
+    data     = _load(DOCKER_PATH)
+    branches = _triggers(data).get("push", {}).get("branches", [])
+    assert any(str(b).startswith("release/") for b in branches), (
+        f"docker-build.yml should trigger on push to `release/**`. "
+        f"Got branches: {branches}")
+
+
+def test_ci_docker_build_tags_image_per_branch():
+    """
+    The build must publish a per-branch tag, not only `:latest` and the sha.
+
+    Without it there is no branch-specific image for the test workflows to
+    pull, and the drift this guards against returns.
+    """
+    run_text = _job_run_text(_load(DOCKER_PATH), "rebuild-docker")
+    assert "SLUG" in run_text, (
+        "docker-build.yml should derive a per-branch tag slug for the image.")
+
+
+def test_ci_template_falls_back_to_a_tag_the_build_publishes():
+    """
+    The template's fallback tag must be one docker-build.yml actually pushes.
+
+    It previously fell back to `:main`, which the build workflow never
+    published, so the fallback could only ever fail. It was unreachable at the
+    time, which is why it went unnoticed.
+    """
+    run_text = _job_run_text(_load(TEMPLATE_PATH), "run")
+    assert "${IMAGE}:main" not in run_text, (
+        "The template must not fall back to `:main`, a tag the Docker build "
+        "workflow does not publish.")
+    assert "${IMAGE}:latest" in run_text, (
+        "The template should fall back to `:latest`, which always exists.")

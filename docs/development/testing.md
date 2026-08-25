@@ -245,8 +245,20 @@ give one workflow per test folder. All are triggerable manually through
 `workflow_dispatch`. They allow targeted re-runs of one area without waiting for
 the full suite.
 
-**`docker-build.yml`** builds the SAD Docker image on push to `main`, and on
-demand. The SAD image packages the SAD executable and all Python dependencies.
+**`docker-build.yml`** builds the SAD Docker image on push to `main` or a
+`release/**` branch, on a schedule, and on demand. The SAD image packages the
+SAD executable and all Python dependencies.
+
+The image carries a branch's Python and dependency versions, while the tests
+run the checked-out branch. One shared image therefore tests a release branch
+against main's environment, and fails whenever the two declare different
+requirements. Each branch gets its own tag instead: `main` publishes
+`:latest` and `:main`, and `release/0.4.0` publishes `:release-0.4.0`.
+
+The test workflows pull the tag matching the branch under test, which on a
+pull request means the base branch, and fall back to `:latest` when no such
+image exists. A scheduled build fires only on the default branch, so it fans
+out over main and every release branch explicitly.
 
 ## Physics Edge Cases
 
