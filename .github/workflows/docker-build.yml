@@ -25,8 +25,9 @@ on:
       - main
       - 'release/**'
   schedule:
-    # Every Sunday at 03:00 UTC
-    - cron: '0 3 * * 0'
+    # Nightly at 02:00 UTC, an hour before run_tests.yml, so the tests always
+    # run against an image built from that night's upstream releases.
+    - cron: '0 2 * * *'
   workflow_dispatch: {}
 
 permissions:

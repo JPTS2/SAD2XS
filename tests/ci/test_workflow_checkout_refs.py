@@ -261,13 +261,13 @@ def test_ci_run_all_workflow_has_pull_request_trigger():
 
 def test_ci_run_all_workflow_has_schedule_trigger():
     """
-    run_tests.yml must have a schedule trigger for weekly runs that catch
+    run_tests.yml must have a schedule trigger for nightly runs that catch
     upstream breakage from new SAD or Xsuite releases independent of SAD2XS
     commits.
     """
     data = _load(RUN_ALL_PATH)
     assert "schedule" in _triggers(data), (
-        "run_tests.yml should have a `schedule` trigger for weekly runs.")
+        "run_tests.yml should have a `schedule` trigger for nightly runs.")
 
 
 def test_ci_run_all_workflow_has_workflow_dispatch_trigger():

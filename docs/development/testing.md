@@ -223,8 +223,10 @@ summaries. The artifact path mirrors the test area that produced it.
 ## CI
 
 **`run_tests.yml`** is the master workflow. It triggers on pull requests to
-`main` and `release/**`, and on a weekly schedule. The weekly run catches
-upstream SAD and Xsuite breakage independently of any SAD2XS change.
+`main` and `release/**`, and nightly at 03:00 UTC. The nightly run catches
+upstream SAD and Xsuite breakage independently of any SAD2XS change. It runs
+an hour after `docker-build.yml`, so it tests against an image built from
+that night's upstream releases.
 
 It has one job, `run-tests`, with two sequential steps:
 
@@ -246,7 +248,7 @@ give one workflow per test folder. All are triggerable manually through
 the full suite.
 
 **`docker-build.yml`** builds the SAD Docker image on push to `main` or a
-`release/**` branch, on a schedule, and on demand. The SAD image packages the
+`release/**` branch, nightly, and on demand. The SAD image packages the
 SAD executable and all Python dependencies.
 
 The image carries a branch's Python and dependency versions, while the tests

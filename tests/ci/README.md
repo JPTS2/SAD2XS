@@ -71,7 +71,7 @@ without a matching workflow fails these tests instead of passing silently.
 
 **Run-all workflow tests (3, not parametrised):**
 - `run_tests.yml` has a `pull_request` trigger (catches regressions before merge)
-- `run_tests.yml` has a `schedule` trigger (weekly runs for upstream breakage)
+- `run_tests.yml` has a `schedule` trigger (nightly runs for upstream breakage)
 - `run_tests.yml` has a `workflow_dispatch` trigger (manual re-runs)
 
 **Regression-gate tests (5 functions, 5 instances):**

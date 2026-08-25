@@ -16,9 +16,11 @@ name: Run Tests
 # Triggers:
 #   - pull_request: catches regressions before any merge to main or a release
 #     branch, running the PR's own code against the current SAD/Xsuite image.
-#   - schedule (weekly): catches upstream breakage. SAD and Xsuite release
+#   - schedule (nightly): catches upstream breakage. SAD and Xsuite release
 #     independently of SAD2XS, so a new version of either can silently break
-#     the converter without any change on this side. Weekly runs surface that.
+#     the converter without any change on this side. A weekly cadence left
+#     such a break undiscovered for days, and it then surfaced on an
+#     unrelated branch, where it read as that branch's fault.
 #   - workflow_dispatch: manual re-run from the GitHub Actions UI.
 
 on:
@@ -27,7 +29,7 @@ on:
       - main
       - 'release/**'
   schedule:
-    - cron: '0 3 * * 1'   # every Monday at 03:00 UTC
+    - cron: '0 3 * * *'   # nightly at 03:00 UTC
   workflow_dispatch: {}
 
 permissions:
