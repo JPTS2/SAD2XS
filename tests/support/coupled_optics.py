@@ -1,6 +1,6 @@
 """
 ================================================================================
-Edwards-Teng coupled optics helpers for open-line SAD comparisons
+Coupled optics helpers for SAD comparison tests
 ================================================================================
 SAD2XS: The unofficial Strategic Accelerator Design (SAD) to Xsuite converter
 
@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-08-25
 ================================================================================
 """
 ################################################################################
@@ -17,82 +17,21 @@ Date:       2026-07-29
 ################################################################################
 import numpy as np
 import xtrack as xt
-
-# Deliberate private-API use: this wraps xtrack's existing open-line
-# Edwards-Teng propagation. The convention tests pin the semantics against
-# native periodic Xtrack columns, uncoupled lines, and SAD.
-from xtrack.twiss import _propagate_edwards_teng
 import xtrack.linear_normal_form as lnf
 
-################################################################################
-# Background
-#
-# SAD reports coupled beta/alpha in Edwards-Teng form. Xsuite can compute
-# Edwards-Teng columns natively for periodic lines, but open-line SAD
-# comparisons need this explicit propagation helper.
-################################################################################
+from sad2xs.xsuite_helpers import propagate_edwards_teng
 
 ################################################################################
-# Edwards-Teng propagation
+# Edwards-Teng lookups
 ################################################################################
-def edwards_teng_optics(
-        twiss_table,
-        rr_et0  = None,
-        betx0   = None,
-        alfx0   = None,
-        bety0   = None,
-        alfy0   = None) -> dict:
-    """
-    Propagate Edwards-Teng optics along an open-line Xsuite Twiss table.
-
-    Parameters
-    ----------
-    twiss_table : xtrack TwissTable
-        Open-line (or periodic) twiss result; `W_matrix`, `mux` and `muy`
-        are consumed.
-    rr_et0 : (2, 2) array-like | None, optional
-        Edwards-Teng decoupling matrix at the first table row. Defaults to
-        zeros, i.e. an uncoupled line start.
-    betx0, alfx0, bety0, alfy0 : float | None, optional
-        Edwards-Teng optics at the first table row. Defaults to the table's
-        plain values, which are identical at an uncoupled start.
-
-    Returns
-    -------
-    dict
-        Arrays over table rows for Edwards-Teng beta/alpha and decoupling
-        matrix components.
-    """
-    if rr_et0 is None:
-        rr_et0 = np.zeros((2, 2))
-    if betx0 is None:
-        betx0 = twiss_table.betx[0]
-    if alfx0 is None:
-        alfx0 = twiss_table.alfx[0]
-    if bety0 is None:
-        bety0 = twiss_table.bety[0]
-    if alfy0 is None:
-        alfy0 = twiss_table.alfy[0]
-
-    return _propagate_edwards_teng(
-        WW      = twiss_table.W_matrix,
-        mux     = twiss_table.mux,
-        muy     = twiss_table.muy,
-        RR_ET0  = np.array(rr_et0, dtype = float),
-        betx0   = betx0,
-        alfx0   = alfx0,
-        bety0   = bety0,
-        alfy0   = alfy0)
-
-
 def edwards_teng_optics_at(twiss_table, element_name, **kwargs) -> dict:
     """
-    Edwards-Teng optics of `edwards_teng_optics` at one named element.
+    Edwards-Teng optics of `propagate_edwards_teng` at one named element.
 
-    Returns a dict of scalars with the same keys as `edwards_teng_optics`.
+    Returns a dict of scalars with the same keys as `propagate_edwards_teng`.
     Extra keyword arguments are forwarded (e.g. initial conditions).
     """
-    optics  = edwards_teng_optics(twiss_table, **kwargs)
+    optics  = propagate_edwards_teng(twiss_table, **kwargs)
     index   = list(twiss_table.name).index(element_name)
     return {key: values[index] for key, values in optics.items()}
 
@@ -159,7 +98,7 @@ def couplings_sad_4d(twiss, validity_tol = 1E-6):
     """
     Calculate SAD's R1-R4 coupling parameters from a closed 4D twiss.
 
-    This is an independent route to the same quantity `edwards_teng_optics`
+    This is an independent route to the same quantity `propagate_edwards_teng`
     plus `normalized_r_matrix` produce. Rather than propagating Edwards-Teng
     optics along the line, it decouples the one-turn matrix directly at every
     element.

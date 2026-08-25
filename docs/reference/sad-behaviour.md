@@ -755,9 +755,10 @@ and **mode-2** Mais-Ripken eigenmode components only. The cross-mode leakage
 terms sit in separate `betx2`, `bety1`, `alfx2`, and `alfy1` columns.
 
 Xsuite can compute Edwards-Teng parameters natively with
-`coupling_edw_teng=True`, but only for periodic lines. `tests/support/coupled_optics.py`
-wraps Xtrack's open-line Edwards-Teng propagation, so converted transfer
-lines can be compared against SAD through coupled regions. See
+`coupling_edw_teng=True`, but only for periodic lines.
+`sad2xs.xsuite_helpers.propagate_edwards_teng` covers the open-line case, so
+converted transfer lines can be compared against SAD through coupled
+regions. See
 [SAD helpers](../helpers/sad-helpers.md) for the practical usage.
 
 The convention map, established empirically (each case anchored by SAD and
