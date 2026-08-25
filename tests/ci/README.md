@@ -23,6 +23,7 @@ This folder runs first (see `pytest.ini`'s `testpaths`), so a misconfigured
   for `run_tests.yml`).
 - Test path validation (paths listed in per-folder workflows exist in the repo).
 - Docker build workflow trigger and naming contracts.
+- Dockerfile build contracts.
 - `pytest.ini`'s `testpaths` completeness (every test collected by a full
   scan of `tests/` is also collected via `testpaths`, and vice versa).
 
@@ -49,6 +50,7 @@ Does not require the SAD binary.
 | `test_workflow_checkout_refs.py` | 61 | 0 | — |
 | `test_workflow_test_targets.py` | 39 | 0 | — |
 | `test_pytest_ini_testpaths.py` | 2 | 0 | — |
+| `test_dockerfile_build_contract.py` | 1 | 0 | — |
 
 ### `test_workflow_checkout_refs.py`
 
@@ -102,6 +104,15 @@ template's own normalisation logic).
 | `test_ci_folder_workflow_lists_at_least_one_test_target` | 12 PASS | Each workflow has a non-empty `test_files:` block |
 | `test_ci_folder_workflow_test_targets_all_exist` | 12 PASS | Each listed path (`tests/<folder>`) exists as a directory |
 | `test_ci_folder_workflow_test_targets_are_under_tests_directory` | 12 PASS | All paths start with `tests/` |
+
+### `test_dockerfile_build_contract.py`
+
+Reads the `Dockerfile` as text and pins the build contracts that are easy to
+undo by accident.
+
+| Test | Expected result | What it checks |
+|------|----------------|----------------|
+| `test_builder_stage_installs_yacc` | PASS | The builder stage installs bison, so make can regenerate `src/calc.c` from `src/calc.y` whenever the mtimes make it try |
 
 ### `test_pytest_ini_testpaths.py`
 

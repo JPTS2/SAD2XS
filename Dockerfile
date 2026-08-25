@@ -8,7 +8,7 @@
 #
 # Authors:    John P. T. Salvesen
 # Email:      john.salvesen@cern.ch
-# Date:       2026-07-27
+# Date:       2026-08-25
 # ==============================================================================
 
 ################################################################################
@@ -33,13 +33,18 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV DEBIAN_FRONTEND=noninteractive
 
 ########################################
-# Get X11 headers and groff
+# Get X11 headers, groff and yacc
 ########################################
+# bison supplies yacc. Upstream tracks both src/calc.y and the generated
+# src/calc.c, and make's builtin .y -> .c rule fires whenever calc.y is the
+# newer file. A shallow clone sets the two mtimes in write order, so the rule
+# fired at random and the build died on a missing yacc. This stage is not
+# copied into the runtime image, so nothing ships.
 RUN set -eux; \
   apt-get update; \
   apt-get install -y --no-install-recommends \
     git make gfortran build-essential ca-certificates pkg-config \
-    libx11-dev groff; \
+    libx11-dev groff bison; \
   (apt-get install -y --no-install-recommends libgfortran5 || \
    apt-get install -y --no-install-recommends libgfortran6 || true); \
   (apt-get install -y --no-install-recommends libquadmath0 || true); \
