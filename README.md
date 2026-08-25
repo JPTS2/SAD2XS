@@ -51,6 +51,18 @@ pip install sad2xs[sad-helpers]
 pip install sad2xs[plotting]
 ```
 
+### The SAD executable
+
+`sad-helpers` runs `sad` as a subprocess, so SAD itself has to be built. To build it from source:
+
+```bash
+sad2xs-install-sad
+```
+
+Currently macOS only; on any other platform the command exits saying so.
+Nothing needs root: dependencies come from Homebrew, and the clone, the build
+and the launcher all live under your home directory.
+
 ## Usage
 Convert a SAD lattice to an Xsuite line in one call:
 

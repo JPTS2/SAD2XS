@@ -16,11 +16,17 @@ Requires the SAD binary for the executable smoke test.
 
 | File | Tests | Fail | Failure root cause |
 |------|-------|------|--------------------|
+| `test_installer_dispatch.py` | 3 | 0 | — |
 | `test_macos_installer.py` | 13 | 0 | — |
 | `test_sad_executable.py` | 1 | 0 | — |
 
+- `test_installer_dispatch.py` — `sad2xs.install_sad.dispatch`:
+  `require_platform` accepting its own platform and refusing any other, and
+  `install_sad` exiting on an unsupported platform with a message naming
+  those that are supported.
+
 - `test_macos_installer.py` — macOS installer internals via
-  monkeypatching: `_run` error handling and non-zero return codes, brew cask
+  monkeypatching: `run` error handling and non-zero return codes, brew cask
   flag, brew prefix with missing formula, executable name resolution,
   `ensure_command_exists` skip and install paths, X11 header detection,
   dependency installation order, conda environment variable stripping and

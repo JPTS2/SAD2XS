@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-import _install_sad_macos as installer
+from sad2xs.install_sad import macos as installer
 
 ################################################################################
 # Command Runner
