@@ -20,17 +20,20 @@ import os
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 
 from ..helpers import log_section_heading
 from ._helpers import (
     InstallConfig,
+    MissingDependency,
+    check_command,
     clone_sad,
     report_path_setup,
     make_sad,
+    strip_inherited_build_settings,
     verify_executable,
     write_launcher)
+from ._helpers import require_dependencies as _require_dependencies
 from .dispatch import require_platform
 
 logger  = logging.getLogger(__name__)
@@ -42,28 +45,6 @@ SYSTEM_PATH = "/usr/bin:/bin:/usr/sbin:/sbin"
 ################################################################################
 # Dependency Reporting
 ################################################################################
-########################################
-# Missing Dependency Record
-########################################
-@dataclass(frozen = True)
-class MissingDependency:
-    """
-    One dependency the SAD build needs but the machine does not provide.
-
-    Attributes
-    ----------
-    name : str
-        The missing command, executable, or header.
-    reason : str
-        Why the SAD build needs it.
-    command : str
-        The command the user can run to provide it.
-    """
-    name:       str
-    reason:     str
-    command:    str
-
-
 ########################################
 # Homebrew Prefix Lookup
 ########################################
@@ -151,38 +132,6 @@ def check_xcode_clt() -> MissingDependency | None:
         return report
 
     return report if process.returncode != 0 else None
-
-
-########################################
-# Command Check
-########################################
-def check_command(
-        cmd:        str,
-        reason:     str,
-        remedy:     str,
-        path:       str | None = None) -> MissingDependency | None:
-    """
-    Check that a command can be found.
-
-    Parameters
-    ----------
-    cmd : str
-        Command to search for.
-    reason : str
-        Why the SAD installation needs the command.
-    remedy : str
-        The command that provides it.
-    path : str, optional
-        Search this PATH rather than the caller's. Defaults to None.
-
-    Returns
-    -------
-    MissingDependency or None
-        A report when the command cannot be found.
-    """
-    if shutil.which(cmd, path = path) is not None:
-        return None
-    return MissingDependency(cmd, reason, remedy)
 
 
 ########################################
@@ -328,27 +277,10 @@ def require_dependencies() -> None:
     Raises
     ------
     SystemExit
-        If anything the SAD build needs is missing.
+        If anything the SAD installation needs is missing.
     """
     logger.info("Checking for required dependencies")
-    missing = audit_dependencies()
-
-    if not missing:
-        logger.info("All required dependencies found")
-        return
-
-    lines = ["Missing dependencies required to build SAD:", ""]
-    for dependency in missing:
-        lines.append(f"  {dependency.name}")
-        lines.append(f"      {dependency.reason}")
-        lines.append(f"      Install with: {dependency.command}")
-        lines.append("")
-    lines.append(
-        "SAD2XS never installs system dependencies and never uses sudo.")
-    lines.append(
-        "Install the above yourself, then rerun sad2xs-install-sad.")
-
-    sys.exit("\n".join(lines))
+    _require_dependencies(audit_dependencies())
 
 ################################################################################
 # Build Environment
@@ -356,10 +288,6 @@ def require_dependencies() -> None:
 def make_clean_build_env() -> dict[str, str]:
     """
     Build an environment that compiles SAD with the Xcode toolchain.
-
-    A conda environment exports compiler and linker variables that point at
-    its own toolchain. SAD picks those up and fails to link against the
-    system frameworks, so they are stripped rather than overridden.
 
     Returns
     -------
@@ -371,26 +299,7 @@ def make_clean_build_env() -> dict[str, str]:
     SystemExit
         If any resolved toolchain executable does not exist.
     """
-    env = os.environ.copy()
-
-    ########################################
-    # Strip Inherited Toolchain Settings
-    ########################################
-    for variable in [
-            "CFLAGS", "CXXFLAGS", "FFLAGS", "FCFLAGS",
-            "CPPFLAGS", "LDFLAGS", "LDFLAGS_LD",
-            "PKG_CONFIG_PATH", "CONDA_BUILD_SYSROOT", "LD_LIBRARY_PATH",
-            "CPATH", "C_INCLUDE_PATH", "CPLUS_INCLUDE_PATH", "LIBRARY_PATH",
-            "DYLD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH",
-            "CONDA_PREFIX", "CONDA_DEFAULT_ENV", "CONDA_SHLVL",
-            "CONDA_TOOLCHAIN_HOST", "CONDA_TOOLCHAIN_BUILD",
-            "_CONDA_PYTHON_SYSCONFIGDATA_NAME",
-            "CC", "CXX", "FC", "F77", "F90",
-            "AR", "AS", "LD", "NM", "RANLIB", "STRIP",
-            "CMAKE_ARGS", "CMAKE_PREFIX_PATH",
-            "CONDA_BUILD", "PREFIX", "BUILD_PREFIX",
-            "HOST", "BUILD", "TARGET"]:
-        env.pop(variable, None)
+    env = strip_inherited_build_settings()
 
     ########################################
     # Point At The Xcode Toolchain

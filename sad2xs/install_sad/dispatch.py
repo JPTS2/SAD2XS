@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-28
+Date:       2026-08-27
 ================================================================================
 """
 ################################################################################
@@ -166,9 +166,13 @@ def _platform_installer() -> Callable[[InstallConfig], None]:
         from .macos import install_sad_macos     # pylint: disable=import-outside-toplevel
         return install_sad_macos
 
+    if sys.platform.startswith("linux"):
+        from .linux import install_sad_linux     # pylint: disable=import-outside-toplevel
+        return install_sad_linux
+
     sys.exit(
         f"No SAD installer for sys.platform {sys.platform!r}. "
-        f"Supported: macOS.")
+        f"Supported: macOS, Linux.")
 
 ########################################
 # Install SAD

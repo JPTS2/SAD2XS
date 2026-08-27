@@ -115,7 +115,7 @@ def test_check_xcode_clt_reports_the_command_that_installs_them(monkeypatch):
 
     assert missing is not None, (
         "Unconfigured Command Line Tools should be reported.")
-    assert missing.command == "xcode-select --install", (
+    assert missing.remedy == "xcode-select --install", (
         "The report should give the exact command that fixes this.")
 
 
@@ -204,8 +204,8 @@ def test_check_command_reports_the_remedy_for_a_missing_command(monkeypatch):
     assert missing is not None, "A missing command should be reported."
     assert missing.name == "nroff", (
         "The report should name the command the user looked for.")
-    assert missing.command == "brew install groff", (
-        "The report should give the command that provides it.")
+    assert missing.remedy == "brew install groff", (
+        "The report should give what provides it.")
 
 
 def test_check_command_searches_only_the_path_it_is_given(tmp_path):
@@ -386,7 +386,7 @@ def test_check_brew_bin_reports_a_formula_that_is_not_installed(
     missing = installer.check_brew_bin("gfortran", "gcc", "why")
 
     assert missing is not None, "An uninstalled formula should be reported."
-    assert missing.command == "brew install gcc", (
+    assert missing.remedy == "brew install gcc", (
         "The report should give the formula that provides gfortran.")
 
 
@@ -399,7 +399,7 @@ def test_check_brew_bin_reports_an_absent_formula(monkeypatch):
     missing = installer.check_brew_bin("gfortran", "gcc", "why")
 
     assert missing is not None, "An absent formula should be reported."
-    assert missing.command == "brew install gcc", (
+    assert missing.remedy == "brew install gcc", (
         "The report should give the formula that provides gfortran.")
 
 
@@ -415,7 +415,7 @@ def test_check_x11_headers_reports_the_cask_when_headers_are_missing(monkeypatch
     missing = installer.check_x11_headers()
 
     assert missing is not None, "Absent X11 headers should be reported."
-    assert missing.command == "brew install --cask xquartz", (
+    assert missing.remedy == "brew install --cask xquartz", (
         "The report should give the cask that provides the headers.")
 
 
@@ -599,74 +599,6 @@ def test_install_sad_macos_stops_before_cloning_when_dependencies_are_missing(
 
     assert cloned == [], (
         "clone_sad should not run when a dependency is missing.")
-
-
-########################################
-# Non-Mutating Policy
-########################################
-def test_the_macos_installer_has_no_package_installation_path():
-    """
-    No installer source line may name a package-manager install command.
-
-    The installer is only allowed to report what is missing. Executing a
-    package manager would ask the user for a password for work they never
-    authorised.
-    """
-    source = Path(installer.__file__).read_text(encoding = "utf-8")
-
-    # Docstrings and messages quote the manual commands on purpose, so only
-    # what the interpreter would actually execute is inspected.
-    code = "".join(
-        token.string for token in tokenize.generate_tokens(
-            io.StringIO(source).readline)
-        if token.type not in (
-            tokenize.STRING,
-            tokenize.COMMENT,
-            tokenize.FSTRING_MIDDLE))
-
-    for phrase in (
-            "sudo", "brew install", "apt install", "apt-get install",
-            "dnf install", "yum install"):
-        assert phrase not in code, (
-            f"The installer must never execute {phrase!r}.")
-
-
-def test_the_macos_installer_never_runs_an_install_subcommand():
-    """
-    No subprocess the installer launches may carry an install subcommand.
-
-    The literal-phrase check cannot see a command split across list
-    elements, which is how the removed automatic installation built it.
-    """
-    source = Path(installer.__file__).read_text(encoding = "utf-8")
-
-    runners = {"run", "check_output", "check_call", "call", "Popen", "system"}
-    forbidden = ("sudo", "install", "apt", "apt-get", "dnf", "yum")
-
-    offenders = []
-    for node in ast.walk(ast.parse(source)):
-        if not isinstance(node, ast.Call):
-            continue
-
-        func = node.func
-        name = func.attr if isinstance(func, ast.Attribute) else getattr(
-            func, "id", "")
-        if name not in runners:
-            continue
-
-        for argument in ast.walk(node):
-            if not (isinstance(argument, ast.Constant)
-                    and isinstance(argument.value, str)):
-                continue
-            # A shell string carries the whole command in one constant,
-            # while a list carries each word in its own.
-            words = set(argument.value.split()) | {argument.value}
-            for word in forbidden:
-                if word in words:
-                    offenders.append((name, argument.value))
-
-    assert offenders == [], (
-        f"No launched command may include an install subcommand: {offenders}")
 
 
 ################################################################################

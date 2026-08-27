@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-28
+Date:       2026-08-27
 ================================================================================
 """
 ################################################################################
@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from sad2xs.install_sad import dispatch, macos
+from sad2xs.install_sad import dispatch, linux, macos
 from sad2xs.install_sad._helpers import CommandError
 
 ################################################################################
@@ -164,6 +164,46 @@ def test_install_sad_hands_the_parsed_config_to_the_macos_installer(monkeypatch)
         "The installer should receive the parsed command line, not defaults.")
     assert received[0].reuse_clone is True, (
         "Flags should survive the trip through dispatch.")
+
+
+def test_install_sad_hands_the_parsed_config_to_the_linux_installer(monkeypatch):
+    """
+    On Linux the command should reach the Linux installer, with the config.
+
+    The two platform branches are what keep each installer off the other's
+    machine, so both have to be covered.
+    """
+    received = []
+
+    monkeypatch.setattr(dispatch.sys, "platform", "linux")
+    monkeypatch.setattr(dispatch, "set_log_level", lambda level: None)
+    monkeypatch.setattr(
+        linux,
+        "install_sad_linux",
+        lambda config: received.append(config))
+
+    dispatch.install_sad(["--branch", "a-test-branch", "--reuse-clone"])
+
+    assert len(received) == 1, (
+        "Linux should reach the Linux installer exactly once.")
+    assert received[0].branch == "a-test-branch", (
+        "The installer should receive the parsed command line, not defaults.")
+    assert received[0].reuse_clone is True, (
+        "Flags should survive the trip through dispatch.")
+
+
+def test_require_platform_exits_when_the_linux_installer_runs_on_macos(
+        monkeypatch):
+    """
+    The Linux installer run on macOS should exit, naming the platform.
+    """
+    monkeypatch.setattr(dispatch.sys, "platform", "darwin")
+
+    with pytest.raises(SystemExit) as exc_info:
+        dispatch.require_platform("linux", "Linux")
+
+    assert "Linux" in str(exc_info.value), (
+        "The message should name the platform the installer supports.")
 
 
 ########################################

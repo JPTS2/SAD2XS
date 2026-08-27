@@ -15,9 +15,12 @@ Date:       2026-08-29
 ################################################################################
 # Required Packages
 ################################################################################
+import ast
+import io
 import os
 import shutil
 import subprocess
+import tokenize
 import sys
 from pathlib import Path
 
@@ -897,3 +900,108 @@ def test_report_path_setup_prints_an_export_a_shell_can_run(
     assert resolved.stdout == str(config.bin_dir), (
         "The pasted instruction should put the literal directory on PATH, "
         "evaluating nothing.")
+
+
+################################################################################
+# Non-Mutating Policy
+################################################################################
+########################################
+# Modules On The Execution Path
+########################################
+def installer_modules() -> list[Path]:
+    """
+    List every module the console script can reach.
+
+    Returns
+    -------
+    list of Path
+        Every Python file in the installer package.
+
+    Notes
+    -----
+    Guarding only the platform modules would miss shared code, which every
+    platform imports and runs.
+    """
+    package = Path(_helpers.__file__).parent
+    modules = sorted(package.glob("*.py"))
+
+    assert len(modules) >= 4, (
+        f"The installer package modules should have been found: {package}")
+    return modules
+
+
+########################################
+# Source Text
+########################################
+def test_no_installer_module_has_a_package_installation_path():
+    """
+    No installer source line may name a command that installs packages.
+
+    The installer is only allowed to report what is missing. Executing a
+    package manager would ask the user for a password for work they never
+    authorised, and shared code runs on every platform.
+    """
+    forbidden = (
+        "sudo", "apt", "apt-get", "dnf", "yum", "zypper", "pacman",
+        "brew install")
+
+    offenders = []
+    for module in installer_modules():
+        source = module.read_text(encoding = "utf-8")
+
+        # Package names and manual instructions are quoted on purpose, so
+        # only what the interpreter would execute is inspected.
+        code = "".join(
+            token.string for token in tokenize.generate_tokens(
+                io.StringIO(source).readline)
+            if token.type not in (
+                tokenize.STRING,
+                tokenize.COMMENT,
+                tokenize.FSTRING_MIDDLE))
+
+        offenders.extend(
+            (module.name, phrase) for phrase in forbidden if phrase in code)
+
+    assert offenders == [], (
+        f"No installer module may execute a package manager: {offenders}")
+
+
+########################################
+# Launched Commands
+########################################
+def test_no_installer_module_runs_an_install_subcommand():
+    """
+    No subprocess any installer module launches may install packages.
+
+    The literal-phrase check cannot see a command split across list
+    elements, which is how a shell installer builds one.
+    """
+    runners = {"run", "check_output", "check_call", "call", "Popen", "system"}
+    forbidden = (
+        "sudo", "install", "apt", "apt-get", "dnf", "yum", "zypper", "pacman",
+        "brew")
+
+    offenders = []
+    for module in installer_modules():
+        for node in ast.walk(ast.parse(module.read_text(encoding = "utf-8"))):
+            if not isinstance(node, ast.Call):
+                continue
+
+            func = node.func
+            name = func.attr if isinstance(func, ast.Attribute) else getattr(
+                func, "id", "")
+            if name not in runners:
+                continue
+
+            for argument in ast.walk(node):
+                if not (isinstance(argument, ast.Constant)
+                        and isinstance(argument.value, str)):
+                    continue
+                # A shell string carries the whole command in one constant,
+                # while a list carries each word in its own.
+                words = set(argument.value.split()) | {argument.value}
+                offenders.extend(
+                    (module.name, word) for word in forbidden if word in words)
+
+    assert offenders == [], (
+        f"No launched command may install packages: {offenders}")

@@ -13,6 +13,8 @@ Decisions about how specific SAD physics is modelled live with the feature they 
 - [Writer should become reusable](#writer-should-become-reusable)
 - [Configuration must not change semantics accidentally](#configuration-must-not-change-semantics-accidentally)
 - [Parser hardening is staged, not a full grammar rewrite](#parser-hardening-is-staged-not-a-full-grammar-rewrite)
+- [SAD builds against the system toolchain, not a conda environment](#sad-builds-against-the-system-toolchain-not-a-conda-environment)
+- [The installer never installs system dependencies](#the-installer-never-installs-system-dependencies)
 
 ## Xsuite is the canonical intermediate model
 
@@ -69,6 +71,24 @@ Decision: `_001_parser.py` keeps its ad-hoc string-splitting approach for now. P
 Reasoning: `parsed_lattice_data` (the parser's `globals`/`elements`/`lines`/`expressions` output) is consumed by seven downstream converter files, so a grammar rewrite's risk is spread far wider than its benefit. The current ad-hoc parser also encodes a number of empirically-discovered SAD quirks (e.g. SAD's own parser silently drops comma-separated trailing parameters in element bodies — matched on purpose, not a bug to fix) that a from-scratch grammar risks re-deriving one at a time. The existing parser is not rated defective: 99% of parser tests pass, and an independent codebase review called the ad-hoc string handling "stylistic, not risky." Line numbers and explicit-rejection errors deliver most of the remaining hardening value without that risk.
 
 Consequence: SAD user-defined functions (`f[x_] := expr`) are explicitly out of scope for now rather than silently half-supported — closer to how Xtrack deliberately does not parse MAD-X files containing expressions. When a full grammar-based parser is eventually built, build its parse tree in parallel with the current parser first and validate its output matches `parsed_lattice_data`'s shape byte-for-byte against the full `tests/sad/` ground-truth corpus before any cutover.
+
+## SAD builds against the system toolchain, not a conda environment
+
+Decision: SAD is built with the system compilers and system glibc. The conda or mamba environment is for Python only. The installer sanitises the build environment so an active environment cannot leak into the build.
+
+Reasoning: SAD2XS runs `sad` as a subprocess. If SAD's runtime libraries came from a conda environment, SAD would work only while that environment was active, and a different active environment would give a mismatched `libgfortran` at runtime rather than a clean failure. The two-layer split is already how the Dockerfile works: the builder stage compiles SAD with the system toolchain, and a separate stage creates the Python environment. Conda sysroots are also older than the host: their `bits/math-finite.h` declares `lgamma` in terms of `lgamma_r`, which SAD does not request, so a conda toolchain fails to compile `autos_.c` outright.
+
+Consequence: each platform installer pins `PATH` to the platform's own directories for the build and clears the compiler, include, library, and linker variables conda activation exports. The dependency audit searches that same pinned `PATH`, so a command supplied only by conda is reported missing rather than disappearing once the build starts. On Linux a toolchain that resolves inside a conda environment is refused outright.
+
+Root is not needed to build SAD. A user without root builds normally, provided the system toolchain and headers are already installed — which is the usual case on a managed shared machine. The limitation applies only when a required system package is absent and the user cannot have it installed. Building against a conda toolchain instead is unsupported and unverified, and this decision should be revisited if that case becomes common.
+
+## The installer never installs system dependencies
+
+Decision: `sad2xs-install-sad` never runs `sudo` and never runs a package manager. It probes for what the build needs, reports everything missing together with how to provide it, and exits before touching SAD. On macOS that is a Homebrew command. On Linux it is the package name for the detected distribution, not a privileged command.
+
+Reasoning: SAD2XS is a lattice converter, not a system administration tool, and it has had no public security review. Asking for a password would ask users to trust it with far more than it needs. Reporting is also more honest across distributions: package names differ, and a machine where the user cannot become root is common on shared systems.
+
+Consequence: distribution detection exists only to name packages accurately in a printed report. The report names the detected distribution family and the package that provides each missing dependency; it prints no command to run as root, and no automatic-confirmation flag. How those packages arrive is left to the user and whoever administers the machine. Source-level tests assert that no executable path in any installer module — the shared code included, since every platform runs it — can invoke a package manager. The clone, the build, the build logs, and the launcher are all owned by the user.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-29
+Date:       2026-08-27
 ================================================================================
 """
 ################################################################################
@@ -43,6 +43,144 @@ NO_MATCHING_REF     = 2
 INSTALL_MARKER      = ".sad2xs-install"
 
 
+################################################################################
+# Dependency Reporting
+################################################################################
+########################################
+# Missing Dependency Record
+########################################
+@dataclass(frozen = True)
+class MissingDependency:
+    """
+    One dependency the SAD build needs but the machine does not provide.
+
+    Attributes
+    ----------
+    name : str
+        The missing command, executable, or header.
+    reason : str
+        Why the SAD installation needs it.
+    remedy : str
+        What the user can do to provide it: a command on a platform where
+        one suffices, or the package that supplies it.
+    """
+    name:       str
+    reason:     str
+    remedy:     str
+
+
+########################################
+# Command Check
+########################################
+def check_command(
+        cmd:        str,
+        reason:     str,
+        remedy:     str,
+        path:       str | None = None) -> MissingDependency | None:
+    """
+    Check that a command can be found.
+
+    Parameters
+    ----------
+    cmd : str
+        Command to search for.
+    reason : str
+        Why the SAD installation needs the command.
+    remedy : str
+        What provides it, as reported to the user.
+    path : str, optional
+        Search this PATH rather than the caller's. Defaults to None.
+
+    Returns
+    -------
+    MissingDependency or None
+        A report when the command cannot be found.
+    """
+    if shutil.which(cmd, path = path) is not None:
+        return None
+    return MissingDependency(cmd, reason, remedy)
+
+
+########################################
+# Dependency Gate
+########################################
+def require_dependencies(
+        missing:    list[MissingDependency],
+        footer:     str | None = None) -> None:
+    """
+    Report every missing dependency, and stop before touching SAD.
+
+    Parameters
+    ----------
+    missing : list of MissingDependency
+        Everything the audit could not find.
+    footer : str, optional
+        Closing instruction, for a platform where installing a system
+        package is not something the user can necessarily do alone.
+        Defaults to None.
+
+    Raises
+    ------
+    SystemExit
+        If anything the SAD installation needs is missing.
+    """
+    if not missing:
+        logger.info("All required dependencies found")
+        return
+
+    lines = ["Missing dependencies required to build SAD:", ""]
+    for dependency in missing:
+        lines.append(f"  {dependency.name}")
+        lines.append(f"      {dependency.reason}")
+        lines.append(f"      Remedy: {dependency.remedy}")
+        lines.append("")
+    lines.append(
+        "SAD2XS never installs system dependencies and never uses sudo.")
+    lines.append(
+        footer or "Install the above yourself, then rerun sad2xs-install-sad.")
+
+    sys.exit("\n".join(lines))
+
+################################################################################
+# Build Environment
+################################################################################
+# A conda environment exports compiler, include, library, and linker settings
+# that point at its own toolchain. SAD picks those up and fails to link against
+# the platform libraries, so they are stripped rather than overridden.
+INHERITED_BUILD_VARIABLES = [
+    "CFLAGS", "CXXFLAGS", "FFLAGS", "FCFLAGS",
+    "CPPFLAGS", "LDFLAGS", "LDFLAGS_LD",
+    "PKG_CONFIG_PATH", "CONDA_BUILD_SYSROOT", "LD_LIBRARY_PATH",
+    "CPATH", "C_INCLUDE_PATH", "CPLUS_INCLUDE_PATH", "LIBRARY_PATH",
+    "DYLD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH",
+    "CONDA_PREFIX", "CONDA_DEFAULT_ENV", "CONDA_SHLVL",
+    "CONDA_TOOLCHAIN_HOST", "CONDA_TOOLCHAIN_BUILD",
+    "_CONDA_PYTHON_SYSCONFIGDATA_NAME",
+    "CC", "CXX", "FC", "F77", "F90",
+    "AR", "AS", "LD", "NM", "RANLIB", "STRIP",
+    "CMAKE_ARGS", "CMAKE_PREFIX_PATH",
+    "CONDA_BUILD", "PREFIX", "BUILD_PREFIX",
+    "HOST", "BUILD", "TARGET"]
+
+
+def strip_inherited_build_settings() -> dict[str, str]:
+    """
+    Copy the environment with any inherited toolchain settings removed.
+
+    Returns
+    -------
+    dict
+        The caller's environment, less anything that would redirect the
+        build away from the platform toolchain.
+    """
+    env = os.environ.copy()
+    for variable in INHERITED_BUILD_VARIABLES:
+        env.pop(variable, None)
+    return env
+
+################################################################################
+# Default Locations
+################################################################################
 def default_prefix() -> Path:
     """
     Return the default directory for the SAD source tree and build logs.

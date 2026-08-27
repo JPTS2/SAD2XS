@@ -65,18 +65,20 @@ owned by you. SAD2XS never invokes `sudo` and never asks for a password.
 
 SAD2XS also never installs system dependencies. The installer probes for what
 the build needs, and when anything is missing it lists every missing item with
-the command that provides it, then exits without touching SAD:
+how to provide it, then exits without touching SAD. On macOS that is a
+Homebrew command; on Linux it is the package your distribution supplies it in,
+never a command to run as root:
 
 ```
 Missing dependencies required to build SAD:
 
   nroff
       Needed to format SAD's libtai man pages during the build.
-      Install with: brew install groff
+      Remedy: brew install groff
 
   /opt/X11/include/X11/Xlib.h
       Needed to build SAD against X11.
-      Install with: brew install --cask xquartz
+      Remedy: brew install --cask xquartz
 
 SAD2XS never installs system dependencies and never uses sudo.
 Install the above yourself, then rerun sad2xs-install-sad.
@@ -107,7 +109,11 @@ is not on your PATH it prints the exact line to add.
 silently built. A `--branch` you name yourself must exist on the remote, so a
 typo fails instead of installing the default branch.
 
-Currently macOS only; on any other platform the command exits saying so.
+Supported on macOS and Linux; on any other platform the command exits saying so.
+On Linux the report names packages for the detected distribution, Debian and
+RHEL families included, and prints no command to run as root. An unrecognised
+distribution is told which dependency to find rather than given another
+distribution's package name.
 
 ## Usage
 Convert a SAD lattice to an Xsuite line in one call:

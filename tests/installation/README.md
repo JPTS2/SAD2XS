@@ -16,9 +16,10 @@ Requires the SAD binary for the executable smoke test.
 
 | File | Tests | Fail | Failure root cause |
 |------|-------|------|--------------------|
-| `test_installer_dispatch.py` | 9 | 0 | — |
-| `test_installer_helpers.py` | 40 | 0 | — |
-| `test_macos_installer.py` | 30 | 0 | — |
+| `test_installer_dispatch.py` | 11 | 0 | — |
+| `test_installer_helpers.py` | 42 | 0 | — |
+| `test_linux_installer.py` | 51 | 0 | — |
+| `test_macos_installer.py` | 28 | 0 | — |
 | `test_real_installation.py` | 1 | 0 | — |
 | `test_sad_executable.py` | 1 | 0 | — |
 
@@ -84,6 +85,52 @@ reaches the launcher and the printed PATH instruction.
 | `test_report_path_setup_is_quiet_when_the_directory_is_on_path` | A launcher directory already on PATH needs nothing from the user. |
 | `test_report_path_setup_prints_the_export_without_touching_any_rc_file` | An unreachable launcher directory should be reported, never wired up. |
 | `test_report_path_setup_prints_an_export_a_shell_can_run` | The printed line is meant to be pasted, so it must run as printed. |
+| `test_no_installer_module_has_a_package_installation_path` | No installer source line may name a command that installs packages. |
+| `test_no_installer_module_runs_an_install_subcommand` | No subprocess any installer module launches may install packages. |
+
+### `test_linux_installer.py`
+
+Covers the Linux-specific parts: distribution detection, per-family package
+suggestions, read-only dependency probes, the sanitised system PATH, the
+conda-free build environment, the sad.conf truncation KEK's instructions
+call for, and the order of the full installation sequence. Every subprocess
+call is monkeypatched apart from the generated launcher, which is executed.
+
+Build-time commands are probed on exactly the PATH the build receives, so a
+command supplied only by conda is reported missing rather than disappearing
+once the build starts. The non-mutating policy guard is not here: it lives
+in `test_installer_helpers.py` and covers every module in the package.
+
+| Test | What it asserts |
+|------|-----------------|
+| `test_distro_family_maps_a_distribution_to_its_packaging_family` | A distribution should map to the family whose package names apply. |
+| `test_distro_family_is_unknown_when_os_release_cannot_be_read` | An absent os-release should give no family rather than raise. |
+| `test_package_suggestion_names_the_package_for_the_family` | The same dependency should be named the way its distribution names it. |
+| `test_package_suggestion_falls_back_when_the_family_is_unknown` | An unrecognised distribution should get an instruction, not a guess. |
+| `test_package_suggestion_passes_through_a_name_it_has_no_mapping_for` | A dependency named the same everywhere needs no mapping. |
+| `test_build_path_is_the_system_directories_alone` | The build PATH should carry the distribution's directories only. |
+| `test_the_audit_and_the_build_use_the_same_path` | The PATH the audit probes must be the PATH the build receives. |
+| `test_a_build_command_supplied_only_by_conda_is_reported_missing` | A command that only conda supplies must not pass the build audit. |
+| `test_a_build_command_on_the_sanitised_path_is_accepted` | A command the sanitised PATH supplies should pass the build audit. |
+| `test_git_is_probed_on_the_callers_path` | git should be found the way the clone will find it. |
+| `test_the_audit_reports_every_miss_together` | Several missing dependencies should be reported in one pass. |
+| `test_check_x11_headers_accepts_a_multiarch_header` | A header under a triplet directory should count as present. |
+| `test_check_x11_headers_reports_the_package_when_absent` | Absent X11 headers should be reported with the distribution's package. |
+| `test_make_clean_build_env_strips_conda_settings_and_pins_the_toolchain` | The build environment should drop conda settings and name the compilers. |
+| `test_make_clean_build_env_refuses_to_use_gcc_as_the_cxx_compiler` | gcc must not stand in for g++. |
+| `test_the_audit_reports_a_missing_gxx` | A machine with gcc but no g++ should be told which package supplies it. |
+| `test_make_clean_build_env_exits_when_a_compiler_is_absent` | A compiler missing from the build PATH should fail naming the variable. |
+| `test_make_clean_build_env_refuses_a_conda_compiler` | A compiler inside a conda environment should be refused, not used. |
+| `test_truncate_sad_conf_keeps_seventy_lines_and_the_original` | sad.conf should be cut to the lines KEK's instructions call for. |
+| `test_truncate_sad_conf_leaves_a_correctly_truncated_tree_alone` | A reused tree already prepared correctly should be left as it is. |
+| `test_truncate_sad_conf_repairs_an_interrupted_preparation` | A backup with a sad.conf that does not match it should be repaired. |
+| `test_truncate_sad_conf_leaves_no_staging_file_behind` | The atomic write should leave nothing beside the files it replaces. |
+| `test_truncate_sad_conf_exits_when_the_tree_has_no_sad_conf` | A tree without sad.conf should fail here, not deep inside make. |
+| `test_install_sad_linux_stops_before_cloning_when_dependencies_are_missing` | A missing dependency should stop the install before SAD is fetched. |
+| `test_install_sad_linux_runs_every_stage_in_order` | The install should check, fetch, prepare, build, verify, then link. |
+| `test_the_linux_install_writes_a_launcher_that_runs` | The launcher the Linux install writes should run as written. |
+| `test_the_dependency_report_names_packages_without_a_privileged_command` | The report should name packages, never a command to run as root. |
+| `test_yacc_is_named_per_family_because_bison_does_not_supply_it_everywhere` | The package that provides yacc differs between families. |
 
 ### `test_macos_installer.py`
 
@@ -92,11 +139,11 @@ dependency report, the sanitised build PATH, the Xcode toolchain
 environment, and the order of the full installation sequence. Every
 subprocess call is monkeypatched.
 
-Two contracts are held directly here. The installer never installs a system
-dependency, asserted over the module source and over every subprocess call
-it constructs. Build-time commands are probed on exactly the PATH the build
-receives, so a command supplied only by conda is reported missing rather
-than disappearing once the build starts.
+Build-time commands are probed on exactly the PATH the build receives, so a
+command supplied only by conda is reported missing rather than disappearing
+once the build starts. The non-mutating policy guard lives in
+`test_installer_helpers.py`, where it covers every module in the package
+rather than one platform's.
 
 | Test | What it asserts |
 |------|-----------------|
@@ -125,8 +172,6 @@ than disappearing once the build starts.
 | `test_require_dependencies_returns_when_nothing_is_missing` | A complete dependency set should let the install proceed. |
 | `test_require_dependencies_exits_listing_every_manual_command` | Missing dependencies should exit non-zero naming each manual command. |
 | `test_install_sad_macos_stops_before_cloning_when_dependencies_are_missing` | A missing dependency should stop the install before SAD is fetched. |
-| `test_the_macos_installer_has_no_package_installation_path` | No installer source line may name a package-manager install command. |
-| `test_the_macos_installer_never_runs_an_install_subcommand` | No subprocess the installer launches may carry an install subcommand. |
 | `test_make_clean_build_env_exits_when_a_tool_path_does_not_exist` | A toolchain variable pointing nowhere should fail before the build. |
 | `test_make_clean_build_env_exits_when_homebrew_has_no_prefix` | An unusable Homebrew should fail naming the prefix, not crash later. |
 | `test_install_sad_macos_runs_every_stage_in_order` | The install should check dependencies, fetch, build, verify, then link. |
@@ -165,6 +210,17 @@ SAD2XS_REAL_INSTALL_TEST=1 python -m pytest tests/installation/test_real_install
 
 It installs into a pytest `tmp_path`, never the default location, and asserts
 that `~/.zshrc` and `~/.bashrc` are byte-identical afterwards.
+
+It runs `sad2xs-install-sad`, so it exercises whichever platform installer the
+running machine dispatches to. On Linux that is `install_sad_linux`, and this
+is the only test that covers it end to end.
+
+Linux was validated by running the console script as an unprivileged user in
+disposable containers, with the system packages provisioned by the container
+rather than by the installer. Both runs cloned SAD, prepared `sad.conf`, built
+it, and ran the smoke lattice through the generated launcher, leaving the shell
+startup files unchanged. Last run 2026-08-27 on linux/arm64: `ubuntu:24.04` and
+`almalinux:9`, both passed.
 
 Last run: 2026-08-29, macOS 15 (Darwin 25.5.0), arm64, from an active conda
 environment. Passed in 197 s: clone into a staging directory, swap into place,
