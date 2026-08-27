@@ -18,7 +18,7 @@ Requires the SAD binary for the executable smoke test.
 |------|-------|------|--------------------|
 | `test_installer_dispatch.py` | 9 | 0 | — |
 | `test_installer_helpers.py` | 40 | 0 | — |
-| `test_macos_installer.py` | 18 | 0 | — |
+| `test_macos_installer.py` | 30 | 0 | — |
 | `test_real_installation.py` | 1 | 0 | — |
 | `test_sad_executable.py` | 1 | 0 | — |
 
@@ -87,30 +87,49 @@ reaches the launcher and the printed PATH instruction.
 
 ### `test_macos_installer.py`
 
-Covers the macOS-specific parts: Homebrew lookups and installs, the Xcode
-toolchain environment, and the order of the full installation sequence.
-Every subprocess call is monkeypatched.
+Covers the macOS-specific parts: read-only dependency probes, the missing-
+dependency report, the sanitised build PATH, the Xcode toolchain
+environment, and the order of the full installation sequence. Every
+subprocess call is monkeypatched.
+
+Two contracts are held directly here. The installer never installs a system
+dependency, asserted over the module source and over every subprocess call
+it constructs. Build-time commands are probed on exactly the PATH the build
+receives, so a command supplied only by conda is reported missing rather
+than disappearing once the build starts.
 
 | Test | What it asserts |
 |------|-----------------|
-| `test_brew_install_uses_cask_flag` | Cask dependencies should be installed with `brew install --cask`. |
-| `test_brew_prefix_installs_missing_formula_then_retries` | brew_prefix(formula) should install a missing formula and retry lookup. |
-| `test_ensure_brew_bin_exists_uses_executable_name` | Homebrew binary checks should not duplicate the `bin` path component. |
-| `test_ensure_command_exists_skips_install_when_command_available` | ensure_command_exists should not install when the command is on PATH. |
-| `test_ensure_command_exists_installs_missing_command` | ensure_command_exists should install the formula when the command is missing. |
-| `test_check_x11_headers_installs_xquartz_when_headers_missing` | Missing X11 headers should trigger xquartz cask installation. |
-| `test_check_x11_headers_exits_when_the_cask_did_not_supply_them` | XQuartz reporting success is not proof the headers arrived. |
-| `test_install_dependencies_checks_required_tools_in_order` | install_dependencies should check Homebrew, required commands, gfortran, and X11 headers without performing installation work directly. |
-| `test_make_clean_build_env_strips_conda_vars_and_sets_toolchain` | make_clean_build_env should remove conda/build contamination and configure Homebrew plus Xcode toolchain paths. |
-| `test_ensure_xcode_clt_passes_when_the_tools_are_configured` | A configured toolchain should let the install proceed. |
-| `test_ensure_xcode_clt_exits_with_the_command_that_installs_them` | Unconfigured Command Line Tools should exit naming the fix. |
-| `test_brew_prefix_exits_when_homebrew_itself_is_missing` | A missing Homebrew has no formula to install, so it cannot self-heal. |
-| `test_brew_prefix_gives_up_after_installing_a_formula_once` | A formula that installs but still reports no prefix must not loop. |
-| `test_install_dependencies_exits_when_brew_is_not_installed` | Homebrew is the only way this installer gets dependencies. |
+| `test_brew_prefix_returns_none_when_the_formula_is_absent` | A failed prefix lookup should report absence, never install anything. |
+| `test_brew_prefix_returns_none_when_homebrew_cannot_be_run` | An absent brew executable should report absence, not raise. |
+| `test_check_xcode_clt_passes_when_the_tools_are_configured` | A configured toolchain should report nothing missing. |
+| `test_check_xcode_clt_reports_the_command_that_installs_them` | Unconfigured Command Line Tools should be reported naming the fix. |
+| `test_build_path_puts_homebrew_ahead_of_the_system_directories` | The build PATH should be Homebrew then macOS, and nothing else. |
+| `test_build_path_falls_back_to_the_system_directories_without_homebrew` | An absent Homebrew should leave only the macOS system directories. |
+| `test_the_audit_and_the_build_use_the_same_path` | The PATH the audit probes must be the PATH the build receives. |
+| `test_check_command_passes_when_the_command_is_on_path` | A command already on PATH should report nothing missing. |
+| `test_check_command_reports_the_remedy_for_a_missing_command` | A missing command should be reported with its manual command. |
+| `test_check_command_searches_only_the_path_it_is_given` | An explicit PATH should be searched instead of the caller's. |
+| `test_a_build_command_supplied_only_by_conda_is_reported_missing` | A command that only conda supplies must not pass the build audit. |
+| `test_a_build_command_on_the_sanitised_path_is_accepted` | A command the sanitised PATH supplies should pass the build audit. |
+| `test_git_is_probed_on_the_callers_path` | git should be found the way the clone will find it. |
+| `test_check_brew_bin_passes_when_the_formula_provides_it` | A present, runnable formula executable should report nothing missing. |
+| `test_check_brew_bin_reports_an_executable_that_cannot_be_run` | A present but non-executable file should be reported missing. |
+| `test_check_brew_bin_reports_a_formula_that_is_not_installed` | A prefix for an uninstalled formula should still report it missing. |
+| `test_check_brew_bin_reports_an_absent_formula` | A formula with no prefix should be reported, not installed. |
+| `test_check_x11_headers_reports_the_cask_when_headers_are_missing` | Missing X11 headers should be reported, never installed. |
+| `test_check_x11_headers_passes_when_the_header_is_present` | Present X11 headers should report nothing missing. |
+| `test_audit_dependencies_reports_nothing_when_everything_is_present` | A complete dependency set should produce an empty report. |
+| `test_audit_dependencies_reports_homebrew_without_probing_its_formulae` | An absent Homebrew should be reported without a formula probe. |
+| `test_audit_dependencies_reports_every_miss_together` | Several missing dependencies should be reported in one pass. |
+| `test_require_dependencies_returns_when_nothing_is_missing` | A complete dependency set should let the install proceed. |
+| `test_require_dependencies_exits_listing_every_manual_command` | Missing dependencies should exit non-zero naming each manual command. |
+| `test_install_sad_macos_stops_before_cloning_when_dependencies_are_missing` | A missing dependency should stop the install before SAD is fetched. |
+| `test_the_macos_installer_has_no_package_installation_path` | No installer source line may name a package-manager install command. |
+| `test_the_macos_installer_never_runs_an_install_subcommand` | No subprocess the installer launches may carry an install subcommand. |
 | `test_make_clean_build_env_exits_when_a_tool_path_does_not_exist` | A toolchain variable pointing nowhere should fail before the build. |
+| `test_make_clean_build_env_exits_when_homebrew_has_no_prefix` | An unusable Homebrew should fail naming the prefix, not crash later. |
 | `test_install_sad_macos_runs_every_stage_in_order` | The install should check dependencies, fetch, build, verify, then link. |
-| `test_ensure_brew_bin_exists_exits_when_the_formula_lacks_the_executable` | A formula that installs but supplies no executable should exit. |
-| `test_ensure_command_exists_exits_when_the_install_did_not_supply_it` | A formula whose name does not match the command should exit. |
 
 ### `test_real_installation.py`
 

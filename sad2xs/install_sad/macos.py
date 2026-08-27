@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-28
+Date:       2026-08-27
 ================================================================================
 """
 ################################################################################
@@ -20,6 +20,7 @@ import os
 import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 from ..helpers import log_section_heading
@@ -28,227 +29,326 @@ from ._helpers import (
     clone_sad,
     report_path_setup,
     make_sad,
-    run,
     verify_executable,
     write_launcher)
 from .dispatch import require_platform
 
 logger  = logging.getLogger(__name__)
 
-################################################################################
-# Xcode Command Line Tools
-################################################################################
-def ensure_xcode_clt() -> None:
-    """
-    Ensure that the Xcode Command Line Tools are installed.
-
-    Raises
-    ------
-    SystemExit
-        If the Command Line Tools are not configured.
-    """
-    process = subprocess.run(           # pylint: disable=subprocess-run-check
-        ["xcode-select", "-p"],
-        stdout  = subprocess.DEVNULL,
-        stderr  = subprocess.DEVNULL)
-    if process.returncode != 0:
-        sys.exit(
-            "Xcode Command Line Tools not configured. Run: xcode-select --install")
+# SAD is built against the platform toolchain, so the build sees only the
+# macOS system directories and Homebrew.
+SYSTEM_PATH = "/usr/bin:/bin:/usr/sbin:/sbin"
 
 ################################################################################
-# Homebrew
+# Dependency Reporting
 ################################################################################
 ########################################
-# Brew Install
+# Missing Dependency Record
 ########################################
-def brew_install(
-        pkg:    str,
-        cask:   bool    = False) -> None:
+@dataclass(frozen = True)
+class MissingDependency:
     """
-    Install a package using Homebrew.
+    One dependency the SAD build needs but the machine does not provide.
 
-    Parameters
+    Attributes
     ----------
-    pkg : str
-        Name of the Homebrew package to install.
-    cask : bool, optional
-        If True, install as a cask rather than a formula. Defaults to False.
+    name : str
+        The missing command, executable, or header.
+    reason : str
+        Why the SAD build needs it.
+    command : str
+        The command the user can run to provide it.
     """
-    logger.info(f"Installing with Homebrew: {pkg}")
-    cmd = ["brew", "install"]
-    if cask:
-        cmd.append("--cask")
-    cmd.append(pkg)
-    run(cmd)
+    name:       str
+    reason:     str
+    command:    str
 
 
 ########################################
-# Brew Prefix Lookup
+# Homebrew Prefix Lookup
 ########################################
-def brew_prefix(formula: str | None = None) -> Path:
+def brew_prefix(formula: str | None = None) -> Path | None:
     """
-    Return the Homebrew prefix, installing a missing formula once.
+    Look up a Homebrew prefix without changing the machine.
+
+    A known formula reports a prefix whether or not it is installed, so a
+    returned path is not proof that anything is there.
 
     Parameters
     ----------
     formula : str, optional
-        If given, return the prefix for this formula rather than for
+        If given, look up the prefix for this formula rather than for
         Homebrew itself. Defaults to None.
 
     Returns
     -------
-    Path
-        The Homebrew prefix.
-
-    Raises
-    ------
-    SystemExit
-        If the prefix cannot be found, or the formula still provides no
-        prefix after being installed.
+    Path or None
+        The prefix, or None when Homebrew reports none.
     """
     cmd = ["brew", "--prefix"]
     if formula is not None:
         cmd.append(formula)
 
-    # Bounded at one install: a formula that reports success but still has no
-    # prefix would otherwise retry forever.
-    for attempt in range(2):
+    try:
         process = subprocess.run(       # pylint: disable=subprocess-run-check
             cmd,
             text    = True,
             stdout  = subprocess.PIPE,
             stderr  = subprocess.DEVNULL)
+    except OSError:
+        return None
 
-        if process.returncode == 0:
-            return Path(process.stdout.strip())
-        if formula is None:
-            sys.exit("Homebrew prefix could not be found.")
-        if attempt == 0:
-            brew_install(formula)
+    if process.returncode != 0:
+        return None
+    return Path(process.stdout.strip())
 
-    sys.exit(f"Homebrew formula {formula} provided no prefix after installation.")
+
+########################################
+# Build PATH
+########################################
+def build_path(brew_root: Path | None) -> str:
+    """
+    Build the PATH the SAD build runs with.
+
+    Parameters
+    ----------
+    brew_root : Path or None
+        The Homebrew prefix, or None when Homebrew is absent.
+
+    Returns
+    -------
+    str
+        Homebrew ahead of the macOS system directories, and nothing else.
+    """
+    if brew_root is None:
+        return SYSTEM_PATH
+    return f"{brew_root}/bin:{brew_root}/sbin:{SYSTEM_PATH}"
+
+
+########################################
+# Xcode Command Line Tools
+########################################
+def check_xcode_clt() -> MissingDependency | None:
+    """
+    Check that the Xcode Command Line Tools are configured.
+
+    Returns
+    -------
+    MissingDependency or None
+        A report when the tools are not configured.
+    """
+    report = MissingDependency(
+        "Xcode Command Line Tools",
+        "Needed for the clang toolchain, the macOS SDK, make, yacc, and git.",
+        "xcode-select --install")
+
+    try:
+        process = subprocess.run(       # pylint: disable=subprocess-run-check
+            ["xcode-select", "-p"],
+            stdout  = subprocess.DEVNULL,
+            stderr  = subprocess.DEVNULL)
+    except OSError:
+        return report
+
+    return report if process.returncode != 0 else None
+
+
+########################################
+# Command Check
+########################################
+def check_command(
+        cmd:        str,
+        reason:     str,
+        remedy:     str,
+        path:       str | None = None) -> MissingDependency | None:
+    """
+    Check that a command can be found.
+
+    Parameters
+    ----------
+    cmd : str
+        Command to search for.
+    reason : str
+        Why the SAD installation needs the command.
+    remedy : str
+        The command that provides it.
+    path : str, optional
+        Search this PATH rather than the caller's. Defaults to None.
+
+    Returns
+    -------
+    MissingDependency or None
+        A report when the command cannot be found.
+    """
+    if shutil.which(cmd, path = path) is not None:
+        return None
+    return MissingDependency(cmd, reason, remedy)
 
 
 ########################################
 # Formula Executable Check
 ########################################
-def ensure_brew_bin_exists(
+def check_brew_bin(
         exe:        str,
-        formula:    str) -> Path:
+        formula:    str,
+        reason:     str) -> MissingDependency | None:
     """
-    Ensure that a Homebrew formula provides a given executable.
+    Check that a Homebrew formula provides a runnable executable.
+
+    Existence alone is not enough: an interrupted install can leave a file
+    behind that cannot be run.
 
     Parameters
     ----------
     exe : str
         Executable name under the formula `bin` directory.
     formula : str
-        Name of the Homebrew package to install if the executable is missing.
+        Homebrew formula that provides the executable.
+    reason : str
+        Why the SAD build needs the executable.
 
     Returns
     -------
-    Path
-        Path to the executable.
-
-    Raises
-    ------
-    SystemExit
-        If the formula does not provide the executable once installed.
+    MissingDependency or None
+        A report when the formula provides no runnable such executable.
     """
-    exe_path = brew_prefix(formula) / "bin" / exe
-    if not exe_path.exists():
-        brew_install(formula)
-        exe_path = brew_prefix(formula) / "bin" / exe
-    if not exe_path.exists():
-        sys.exit(
-            f"Homebrew formula {formula} did not provide expected executable: "
-            f"{exe_path}")
-    return exe_path
-
-
-########################################
-# PATH Command Check
-########################################
-def ensure_command_exists(
-        cmd:        str,
-        formula:    str) -> None:
-    """
-    Ensure that a command is available on PATH, installing a formula if missing.
-
-    Parameters
-    ----------
-    cmd : str
-        Command to search for.
-    formula : str
-        Homebrew formula to install if the command is missing.
-
-    Raises
-    ------
-    SystemExit
-        If the command is still missing once the formula is installed.
-    """
-    if shutil.which(cmd) is not None:
-        return
-
-    logger.info(f"Missing: command {cmd}")
-    logger.info(f"Will install: {formula}")
-    brew_install(formula)
-
-    if shutil.which(cmd) is None:
-        sys.exit(f"Command still not found after installing {formula}: {cmd}")
+    prefix = brew_prefix(formula)
+    if prefix is not None and os.access(prefix / "bin" / exe, os.X_OK):
+        return None
+    return MissingDependency(exe, reason, f"brew install {formula}")
 
 
 ########################################
 # X11 Headers
 ########################################
-def check_x11_headers() -> None:
+def check_x11_headers() -> MissingDependency | None:
     """
-    Check for X11 headers, installing XQuartz if they are missing.
+    Check for the X11 headers XQuartz provides.
 
-    Raises
-    ------
-    SystemExit
-        If the header is still absent after installing XQuartz. The cask
-        reports success without placing the headers when XQuartz needs a
-        login to finish setting up.
+    Returns
+    -------
+    MissingDependency or None
+        A report when the header is absent.
     """
     x11_header = Path("/opt/X11/include/X11/Xlib.h")
     if x11_header.exists():
-        return
-
-    logger.info("Missing: X11 headers")
-    logger.info("Will install: xquartz")
-    brew_install("xquartz", cask = True)
-
-    if not x11_header.exists():
-        sys.exit(
-            f"X11 headers still missing after installing xquartz: "
-            f"{x11_header}. Log out and back in, then rerun.")
+        return None
+    return MissingDependency(
+        str(x11_header),
+        "Needed to build SAD against X11.",
+        "brew install --cask xquartz")
 
 
 ########################################
-# Dependency Installation
+# Dependency Audit
 ########################################
-def install_dependencies() -> None:
+def audit_dependencies() -> list[MissingDependency]:
     """
-    Install the dependencies the SAD build needs, using Homebrew.
+    Report every dependency the SAD installation needs but cannot find.
+
+    Nothing here changes the machine. Every check is a read-only probe, so
+    the whole set is reported at once rather than one rerun at a time.
+
+    Returns
+    -------
+    list of MissingDependency
+        Everything missing, in the order it is checked.
+    """
+    missing: list[MissingDependency] = []
+
+    clt = check_xcode_clt()
+    if clt is not None:
+        missing.append(clt)
+
+    ########################################
+    # Clone Dependencies
+    ########################################
+    # The clone runs in the caller's environment, not the build's, so git is
+    # probed the way the clone will actually find it.
+    git = check_command(
+        "git",
+        "Needed to clone the SAD source.",
+        "xcode-select --install")
+    if git is not None:
+        missing.append(git)
+
+    ########################################
+    # Build Dependencies
+    ########################################
+    # Probing the caller's PATH would accept a conda-only command that
+    # vanishes once the build replaces PATH with this same value.
+    brew_root = brew_prefix() if shutil.which("brew") is not None else None
+    if brew_root is None:
+        missing.append(MissingDependency(
+            "brew",
+            "Needed to provide gfortran, groff, and XQuartz.",
+            "See https://brew.sh for the Homebrew installation command."))
+
+    sanitised_path = build_path(brew_root)
+
+    for cmd, reason, remedy in (
+            ("make",
+             "Needed to run SAD's build.",
+             "xcode-select --install"),
+            ("yacc",
+             "Needed to generate SAD's parser from calc.y.",
+             "xcode-select --install"),
+            ("nroff",
+             "Needed to format SAD's libtai man pages during the build.",
+             "brew install groff")):
+        found = check_command(cmd, reason, remedy, path = sanitised_path)
+        if found is not None:
+            missing.append(found)
+
+    if brew_root is not None:
+        gfortran = check_brew_bin(
+            "gfortran",
+            "gcc",
+            "Needed to compile SAD's Fortran sources; Apple ships no Fortran compiler.")
+        if gfortran is not None:
+            missing.append(gfortran)
+
+    ########################################
+    # X11 Headers
+    ########################################
+    headers = check_x11_headers()
+    if headers is not None:
+        missing.append(headers)
+
+    return missing
+
+
+########################################
+# Dependency Gate
+########################################
+def require_dependencies() -> None:
+    """
+    Report every missing dependency, and stop before touching SAD.
 
     Raises
     ------
     SystemExit
-        If Homebrew itself is not installed.
+        If anything the SAD build needs is missing.
     """
-    logger.info("Checking for required dependencies (brew-based)")
-    if shutil.which("brew") is None:
-        sys.exit("Homebrew (brew) not found. Install it from brew.sh then rerun.")
+    logger.info("Checking for required dependencies")
+    missing = audit_dependencies()
 
-    ensure_command_exists("git", "git")
-    ensure_command_exists("make", "make")
-    ensure_command_exists("nroff", "groff")
-    ensure_command_exists("bison", "bison")
-    ensure_brew_bin_exists("gfortran", "gcc")
+    if not missing:
+        logger.info("All required dependencies found")
+        return
 
-    check_x11_headers()
+    lines = ["Missing dependencies required to build SAD:", ""]
+    for dependency in missing:
+        lines.append(f"  {dependency.name}")
+        lines.append(f"      {dependency.reason}")
+        lines.append(f"      Install with: {dependency.command}")
+        lines.append("")
+    lines.append(
+        "SAD2XS never installs system dependencies and never uses sudo.")
+    lines.append(
+        "Install the above yourself, then rerun sad2xs-install-sad.")
+
+    sys.exit("\n".join(lines))
 
 ################################################################################
 # Build Environment
@@ -296,8 +396,10 @@ def make_clean_build_env() -> dict[str, str]:
     # Point At The Xcode Toolchain
     ########################################
     brew_root = brew_prefix()
+    if brew_root is None:
+        sys.exit("Homebrew prefix could not be found.")
 
-    env["PATH"]     = f"{brew_root}/bin:{brew_root}/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
+    env["PATH"]     = build_path(brew_root)
     env["SDKROOT"]  = subprocess.check_output(
         ["xcrun", "--show-sdk-path"], text = True).strip()
 
@@ -314,7 +416,10 @@ def make_clean_build_env() -> dict[str, str]:
 
     # Apple's toolchain ships no Fortran compiler, so SAD's Fortran sources
     # need Homebrew's gfortran.
-    env["FC"]       = str(brew_prefix("gcc") / "bin" / "gfortran")
+    gcc_prefix = brew_prefix("gcc")
+    if gcc_prefix is None:
+        sys.exit("Homebrew formula gcc provided no prefix.")
+    env["FC"]       = str(gcc_prefix / "bin" / "gfortran")
 
     # macOS ships no ftp(1), which SAD's makefile would otherwise reach for.
     env["FETCH"]    = "curl -L --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 300 -O"
@@ -355,9 +460,8 @@ def install_sad_macos(config: InstallConfig) -> None:
 
     log_section_heading("macOS SAD Installation", mode = "banner")
 
-    log_section_heading("Installing Required Dependencies")
-    ensure_xcode_clt()
-    install_dependencies()
+    log_section_heading("Checking Required Dependencies")
+    require_dependencies()
 
     log_section_heading("Fetching SAD Source")
     reused_tree = clone_sad(config)

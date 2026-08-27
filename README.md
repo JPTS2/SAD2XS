@@ -60,14 +60,36 @@ sad2xs-install-sad
 ```
 
 The source tree goes to `~/.local/share/sad2xs` and the `sad` launcher to
-`~/.local/bin`. The SAD clone, build, and launcher installation do not require
-root; Homebrew may request administrator authorization when installing a
-missing system dependency such as the XQuartz cask.
+`~/.local/bin`. The clone, the build, the build logs, and the launcher are all
+owned by you. SAD2XS never invokes `sudo` and never asks for a password.
+
+SAD2XS also never installs system dependencies. The installer probes for what
+the build needs, and when anything is missing it lists every missing item with
+the command that provides it, then exits without touching SAD:
+
+```
+Missing dependencies required to build SAD:
+
+  nroff
+      Needed to format SAD's libtai man pages during the build.
+      Install with: brew install groff
+
+  /opt/X11/include/X11/Xlib.h
+      Needed to build SAD against X11.
+      Install with: brew install --cask xquartz
+
+SAD2XS never installs system dependencies and never uses sudo.
+Install the above yourself, then rerun sad2xs-install-sad.
+```
+
+Run those commands yourself, then rerun `sad2xs-install-sad`.
 
 The build ignores any active conda environment: SAD is compiled against the
 platform toolchain, which on macOS means Xcode plus Homebrew's gfortran, so
 that it does not depend on which environment happens to be active when it
-runs.
+runs. The dependency check searches that same toolchain PATH, so a command
+supplied only by conda is reported missing rather than disappearing once the
+build starts.
 
 Both locations can be moved, which matters on a filesystem that is slow or
 quota-limited:
