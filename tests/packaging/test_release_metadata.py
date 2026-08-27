@@ -15,14 +15,20 @@ Date:       2026-07-27
 ################################################################################
 # Required Packages
 ################################################################################
+import importlib
 import importlib.metadata
+import pathlib
 import re
+import tomllib
 
 ################################################################################
 # Module-level metadata fixture
 ################################################################################
 _META     = importlib.metadata.metadata("sad2xs")
 _REQUIRES = importlib.metadata.requires("sad2xs") or []
+
+_PYPROJECT = tomllib.loads(
+    (pathlib.Path(__file__).resolve().parents[2] / "pyproject.toml").read_text())
 
 ################################################################################
 # Name
@@ -141,3 +147,30 @@ def test_release_metadata_tfs_is_an_optional_extra_not_a_hard_dependency():
     assert all("extra ==" in req for req in tfs_requires), (
         "tfs-pandas should only be required under an extra, not "
         f"unconditionally. Current tfs requires: {tfs_requires}")
+
+
+################################################################################
+# Console Scripts
+################################################################################
+def test_release_metadata_console_scripts_resolve_to_real_callables():
+    """
+    Every `[project.scripts]` target should import and be callable.
+
+    Nothing else executes these entry points, so a renamed or mistyped
+    target ships a command that fails at the first invocation, and only for
+    the user who runs it.
+    """
+    scripts = _PYPROJECT.get("project", {}).get("scripts", {})
+
+    assert scripts, "The project should declare at least one console script."
+
+    for name, target in scripts.items():
+        module_path, _, attribute = target.partition(":")
+
+        module = importlib.import_module(module_path)
+
+        assert hasattr(module, attribute), (
+            f"Console script {name} points at {target}, but {attribute} does "
+            f"not exist in {module_path}.")
+        assert callable(getattr(module, attribute)), (
+            f"Console script {name} points at {target}, which is not callable.")

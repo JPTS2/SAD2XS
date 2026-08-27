@@ -59,9 +59,33 @@ pip install sad2xs[plotting]
 sad2xs-install-sad
 ```
 
+The source tree goes to `~/.local/share/sad2xs` and the `sad` launcher to
+`~/.local/bin`. The SAD clone, build, and launcher installation do not require
+root; Homebrew may request administrator authorization when installing a
+missing system dependency such as the XQuartz cask.
+
+The build ignores any active conda environment: SAD is compiled against the
+platform toolchain, which on macOS means Xcode plus Homebrew's gfortran, so
+that it does not depend on which environment happens to be active when it
+runs.
+
+Both locations can be moved, which matters on a filesystem that is slow or
+quota-limited:
+
+```bash
+sad2xs-install-sad --prefix /scratch/$USER/sad --bin-dir ~/bin
+sad2xs-install-sad --reuse-clone   # rebuild in place, without re-cloning
+```
+
+The installer never edits your shell configuration. If the launcher directory
+is not on your PATH it prints the exact line to add.
+
+`--reuse-clone` keeps the existing checkout, and requires it to match
+`--repo-url` and any explicit `--branch`; a mismatch is refused rather than
+silently built. A `--branch` you name yourself must exist on the remote, so a
+typo fails instead of installing the default branch.
+
 Currently macOS only; on any other platform the command exits saying so.
-Nothing needs root: dependencies come from Homebrew, and the clone, the build
-and the launcher all live under your home directory.
 
 ## Usage
 Convert a SAD lattice to an Xsuite line in one call:

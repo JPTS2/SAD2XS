@@ -16,25 +16,143 @@ Requires the SAD binary for the executable smoke test.
 
 | File | Tests | Fail | Failure root cause |
 |------|-------|------|--------------------|
-| `test_installer_dispatch.py` | 3 | 0 | — |
-| `test_macos_installer.py` | 13 | 0 | — |
+| `test_installer_dispatch.py` | 9 | 0 | — |
+| `test_installer_helpers.py` | 40 | 0 | — |
+| `test_macos_installer.py` | 18 | 0 | — |
+| `test_real_installation.py` | 1 | 0 | — |
 | `test_sad_executable.py` | 1 | 0 | — |
 
-- `test_installer_dispatch.py` — `sad2xs.install_sad.dispatch`:
-  `require_platform` accepting its own platform and refusing any other, and
-  `install_sad` exiting on an unsupported platform with a message naming
-  those that are supported.
+### `test_installer_dispatch.py`
 
-- `test_macos_installer.py` — macOS installer internals via
-  monkeypatching: `run` error handling and non-zero return codes, brew cask
-  flag, brew prefix with missing formula, executable name resolution,
-  `ensure_command_exists` skip and install paths, X11 header detection,
-  dependency installation order, conda environment variable stripping and
-  toolchain setup, launcher file writing, shell RC deduplication and creation.
+Covers the command line and the platform choice: argument parsing into
+an `InstallConfig`, the guard each platform module applies to itself, and
+how the command reports a platform it cannot serve or a build that failed.
 
-- `test_sad_executable.py` — SAD executable smoke check: verifies the
-  `sad` command is on PATH and runs the committed installation test lattice
-  (`sad_installation_test.sad`) to completion with returncode 0.
+| Test | What it asserts |
+|------|-----------------|
+| `test_require_platform_allows_the_macos_installer_on_macos` | An installer running on the platform it supports should proceed. |
+| `test_require_platform_exits_when_the_macos_installer_runs_on_linux` | An installer run directly on the wrong platform should exit, naming the command that picks the right one. |
+| `test_the_command_line_defaults_to_the_xdg_locations` | With no arguments the install should land in the XDG directories. |
+| `test_prefix_redirects_the_whole_install` | A single --prefix should move the source tree and the build logs. |
+| `test_a_user_relative_prefix_is_expanded` | A ~ in a path should be expanded rather than taken literally. |
+| `test_install_sad_exits_when_no_installer_exists_for_the_platform` | A platform with no installer should exit, naming those that have one. |
+| `test_install_sad_hands_the_parsed_config_to_the_macos_installer` | On macOS the command should reach the macOS installer, with the config. |
+| `test_install_sad_reports_a_failed_build_without_a_traceback` | A failed build step should exit with its message, not a stack trace. |
+| `test_a_named_branch_is_marked_as_explicitly_requested` | A branch given on the command line should be distinguishable. |
+
+### `test_installer_helpers.py`
+
+Covers the platform-independent installer machinery in `_helpers.py` by
+monkeypatching subprocess calls. No test clones, builds, or writes outside
+`tmp_path`. Weighted towards the destructive paths: which source trees may
+be replaced, what happens when a clone or a source request fails, and what
+reaches the launcher and the printed PATH instruction.
+
+| Test | What it asserts |
+|------|-----------------|
+| `test_install_config_derives_prefix_paths` | Every build path should follow from the prefix alone. |
+| `test_install_config_puts_the_launcher_in_the_bin_directory` | The launcher follows bin_dir, not the prefix, so the two move apart. |
+| `test_install_config_makes_a_relative_prefix_absolute` | A relative --prefix must not reach the launcher script. |
+| `test_run_raises_command_error_on_nonzero_return_code` | run should raise CommandError when a checked command returns non-zero. |
+| `test_run_check_false_returns_completed_process_on_nonzero` | run should return the CompletedProcess when check=False. |
+| `test_run_raises_with_the_log_path_when_a_logged_command_fails` | A failed build step should carry the log that explains it. |
+| `test_run_survives_build_output_that_is_not_valid_utf8` | A compiler in a non-UTF-8 locale should not kill the build. |
+| `test_log_tail_reports_the_end_of_a_long_log` | A build failure should surface the end of the log, where the cause is. |
+| `test_log_tail_reports_a_missing_log_without_raising` | A log that was never created must not mask the build failure itself. |
+| `test_clone_sad_refuses_to_delete_a_source_tree_it_does_not_own` | An unrelated <prefix>/src must never be removed. |
+| `test_a_marker_beside_the_source_tree_does_not_authorise_deleting_it` | Ownership must be proved by the tree itself, not by its parent. |
+| `test_clone_sad_replaces_a_tree_it_marked_as_its_own` | The marker inside a source tree identifies it as safe to replace. |
+| `test_a_failed_clone_leaves_the_previous_source_tree_untouched` | A clone that fails must not cost the user a working installation. |
+| `test_a_failed_clone_leaves_no_ownership_marker` | A half-finished install must not claim ownership of anything. |
+| `test_an_absent_explicit_branch_leaves_the_previous_source_tree_untouched` | A typo in --branch must be reported before anything is deleted. |
+| `test_guard_prefix_catches_a_home_directory_reached_through_a_symlink` | A symlinked home must still be refused as an install prefix. |
+| `test_clone_sad_fails_when_an_explicitly_named_branch_is_absent` | A mistyped --branch should stop the install, not install other source. |
+| `test_clone_sad_falls_back_to_the_remote_default_branch` | The default branch name only should tolerate an upstream rename. |
+| `test_clone_sad_reports_a_remote_failure_as_a_remote_failure` | A network or repository failure is not an absent branch. |
+| `test_clone_sad_reports_a_git_that_cannot_be_run` | A missing git should say so rather than surface as a traceback. |
+| `test_clone_sad_refuses_to_reuse_a_checkout_whose_origin_is_not_the_request` | Reuse validation fails closed on anything that is not a match. |
+| `test_clone_sad_refuses_to_reuse_a_checkout_with_no_usable_branch` | An unreadable or detached HEAD cannot satisfy an explicit --branch. |
+| `test_clone_sad_keeps_a_matching_tree_and_reports_the_reuse` | A matching checkout should be kept, and the reuse reported. |
+| `test_clone_sad_reports_no_reuse_when_asked_to_reuse_a_tree_that_is_absent` | --reuse-clone with nothing to reuse is still a fresh clone. |
+| `test_clone_sad_truncates_the_build_log_even_when_reusing_a_tree` | A reused tree must still start from an empty build log. |
+| `test_make_sad_cleans_only_a_reused_tree` | A fresh clone has nothing to clean, and upstream's clean target fails when there is nothing to remove. |
+| `test_verify_executable_accepts_an_executable_binary` | A build that produced a runnable binary should pass without exiting. |
+| `test_verify_executable_rejects_a_binary_without_the_executable_bit` | A file that exists but cannot be run is a failed build. |
+| `test_verify_executable_exits_when_the_build_produced_no_binary` | A build that returns zero but leaves no binary should still fail. |
+| `test_write_launcher_writes_an_executable_script` | write_launcher should create an executable script pointing at the build. |
+| `test_write_launcher_quotes_a_prefix_containing_shell_metacharacters` | An awkward prefix should reach the launcher as a literal path. |
+| `test_report_path_setup_is_quiet_when_the_directory_is_on_path` | A launcher directory already on PATH needs nothing from the user. |
+| `test_report_path_setup_prints_the_export_without_touching_any_rc_file` | An unreachable launcher directory should be reported, never wired up. |
+| `test_report_path_setup_prints_an_export_a_shell_can_run` | The printed line is meant to be pasted, so it must run as printed. |
+
+### `test_macos_installer.py`
+
+Covers the macOS-specific parts: Homebrew lookups and installs, the Xcode
+toolchain environment, and the order of the full installation sequence.
+Every subprocess call is monkeypatched.
+
+| Test | What it asserts |
+|------|-----------------|
+| `test_brew_install_uses_cask_flag` | Cask dependencies should be installed with `brew install --cask`. |
+| `test_brew_prefix_installs_missing_formula_then_retries` | brew_prefix(formula) should install a missing formula and retry lookup. |
+| `test_ensure_brew_bin_exists_uses_executable_name` | Homebrew binary checks should not duplicate the `bin` path component. |
+| `test_ensure_command_exists_skips_install_when_command_available` | ensure_command_exists should not install when the command is on PATH. |
+| `test_ensure_command_exists_installs_missing_command` | ensure_command_exists should install the formula when the command is missing. |
+| `test_check_x11_headers_installs_xquartz_when_headers_missing` | Missing X11 headers should trigger xquartz cask installation. |
+| `test_check_x11_headers_exits_when_the_cask_did_not_supply_them` | XQuartz reporting success is not proof the headers arrived. |
+| `test_install_dependencies_checks_required_tools_in_order` | install_dependencies should check Homebrew, required commands, gfortran, and X11 headers without performing installation work directly. |
+| `test_make_clean_build_env_strips_conda_vars_and_sets_toolchain` | make_clean_build_env should remove conda/build contamination and configure Homebrew plus Xcode toolchain paths. |
+| `test_ensure_xcode_clt_passes_when_the_tools_are_configured` | A configured toolchain should let the install proceed. |
+| `test_ensure_xcode_clt_exits_with_the_command_that_installs_them` | Unconfigured Command Line Tools should exit naming the fix. |
+| `test_brew_prefix_exits_when_homebrew_itself_is_missing` | A missing Homebrew has no formula to install, so it cannot self-heal. |
+| `test_brew_prefix_gives_up_after_installing_a_formula_once` | A formula that installs but still reports no prefix must not loop. |
+| `test_install_dependencies_exits_when_brew_is_not_installed` | Homebrew is the only way this installer gets dependencies. |
+| `test_make_clean_build_env_exits_when_a_tool_path_does_not_exist` | A toolchain variable pointing nowhere should fail before the build. |
+| `test_install_sad_macos_runs_every_stage_in_order` | The install should check dependencies, fetch, build, verify, then link. |
+| `test_ensure_brew_bin_exists_exits_when_the_formula_lacks_the_executable` | A formula that installs but supplies no executable should exit. |
+| `test_ensure_command_exists_exits_when_the_install_did_not_supply_it` | A formula whose name does not match the command should exit. |
+
+### `test_real_installation.py`
+
+Opt-in end-to-end install. Clones and builds SAD into a temporary prefix,
+then runs the smoke lattice through the generated launcher. Needs the
+network and takes minutes, so it is skipped unless
+`SAD2XS_REAL_INSTALL_TEST=1` is set.
+
+| Test | What it asserts |
+|------|-----------------|
+| `test_installer_builds_sad_and_the_launcher_runs_the_smoke_lattice` | A real install should produce a launcher that runs a SAD lattice. |
+
+### `test_sad_executable.py`
+
+Smoke check against a real SAD installation. Requires the SAD binary.
+
+| Test | What it asserts |
+|------|-----------------|
+| `test_sad_executable_runs_installation_smoke_lattice` | The installed SAD executable should run the committed installation smoke lattice without returning an error. |
+
+## Real Installation Validation
+
+Every other test in this folder monkeypatches its subprocess calls, so none of
+them proves the installer can actually build SAD. `test_real_installation.py`
+does, but it needs the network and takes minutes, so it does not run by
+default.
+
+To run it:
+
+```bash
+SAD2XS_REAL_INSTALL_TEST=1 python -m pytest tests/installation/test_real_installation.py -v
+```
+
+It installs into a pytest `tmp_path`, never the default location, and asserts
+that `~/.zshrc` and `~/.bashrc` are byte-identical afterwards.
+
+Last run: 2026-08-29, macOS 15 (Darwin 25.5.0), arm64, from an active conda
+environment. Passed in 197 s: clone into a staging directory, swap into place,
+`make depend`, `make exe`, a runnable `src/bin/gs`, and the smoke lattice
+completing with return code 0 through the generated launcher invoked from an
+unrelated working directory. Both shell rc files were unchanged, checked for
+modification and for creation.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
