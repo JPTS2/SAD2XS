@@ -51,6 +51,81 @@ pip install sad2xs[sad-helpers]
 pip install sad2xs[plotting]
 ```
 
+### The SAD executable
+
+`sad-helpers` runs `sad` as a subprocess, so SAD itself has to be built. To build it from source:
+
+```bash
+sad2xs-install-sad
+```
+
+The source tree goes to `~/.local/share/sad2xs` and the `sad` launcher to
+`~/.local/bin`. The clone, the build, the build logs, and the launcher are all
+owned by you. SAD2XS never invokes `sudo` and never asks for a password.
+
+SAD2XS also never installs system dependencies. The installer probes for what
+the build needs, and when anything is missing it lists every missing item with
+how to provide it, then exits without touching SAD. On macOS that is a
+Homebrew command; on Linux it is the package your distribution supplies it in,
+never a command to run as root:
+
+```
+Missing dependencies required to build SAD:
+
+  nroff
+      Needed to format SAD's libtai man pages during the build.
+      Remedy: brew install groff
+
+  /opt/X11/include/X11/Xlib.h
+      Needed to build SAD against X11.
+      Remedy: brew install --cask xquartz
+
+SAD2XS never installs system dependencies and never uses sudo.
+Install the above yourself, then rerun sad2xs-install-sad.
+```
+
+Run those commands yourself, then rerun `sad2xs-install-sad`.
+
+The build ignores any active conda environment: SAD is compiled against the
+platform toolchain, which on macOS means Xcode plus Homebrew's gfortran, so
+that it does not depend on which environment happens to be active when it
+runs. The dependency check searches that same toolchain PATH, so a command
+supplied only by conda is reported missing rather than disappearing once the
+build starts.
+
+Both locations can be moved, which matters on a filesystem that is slow or
+quota-limited:
+
+```bash
+sad2xs-install-sad --prefix /scratch/$USER/sad --bin-dir ~/bin
+sad2xs-install-sad --reuse-clone   # rebuild in place, without re-cloning
+```
+
+A normal install is one transaction. Your existing source tree is held aside
+for the whole clone, build, and launcher write, and put back if any step
+fails, so a failed install leaves your working SAD exactly as it was. A first
+install that fails removes what it created rather than leaving a broken tree
+behind. If a run is killed outright, the next one finds the unfinished install
+and reconciles it before starting.
+
+`--reuse-clone` rebuilds the tree in place instead, which is the point of the
+flag. That means a build which fails part way can leave that tree unusable, so
+prefer a normal install when you have a working SAD you depend on.
+
+The installer never edits your shell configuration. If the launcher directory
+is not on your PATH it prints the exact line to add.
+
+`--reuse-clone` keeps the existing checkout, and requires it to match
+`--repo-url` and any explicit `--branch`; a mismatch is refused rather than
+silently built. A `--branch` you name yourself must exist on the remote, so a
+typo fails instead of installing the default branch.
+
+Supported on macOS and Linux; on any other platform the command exits saying so.
+On Linux the report names packages for the detected distribution, Debian and
+RHEL families included, and prints no command to run as root. An unrecognised
+distribution is told which dependency to find rather than given another
+distribution's package name.
+
 ## Usage
 Convert a SAD lattice to an Xsuite line in one call:
 

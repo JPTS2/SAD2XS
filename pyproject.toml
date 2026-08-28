@@ -49,6 +49,10 @@ dependencies = [
     "scipy>=1.14",
     "xsuite>=0.59.0"]
 
+[project.scripts]
+# Builds SAD from source.
+sad2xs-install-sad = "sad2xs.install_sad:install_sad"
+
 [project.optional-dependencies]
 # Required for sad2xs.sad_helpers in addition to a working SAD executable
 sad-helpers = ["tfs-pandas>=3.8", "tqdm>=4.66"]

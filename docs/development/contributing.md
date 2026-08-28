@@ -105,6 +105,8 @@ gh issue list
 
 All package terminal output goes through the `sad2xs` logger hierarchy. Never call `print()` in `sad2xs/`. A source-scan test, `tests/observability/test_no_print_statements.py`, fails on any print call. Get a logger at module level with `logger = logging.getLogger(__name__)`.
 
+This holds for console scripts too. `initialise_logging()` runs on package import, so a `[project.scripts]` entry point already has a configured logger by the time it starts; it only has to raise the level, as `sad2xs-install-sad` does with `set_log_level("info")`. Output that a command streams from a subprocess is not package output, and is passed through unchanged.
+
 Level semantics:
 
 - **error**: never logged — raise an exception instead, with the diagnostic context (element names, line numbers, external SAD output) embedded in the exception message;
