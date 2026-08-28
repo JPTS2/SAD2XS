@@ -765,6 +765,7 @@ def test_install_sad_macos_runs_every_stage_in_order(tmp_path, monkeypatch):
     stages = []
     build_env = {"CC": "/usr/bin/clang"}
 
+    monkeypatch.setattr(installer, "require_platform", lambda *args: None)
     monkeypatch.setattr(installer, "require_dependencies",
                         lambda: stages.append("dependencies"))
     monkeypatch.setattr(installer, "make_clean_build_env",
