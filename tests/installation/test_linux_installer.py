@@ -24,6 +24,7 @@ from pathlib import Path
 
 import pytest
 
+from sad2xs.install_sad import _helpers
 from sad2xs.install_sad import linux as installer
 
 ################################################################################
@@ -522,6 +523,30 @@ def test_make_clean_build_env_refuses_a_conda_compiler(
         "The message should say the system toolchain is required.")
 
 
+def test_make_clean_build_env_refuses_a_system_path_symlink_into_conda(
+        tmp_path,
+        monkeypatch):
+    """
+    A compiler symlink must be judged by its target, not its innocent name.
+    """
+    system_bin = tmp_path / "system" / "bin"
+    conda_bin = tmp_path / "miniforge" / "bin"
+    stub_toolchain(conda_bin, "gcc", "g++", "gfortran")
+    system_bin.mkdir(parents = True)
+    for name in ("gcc", "g++", "gfortran"):
+        (system_bin / name).symlink_to(conda_bin / name)
+
+    monkeypatch.setattr(installer, "SYSTEM_PATH", str(system_bin))
+
+    with pytest.raises(SystemExit) as exc_info:
+        installer.make_clean_build_env()
+
+    assert "miniforge" in str(exc_info.value), (
+        "The refusal should name the compiler's resolved environment.")
+    assert "system toolchain" in str(exc_info.value), (
+        "The message should state which toolchain is required.")
+
+
 ################################################################################
 # Source Preparation
 ################################################################################
@@ -540,7 +565,7 @@ def test_truncate_sad_conf_keeps_seventy_lines_and_the_original(tmp_path):
     lines = [f"line {n}\n" for n in range(1, 121)]
     (config.src_dir / "sad.conf").write_text("".join(lines), encoding = "utf-8")
 
-    installer.truncate_sad_conf(config)
+    installer.truncate_sad_conf(config.src_dir)
 
     kept = (config.src_dir / "sad.conf").read_text(encoding = "utf-8")
     original = (config.src_dir / "sad.conf.orig").read_text(encoding = "utf-8")
@@ -563,7 +588,7 @@ def test_truncate_sad_conf_leaves_a_correctly_truncated_tree_alone(tmp_path):
     (config.src_dir / "sad.conf").write_text(
         "".join(lines[:70]), encoding = "utf-8")
 
-    installer.truncate_sad_conf(config)
+    installer.truncate_sad_conf(config.src_dir)
 
     assert (config.src_dir / "sad.conf").read_text(
         encoding = "utf-8") == "".join(lines[:70]), (
@@ -597,7 +622,7 @@ def test_truncate_sad_conf_repairs_an_interrupted_preparation(
     if contents is not None:
         (config.src_dir / "sad.conf").write_text(contents, encoding = "utf-8")
 
-    installer.truncate_sad_conf(config)
+    installer.truncate_sad_conf(config.src_dir)
 
     assert (config.src_dir / "sad.conf").read_text(
         encoding = "utf-8") == "".join(lines[:70]), (
@@ -616,7 +641,7 @@ def test_truncate_sad_conf_leaves_no_staging_file_behind(tmp_path):
     (config.src_dir / "sad.conf").write_text(
         "".join(f"line {n}\n" for n in range(1, 121)), encoding = "utf-8")
 
-    installer.truncate_sad_conf(config)
+    installer.truncate_sad_conf(config.src_dir)
 
     assert sorted(path.name for path in config.src_dir.iterdir()) == [
         "sad.conf", "sad.conf.orig"], (
@@ -631,7 +656,7 @@ def test_truncate_sad_conf_exits_when_the_tree_has_no_sad_conf(tmp_path):
     config.src_dir.mkdir(parents = True)
 
     with pytest.raises(SystemExit) as exc_info:
-        installer.truncate_sad_conf(config)
+        installer.truncate_sad_conf(config.src_dir)
 
     assert "sad.conf" in str(exc_info.value), (
         "The message should name the file that was expected.")
@@ -657,14 +682,14 @@ def test_install_sad_linux_stops_before_cloning_when_dependencies_are_missing(
     monkeypatch.setattr(installer, "require_platform", lambda *args: None)
     monkeypatch.setattr(installer, "require_dependencies",
                         lambda: sys.exit("missing"))
-    monkeypatch.setattr(installer, "clone_sad",
-                        lambda config: cloned.append(config))
+    monkeypatch.setattr(installer, "install_sad_source",
+                        lambda *args, **kwargs: cloned.append(args))
 
     with pytest.raises(SystemExit):
         installer.install_sad_linux(make_config(tmp_path))
 
     assert cloned == [], (
-        "clone_sad should not run when a dependency is missing.")
+        "No source should be fetched when a dependency is missing.")
 
 
 ########################################
@@ -672,7 +697,7 @@ def test_install_sad_linux_stops_before_cloning_when_dependencies_are_missing(
 ########################################
 def test_install_sad_linux_runs_every_stage_in_order(tmp_path, monkeypatch):
     """
-    The install should check, fetch, prepare, build, verify, then link.
+    The install should check, build, then install the launcher.
 
     Nothing else covers the function that performs the install, so a stage
     dropped or reordered would otherwise reach users unnoticed.
@@ -683,43 +708,31 @@ def test_install_sad_linux_runs_every_stage_in_order(tmp_path, monkeypatch):
     monkeypatch.setattr(installer, "require_platform", lambda *args: None)
     monkeypatch.setattr(installer, "require_dependencies",
                         lambda: stages.append("dependencies"))
-    monkeypatch.setattr(installer, "clone_sad",
-                        lambda config: stages.append("clone") or True)
-    monkeypatch.setattr(installer, "truncate_sad_conf",
-                        lambda config: stages.append("sad.conf"))
     monkeypatch.setattr(installer, "make_clean_build_env", lambda: build_env)
-    monkeypatch.setattr(installer, "verify_executable",
-                        lambda config: stages.append("verify"))
-    monkeypatch.setattr(installer, "write_launcher",
-                        lambda config: stages.append("launcher"))
     monkeypatch.setattr(installer, "report_path_setup",
                         lambda config: stages.append("path"))
 
     received = {}
 
-    def fake_make_sad(config, env, reused_tree):
-        stages.append("build")
+    def fake_install_sad_source(config, env, prepare = None):
+        stages.append("install")
         received["env"] = env
-        received["reused_tree"] = reused_tree
+        received["prepare"] = prepare
 
-    monkeypatch.setattr(installer, "make_sad", fake_make_sad)
+    monkeypatch.setattr(installer, "install_sad_source", fake_install_sad_source)
 
     installer.install_sad_linux(make_config(tmp_path))
 
     assert stages == [
         "dependencies",
-        "clone",
-        "sad.conf",
-        "build",
-        "verify",
-        "launcher",
+        "install",
         "path",
     ], "The install stages should run in dependency order."
     assert received["env"] is build_env, (
         "The build should run against the sanitised environment.")
-    assert received["reused_tree"] is True, (
-        "clone_sad's reuse answer should reach the build, which decides "
-        "whether to clean first.")
+    assert received["prepare"] is installer.truncate_sad_conf, (
+        "sad.conf preparation must run inside the staged build, so a "
+        "failure there costs the user nothing.")
 
 
 ########################################
@@ -742,14 +755,16 @@ def test_the_linux_install_writes_a_launcher_that_runs(tmp_path, monkeypatch):
     gs = config.src_dir / "bin" / "gs"
     gs.write_text('#!/bin/sh\necho "gs ran"\n', encoding = "utf-8")
     gs.chmod(0o755)
+    (config.src_dir / "sad.conf").write_text(
+        "".join(f"line {n}\n" for n in range(1, 121)), encoding = "utf-8")
 
     monkeypatch.setattr(installer, "require_platform", lambda *args: None)
     monkeypatch.setattr(installer, "require_dependencies", lambda: None)
-    monkeypatch.setattr(installer, "clone_sad", lambda config: False)
-    monkeypatch.setattr(installer, "truncate_sad_conf", lambda config: None)
     monkeypatch.setattr(installer, "make_clean_build_env", dict)
-    monkeypatch.setattr(installer, "make_sad",
-                        lambda config, env, reused_tree: None)
+    # Patched on the shared module, which is where install_sad_source
+    # reaches for them.
+    monkeypatch.setattr(_helpers, "prepare_source", lambda config: (True, None))
+    monkeypatch.setattr(_helpers, "make_sad", lambda *args, **kwargs: None)
 
     installer.install_sad_linux(config)
 

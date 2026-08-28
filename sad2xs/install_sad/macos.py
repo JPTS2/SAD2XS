@@ -26,13 +26,10 @@ from ..helpers import log_section_heading
 from ._helpers import (
     InstallConfig,
     MissingDependency,
+    install_sad_source,
     check_command,
-    clone_sad,
     report_path_setup,
-    make_sad,
-    strip_inherited_build_settings,
-    verify_executable,
-    write_launcher)
+    strip_inherited_build_settings)
 from ._helpers import require_dependencies as _require_dependencies
 from .dispatch import require_platform
 
@@ -41,6 +38,22 @@ logger  = logging.getLogger(__name__)
 # SAD is built against the platform toolchain, so the build sees only the
 # macOS system directories and Homebrew.
 SYSTEM_PATH = "/usr/bin:/bin:/usr/sbin:/sbin"
+
+# xcrun is the authority for paths inside the selected Xcode developer
+# directory. Keeping the mapping here makes the audit and build environment
+# resolve exactly the same toolchain.
+XCODE_TOOLS = (
+    ("CC",       "clang"),
+    ("CXX",      "clang++"),
+    ("AR",       "ar"),
+    ("RANLIB",   "ranlib"),
+    ("NM",       "nm"),
+    ("STRIP",    "strip"),
+    ("LD",       "ld"))
+
+
+class XcodeToolchainError(RuntimeError):
+    """Raised when the selected Xcode toolchain cannot be used."""
 
 ################################################################################
 # Dependency Reporting
@@ -109,9 +122,58 @@ def build_path(brew_root: Path | None) -> str:
 ########################################
 # Xcode Command Line Tools
 ########################################
+def resolve_xcode_toolchain() -> dict[str, str]:
+    """
+    Resolve the SDK and build tools from the selected Xcode installation.
+
+    Returns
+    -------
+    dict
+        SDKROOT and compiler-tool variables ready for the build environment.
+
+    Raises
+    ------
+    XcodeToolchainError
+        If xcrun cannot run, reports a failure, returns an empty path, or
+        names a tool that is not executable.
+    """
+    commands = [("SDKROOT", ["xcrun", "--show-sdk-path"], False)]
+    commands.extend(
+        (variable, ["xcrun", "--find", tool], True)
+        for variable, tool in XCODE_TOOLS)
+
+    resolved = {}
+    for variable, cmd, executable in commands:
+        try:
+            value = subprocess.check_output(
+                cmd,
+                text   = True,
+                stderr = subprocess.DEVNULL).strip()
+        except (OSError, subprocess.CalledProcessError) as error:
+            raise XcodeToolchainError(
+                f"{' '.join(cmd)} failed: {error}") from error
+
+        if not value:
+            raise XcodeToolchainError(
+                f"{' '.join(cmd)} returned an empty path.")
+
+        path = Path(value)
+        if executable and not os.access(path, os.X_OK):
+            raise XcodeToolchainError(
+                f"{variable} resolved to a tool that is not executable: "
+                f"{path}")
+        if not executable and not path.exists():
+            raise XcodeToolchainError(
+                f"SDKROOT resolved to a path that does not exist: {path}")
+
+        resolved[variable] = str(path)
+
+    return resolved
+
+
 def check_xcode_clt() -> MissingDependency | None:
     """
-    Check that the Xcode Command Line Tools are configured.
+    Check that the selected Xcode Command Line Tools are usable.
 
     Returns
     -------
@@ -121,7 +183,8 @@ def check_xcode_clt() -> MissingDependency | None:
     report = MissingDependency(
         "Xcode Command Line Tools",
         "Needed for the clang toolchain, the macOS SDK, make, yacc, and git.",
-        "xcode-select --install")
+        "Run xcode-select --install, or repair/select a working Xcode "
+        "developer directory.")
 
     try:
         process = subprocess.run(       # pylint: disable=subprocess-run-check
@@ -131,7 +194,14 @@ def check_xcode_clt() -> MissingDependency | None:
     except OSError:
         return report
 
-    return report if process.returncode != 0 else None
+    if process.returncode != 0:
+        return report
+
+    try:
+        resolve_xcode_toolchain()
+    except XcodeToolchainError:
+        return report
+    return None
 
 
 ########################################
@@ -297,7 +367,7 @@ def make_clean_build_env() -> dict[str, str]:
     Raises
     ------
     SystemExit
-        If any resolved toolchain executable does not exist.
+        If Homebrew or the selected Xcode toolchain cannot support the build.
     """
     env = strip_inherited_build_settings()
 
@@ -308,20 +378,14 @@ def make_clean_build_env() -> dict[str, str]:
     if brew_root is None:
         sys.exit("Homebrew prefix could not be found.")
 
-    env["PATH"]     = build_path(brew_root)
-    env["SDKROOT"]  = subprocess.check_output(
-        ["xcrun", "--show-sdk-path"], text = True).strip()
-
-    for variable, tool in (
-            ("CC",       "clang"),
-            ("CXX",      "clang++"),
-            ("AR",       "ar"),
-            ("RANLIB",   "ranlib"),
-            ("NM",       "nm"),
-            ("STRIP",    "strip"),
-            ("LD",       "ld")):
-        env[variable] = subprocess.check_output(
-            ["xcrun", "--find", tool], text = True).strip()
+    env["PATH"] = build_path(brew_root)
+    try:
+        env.update(resolve_xcode_toolchain())
+    except XcodeToolchainError as error:
+        sys.exit(
+            f"The selected Xcode Command Line Tools are unusable: {error}\n"
+            f"Run xcode-select --install, or repair/select a working Xcode "
+            f"developer directory, then rerun sad2xs-install-sad.")
 
     # Apple's toolchain ships no Fortran compiler, so SAD's Fortran sources
     # need Homebrew's gfortran.
@@ -372,15 +436,8 @@ def install_sad_macos(config: InstallConfig) -> None:
     log_section_heading("Checking Required Dependencies")
     require_dependencies()
 
-    log_section_heading("Fetching SAD Source")
-    reused_tree = clone_sad(config)
-
-    log_section_heading("Building SAD")
-    make_sad(config, make_clean_build_env(), reused_tree)
-    verify_executable(config)
-
-    log_section_heading("Installing Launcher")
-    write_launcher(config)
+    log_section_heading("Installing SAD")
+    install_sad_source(config, make_clean_build_env())
     report_path_setup(config)
 
     log_section_heading("SAD Installation Summary")

@@ -26,13 +26,10 @@ from ..helpers import log_section_heading
 from ._helpers import (
     InstallConfig,
     MissingDependency,
+    install_sad_source,
     check_command,
-    clone_sad,
     report_path_setup,
-    make_sad,
-    strip_inherited_build_settings,
-    verify_executable,
-    write_launcher)
+    strip_inherited_build_settings)
 from ._helpers import require_dependencies as _require_dependencies
 from .dispatch import require_platform
 
@@ -339,13 +336,15 @@ def make_clean_build_env() -> dict[str, str]:
         if resolved is None:
             sys.exit(
                 f"Compiler not found on the build PATH: {variable} ({tool})")
-        env[variable] = resolved
+        # which reports the directory entry it found, which may be a symlink
+        # into an active conda installation. Check and use the real target.
+        env[variable] = str(Path(resolved).resolve())
 
     ########################################
     # Refuse A Conda Toolchain
     ########################################
     for variable in ("CC", "CXX", "FC"):
-        if any(marker in env[variable] for marker in CONDA_MARKERS):
+        if any(marker in env[variable].lower() for marker in CONDA_MARKERS):
             sys.exit(
                 f"{variable}={env[variable]} lives in a conda environment. "
                 f"SAD must be built with the system toolchain.")
@@ -392,7 +391,7 @@ def _write_atomically(path: Path, text: str) -> None:
     os.replace(staging, path)
 
 
-def truncate_sad_conf(config: InstallConfig) -> None:
+def truncate_sad_conf(src_dir: Path) -> None:
     """
     Cut sad.conf down to the lines KEK's instructions call for.
 
@@ -405,16 +404,16 @@ def truncate_sad_conf(config: InstallConfig) -> None:
 
     Parameters
     ----------
-    config : InstallConfig
-        Install configuration.
+    src_dir : Path
+        The source tree being built.
 
     Raises
     ------
     SystemExit
         If the cloned tree has no sad.conf to work from.
     """
-    sad_conf = config.src_dir / "sad.conf"
-    original = config.src_dir / "sad.conf.orig"
+    sad_conf = src_dir / "sad.conf"
+    original = src_dir / "sad.conf.orig"
 
     ########################################
     # Reused Or Interrupted Tree
@@ -477,16 +476,8 @@ def install_sad_linux(config: InstallConfig) -> None:
     log_section_heading("Checking Required Dependencies")
     require_dependencies()
 
-    log_section_heading("Fetching SAD Source")
-    reused_tree = clone_sad(config)
-    truncate_sad_conf(config)
-
-    log_section_heading("Building SAD")
-    make_sad(config, make_clean_build_env(), reused_tree)
-    verify_executable(config)
-
-    log_section_heading("Installing Launcher")
-    write_launcher(config)
+    log_section_heading("Installing SAD")
+    install_sad_source(config, make_clean_build_env(), truncate_sad_conf)
     report_path_setup(config)
 
     log_section_heading("SAD Installation Summary")

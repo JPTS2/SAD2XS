@@ -101,6 +101,17 @@ sad2xs-install-sad --prefix /scratch/$USER/sad --bin-dir ~/bin
 sad2xs-install-sad --reuse-clone   # rebuild in place, without re-cloning
 ```
 
+A normal install is one transaction. Your existing source tree is held aside
+for the whole clone, build, and launcher write, and put back if any step
+fails, so a failed install leaves your working SAD exactly as it was. A first
+install that fails removes what it created rather than leaving a broken tree
+behind. If a run is killed outright, the next one finds the unfinished install
+and reconciles it before starting.
+
+`--reuse-clone` rebuilds the tree in place instead, which is the point of the
+flag. That means a build which fails part way can leave that tree unusable, so
+prefer a normal install when you have a working SAD you depend on.
+
 The installer never edits your shell configuration. If the launcher directory
 is not on your PATH it prints the exact line to add.
 

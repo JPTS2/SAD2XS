@@ -24,6 +24,7 @@ from .._logging import set_log_level
 from ._helpers import (
     CommandError,
     InstallConfig,
+    RollbackError,
     SAD_GIT_BRANCH,
     SAD_GIT_REPO_URL,
     default_bin_dir,
@@ -123,10 +124,14 @@ def parse_args_to_config(argv: list[str] | None = None) -> InstallConfig:
     parser.add_argument(
         "--reuse-clone",
         action  = "store_true",
-        help    = "reuse an existing source tree instead of replacing it, "
-                  "which saves re-cloning on a slow or quota-limited "
-                  "filesystem. The checkout must match --repo-url and any "
-                  "explicit --branch, or the install is refused")
+        help    = "rebuild an existing source tree in place instead of "
+                  "replacing it, which saves re-cloning on a slow or "
+                  "quota-limited filesystem. The checkout must match "
+                  "--repo-url and any explicit --branch, or the install is "
+                  "refused. Note that an in-place rebuild can leave the tree "
+                  "unusable if it fails part way; without this flag the "
+                  "previous tree is held aside and put back if the new "
+                  "build fails")
 
     args = parser.parse_args(argv)
 
@@ -203,7 +208,7 @@ def install_sad(argv: list[str] | None = None) -> None:
 
     try:
         installer(config)
-    except CommandError as error:
+    except (CommandError, RollbackError) as error:
         # run() has already reported the tail of the build log, so a
         # traceback into the command runner adds nothing actionable.
         sys.exit(str(error))
