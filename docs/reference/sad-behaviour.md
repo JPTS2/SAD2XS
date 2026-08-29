@@ -375,6 +375,12 @@ tracking output to the equivalent `QUAD`, including every pinned reference
 value (`tests/sad/test_mult.py`,
 `test_mult_k1_f1_f2_matches_sad_reference_values`).
 
+For combined normal/skew K1 content, the linear soft-edge coefficients use
+`abs(K1+i*SK1)/L` and the frame angle uses
+`ROTATE+akang(K1+i*SK1)`. The F1 dependence remains a literal square:
+`a=-abs(K1+i*SK1)/L*f1_raw^2/24`. Runs with both signs of F1 exclude the
+previously suspected signed form `F1*abs(F1)`.
+
 `FRINGE`, internally `mfring`, uses the **same `{1, 2, 3}` numbering as
 `QUAD`**: `1` is entrance-only, `2` is exit-only, and `3` is both. It
 applies to **all** of `MULT`'s fringe sub-mechanisms at once. The `K1`

@@ -20,7 +20,7 @@ The modules live in `sad2xs/output_writer/`. The entry points themselves are in 
 - [The lattice file](#the-lattice-file)
 - [The optics file](#the-optics-file)
 - [Supported elements](#supported-elements)
-- [Taylor maps are written as literals](#taylor-maps-are-written-as-literals)
+- [Taylor-map output](#taylor-map-output)
 - [Limitations](#limitations)
 
 ## The lattice file
@@ -82,13 +82,21 @@ The writer's supported set is **not** the same question as which SAD elements th
 
 `xt.LimitRectEllipse` is the one class the policy test does not cover. It is serialised, and it is tested by the element-level aperture writer tests in `tests/writer/elements/test_aper_writer.py`, but it has no row in the policy test.
 
-## Taylor maps are written as literals
+## Taylor-map output
 
-`xt.FirstOrderTaylorMap` and `xt.SecondOrderTaylorMap` are serialised as literal arrays at full double precision, not as optics variables.
+Generic `xt.FirstOrderTaylorMap` and `xt.SecondOrderTaylorMap` elements are
+serialised as literal arrays at full double precision, not as optics variables.
 
 Their coefficients are not physically meaningful knobs a user would retune, and a second-order map's `T` tensor would produce an unusable number of variables.
 
-Quad-fringe maps additionally carry `_sad_quad_fringe_a`, `_sad_quad_fringe_b`, and `_sad_quad_fringe_theta` as plain attributes. The writer preserves these when present, because the reversal step needs them. See [fringe models](../converter/fringes.md).
+Recognised SAD K1 soft-edge maps are compact instead. The generated file
+defines one self-contained builder and calls it with only `(a, b,
+frame_rotation)`. This avoids repeating a mostly-zero `6x6x6` tensor for every
+QUAD or MULT face. The same call attaches `_sad_k1_fringe_a`,
+`_sad_k1_fringe_b`, and `_sad_k1_fringe_frame_rotation` through `env.new`, so
+the optics metadata and reversal support survive a write/reload cycle without
+loose post-construction assignments. Pre-0.4 QUAD metadata remains readable and
+uses the literal compatibility path. See [fringe models](../converter/fringes.md).
 
 ## Limitations
 

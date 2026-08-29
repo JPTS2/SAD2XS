@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-08-29
 ================================================================================
 """
 
@@ -19,7 +19,11 @@ Date:       2026-07-29
 import numpy as np
 import xtrack as xt
 
-from ._004_element_converter import _quad_fringe_taylor_coeffs, _rotate_quad_fringe_taylor_map
+from ._000_fringe_helpers import (
+    get_sad_k1_fringe_metadata,
+    rotate_sad_k1_fringe_taylor_map,
+    sad_k1_fringe_taylor_coeffs,
+    set_sad_k1_fringe_a)
 
 ################################################################################
 # Line Element Order Reversal
@@ -34,8 +38,7 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
     becomes the new entry edge and vice versa), solenoid ks is
     negated, solenoid GEO reference-shift Translations (name suffix
     "_dxy") are negated since the former exit boundary is now the
-    entrance, and QUAD linear-fringe SecondOrderTaylorMaps (see
-    `_004_element_converter.convert_quadrupoles`) are rebuilt in place
+    entrance, and SAD K1 soft-edge SecondOrderTaylorMaps are rebuilt in place
     for their new role. Standalone COORD-derived Translations (no
     "_dxy" suffix) are left unchanged, since a COORD offset is a fixed
     geometric property of the beampipe and does not flip sign under
@@ -73,7 +76,7 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
         (tt.element_type == "Bend") | (tt.element_type == "RBend")]
     tt_sol      = tt.rows[tt.element_type == "UniformSolenoid"]
     tt_dxy      = tt.rows[tt.element_type == "Translation"]
-    tt_qfringe  = tt.rows[tt.element_type == "SecondOrderTaylorMap"]
+    tt_k1_fringe = tt.rows[tt.element_type == "SecondOrderTaylorMap"]
 
     ########################################
     # Get unique elements
@@ -81,7 +84,8 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
     unique_bends    = list(set([name.split("::")[0] for name in tt_bend.name]))
     unique_sols     = list(set([name.split("::")[0] for name in tt_sol.name]))
     unique_dxys     = list(set([name.split("::")[0] for name in tt_dxy.name]))
-    unique_qfringes = list(set([name.split("::")[0] for name in tt_qfringe.name]))
+    unique_k1_fringes = list(set(
+        [name.split("::")[0] for name in tt_k1_fringe.name]))
 
     ########################################
     # Get only the non-reversed and handle reverse later
@@ -93,8 +97,9 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
         [name[1:] if name.startswith("-") else name for name in unique_sols]))
     unique_dxys     = list(set(
         [name[1:] if name.startswith("-") else name for name in unique_dxys]))
-    unique_qfringes = list(set(
-        [name[1:] if name.startswith("-") else name for name in unique_qfringes]))
+    unique_k1_fringes = list(set(
+        [name[1:] if name.startswith("-") else name
+         for name in unique_k1_fringes]))
 
     ########################################
     # Bend Adjustments
@@ -125,40 +130,37 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
             env[bend].edge_exit_hgap    = entry_hgap
 
     ########################################
-    # Quadrupole Linear Fringe Adjustments
+    # SAD K1 Soft-Edge Fringe Adjustments
     ########################################
-    for qfringe in unique_qfringes:
+    for fringe_name in unique_k1_fringes:
 
         # Handling trying forward and reverse
-        for qfringe in [qfringe, "-" + qfringe]:
+        for candidate_name in [fringe_name, "-" + fringe_name]:
 
-            if qfringe not in env_elements:
+            if candidate_name not in env_elements:
                 continue
 
-            element = env[qfringe]
-            if not hasattr(element, "_sad_quad_fringe_a"):
-                # A SecondOrderTaylorMap not built by convert_quadrupoles
-                # (none exist today, but this stays a no-op rather than
-                # an assumption if that ever changes).
+            element = env[candidate_name]
+            metadata = get_sad_k1_fringe_metadata(element)
+            if metadata is None:
+                # An unrelated SecondOrderTaylorMap stays untouched.
                 continue
 
             # The side that survives reversal serves the OPPOSITE role
             # (entrance <-> exit), using the SAME (a, b) it was always
             # built with -- only the kick's sign convention flips
             # (tquad.f applies +a at the entrance, -a at the exit; see
-            # _004_element_converter.convert_quadrupoles). theta is a
+            # the element converter). The frame rotation is a
             # fixed geometric property of the magnet (ROTATE+akang(K1))
             # and does not change under reversal.
-            a       = element._sad_quad_fringe_a
-            b       = element._sad_quad_fringe_b
-            theta   = element._sad_quad_fringe_theta
-            k, R, T = _rotate_quad_fringe_taylor_map(
-                theta, *_quad_fringe_taylor_coeffs(-a, b))
+            a, b, frame_rotation = metadata
+            k, R, T = rotate_sad_k1_fringe_taylor_map(
+                frame_rotation, *sad_k1_fringe_taylor_coeffs(-a, b))
 
             element.k = k
             element.R = R
             element.T = T
-            element._sad_quad_fringe_a = -a
+            set_sad_k1_fringe_a(element, -a)
 
     ########################################
     # Solenoid Adjustments

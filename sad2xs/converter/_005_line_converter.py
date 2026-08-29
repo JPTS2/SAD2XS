@@ -158,8 +158,8 @@ def convert_lines(
     """
     Build every parsed SAD LINE as an Xsuite line, handling reversals.
 
-    A component referencing a quad-fringe compound (`{name}_compound`,
-    see `convert_quadrupoles`) is first redirected there from the bare
+    A component referencing a soft-edge-fringe compound (`{name}_compound`)
+    is first redirected there from the bare
     `{name}` SAD element name. Reversed line references (`-LINENAME`)
     are then resolved in three passes: (1) reversed real (imported)
     sublines have their element order reversed and every component
@@ -211,11 +211,11 @@ def convert_lines(
         components = list(components)
 
         ########################################################################
-        # Handle quad-fringe compound references
+        # Handle soft-edge-fringe compound references
         ########################################################################
-        # convert_quadrupoles names a fringe/body compound's wrapping line
-        # "{name}_compound" so the quadrupole body can keep the bare SAD
-        # name -- redirect any component referencing "{name}" onto it.
+        # Element converters name a fringe/body compound's wrapping line
+        # "{name}_compound" so the body can keep the bare SAD name. Redirect
+        # any component referencing "{name}" onto it.
         for i, component in enumerate(components):
             is_reversed     = component.startswith("-")
             base_name       = component[1:] if is_reversed else component

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-06
+Date:       2026-08-29
 ================================================================================
 """
 
@@ -22,6 +22,7 @@ import xtrack as xt
 import numpy as np
 
 from ..types import ConfigLike
+from ._000_fringe_helpers import get_sad_k1_fringe_metadata
 
 logger  = logging.getLogger(__name__)
 
@@ -79,6 +80,7 @@ def convert_solenoids(
         return
     solenoids   = parsed_elements["sol"]
     n_converted = 0
+    zero_bz_fringe_maps = set()
 
     ########################################
     # Get bound and geo solenoids
@@ -458,6 +460,18 @@ def convert_solenoids(
                         f"Converted Multipole {element} to solenoid with ks = {ks}")
                     continue
 
+                # SAD's exact K1 soft-edge map depends on the overlapping
+                # longitudinal field. Keep the validated zero-BZ map, but do
+                # not let that approximation pass silently in a powered
+                # bound-solenoid region.
+                elif isinstance(
+                        environment.element_dict[element],
+                        xt.SecondOrderTaylorMap) and get_sad_k1_fringe_metadata(
+                            line[element]) is not None:
+                    if not isinstance(ks, (int, float, np.number)) or not np.isclose(ks, 0.0):
+                        zero_bz_fringe_maps.add(element.lstrip("-"))
+                    continue
+
                 # Known thin elements that don't need conversion
                 elif isinstance(
                     environment.element_dict[element],      # type: ignore
@@ -478,6 +492,13 @@ def convert_solenoids(
                 else:
                     logger.warning(
                         f"Element {element} in line {line_name} has not been converted")
+
+    if zero_bz_fringe_maps:
+        logger.warning(
+            "SAD K1 soft-edge fringe maps inside a powered bound-solenoid "
+            "region use the zero-BZ approximation. The overlapping "
+            "longitudinal-field correction is not modelled. Affected maps: "
+            + ", ".join(sorted(zero_bz_fringe_maps)))
 
     logger.info(f"Converted {n_converted} elements inside solenoid regions")
 

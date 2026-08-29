@@ -109,6 +109,11 @@ A SAD `MULT` can mean several different things, so the converter takes the first
 
 Cases 2 and 3 both canonicalise a `K0`/`SK0`-only rotation the same way the bend converter does, and both require a non-zero length, because integrated strengths must be divided by length.
 
+An active K1 soft-edge fringe wraps whichever body representation is selected
+between entrance and exit Taylor maps. The body retains the bare SAD name and
+the wrapper uses `{name}_compound`. See [fringe models](fringes.md) for the
+zero-BZ approximation, `DROT` handling, and unsupported fringe terms.
+
 ### The dipole fringe residual when a MULT is simplified
 
 Xsuite's bend fringe model does not exactly reproduce SAD's `MULT` dipole fringe convention. A `MULT` with only `K0` set, or only `SK0`, carries a fringe contribution of exactly `m43 = -K0^2/L` to the linear transfer matrix, or `m21` for `SK0`. Xsuite's bend edge models either add `theta^4`-order terms or give zero.

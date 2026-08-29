@@ -24,13 +24,14 @@ This page covers every fringe mechanism SAD applies. For what SAD itself does in
 | `BEND` | hard-edge | `DISFRIN` | edge model applied unconditionally; `DISFRIN` not read |
 | `QUAD` | soft-edge, linear | `FRINGE`, `F1`, `F2`, `F1K1F`, `F1K1B`, `F2K1F`, `F2K1B` | **imported** as a Taylor map, on by default |
 | `QUAD` | hard-edge | `DISFRIN`, plus `FRINGE` side gating | edge model applied unconditionally; neither read |
-| `MULT` | soft-edge and hard-edge | `FRINGE`, `DISFRIN`, `F1`/`F2`/`FB1`/`FB2` | not imported |
+| `MULT` | K1 soft-edge, linear | `FRINGE`, `F1`, `F2`, per-face K1 terms | **imported** with zero BZ, on by default |
+| `MULT` | dipole soft-edge and generic hard-edge | `FB1`/`FB2`, `DISFRIN` | not imported |
 | `MULT` | `K0`/`SK0` dipole fringe | — | not reproduced; converter warns |
 | `SEXT`, `OCT` | hard-edge | `DISFRIN` | not modelled |
 | `CAVI` | RF edge-focusing kick | `FRINGE`, `DISFRIN` | not modelled |
 | `SOL` | fringe kick | `DISFRIN` | not modelled; converter warns — see [solenoids](solenoids.md) |
 
-Two `Config` flags control the imports: `_import_sad_bend_fringes` and `_import_sad_quad_fringes`. Both default to `True`. Neither is a public documented feature yet.
+Three private `Config` flags control the imports: `_import_sad_bend_fringes`, `_import_sad_quad_fringes`, and `_import_sad_mult_fringes`. All default to `True`.
 
 Every fringe parameter must be a concrete number. A deferred (symbolic) expression raises a clear error rather than silently producing wrong values.
 
@@ -131,7 +132,9 @@ Keeping the body's bare name matters beyond cosmetics. Twiss alignment originall
 
 ### Surviving a line reversal
 
-Each fringe map stores the `(a, b, theta)` it was built from as plain attributes: `_sad_quad_fringe_a`, `_sad_quad_fringe_b`, `_sad_quad_fringe_theta`.
+Each fringe map stores the source-neutral `(a, b, frame_rotation)` it was
+built from as plain attributes: `_sad_k1_fringe_a`, `_sad_k1_fringe_b`, and
+`_sad_k1_fringe_frame_rotation`.
 
 These are ordinary Python attributes, not xofields. Xsuite has no field for them, but the object carries them through line building and `line.mirror()`. This lets the reversal step rebuild each map's coefficients in place under `-LINE` or `reverse_element_order`. Only the surviving side's `a` flips sign; `b` and `theta` are unchanged.
 
@@ -159,7 +162,40 @@ A SAD `MULT` combines bend-style content (`ANGLE`, `K0`, soft-edge `FB1`/`FB2`) 
 
 `FRINGE` uses the same `{1, 2, 3}` numbering as `QUAD`, and it selects the side for **all** of the element's fringe sub-mechanisms simultaneously — the quad-style linear fringe, the dipole-style linear fringe, and the `DISFRIN`-gated hard-edge kick all read the same value.
 
-None of this is imported.
+### K1 soft edge: imported with zero longitudinal field
+
+The K1 part is imported with the same second-order Taylor-map machinery as a
+`QUAD`. For integrated normal and skew strengths `K1` and `SK1`,
+
+```text
+akk = |K1 + i SK1| / L
+a   = -akk * f1_raw^2 / 24
+b   =  akk * f2_raw
+theta = ROTATE + akang(K1 + i SK1)
+```
+
+The entrance map uses `a`; the exit uses `-a`. `b` keeps its sign. Both signs
+of `F1` were checked against the real SAD binary: the square is literal, not
+`F1*abs(F1)`. Active faces bracket the complete converted MULT body, including
+a generic multipole, an auto- or user-simplified quadrupole, and an RF-sliced
+body. A user replacement that discards K1/SK1 also discards the fringe and
+raises a warning.
+
+`DROT` is not applied to the converted MULT body. An active linear fringe with
+nonzero `DROT` is therefore warned about and skipped rather than rotating only
+one part of the element.
+
+The map currently assumes zero overlapping longitudinal field. When it occurs
+inside a powered bound-solenoid region, the body still receives the local `ks`
+but conversion warns that the fringe uses the zero-BZ approximation. A targeted
+SuperKEKB study found the omitted local-BZ term changed the tested IP beta
+values by at most `0.094 um`, and contributed roughly `0.1%` of the target
+fringe tune response. That supports the approximation for those symmetric,
+`F1`-only QC cases; it is not a general exact result. A deliberately one-sided
+stress case reached about `11%` relative map error.
+
+The dipole-style `FB1`/`FB2` term and the `DISFRIN`-gated generic hard-edge
+kick remain unmodelled.
 
 ### The `K0`/`SK0` dipole fringe residual
 

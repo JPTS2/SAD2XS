@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-24
+Date:       2026-08-29
 ================================================================================
 """
 
@@ -22,6 +22,51 @@ import xdeps as xd
 
 from ._000_helpers import get_parentname
 from ..types import ConfigLike
+
+
+_SAD_K1_FRINGE_WRITER_HELPER = r'''
+def _new_sad_k1_fringe_map(env, *, name, a, b, frame_rotation_rad):
+    """Rebuild a zero-BZ SAD K1 soft-edge map without literal tensors."""
+    ea, eam = np.exp(a), np.exp(-a)
+    k = np.zeros(6)
+    R = np.zeros((6, 6))
+    T = np.zeros((6, 6, 6))
+
+    R[0, 0], R[0, 1], R[1, 1] = ea, b, eam
+    R[2, 2], R[2, 3], R[3, 3] = eam, -b, ea
+    R[4, 4] = R[5, 5] = 1.0
+
+    T[0, 0, 5] = T[0, 5, 0] = -a * ea / 2.0
+    T[0, 1, 5] = T[0, 5, 1] = -b
+    T[1, 1, 5] = T[1, 5, 1] = a * eam / 2.0
+    T[2, 2, 5] = T[2, 5, 2] = a * eam / 2.0
+    T[2, 3, 5] = T[2, 5, 3] = b
+    T[3, 3, 5] = T[3, 5, 3] = -a * ea / 2.0
+    T[4, 1, 1] = -b * eam * (1.0 + a / 2.0)
+    T[4, 3, 3] = b * ea * (1.0 - a / 2.0)
+    T[4, 0, 1] = T[4, 1, 0] = -a / 2.0
+    T[4, 2, 3] = T[4, 3, 2] = a / 2.0
+
+    c, s = np.cos(frame_rotation_rad), np.sin(frame_rotation_rad)
+    rotate_in = np.eye(6)
+    rotate_in[0, 0], rotate_in[0, 2] = c, -s
+    rotate_in[1, 1], rotate_in[1, 3] = c, -s
+    rotate_in[2, 0], rotate_in[2, 2] = s, c
+    rotate_in[3, 1], rotate_in[3, 3] = s, c
+    rotate_out = rotate_in.T
+
+    env.new(
+        name        = name,
+        prototype   = xt.SecondOrderTaylorMap,
+        length      = 0.0,
+        k           = rotate_out @ k,
+        R           = rotate_out @ R @ rotate_in,
+        T           = np.einsum(
+            "ia,abc,bj,ck->ijk", rotate_out, T, rotate_in, rotate_in),
+        _sad_k1_fringe_a              = a,
+        _sad_k1_fringe_b              = b,
+        _sad_k1_fringe_frame_rotation = frame_rotation_rad)
+'''
 
 ################################################################################
 # Array Formatting
@@ -68,7 +113,7 @@ def create_taylor_map_lattice_file_information(
     Generate the lattice-file source for every FirstOrderTaylorMap and
     SecondOrderTaylorMap element.
 
-    Like cavities, these are not grouped/cloned: two Taylor maps
+    Generic maps are not grouped/cloned: two Taylor maps
     sharing every coefficient by coincidence would still gain nothing
     from cloning, and in practice every map's (k, R, T) or (m0, m1)
     is a distinct, per-element derived result (e.g. one SAD QUAD's own
@@ -76,14 +121,12 @@ def create_taylor_map_lattice_file_information(
     `_004_element_converter._new_quad_fringe_element`), so each is
     written individually with the full coefficient arrays as literals.
 
-    A SecondOrderTaylorMap built by `_new_quad_fringe_element` also
-    carries three plain (non-xofield) Python attributes --
-    `_sad_quad_fringe_a`/`_sad_quad_fringe_b`/`_sad_quad_fringe_theta`
-    -- that `_007_reversals.py`'s reversal fix-up needs to rebuild the
-    map correctly under `-LINE`/`reverse_element_order`. Where present,
-    these are written as three follow-up assignment lines after the
-    element is created, so a written-and-reloaded line still supports
-    that fix-up.
+    SAD K1 fringe maps are the exception. Their three scalar parameters
+    reconstruct the tensors exactly, so one generated helper and one compact
+    call per map avoid embedding hundreds of mostly-zero coefficients. The
+    scalar metadata is passed through `env.new`, keeping the generated file
+    self-contained and preserving reversal support. Pre-0.4 QUAD metadata is
+    still serialized by the legacy literal path for compatibility.
 
     Parameters
     ----------
@@ -132,6 +175,10 @@ def create_taylor_map_lattice_file_information(
 # Taylor Maps
 ############################################################"""
 
+    if any(hasattr(line[name], "_sad_k1_fringe_a")
+           for name in unique_second_order_names):
+        output_string += "\n" + _SAD_K1_FRINGE_WRITER_HELPER
+
     ########################################
     # First order Taylor maps
     ########################################
@@ -165,6 +212,16 @@ env.new(
             root_name   = name[1:]
             if root_name not in unique_second_order_names:
                 name    = root_name
+
+        if hasattr(element, "_sad_k1_fringe_a"):
+            output_string += f'''
+_new_sad_k1_fringe_map(
+    env,
+    name = "{name}",
+    a = {element._sad_k1_fringe_a:.24e},
+    b = {element._sad_k1_fringe_b:.24e},
+    frame_rotation_rad = {element._sad_k1_fringe_frame_rotation:.24e})'''
+            continue
 
         output_string   += f"""
 env.new(
