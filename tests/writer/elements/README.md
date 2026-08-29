@@ -30,7 +30,7 @@ serialises.
 | `test_refshift_writer.py` | 39 | 0 | `xt.Translation`, `xt.TimeDelay`, `xt.Rotation` | every shift and rotation field as an optics expression, zero `default_to_zero` behaviour, all five types in one line |
 | `test_aper_writer.py` | 33 | 0 | `xt.LimitEllipse`, `xt.LimitRect`, `xt.LimitRectEllipse` | bounds, offsets, asymmetric bounds, mixed types |
 | `test_marker_writer.py` | 11 | 0 | `xt.Marker` | type, name, order, multiple markers, start/end convention, offset marker insertion |
-| `test_taylor_maps_writer.py` | 21 | 0 | `xt.FirstOrderTaylorMap`, `xt.SecondOrderTaylorMap` | map arrays as full-precision literals, quad-fringe reversal metadata, minus-sign root-name cleanup, multiple maps in one line |
+| `test_taylor_maps_writer.py` | 22 | 0 | `xt.FirstOrderTaylorMap`, `xt.SecondOrderTaylorMap` | generic maps as full-precision literals, compact SAD K1-fringe builder and metadata, minus-sign root-name cleanup, multiple maps in one line |
 
 ### `test_bend_writer.py` and `test_corr_writer.py` note
 

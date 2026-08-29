@@ -44,7 +44,7 @@ filename; SAD's shell wrapper requires a relative path in the working directory.
 | `test_sext.py` | 33 | 0 | SEXT parameters and hard-edge fringe |
 | `test_oct.py` | 33 | 0 | OCT parameters and hard-edge fringe |
 | `test_bend.py` | 43 | 0 | BEND parameters, soft-edge and hard-edge fringe |
-| `test_mult.py` | 56 | 0 | MULT parameters, every fringe sub-mechanism, RF content |
+| `test_mult.py` | 57 | 0 | MULT parameters, every fringe sub-mechanism, RF content |
 | `test_cavi.py` | 39 | 0 | CAVI parameters, RF focusing, edge-focusing kick |
 | `test_sol.py` | 38 | 0 | SOL parameters and the solenoid fringe kick |
 | `test_drift.py` | 29 | 0 | DRIFT accepts length only |

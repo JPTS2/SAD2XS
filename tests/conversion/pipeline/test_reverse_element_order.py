@@ -886,3 +886,59 @@ def test_pipeline_reverse_element_order_quad_fringe_matches_sad_reversed_line(tm
             f"Xsuite reverse_element_order=True QUAD fringe tracking "
             f"`{coord}` should match SAD's native -LINE reversed tracking. "
             f"Xsuite: {xs_val:.6e}, SAD: {sad_val:.6e}.")
+
+
+def test_pipeline_reverse_element_order_mult_fringe_matches_sad_reversed_line(
+        tmp_path):
+    """A reversed asymmetric MULT K1 fringe should match SAD's ``-LINE``."""
+    lattice_content = (
+        "MOMENTUM = 1.0 GEV;\n"
+        "MULT M1 = (L=1.0 K1=0.05 "
+        "F1K1F=-0.05 F1K1B=0.03 F2K1F=0.02 F2K1B=-0.01 "
+        "FRINGE=1 DISFRIN=1);\n"
+        "MARK START=() END=();\n"
+        "LINE TEST=(START M1 END);\n"
+        "LINE TESTREV=(-TEST);\n")
+    lattice_path = tmp_path / "rev_mult_fringe.sad"
+    lattice_path.write_text(lattice_content)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        sad = track_sad(
+            lattice_filepath = lattice_path.name,
+            line_name        = "TESTREV",
+            x_init           = np.array([1e-3]),
+            px_init          = np.array([2e-3]),
+            y_init           = np.array([-1.5e-3]),
+            py_init          = np.array([0.5e-3]),
+            zeta_init        = np.array([0.0]),
+            delta_init       = np.array([0.0]),
+            n_turns          = 1,
+            rfsw             = False,
+            with_progress    = False)
+    finally:
+        os.chdir(cwd)
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path       = str(lattice_path),
+        output_directory       = "N/A",
+        reverse_element_order  = True,
+        SIMPLIFY_MULTIPOLES    = False,
+        _verbose               = False,
+        _test_mode             = True)
+    particle = xt.Particles(
+        "positron", p0c=1.0E9,
+        x=1e-3, px=2e-3, y=-1.5e-3, py=0.5e-3, zeta=0.0, delta=0.0)
+    line.track(particle, num_turns=1)
+
+    for coordinate, sad_value, xsuite_value in (
+            ("x", sad["x"][0], particle.x[0]),
+            ("px", sad["px"][0], particle.px[0]),
+            ("y", sad["y"][0], particle.y[0]),
+            ("py", sad["py"][0], particle.py[0])):
+        assert xsuite_value == pytest.approx(
+            sad_value, rel = 1e-5, abs = 1e-9), (
+                f"Reversed MULT soft-edge {coordinate} should match SAD's "
+                f"native -LINE: Xsuite={xsuite_value:.12e}, "
+                f"SAD={sad_value:.12e}.")

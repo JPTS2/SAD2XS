@@ -319,6 +319,45 @@ def test_second_order_taylor_map_writer_omits_sad_quad_fringe_metadata_when_abse
         "when the original element never had it.")
 
 
+def test_sad_k1_fringe_writer_uses_compact_helper_without_post_assignment(tmp_path):
+    """Recognised SAD fringe maps should be rebuilt semantically in one call."""
+    line = _build_second_order_map_line()
+    line["m1"]._sad_k1_fringe_a = -3.125E-05
+    line["m1"]._sad_k1_fringe_b = 0.006
+    line["m1"]._sad_k1_fringe_frame_rotation = 0.125
+
+    output_dir = tmp_path / "compact_fringe_writer"
+    output_dir.mkdir()
+    import sad2xs as s2x
+    from sad2xs.config import Config
+    s2x.write_lattice(
+        line = line, output_filename = "lattice",
+        output_directory = str(output_dir), output_header = "test",
+        offset_marker_locations = None,
+        config = Config(_verbose = False))
+    source = (output_dir / "lattice.py").read_text()
+
+    assert source.count("def _new_sad_k1_fringe_map(") == 1
+    assert "_new_sad_k1_fringe_map(" in source
+    assert 'name = "m1"' in source
+    assert "env.elements[" not in source
+    assert source.count("prototype   = xt.SecondOrderTaylorMap") == 1
+
+    env = xt.Environment()
+    env.call(str(output_dir / "lattice.py"))
+    reloaded = env["m1"]
+    assert reloaded._sad_k1_fringe_a == pytest.approx(-3.125E-05)
+    assert reloaded._sad_k1_fringe_b == pytest.approx(0.006)
+    assert reloaded._sad_k1_fringe_frame_rotation == pytest.approx(0.125)
+    from sad2xs.converter._000_fringe_helpers import (
+        rotate_sad_k1_fringe_taylor_map, sad_k1_fringe_taylor_coeffs)
+    expected_k, expected_R, expected_T = rotate_sad_k1_fringe_taylor_map(
+        0.125, *sad_k1_fringe_taylor_coeffs(-3.125E-05, 0.006))
+    np.testing.assert_allclose(reloaded.k, expected_k)
+    np.testing.assert_allclose(reloaded.R, expected_R)
+    np.testing.assert_allclose(reloaded.T, expected_T)
+
+
 ################################################################################
 # Minus-Sign Root-Name Cleanup
 ################################################################################

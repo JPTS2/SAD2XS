@@ -892,6 +892,31 @@ def test_sol_pipeline_requires_geometric_solenoid_in_bound_pair(write_lattice):
             _verbose         = False,
             _test_mode       = True)
 
+
+def test_mult_k1_fringe_inside_powered_solenoid_warns_about_zero_bz(
+        write_lattice, caplog):
+    """Overlapping BZ is retained in the body but omitted from the fringe map."""
+    lattice_path = write_lattice(
+        _bound_solenoid_lattice(
+            bz = 0.1,
+            middle_element = (
+                "MULT M1=(L=0.5 K1=0.1 F1=0.02 F2=0.01 "
+                "FRINGE=3 DISFRIN=1);"),
+            middle_name = "M1"),
+        filename = "mult_fringe_inside_powered_solenoid.sad")
+
+    caplog.set_level(logging.WARNING)
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = "N/A",
+        _verbose         = False,
+        _test_mode       = True)
+
+    assert isinstance(line["m1_sol_in"], xt.UniformSolenoid)
+    assert "zero-BZ approximation" in caplog.text
+    assert "m1_fringe_in" in caplog.text
+    assert "m1_fringe_out" in caplog.text
+
 def test_sol_pipeline_preserves_reversed_bound_solenoid_order(write_lattice):
     """
     Reversed bound SOL components should still build a deterministic line.

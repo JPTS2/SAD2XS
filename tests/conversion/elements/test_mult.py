@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-08-29
 ================================================================================
 """
 ################################################################################
@@ -1486,3 +1486,211 @@ def test_mult_conversion_matches_sad_tracking_for_thin_multipole(
             "Thin MULT tracking should remain active and preserve integrated "
             "normal multipole strengths.",
         ])
+
+################################################################################
+# Linear F1/F2 Fringe Import
+################################################################################
+def test_mult_linear_fringe_import_defaults_on_and_brackets_body(write_lattice):
+    """An active thick MULT fringe should bracket the unchanged body by default."""
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        MULT M1 = (L=0.5 K1=0.1 F1=0.02 F2=0.01 FRINGE=3 DISFRIN=1);
+        MARK START=() END=();
+        LINE TEST=(START M1 END);
+        """,
+        filename = "mult_linear_fringe_default.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = "N/A",
+        _verbose         = False,
+        _test_mode       = True)
+
+    assert line.element_names == [
+        "m1_fringe_in", "m1", "m1_fringe_out"]
+    assert isinstance(line["m1"], xt.Quadrupole)
+    assert isinstance(line["m1_fringe_in"], xt.SecondOrderTaylorMap)
+    assert isinstance(line["m1_fringe_out"], xt.SecondOrderTaylorMap)
+
+
+def test_mult_linear_fringe_coefficients_square_f1_and_include_sk1(
+        parsed_elements, xsuite_environment):
+    """MULT uses |K1+iSK1| and F1 squared, as established against SAD."""
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "m1",
+            element_variables = {
+                "l": 0.5, "k1": 0.03, "sk1": 0.04,
+                "f1k1f": -0.02, "f2k1f": 0.01, "fringe": 1.0}),
+        environment                 = xsuite_environment,
+        user_multipole_replacements = None,
+        config                      = _mult_config(simplify = False))
+
+    fringe = xsuite_environment["m1_fringe_in"]
+    magnitude = np.hypot(0.03, 0.04) / 0.5
+    expected_a = -magnitude * (-0.02)**2 / 24.0
+    expected_b = magnitude * 0.01
+    expected_theta = 0.5 * np.arctan2(0.04 * 0.5, 0.03 * 0.5)
+    assert fringe._sad_k1_fringe_a == pytest.approx(expected_a)
+    assert fringe._sad_k1_fringe_b == pytest.approx(expected_b)
+    assert fringe._sad_k1_fringe_frame_rotation == pytest.approx(expected_theta)
+    assert "m1_fringe_out" not in xsuite_environment.element_dict
+
+
+def test_mult_linear_fringe_import_can_be_disabled(
+        parsed_elements, xsuite_environment):
+    """The hidden MULT-fringe flag should provide the same opt-out as QUAD."""
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "m1",
+            element_variables = {
+                "l": 0.5, "k1": 0.1, "f1": 0.02, "fringe": 3.0}),
+        environment                 = xsuite_environment,
+        user_multipole_replacements = None,
+        config                      = Config(
+            _verbose = False, SIMPLIFY_MULTIPOLES = False,
+            _import_sad_mult_fringes = False))
+
+    assert "m1" in xsuite_environment.element_dict
+    assert "m1_compound" not in xsuite_environment.lines
+    assert not any("fringe" in name for name in xsuite_environment.element_dict)
+
+
+def test_mult_linear_fringe_with_drot_warns_and_is_skipped(
+        parsed_elements, xsuite_environment, caplog):
+    """DROT must not be applied only to the fringe while the body ignores it."""
+    caplog.set_level(logging.WARNING, logger = "sad2xs.converter._004_element_converter")
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "m1",
+            element_variables = {
+                "l": 0.5, "k1": 0.1, "f1": 0.02,
+                "fringe": 3.0, "drot": 0.01}),
+        environment                 = xsuite_environment,
+        user_multipole_replacements = None,
+        config                      = _mult_config(simplify = False))
+
+    assert "m1_compound" not in xsuite_environment.lines
+    assert "nonzero DROT" in caplog.text
+
+
+def test_mult_linear_fringe_wraps_user_quadrupole_replacement(
+        parsed_elements, xsuite_environment):
+    """A K1-preserving user replacement should retain both fringe faces."""
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type = "mult", element_name = "m1",
+            element_variables = {
+                "l": 0.5, "k1": 0.1, "f1": 0.02, "fringe": 3.0}),
+        environment = xsuite_environment,
+        user_multipole_replacements = {"m1": "Quadrupole"},
+        config = _mult_config(simplify = False))
+
+    assert isinstance(xsuite_environment["m1"], xt.Quadrupole)
+    assert xsuite_environment.lines["m1_compound"].element_names == [
+        "m1_fringe_in", "m1", "m1_fringe_out"]
+
+
+def test_mult_linear_fringe_is_skipped_when_user_replacement_discards_k1(
+        parsed_elements, xsuite_environment, caplog):
+    """A replacement that removes K1 must not retain a contradictory fringe."""
+    caplog.set_level(logging.WARNING)
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type = "mult", element_name = "m1",
+            element_variables = {
+                "l": 0.5, "k1": 0.1, "k2": 0.2,
+                "f1": 0.02, "fringe": 3.0}),
+        environment = xsuite_environment,
+        user_multipole_replacements = {"m1": "Sextupole"},
+        config = _mult_config(simplify = False))
+
+    assert isinstance(xsuite_environment["m1"], xt.Sextupole)
+    assert "m1_compound" not in xsuite_environment.lines
+    assert "replacement discards K1/SK1" in caplog.text
+
+
+def test_mult_linear_fringe_wraps_complete_rf_sliced_body(
+        parsed_elements, xsuite_environment):
+    """RF slicing should remain inside, rather than replace, the fringe faces."""
+    xsuite_environment["fshift"] = 0.0
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type = "mult", element_name = "m1",
+            element_variables = {
+                "l": 0.5, "k1": 0.1, "f1": 0.02, "fringe": 3.0,
+                "volt": 1e6, "freq": 5e8, "phi": 0.0}),
+        environment = xsuite_environment,
+        user_multipole_replacements = None,
+        config = _mult_config(simplify = False))
+
+    names = xsuite_environment.lines["m1_compound"].element_names
+    assert names[0] == "m1_fringe_in"
+    assert names[-1] == "m1_fringe_out"
+    assert any("m1_cavi_" in name for name in names)
+
+
+def test_mult_linear_fringe_import_matches_sad_tracking(write_lattice, tmp_path):
+    """The zero-BZ K1/SK1 map should preserve SAD transverse tracking."""
+    initial = _standard_five_particle_offsets()
+    lattice_text = """\
+    MOMENTUM = 1.0 GEV;
+    MULT M1 = (L=1.0 K1=0.03 SK1=0.04 K2=0.02
+               F1=-0.02 F2=0.01 FRINGE=3 DISFRIN=1);
+    MARK START=() END=();
+    LINE TEST_LINE=(START M1 END);
+    """
+    lattice_path = write_lattice(
+        lattice_text, filename = "mult_linear_fringe_tracking.sad")
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        sad_particles = track_sad(
+            lattice_filepath       = lattice_path.name,
+            line_name              = "TEST_LINE",
+            x_init                 = initial[0],
+            px_init                = initial[1],
+            y_init                 = initial[2],
+            py_init                = initial[3],
+            zeta_init              = initial[4],
+            delta_init             = initial[5],
+            n_turns                = 1,
+            rfsw                   = False,
+            rad                    = False,
+            fluc                   = False,
+            radcod                 = False,
+            radtaper               = False,
+            turn_by_turn_monitor   = False,
+            with_progress          = False,
+            wall_time              = 30)
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path       = str(lattice_path),
+            output_directory       = "N/A",
+            _verbose               = False,
+            _test_mode             = True,
+            SIMPLIFY_MULTIPOLES    = False)
+        xs_particles = track_xsuite_particles(line, *initial)
+    finally:
+        os.chdir(cwd)
+
+    _assert_mult_tracking_matches_sad(
+        test_name          = "test_mult_linear_fringe_import_matches_sad_tracking",
+        lattice_text       = lattice_text,
+        initial_coordinates = _mult_initial_coordinates(*initial),
+        sad_coordinates    = {
+            key: _mult_sad_coordinates(sad_particles)[key]
+            for key in ("x", "px", "y", "py")},
+        xsuite_coordinates = {
+            key: _mult_xsuite_coordinates(xs_particles)[key]
+            for key in ("x", "px", "y", "py")},
+        parameters         = {
+            "length": 1.0, "k1l": 0.03, "sk1l": 0.04,
+            "k2l": 0.02, "f1": -0.02, "f2": 0.01},
+        notes              = [
+            "DISFRIN=1 suppresses the separate hard-edge model; this test "
+            "targets the zero-BZ F1/F2 K1 soft-edge map."])
