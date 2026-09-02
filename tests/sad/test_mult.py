@@ -687,6 +687,38 @@ def test_mult_k1_fringe_mode_gates_entrance_exit(tmp_path):
         "FRINGE=1 (entrance-only) and FRINGE=2 (exit-only) should give "
         "different kicks for asymmetric F1K1F/F1K1B/F2K1F/F2K1B.")
 
+
+def test_mult_k1_fringe_mode_uses_integer_keyword_semantics(tmp_path):
+    """SAD's input layer truncates FRINGE=1.5 to mode 1 before tracking."""
+    x_vals, px_vals = np.array([1e-3]), np.array([2e-3])
+    y_vals, py_vals = np.array([-1.5e-3]), np.array([0.5e-3])
+
+    def run(fringe):
+        body = (
+            "MULT M1=(L=1.0 K1=0.3 F1K1F=0.05 F1K1B=-0.03 "
+            f"F2K1F=0.02 F2K1B=-0.01 FRINGE={fringe});\n"
+            "MARK START=() END=(); LINE TEST=(START M1 END);")
+        return _track_mult_probe(
+            tmp_path, body, f"mult_nint_{fringe}.sad",
+            x_vals, px_vals, y_vals, py_vals)
+
+    results = {mode: run(mode) for mode in (0, 1, 1.5, 2, 3)}
+    transverse = {
+        mode: np.concatenate([
+            result[coordinate] for coordinate in ("x", "px", "y", "py")])
+        for mode, result in results.items()}
+
+    np.testing.assert_allclose(
+        transverse[1.5], transverse[1], rtol = 0.0, atol = 1e-15,
+        err_msg = "FRINGE=1.5 should truncate to entrance-only mode 1.")
+    for other_mode in (0, 2, 3):
+        assert not np.allclose(
+            transverse[1.5], transverse[other_mode],
+            rtol = 0.0, atol = 1e-15), (
+            "FRINGE=1.5 should match only mode 1, not "
+            f"mode {other_mode}.")
+
+
 def test_mult_k1_f1_f2_matches_sad_reference_values(tmp_path):
     """
     Pinned ground truth: L=1.0, K1=0.3, F1=0.02, F2=0.01, FRINGE=3.
