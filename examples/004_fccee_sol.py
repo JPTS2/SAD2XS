@@ -28,7 +28,8 @@ s2x.set_log_level("info")
 import matplotlib.pyplot as plt
 
 from sad2xs.xsuite_helpers import align_xsuite_twiss_with_sad_twiss, \
-    assert_xsuite_matches_sad_twiss, compute_s_sad, plot_xsuite_sad_comparison
+    assert_xsuite_matches_sad_twiss, compute_s_sad, DEFAULT_TWISS_TOLERANCES, \
+    plot_xsuite_sad_comparison
 
 ################################################################################
 # User Parameters
@@ -41,6 +42,12 @@ LINE_NAME                   = "RING"
 EDWARDS_TENG_COLUMNS   = {
     "betx": "betx_edw_teng", "bety": "bety_edw_teng",
     "alfx": "alfx_edw_teng", "alfy": "alfy_edw_teng"}
+
+# Native SAD retains the SOL hard-edge fringe, which SAD2XS does not yet match.
+NATIVE_SAD_TOLERANCES = {
+    column: values.copy() for column, values in DEFAULT_TWISS_TOLERANCES.items()}
+for column in ("betx", "bety", "alfx", "alfy"):
+    NATIVE_SAD_TOLERANCES[column]["rtol"] = 1.2E-3
 
 ################################################################################
 # Load Reference Data
@@ -59,7 +66,16 @@ LINE["F1", "ESCL*"]         = 0;
 LINE["F1", "ESCR*"]         = 0;""",
     output_filepath             = REBUILT_SAD_LATTICE_PATH)
 
-tw_sad  = s2x.sad_helpers.twiss_sad(
+tw_sad = s2x.sad_helpers.twiss_sad(
+    lattice_filepath            = SAD_LATTICE_PATH,
+    line_name                   = LINE_NAME,
+    calc6d                      = False,
+    closed                      = True,
+    rfsw                        = True,
+    reverse_element_order       = False,
+    reverse_survey_horizontal   = False,
+    additional_commands         = "")
+tw_sad_rebuilt = s2x.sad_helpers.twiss_sad(
     lattice_filepath            = REBUILT_SAD_LATTICE_PATH,
     line_name                   = LINE_NAME,
     calc6d                      = False,
@@ -107,7 +123,7 @@ tw_xs["s_sad"]  = compute_s_sad(tw_xs)
 ########################################
 # Align Xsuite Twiss with SAD Twiss
 ########################################
-tw_xs_aligned, tw_sad_aligned   = align_xsuite_twiss_with_sad_twiss(
+tw_xs_aligned, tw_sad_aligned = align_xsuite_twiss_with_sad_twiss(
     xsuite_twiss    = tw_xs,
     sad_twiss       = tw_sad,
     s_tol           = 1E-3)
@@ -119,6 +135,7 @@ if RUN_ASSERTS:
     assert_xsuite_matches_sad_twiss(
         xsuite_aligned          = tw_xs_aligned,
         sad_aligned             = tw_sad_aligned,
+        tolerances              = NATIVE_SAD_TOLERANCES,
         xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
 
 ################################################################################
@@ -131,7 +148,8 @@ if RUN_ASSERTS:
 plot_xsuite_sad_comparison(
     xsuite_aligned          = tw_xs_aligned,
     sad_aligned             = tw_sad_aligned,
-    xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
+    xsuite_column_overrides = EDWARDS_TENG_COLUMNS,
+    title_prefix            = "Original SAD")
 
 ########################################
 # IP1 Orbit
@@ -142,7 +160,7 @@ plot_xsuite_sad_comparison(
     xsuite_column_overrides = EDWARDS_TENG_COLUMNS,
     groups                  = ["orbit_xy", "orbit_pxpy"],
     ele_stop                = "QD0AR.1",
-    title_prefix            = "First IP")
+    title_prefix            = "First IP: original SAD")
 
 tt_ip1  = tt.rows[tt.s < 2.5]
 fig, ax = plt.subplots(figsize = (6, 3))
@@ -163,7 +181,7 @@ plot_xsuite_sad_comparison(
     groups                  = ["orbit_xy", "orbit_pxpy"],
     ele_start               = "D01.2",
     ele_stop                = "QD0AR.2",
-    title_prefix            = "Second IP")
+    title_prefix            = "Second IP: original SAD")
 
 tt_ip2  = tt.rows[(tt.s > 22662) & (tt.s < 22667)]
 fig, ax = plt.subplots(figsize = (6, 3))
