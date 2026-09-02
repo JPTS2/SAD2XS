@@ -39,7 +39,7 @@ The order matters. Later steps depend on earlier ones existing, and the offset-m
 
 Identical elements are written once and reused through `env.new(..., mode="clone")` rather than repeated.
 
-Grouping is by length. `quantize_length` rounds lengths to a set precision so that elements which are identical in practice are recognised as such, rather than being written separately because of floating-point noise.
+Grouping is by length. `quantize_length` rounds lengths to `Config.MAGNET_LENGTH_PRECISION` so that elements which are identical in practice are recognised as such, rather than being written separately because of floating-point noise. The converter uses the same value as its minimum absolute nonzero concrete element length, keeping the thin/thick decision consistent with the writer's resolution.
 
 ### Reversed elements
 

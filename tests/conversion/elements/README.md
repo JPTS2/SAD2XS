@@ -40,9 +40,9 @@ to extend.
 | `test_map.py` | 6 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
-| `test_mult.py` | 58 | 0 | — |
+| `test_mult.py` | 59 | 0 | — |
 | `test_oct.py` | 41 | 0 | — |
-| `test_quad.py` | 50 | 0 | — |
+| `test_quad.py` | 51 | 0 | — |
 | `test_sext.py` | 41 | 0 | — |
 | `test_sol.py` | 172 | 0 | — |
 

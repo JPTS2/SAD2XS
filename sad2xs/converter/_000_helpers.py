@@ -65,6 +65,60 @@ def parse_expression(expression: int | float | str) -> SadValue:
             f"Unsupported type: {type(expression)}. Expected str, int, or float.")
 
 ################################################################################
+# Element Length Validation
+################################################################################
+def validate_element_lengths(
+        parsed_elements:    dict[str, dict],
+        environment:        xt.Environment,
+        minimum_length:     float) -> None:
+    """
+    Reject concrete nonzero lengths below the conversion precision.
+
+    SAD distinguishes an exactly zero (thin) element from every nonzero
+    (thick) element. Enforcing a minimum resolved length prevents different
+    converter paths from making inconsistent tolerance-based decisions near
+    zero. Length expressions are evaluated at their initial Xsuite values.
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        Parsed SAD elements, grouped by element type and name.
+    environment : xt.Environment
+        Environment containing the converted SAD variables used to evaluate
+        length expressions.
+    minimum_length : float
+        Smallest permitted absolute nonzero length, in metres.
+
+    Raises
+    ------
+    ValueError
+        If `minimum_length` is not positive, or a concrete element length is
+        nonzero with an absolute value smaller than `minimum_length`.
+    """
+    if minimum_length <= 0.0:
+        raise ValueError(
+            "MAGNET_LENGTH_PRECISION must be greater than zero, got "
+            f"{minimum_length!r}.")
+
+    for element_type, elements in parsed_elements.items():
+        for element_name, parameters in elements.items():
+            if "l" not in parameters:
+                continue
+
+            length = parse_expression(parameters["l"])
+            if isinstance(length, str):
+                length = environment.eval(length)
+            if length == 0.0:
+                continue
+            if abs(length) < minimum_length:
+                raise ValueError(
+                    f"{element_type.upper()} element {element_name!r} has "
+                    f"nonzero length {length:.17g} m, below "
+                    f"MAGNET_LENGTH_PRECISION={minimum_length:.17g} m. "
+                    "Use exactly zero for a thin element or increase its "
+                    "absolute length.")
+
+################################################################################
 # Zero Check
 ################################################################################
 def is_effectively_zero(val: SadValue, tol: float = 1E-12) -> bool:
@@ -472,7 +526,8 @@ def only_index_nonzero(
     idx : int
         The multipole order index that is allowed to be non-zero.
     tol : float
-        Absolute tolerance for "zero" (see `is_effectively_zero`).
+        Absolute tolerance for zero integrated strength (see
+        `is_effectively_zero`). Length uses exact-zero semantics.
 
     Returns
     -------
@@ -482,9 +537,8 @@ def only_index_nonzero(
         non-numeric string value counts as non-zero); and at least
         one of `knl[idx]`/`ksl[idx]` is non-zero within `tol`.
     """
-    if isinstance(length, (int, float)):
-        if abs(length) <= tol:
-            return False
+    if isinstance(length, (int, float)) and length == 0.0:
+        return False
 
     max_len = max(len(knl), len(ksl))
     for arr in (knl, ksl):

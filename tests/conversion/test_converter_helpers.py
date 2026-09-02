@@ -29,6 +29,7 @@ from sad2xs.converter._000_helpers import (
     is_effectively_zero,
     only_index_nonzero,
     species_from_mass_and_charge,
+    validate_element_lengths,
     values_provably_equal,
     values_provably_opposite)
 
@@ -43,6 +44,62 @@ from sad2xs.converter._000_helpers import (
 #   tests/conversion/pipeline/test_math_function_expressions.py
 #   - test_math_function_expression_converts_to_correct_value[LOG-...]
 #   - test_math_function_expression_converts_to_correct_value[LN-...]
+
+################################################################################
+# validate_element_lengths
+################################################################################
+def test_validate_element_lengths_accepts_exact_zero():
+    """
+    An exactly zero length is the explicit thin-element convention.
+    """
+    validate_element_lengths(
+        parsed_elements = {"quad": {"q1": {"l": 0.0}}},
+        environment     = xt.Environment(),
+        minimum_length  = 1.0E-9)
+
+
+def test_validate_element_lengths_accepts_both_signs_at_cutoff():
+    """The cutoff itself is a valid resolved thick-element length."""
+    for length in (1.0E-9, -1.0E-9):
+        validate_element_lengths(
+            parsed_elements = {"quad": {"q1": {"l": length}}},
+            environment     = xt.Environment(),
+            minimum_length  = 1.0E-9)
+
+
+def test_validate_element_lengths_rejects_both_signs_below_cutoff():
+    """Either sign of concrete nonzero length below the cutoff is invalid."""
+    for length in (5.0E-10, -5.0E-10):
+        with pytest.raises(
+                ValueError,
+                match = r"QUAD element 'q1'.*below MAGNET_LENGTH_PRECISION"):
+            validate_element_lengths(
+                parsed_elements = {"quad": {"q1": {"l": length}}},
+                environment     = xt.Environment(),
+                minimum_length  = 1.0E-9)
+
+
+def test_validate_element_lengths_checks_initial_expression_value():
+    """A SAD length expression below the cutoff is rejected after evaluation."""
+    environment = xt.Environment()
+    environment["lq"] = 5.0E-10
+
+    with pytest.raises(ValueError, match = "below MAGNET_LENGTH_PRECISION"):
+        validate_element_lengths(
+            parsed_elements = {"quad": {"q1": {"l": "lq"}}},
+            environment     = environment,
+            minimum_length  = 1.0E-9)
+
+
+def test_validate_element_lengths_requires_positive_cutoff():
+    """A non-positive cutoff cannot define the thin/thick boundary."""
+    with pytest.raises(
+            ValueError,
+            match = "MAGNET_LENGTH_PRECISION must be greater than zero"):
+        validate_element_lengths(
+            parsed_elements = {},
+            environment     = xt.Environment(),
+            minimum_length  = 0.0)
 
 ################################################################################
 # is_effectively_zero
@@ -386,6 +443,11 @@ def test_only_index_nonzero_returns_false_for_zero_length():
     """
     assert not only_index_nonzero(0.0, [1.0], [], 0, tol=1e-12), (
         "Zero numeric length should return False.")
+
+def test_only_index_nonzero_does_not_apply_strength_tolerance_to_length():
+    """Every nonzero validated length remains eligible for simplification."""
+    assert only_index_nonzero(1.0E-14, [1.0], [], 0, tol=1.0E-12), (
+        "KNL_ZERO_TOL should classify strengths, not nonzero lengths.")
 
 def test_only_index_nonzero_string_length_does_not_crash():
     """

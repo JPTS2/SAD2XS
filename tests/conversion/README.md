@@ -38,7 +38,7 @@ Top-level files cover cross-cutting behaviour:
 
 | File | Tests | Fail | Covers |
 |------|-------|------|--------|
-| `test_converter_helpers.py` | 53 | 0 | converter helper functions |
+| `test_converter_helpers.py` | 59 | 0 | converter helper functions |
 | `test_xsuite_api_compatibility.py` | 23 | 0 | Xsuite APIs the converter relies on |
 | `test_coupled_twiss_convention.py` | 9 | 0 | the coupled-twiss comparison convention against SAD |
 

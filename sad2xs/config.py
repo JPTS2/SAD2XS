@@ -184,6 +184,7 @@ class Config:
     MARKER_INSERTION_TOLERANCE:     float           = 1E-9
 
     ########################################
-    # Writer Magnet Length Precision
+    # Element Length Precision
     ########################################
+    # Minimum absolute nonzero concrete element length; exactly zero is thin.
     MAGNET_LENGTH_PRECISION:        float           = 1E-9

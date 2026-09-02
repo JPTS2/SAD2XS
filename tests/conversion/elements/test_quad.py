@@ -22,6 +22,7 @@ import pytest
 import sad2xs as s2x
 import xtrack as xt
 
+from sad2xs.config import Config
 from sad2xs.converter._004_element_converter import convert_quadrupoles
 from sad2xs.sad_helpers import track_sad
 from tests.support.config import (
@@ -1215,14 +1216,14 @@ def test_quad_conversion_matches_sad_tracking_for_element_rotation(
 # docs/reference/sad-behaviour.md. Defaults to True, as
 # _import_sad_bend_fringes does.
 ################################################################################
-def _quad_fringe_lattice_text(fringe_params, k1 = 0.3):
+def _quad_fringe_lattice_text(fringe_params, k1 = 0.3, length = 1.0):
     """
     A single-quadrupole lattice carrying the given fringe parameters.
     """
     return f"""\
     MOMENTUM    = 1.0 GEV;
 
-    QUAD        TEST_QUAD   = (L = 1.0 K1 = {k1} {fringe_params});
+    QUAD        TEST_QUAD   = (L = {length} K1 = {k1} {fringe_params});
 
     MARK        START       = ()
                 END         = ();
@@ -1358,6 +1359,31 @@ def test_quad_fringe_import_builds_only_active_side(write_lattice):
     assert "test_quad_fringe_out" not in line.element_names, (
         "FRINGE=1 should NOT build an exit fringe element -- there is "
         "nothing active on that side to model.")
+
+def test_quad_above_length_precision_remains_thick_with_fringe(write_lattice):
+    """
+    A QUAD shorter than NumPy's default closeness tolerance but above the
+    SAD2XS length precision is thick in SAD and must remain thick in Xsuite.
+    """
+    length = 5 * Config().MAGNET_LENGTH_PRECISION
+    lattice_path = write_lattice(
+        _quad_fringe_lattice_text(
+            "F1K1F=0.05 FRINGE=1", k1 = 1.0e-12, length = length),
+        filename = "quad_fringe_short_thick.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path         = str(lattice_path),
+        output_directory         = "N/A",
+        _verbose                 = False,
+        _test_mode               = True,
+        _import_sad_quad_fringes = True)
+
+    assert line.element_names == ["test_quad_fringe_in", "test_quad"]
+    assert isinstance(line["test_quad"], xt.Quadrupole), (
+        "A resolved nonzero length above MAGNET_LENGTH_PRECISION must not be "
+        "collapsed to a thin Multipole by a generic closeness tolerance.")
+    assert line["test_quad"].length == pytest.approx(length)
+
 
 def test_quad_fringe_import_matches_sad_tracking(write_lattice, tmp_path):
     """

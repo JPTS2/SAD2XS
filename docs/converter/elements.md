@@ -41,7 +41,9 @@ How each SAD element family is converted into Xsuite elements.
 
 ## Thin and thick elements
 
-A magnetic element with no length, or zero length, converts to `xt.Multipole` rather than its typed Xsuite class. The typed classes describe a thick element; a thin one is a pure kick.
+A magnetic element with no length, or exactly zero length, converts to `xt.Multipole` rather than its typed Xsuite class. The typed classes describe a thick element; a thin one is a pure kick.
+
+For every SAD element with a concrete length, SAD2XS requires either `L == 0` or `abs(L) >= Config.MAGNET_LENGTH_PRECISION` (1 nm by default). Values between those limits are rejected rather than being classified inconsistently by floating-point tolerances. A length expression is checked at its initial converted value.
 
 For a thin bend this matters beyond bookkeeping. The converter sets `hxl` to `k0l`, so the element still bends the reference orbit and generates dispersion. Dropping that would silently change the optics.
 

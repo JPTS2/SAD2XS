@@ -28,6 +28,7 @@ from ..types import ConfigLike, SadValue
 from ..helpers import log_section_heading
 from ._000_helpers import (
     parse_expression,
+    validate_element_lengths,
     get_element_misalignments,
     is_effectively_zero,
     only_index_nonzero,
@@ -88,6 +89,11 @@ def convert_elements(
     # Get the required data
     ########################################
     parsed_elements = parsed_lattice_data["elements"]
+
+    validate_element_lengths(
+        parsed_elements = parsed_elements,
+        environment     = environment,
+        minimum_length  = config.MAGNET_LENGTH_PRECISION)
 
     ########################################
     # Drifts
@@ -549,7 +555,7 @@ def convert_bends(
 
             # Thin/zero-length bend → Multipole; hxl required for reference orbit
             # bending and dispersion generation (without it px and dpx are wrong)
-            if isinstance(length, float) and np.isclose(length, 0.0):
+            if isinstance(length, float) and length == 0.0:
                 rotation, field_sign = _canonicalize_dipole_rotation(rotation)
                 if field_sign == -1:
                     k0l = -k0l if isinstance(k0l, (int, float, np.number)) else f"-({k0l})"
@@ -846,7 +852,7 @@ def _convert_typed_multipole(
     ########################################
     # Thin/zero-length element → Multipole
     ########################################
-    if isinstance(length, float) and np.isclose(length, 0.0):
+    if isinstance(length, float) and length == 0.0:
         kl = parse_expression(ele_vars.get(k_name, 0.0))
         shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
         if isinstance(rotation, float):
@@ -988,7 +994,7 @@ def _quad_linear_fringe_coefficients(
         return {}
 
     length = parse_expression(ele_vars.get("l", 0.0))
-    if not isinstance(length, float) or np.isclose(length, 0.0):
+    if not isinstance(length, float) or length == 0.0:
         return {}
 
     mfring = parse_expression(ele_vars.get("fringe", 0.0))
@@ -1165,7 +1171,7 @@ def _mult_linear_fringe_coefficients(
         return {}
 
     length = parse_expression(ele_vars.get("l", 0.0))
-    if not isinstance(length, float) or np.isclose(length, 0.0):
+    if not isinstance(length, float) or length == 0.0:
         return {}
 
     # Do not inspect unrelated deferred ROTATE/DROT expressions on MULTs that
@@ -1369,7 +1375,7 @@ def convert_multipoles(
                 ele_name    = ele_name,
                 ele_vars    = ele_vars)
 
-            n_slices = 1 if is_effectively_zero(length, config.KNL_ZERO_TOL) \
+            n_slices = 1 if isinstance(length, float) and length == 0.0 \
                 else config.N_SLICES_MULT_RF
 
             # Slices are always uniform, so reversal is a no-op today; would
@@ -1423,7 +1429,7 @@ def convert_multipoles(
                     "(user_multipole_replacements)")
 
                 if "l" not in ele_vars or \
-                    (isinstance(length, (float, int)) and abs(length) <= config.KNL_ZERO_TOL):
+                    (isinstance(length, (float, int)) and length == 0.0):
                     raise ValueError(
                         f"Cannot replace thin SAD multipole {ele_name} with {replace_type}.\n" + \
                         "Multipole replacement requires a non-zero length because integrated " + \

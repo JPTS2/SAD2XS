@@ -946,31 +946,30 @@ def test_mult_converter_ignores_user_replacements_for_rf_elements(
         "RF-carrying MULT should take the RF slicing path, ignoring "
         "user_multipole_replacements.")
 
-def test_mult_converter_treats_negligible_length_as_thin_rf(
+def test_mult_converter_rejects_ambiguous_short_rf_length(
         parsed_elements,
         xsuite_environment):
     """
-    A length that is negligible but not exactly 0.0 (floating-point
-    residue) should still take the thin (single-slice) RF path, matching
-    this file's tolerance-based zero check used elsewhere
-    (config.KNL_ZERO_TOL), not an exact `== 0.0` comparison.
+    A concrete nonzero RF-MULT length below the configured precision is
+    neither silently treated as thin nor sliced as a thick element.
     """
     xsuite_environment["fshift"] = 0.0
 
-    convert_multipoles(
-        parsed_elements = parsed_elements(
-            element_type      = "mult",
-            element_name      = "test_mult",
-            element_variables = {
-                "l": 1.0E-14, "k1": 0.2, "volt": 1.0E5, "freq": 5.0E8}),
-        environment                 = xsuite_environment,
-        user_multipole_replacements = None,
-        config                      = _mult_config())
-
-    assert xsuite_environment.lines["test_mult"].element_names == [
-        "test_mult_mult_0", "test_mult_cavi_0"], (
-        "Negligible-but-nonzero length should take the thin RF path, not "
-        "spuriously slice into N near-zero-length fragments.")
+    with pytest.raises(
+            ValueError,
+            match = r"MULT element 'test_mult'.*below MAGNET_LENGTH_PRECISION"):
+        convert_elements(
+            parsed_lattice_data = {
+                "elements": parsed_elements(
+                    element_type      = "mult",
+                    element_name      = "test_mult",
+                    element_variables = {
+                        "l": 1.0E-14, "k1": 0.2,
+                        "volt": 1.0E5, "freq": 5.0E8}),
+            },
+            environment                 = xsuite_environment,
+            user_multipole_replacements = None,
+            config                      = _mult_config())
 
 def test_mult_converter_uses_harmonic_when_harmonic_is_supplied(
         parsed_elements,
@@ -1537,6 +1536,36 @@ def test_mult_linear_fringe_coefficients_square_f1_and_include_sk1(
     assert fringe._sad_k1_fringe_b == pytest.approx(expected_b)
     assert fringe._sad_k1_fringe_frame_rotation == pytest.approx(expected_theta)
     assert "m1_fringe_out" not in xsuite_environment.element_dict
+
+
+def test_mult_above_length_precision_remains_thick_with_fringe(write_lattice):
+    """
+    A MULT shorter than NumPy's default closeness tolerance but above the
+    SAD2XS length precision is thick in SAD and retains its soft fringe.
+    """
+    length = 5 * Config().MAGNET_LENGTH_PRECISION
+    lattice_path = write_lattice(
+        f"""\
+        MOMENTUM = 1.0 GEV;
+        MULT M1 = (L={length} K1=1.0E-12 F1=0.02 FRINGE=1 DISFRIN=1);
+        MARK START=() END=();
+        LINE TEST_LINE=(START M1 END);
+        """,
+        filename = "mult_fringe_short_thick.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path      = str(lattice_path),
+        output_directory      = "N/A",
+        _verbose              = False,
+        _test_mode            = True,
+        SIMPLIFY_MULTIPOLES   = False)
+
+    assert line.element_names == ["m1_fringe_in", "m1"]
+    assert isinstance(line["m1"], xt.Multipole)
+    assert line["m1"].isthick, (
+        "A resolved nonzero length above MAGNET_LENGTH_PRECISION must remain "
+        "a thick Multipole.")
+    assert line["m1"].length == pytest.approx(length)
 
 
 def test_mult_linear_fringe_import_can_be_disabled(
