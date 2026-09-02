@@ -44,7 +44,7 @@ to extend.
 | `test_oct.py` | 41 | 0 | — |
 | `test_quad.py` | 56 | 0 | — |
 | `test_sext.py` | 41 | 0 | — |
-| `test_sol.py` | 172 | 0 | — |
+| `test_sol.py` | 181 | 0 | — |
 
 ### `test_sol.py` note
 
@@ -90,8 +90,10 @@ per-element defaults.
 The soft quadrupolar (K1/SK1) section pins the MULT map at three levels: derived
 coefficients (including SK1 and both signs of F1), full SAD-vs-Xsuite tracking,
 and every body-selection branch that can retain or discard K1. The companion
-solenoid test verifies that a powered overlapping BZ raises the explicit
-zero-BZ warning rather than silently claiming exact coverage.
+solenoid tests verify centred powered-BZ F1/F2 response through adjacent
+segment edges, the single warning for offset powered fringes, reuse of source
+face maps with context-specific bodies, and the measured K0/SK0 combined-body
+limitation.
 
 `test_mult_conversion_matches_sad_twiss_for_single_order` isolates powered
 multipole orders (`K1`-`K3`, `SK1`-`SK3`) after the model retune above

@@ -200,6 +200,7 @@ def test_xsuite_line_model_configuration_calls_used_by_sad2xs():
         num_multipole_kicks = config.N_INTEGRATOR_KICKS_MULT)
     line.set(
         table.rows[table.element_type == "UniformSolenoid"],
+        integrator          = config.INTEGRATOR_SOL,
         num_multipole_kicks = config.N_INTEGRATOR_KICKS_SOL)
     line.set(
         table.rows[table.element_type == "Cavity"],
@@ -216,6 +217,11 @@ def test_xsuite_line_model_configuration_calls_used_by_sad2xs():
     assert line["test_quad"].num_multipole_kicks == (
         config.N_INTEGRATOR_KICKS_QUAD), (
         "Xsuite Line.set should apply SAD2XS quadrupole kick configuration.")
+    assert line["test_sol"].integrator == config.INTEGRATOR_SOL, (
+        "Xsuite Line.set should apply SAD2XS solenoid integrator configuration.")
+    assert line["test_sol"].num_multipole_kicks == (
+        config.N_INTEGRATOR_KICKS_SOL), (
+        "Xsuite Line.set should apply SAD2XS solenoid kick configuration.")
     assert line["test_cavi"].absolute_time == config.ABSOLUTE_TIME_CAVI, (
         "Xsuite Line.set should apply SAD2XS cavity absolute-time configuration.")
 

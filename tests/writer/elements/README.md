@@ -25,7 +25,7 @@ serialises.
 | `test_sext_writer.py` | 30 | 0 | `xt.Sextupole` | `k2`, `k2s`, `shift_x`/`shift_y`, `rot_s_rad`, `knl`/`ksl` literal arrays |
 | `test_oct_writer.py` | 30 | 0 | `xt.Octupole` | `k3`, `k3s`, `shift_x`/`shift_y`, `rot_s_rad`, `knl`/`ksl` literal arrays |
 | `test_mult_writer.py` | 25 | 0 | `xt.Multipole` | `knl`/`ksl` literal arrays, not optics variables; `shift_x`/`shift_y`, `rot_s_rad` |
-| `test_sol_writer.py` | 26 | 0 | `xt.UniformSolenoid` | `ks` as a literal number, `x0`/`y0` axis offsets, `knl`/`ksl`, `shift_x`/`shift_y`, `rot_s_rad` |
+| `test_sol_writer.py` | 27 | 0 | `xt.UniformSolenoid` | `ks` as a literal number, `x0`/`y0` axis offsets, `knl`/`ksl`, `shift_x`/`shift_y`, `rot_s_rad`, configured integrator and kick count |
 | `test_cavi_writer.py` | 24 | 0 | `xt.Cavity` | voltage, frequency, and phase as optics expressions; the `fshift` global shift; harmonic mode writing `harm_{name}` instead of `freq_{name}` |
 | `test_refshift_writer.py` | 39 | 0 | `xt.Translation`, `xt.TimeDelay`, `xt.Rotation` | every shift and rotation field as an optics expression, zero `default_to_zero` behaviour, all five types in one line |
 | `test_aper_writer.py` | 33 | 0 | `xt.LimitEllipse`, `xt.LimitRect`, `xt.LimitRectEllipse` | bounds, offsets, asymmetric bounds, mixed types |

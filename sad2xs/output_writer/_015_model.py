@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-23
+Date:       2026-09-01
 ================================================================================
 """
 
@@ -97,6 +97,7 @@ line.set(
     num_multipole_kicks = {config.N_INTEGRATOR_KICKS_MULT})
 line.set(
     tt_sol,
+    integrator          = "{config.INTEGRATOR_SOL}",
     num_multipole_kicks = {config.N_INTEGRATOR_KICKS_SOL})
 line.set(
     tt_cavi,

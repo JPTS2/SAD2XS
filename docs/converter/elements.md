@@ -113,8 +113,8 @@ Cases 2 and 3 both canonicalise a `K0`/`SK0`-only rotation the same way the bend
 
 An active K1 soft-edge fringe wraps whichever body representation is selected
 between entrance and exit Taylor maps. The body retains the bare SAD name and
-the wrapper uses `{name}_compound`. See [fringe models](fringes.md) for the
-zero-BZ approximation, `DROT` handling, and unsupported fringe terms.
+the wrapper uses `{name}_compound`. See [fringe models](fringes.md) for handling
+inside powered solenoids, `DROT`, and unsupported fringe terms.
 
 ### The dipole fringe residual when a MULT is simplified
 

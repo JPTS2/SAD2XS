@@ -24,7 +24,7 @@ This page covers every fringe mechanism SAD applies. For what SAD itself does in
 | `BEND` | hard-edge | `DISFRIN` | edge model applied unconditionally; `DISFRIN` not read |
 | `QUAD` | soft-edge, linear | `FRINGE`, `F1`, `F2`, `F1K1F`, `F1K1B`, `F2K1F`, `F2K1B` | **imported** as a Taylor map, on by default |
 | `QUAD` | hard-edge | `DISFRIN`, plus `FRINGE` side gating | edge model applied unconditionally; neither read |
-| `MULT` | K1 soft-edge, linear | `FRINGE`, `F1`, `F2`, per-face K1 terms | **imported** with zero BZ, on by default |
+| `MULT` | K1 soft-edge, linear | `FRINGE`, `F1`, `F2`, per-face K1 terms | **imported** as a Taylor map, on by default |
 | `MULT` | dipole soft-edge and generic hard-edge | `FB1`/`FB2`, `DISFRIN` | not imported |
 | `MULT` | `K0`/`SK0` dipole fringe | — | not reproduced; converter warns |
 | `SEXT`, `OCT` | hard-edge | `DISFRIN` | not modelled |
@@ -162,7 +162,7 @@ A SAD `MULT` combines bend-style content (`ANGLE`, `K0`, soft-edge `FB1`/`FB2`) 
 
 `FRINGE` uses the same `{1, 2, 3}` numbering as `QUAD`, and it selects the side for **all** of the element's fringe sub-mechanisms simultaneously — the quad-style linear fringe, the dipole-style linear fringe, and the `DISFRIN`-gated hard-edge kick all read the same value.
 
-### K1 soft edge: imported with zero longitudinal field
+### K1 soft edge: imported
 
 The K1 part is imported with the same second-order Taylor-map machinery as a
 `QUAD`. For integrated normal and skew strengths `K1` and `SK1`,
@@ -185,17 +185,33 @@ raises a warning.
 nonzero `DROT` is therefore warned about and skipped rather than rotating only
 one part of the element.
 
-The map currently assumes zero overlapping longitudinal field. When it occurs
-inside a powered bound-solenoid region, the body still receives the local `ks`
-but conversion warns that the fringe uses the zero-BZ approximation. A targeted
-SuperKEKB study found the omitted local-BZ term changed the tested IP beta
-values by at most `0.094 um`, and contributed roughly `0.1%` of the target
-fringe tune response. That supports the approximation for those symmetric,
-`F1`-only QC cases; it is not a general exact result. A deliberately one-sided
-stress case reached about `11%` relative map error.
+Inside a powered bound-solenoid region, the adjacent Xtrack
+`UniformSolenoid` segment edges transform a centred face map into and out of
+the local canonical coordinates. The face map must therefore remain the same
+zero-local-BZ map used outside the solenoid. Adding the local `ks` to the
+Taylor map would apply the transformation twice. Direct SAD tracking pins this
+for both F1 and F2 responses in a centred powered case.
+
+SAD's combined DX/DY and local-field convention is not reproduced exactly for
+an offset K1 fringe inside powered BZ. The converter raises one warning naming
+the affected element count; this remains an explicit limitation.
+
+The representation is a second-order expansion about `delta=0` and equates
+Xsuite `pzeta` with SAD `delta`. This has been validated for the targeted
+ultrarelativistic electron/positron lattices, not for lower-beta particles.
+Direct SAD tracking validates centred powered F1 and F2 responses, as well as
+zero-BZ F1/F2, signed F1, negative-length, and off-momentum cases.
 
 The dipole-style `FB1`/`FB2` term and the `DISFRIN`-gated generic hard-edge
 kick remain unmodelled.
+
+This face-map support is separate from the thick body convention. If the same
+MULT also carries `K0` or `SK0` inside powered BZ, SAD's combined paraxial
+`tsolque` body map is not identical to Xtrack's converged split
+solenoid/multipole map. SAD2XS warns once for the lattice; see
+[limitations](../usage/limitations.md).
+
+That body distinction is separate from the offset-fringe limitation above.
 
 ### The `K0`/`SK0` dipole fringe residual
 
