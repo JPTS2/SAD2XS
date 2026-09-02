@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-29
+Date:       2026-09-01
 ================================================================================
 """
 ################################################################################
@@ -1489,7 +1489,7 @@ def test_mult_conversion_matches_sad_tracking_for_thin_multipole(
 ################################################################################
 # Linear F1/F2 Fringe Import
 ################################################################################
-def test_mult_linear_fringe_import_defaults_on_and_brackets_body(write_lattice):
+def test_mult_soft_quadrupolar_fringe_defaults_on_and_brackets_body(write_lattice):
     """An active thick MULT fringe should bracket the unchanged body by default."""
     lattice_path = write_lattice(
         """\
@@ -1498,7 +1498,7 @@ def test_mult_linear_fringe_import_defaults_on_and_brackets_body(write_lattice):
         MARK START=() END=();
         LINE TEST=(START M1 END);
         """,
-        filename = "mult_linear_fringe_default.sad")
+        filename = "mult_soft_quadrupolar_fringe_default.sad")
 
     line = s2x.convert_sad_to_xsuite(
         sad_lattice_path = str(lattice_path),
@@ -1513,29 +1513,72 @@ def test_mult_linear_fringe_import_defaults_on_and_brackets_body(write_lattice):
     assert isinstance(line["m1_fringe_out"], xt.SecondOrderTaylorMap)
 
 
-def test_mult_linear_fringe_coefficients_square_f1_and_include_sk1(
+def test_mult_soft_quadrupolar_fringe_preserves_f1_sign_and_includes_sk1(
         parsed_elements, xsuite_environment):
-    """MULT uses |K1+iSK1| and F1 squared, as established against SAD."""
+    """MULT uses |K1+iSK1| and SAD's signed F1*abs(F1) coefficient."""
     convert_multipoles(
         parsed_elements = parsed_elements(
             element_type      = "mult",
             element_name      = "m1",
             element_variables = {
                 "l": 0.5, "k1": 0.03, "sk1": 0.04,
-                "f1k1f": -0.02, "f2k1f": 0.01, "fringe": 1.0}),
+                "f1k1f": -0.02, "f2k1f": 0.01, "fringe": 1.0,
+                "dx": 1.2e-3, "dy": -0.8e-3}),
         environment                 = xsuite_environment,
         user_multipole_replacements = None,
         config                      = _mult_config(simplify = False))
 
     fringe = xsuite_environment["m1_fringe_in"]
     magnitude = np.hypot(0.03, 0.04) / 0.5
-    expected_a = -magnitude * (-0.02)**2 / 24.0
+    expected_a = -magnitude * (-0.02) * abs(-0.02) / 24.0
     expected_b = magnitude * 0.01
     expected_theta = 0.5 * np.arctan2(0.04 * 0.5, 0.03 * 0.5)
-    assert fringe._sad_k1_fringe_a == pytest.approx(expected_a)
-    assert fringe._sad_k1_fringe_b == pytest.approx(expected_b)
-    assert fringe._sad_k1_fringe_frame_rotation == pytest.approx(expected_theta)
+    assert fringe.R[0, 0] == pytest.approx(np.exp(expected_a))
+    assert fringe.R[0, 1] == pytest.approx(expected_b)
+    assert fringe.rot_s_rad == pytest.approx(-expected_theta)
+    assert fringe.shift_x == pytest.approx(1.2e-3)
+    assert fringe.shift_y == pytest.approx(-0.8e-3)
     assert "m1_fringe_out" not in xsuite_environment.element_dict
+
+
+def test_mult_soft_quadrupolar_fringe_uses_sad_integer_keyword_semantics(
+        parsed_elements, xsuite_environment):
+    """SAD's input layer truncates FRINGE=1.5 to entrance-only mode 1."""
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "m1",
+            element_variables = {
+                "l": 0.5, "k1": 0.1,
+                "f1k1f": 0.02, "f1k1b": 0.03, "fringe": 1.5}),
+        environment                 = xsuite_environment,
+        user_multipole_replacements = None,
+        config                      = _mult_config(simplify = False))
+
+    assert "m1_fringe_in" in xsuite_environment.element_dict
+    assert "m1_fringe_out" not in xsuite_environment.element_dict
+
+
+def test_negative_length_mult_fringe_uses_positive_local_magnitude(
+        parsed_elements, xsuite_environment):
+    """SAD's `akang` rotation keeps the local K1/L magnitude positive."""
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "m1",
+            element_variables = {
+                "l": -0.5, "k1": 0.1,
+                "f1": 0.02, "f2": 0.01, "fringe": 1.0}),
+        environment                 = xsuite_environment,
+        user_multipole_replacements = None,
+        config                      = _mult_config(simplify = False))
+
+    fringe    = xsuite_environment["m1_fringe_in"]
+    magnitude = 0.1 / 0.5
+    expected_a = -magnitude * 0.02**2 / 24.0
+    assert fringe.R[0, 0] == pytest.approx(np.exp(expected_a))
+    assert fringe.R[0, 1] == pytest.approx(magnitude * 0.01)
+    assert fringe.rot_s_rad == pytest.approx(-np.pi / 2.0)
 
 
 def test_mult_above_length_precision_remains_thick_with_fringe(write_lattice):
@@ -1568,7 +1611,7 @@ def test_mult_above_length_precision_remains_thick_with_fringe(write_lattice):
     assert line["m1"].length == pytest.approx(length)
 
 
-def test_mult_linear_fringe_import_can_be_disabled(
+def test_mult_soft_quadrupolar_fringe_can_be_disabled(
         parsed_elements, xsuite_environment):
     """The hidden MULT-fringe flag should provide the same opt-out as QUAD."""
     convert_multipoles(
@@ -1588,7 +1631,7 @@ def test_mult_linear_fringe_import_can_be_disabled(
     assert not any("fringe" in name for name in xsuite_environment.element_dict)
 
 
-def test_mult_linear_fringe_with_drot_warns_and_is_skipped(
+def test_mult_soft_quadrupolar_fringe_with_drot_warns_and_is_skipped(
         parsed_elements, xsuite_environment, caplog):
     """DROT must not be applied only to the fringe while the body ignores it."""
     caplog.set_level(logging.WARNING, logger = "sad2xs.converter._004_element_converter")
@@ -1607,7 +1650,7 @@ def test_mult_linear_fringe_with_drot_warns_and_is_skipped(
     assert "nonzero DROT" in caplog.text
 
 
-def test_mult_linear_fringe_wraps_user_quadrupole_replacement(
+def test_mult_soft_quadrupolar_fringe_wraps_user_quadrupole_replacement(
         parsed_elements, xsuite_environment):
     """A K1-preserving user replacement should retain both fringe faces."""
     convert_multipoles(
@@ -1624,7 +1667,7 @@ def test_mult_linear_fringe_wraps_user_quadrupole_replacement(
         "m1_fringe_in", "m1", "m1_fringe_out"]
 
 
-def test_mult_linear_fringe_is_skipped_when_user_replacement_discards_k1(
+def test_mult_soft_quadrupolar_fringe_is_skipped_when_replacement_discards_k1(
         parsed_elements, xsuite_environment, caplog):
     """A replacement that removes K1 must not retain a contradictory fringe."""
     caplog.set_level(logging.WARNING)
@@ -1643,7 +1686,7 @@ def test_mult_linear_fringe_is_skipped_when_user_replacement_discards_k1(
     assert "replacement discards K1/SK1" in caplog.text
 
 
-def test_mult_linear_fringe_wraps_complete_rf_sliced_body(
+def test_mult_soft_quadrupolar_fringe_wraps_complete_rf_sliced_body(
         parsed_elements, xsuite_environment):
     """RF slicing should remain inside, rather than replace, the fringe faces."""
     xsuite_environment["fshift"] = 0.0
@@ -1663,63 +1706,120 @@ def test_mult_linear_fringe_wraps_complete_rf_sliced_body(
     assert any("m1_cavi_" in name for name in names)
 
 
-def test_mult_linear_fringe_import_matches_sad_tracking(write_lattice, tmp_path):
-    """The zero-BZ K1/SK1 map should preserve SAD transverse tracking."""
-    initial = _standard_five_particle_offsets()
-    lattice_text = """\
-    MOMENTUM = 1.0 GEV;
-    MULT M1 = (L=1.0 K1=0.03 SK1=0.04 K2=0.02
-               F1=-0.02 F2=0.01 FRINGE=3 DISFRIN=1);
-    MARK START=() END=();
-    LINE TEST_LINE=(START M1 END);
-    """
-    lattice_path = write_lattice(
-        lattice_text, filename = "mult_linear_fringe_tracking.sad")
-
+def test_mult_soft_quadrupolar_fringe_response_matches_sad_in_6d(
+        write_lattice,
+        tmp_path):
+    """The zero-BZ K1/SK1 fringe response should agree with SAD in 6D."""
+    x, px, y, py, zeta, _ = _standard_five_particle_offsets()
+    delta   = np.array([0.0, 0.005, -0.005, 0.02, -0.02])
+    initial = (x, px, y, py, zeta, delta)
+    sad_particles = {}
+    xs_particles  = {}
     cwd = os.getcwd()
     os.chdir(tmp_path)
     try:
-        sad_particles = track_sad(
-            lattice_filepath       = lattice_path.name,
-            line_name              = "TEST_LINE",
-            x_init                 = initial[0],
-            px_init                = initial[1],
-            y_init                 = initial[2],
-            py_init                = initial[3],
-            zeta_init              = initial[4],
-            delta_init             = initial[5],
-            n_turns                = 1,
-            rfsw                   = False,
-            rad                    = False,
-            fluc                   = False,
-            radcod                 = False,
-            radtaper               = False,
-            turn_by_turn_monitor   = False,
-            with_progress          = False,
-            wall_time              = 30)
-        line = s2x.convert_sad_to_xsuite(
-            sad_lattice_path       = str(lattice_path),
-            output_directory       = "N/A",
-            _verbose               = False,
-            _test_mode             = True,
-            SIMPLIFY_MULTIPOLES    = False)
-        xs_particles = track_xsuite_particles(line, *initial)
+        for state, fringe_mode in (("off", 0), ("on", 3)):
+            lattice_text = f"""\
+            MOMENTUM = 1.0 GEV;
+            MULT M1 = (L=1.0 K1=0.03 SK1=0.04 K2=0.02
+                       F1=-0.02 F2=0.01 FRINGE={fringe_mode} DISFRIN=1);
+            MARK START=() END=();
+            LINE TEST_LINE=(START M1 END);
+            """
+            lattice_path = write_lattice(
+                lattice_text,
+                filename = f"mult_soft_quadrupolar_fringe_{state}.sad")
+            sad_particles[state] = track_sad(
+                lattice_filepath       = lattice_path.name,
+                line_name              = "TEST_LINE",
+                x_init                 = initial[0],
+                px_init                = initial[1],
+                y_init                 = initial[2],
+                py_init                = initial[3],
+                zeta_init              = initial[4],
+                delta_init             = initial[5],
+                n_turns                = 1,
+                rfsw                   = True,
+                rad                    = False,
+                fluc                   = False,
+                radcod                 = False,
+                radtaper               = False,
+                turn_by_turn_monitor   = False,
+                with_progress          = False,
+                wall_time              = 30)
+            line = s2x.convert_sad_to_xsuite(
+                sad_lattice_path       = str(lattice_path),
+                output_directory       = "N/A",
+                _verbose               = False,
+                _test_mode             = True,
+                SIMPLIFY_MULTIPOLES    = False)
+            xs_particles[state] = track_xsuite_particles(line, *initial)
     finally:
         os.chdir(cwd)
 
-    _assert_mult_tracking_matches_sad(
-        test_name          = "test_mult_linear_fringe_import_matches_sad_tracking",
-        lattice_text       = lattice_text,
-        initial_coordinates = _mult_initial_coordinates(*initial),
-        sad_coordinates    = {
-            key: _mult_sad_coordinates(sad_particles)[key]
-            for key in ("x", "px", "y", "py")},
-        xsuite_coordinates = {
-            key: _mult_xsuite_coordinates(xs_particles)[key]
-            for key in ("x", "px", "y", "py")},
-        parameters         = {
-            "length": 1.0, "k1l": 0.03, "sk1l": 0.04,
-            "k2l": 0.02, "f1": -0.02, "f2": 0.01},
-        notes              = [
-            "DISFRIN=1 suppresses the separate hard-edge model; this test "
-            "targets the zero-BZ F1/F2 K1 soft-edge map."])
+    sad_coordinates = {
+        state: _mult_sad_coordinates(particles)
+        for state, particles in sad_particles.items()}
+    xs_coordinates = {
+        state: _mult_xsuite_coordinates(particles)
+        for state, particles in xs_particles.items()}
+    for coordinate in ("x", "px", "y", "py", "zeta", "delta"):
+        sad_response = (
+            sad_coordinates["on"][coordinate]
+            - sad_coordinates["off"][coordinate])
+        xs_response = (
+            xs_coordinates["on"][coordinate]
+            - xs_coordinates["off"][coordinate])
+        # The longitudinal signal is a small second-order path-length effect;
+        # the truncated map reproduces its sign and scale, not SAD's full map.
+        relative_tolerance = 1.0e-1 if coordinate == "zeta" else 1.0e-2
+        absolute_tolerance = max(
+            1.0e-13,
+            relative_tolerance * np.max(np.abs(sad_response)))
+        np.testing.assert_allclose(
+            xs_response,
+            sad_response,
+            rtol = relative_tolerance,
+            atol = absolute_tolerance,
+            err_msg = (
+                f"The off-momentum MULT fringe response in {coordinate} "
+                "should match SAD to within the documented second-order "
+                "Taylor truncation."))
+
+
+def test_negative_length_mult_fringe_response_matches_sad(
+        write_lattice, tmp_path):
+    """A negative-length MULT should retain SAD's fringe-response signs."""
+    matrices = {"sad": {}, "xsuite": {}}
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        for state, f1 in (("off", 0.0), ("on", 0.2)):
+            lattice_text = f"""\
+            MOMENTUM = 1.0 GEV;
+            MULT M1=(L=-1.0 K1=0.1 F1={f1} F2=0.03
+                     FRINGE=1 DISFRIN=1);
+            MARK START=() END=();
+            LINE TEST_LINE=(START M1 END);
+            """
+            lattice_path = write_lattice(
+                lattice_text,
+                filename = f"negative_length_mult_fringe_{state}.sad")
+            matrices["sad"][state] = transfer_matrix_sad(
+                lattice_path.name, "TEST_LINE")[:4, :4]
+            line = s2x.convert_sad_to_xsuite(
+                sad_lattice_path       = str(lattice_path),
+                line_name              = "TEST_LINE",
+                output_directory       = "N/A",
+                SIMPLIFY_MULTIPOLES    = False,
+                _verbose               = False,
+                _test_mode             = True)
+            matrices["xsuite"][state] = linear_transfer_matrix_4d(line)
+    finally:
+        os.chdir(cwd)
+
+    sad_response = matrices["sad"]["on"] - matrices["sad"]["off"]
+    xsuite_response = (
+        matrices["xsuite"]["on"] - matrices["xsuite"]["off"])
+    np.testing.assert_allclose(
+        xsuite_response, sad_response, rtol = 2e-4, atol = 2e-10)

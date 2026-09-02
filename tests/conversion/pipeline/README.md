@@ -26,11 +26,11 @@ each parametrisation separately.
 | `test_multipole_replacements.py` | 8 | 0 | — |
 | `test_offset_markers.py` | 27 | 0 | — |
 | `test_reference_particle.py` | 11 | 0 | — |
-| `test_reverse_survey_horizontal.py` | 12 | 0 | — |
-| `test_reverse_survey_vertical.py` | 13 | 0 | — |
+| `test_reverse_survey_horizontal.py` | 14 | 0 | — |
+| `test_reverse_survey_vertical.py` | 14 | 0 | — |
 | `test_reverse_charge_sign.py` | 6 | 0 | — |
 | `test_reverse_element_order.py` | 18 | 0 | — |
-| `test_reversed_component_syntax.py` | 7 | 0 | — |
+| `test_reversed_component_syntax.py` | 11 | 0 | — |
 
 ### `test_convert_sad_to_xsuite.py` note
 
@@ -68,9 +68,10 @@ reversal to electron and antiproton, `p0c`/`mass0` isolation, and the
 Covers SAD's per-element `-NAME` reversal syntax, through
 `create_reversed_component`. This is a separate path from the whole-line
 `-LINE` reversal covered by `test_reverse_element_order.py`.
-That coverage includes an asymmetric MULT K1 fringe checked against SAD's
-native reversed line, so the entrance/exit coefficient sign is not inferred
-only from the in-memory map representation.
+That coverage includes asymmetric QUAD and MULT soft quadrupolar fringes
+checked against SAD's native `-NAME` transfer map, including a line containing
+both forward and reversed occurrences. The face sign and occurrence isolation
+are therefore not inferred only from the in-memory representation.
 
 It covers direction-symmetric reuse for drifts and quadrupoles, solenoid `ks`
 negation, the bend edge-angle swap, and the bend `fint`/`hgap` swap. Two

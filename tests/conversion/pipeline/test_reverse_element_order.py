@@ -22,7 +22,11 @@ import pytest
 import xtrack as xt
 
 import sad2xs as s2x
-from sad2xs.sad_helpers import track_sad, rebuild_sad_lattice
+from sad2xs.sad_helpers import (
+    rebuild_sad_lattice,
+    track_sad,
+    transfer_matrix_sad)
+from tests.support.coupled_optics import linear_transfer_matrix_4d
 
 ################################################################################
 # Default Behaviour
@@ -822,7 +826,7 @@ def test_pipeline_reverse_element_order_translation_physics_matches_sad(tmp_path
 
 
 ################################################################################
-# QUAD Linear Fringe Field Adjustment (_import_sad_quad_fringes)
+# QUAD Soft Quadrupolar Fringe Adjustment
 ################################################################################
 def test_pipeline_reverse_element_order_quad_fringe_matches_sad_reversed_line(tmp_path):
     """
@@ -890,55 +894,52 @@ def test_pipeline_reverse_element_order_quad_fringe_matches_sad_reversed_line(tm
 
 def test_pipeline_reverse_element_order_mult_fringe_matches_sad_reversed_line(
         tmp_path):
-    """A reversed asymmetric MULT K1 fringe should match SAD's ``-LINE``."""
+    """A reversed signed-F1 MULT fringe response should match SAD ``-LINE``."""
     lattice_content = (
         "MOMENTUM = 1.0 GEV;\n"
         "MULT M1 = (L=1.0 K1=0.05 "
         "F1K1F=-0.05 F1K1B=0.03 F2K1F=0.02 F2K1B=-0.01 "
-        "FRINGE=1 DISFRIN=1);\n"
+        "FRINGE=1 DISFRIN=1)\n"
+        "     M0 = (L=1.0 K1=0.05 "
+        "F1K1F=-0.05 F1K1B=0.03 F2K1F=0.02 F2K1B=-0.01 "
+        "FRINGE=0 DISFRIN=1);\n"
         "MARK START=() END=();\n"
         "LINE TEST=(START M1 END);\n"
-        "LINE TESTREV=(-TEST);\n")
+        "LINE TESTOFF=(START M0 END);\n"
+        "LINE TESTREV=(-TEST);\n"
+        "LINE TESTREVOFF=(-TESTOFF);\n")
     lattice_path = tmp_path / "rev_mult_fringe.sad"
     lattice_path.write_text(lattice_content)
 
     cwd = os.getcwd()
     os.chdir(tmp_path)
     try:
-        sad = track_sad(
-            lattice_filepath = lattice_path.name,
-            line_name        = "TESTREV",
-            x_init           = np.array([1e-3]),
-            px_init          = np.array([2e-3]),
-            y_init           = np.array([-1.5e-3]),
-            py_init          = np.array([0.5e-3]),
-            zeta_init        = np.array([0.0]),
-            delta_init       = np.array([0.0]),
-            n_turns          = 1,
-            rfsw             = False,
-            with_progress    = False)
+        sad_on = transfer_matrix_sad(lattice_path.name, "TESTREV")
+        sad_off = transfer_matrix_sad(lattice_path.name, "TESTREVOFF")
     finally:
         os.chdir(cwd)
 
-    line = s2x.convert_sad_to_xsuite(
+    line_on = s2x.convert_sad_to_xsuite(
         sad_lattice_path       = str(lattice_path),
         output_directory       = "N/A",
+        line_name              = "TEST",
         reverse_element_order  = True,
         SIMPLIFY_MULTIPOLES    = False,
         _verbose               = False,
         _test_mode             = True)
-    particle = xt.Particles(
-        "positron", p0c=1.0E9,
-        x=1e-3, px=2e-3, y=-1.5e-3, py=0.5e-3, zeta=0.0, delta=0.0)
-    line.track(particle, num_turns=1)
+    line_off = s2x.convert_sad_to_xsuite(
+        sad_lattice_path       = str(lattice_path),
+        output_directory       = "N/A",
+        line_name              = "TEST",
+        reverse_element_order  = True,
+        SIMPLIFY_MULTIPOLES    = False,
+        _import_sad_mult_fringes = False,
+        _verbose               = False,
+        _test_mode             = True)
 
-    for coordinate, sad_value, xsuite_value in (
-            ("x", sad["x"][0], particle.x[0]),
-            ("px", sad["px"][0], particle.px[0]),
-            ("y", sad["y"][0], particle.y[0]),
-            ("py", sad["py"][0], particle.py[0])):
-        assert xsuite_value == pytest.approx(
-            sad_value, rel = 1e-5, abs = 1e-9), (
-                f"Reversed MULT soft-edge {coordinate} should match SAD's "
-                f"native -LINE: Xsuite={xsuite_value:.12e}, "
-                f"SAD={sad_value:.12e}.")
+    sad_response = sad_on - sad_off
+    xsuite_response = (
+        linear_transfer_matrix_4d(line_on)
+        - linear_transfer_matrix_4d(line_off))
+    np.testing.assert_allclose(
+        xsuite_response, sad_response, rtol=2e-4, atol=2e-10)

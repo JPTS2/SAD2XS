@@ -30,7 +30,7 @@ serialises.
 | `test_refshift_writer.py` | 39 | 0 | `xt.Translation`, `xt.TimeDelay`, `xt.Rotation` | every shift and rotation field as an optics expression, zero `default_to_zero` behaviour, all five types in one line |
 | `test_aper_writer.py` | 33 | 0 | `xt.LimitEllipse`, `xt.LimitRect`, `xt.LimitRectEllipse` | bounds, offsets, asymmetric bounds, mixed types |
 | `test_marker_writer.py` | 11 | 0 | `xt.Marker` | type, name, order, multiple markers, start/end convention, offset marker insertion |
-| `test_taylor_maps_writer.py` | 22 | 0 | `xt.FirstOrderTaylorMap`, `xt.SecondOrderTaylorMap` | generic maps as full-precision literals, compact SAD K1-fringe builder and metadata, minus-sign root-name cleanup, multiple maps in one line |
+| `test_taylor_maps_writer.py` | 23 | 0 | `xt.FirstOrderTaylorMap`, `xt.SecondOrderTaylorMap` | generic maps as full-precision literals; compact SAD soft-quadrupolar maps, live QUAD dependency, reversal-only names, multiple maps |
 
 ### `test_bend_writer.py` and `test_corr_writer.py` note
 
@@ -53,9 +53,11 @@ interpretation step. Physical correctness is Xsuite's contract, not SAD2XS's.
 
 ### `test_taylor_maps_writer.py` note
 
-`_new_quad_fringe_element` stashes `_sad_quad_fringe_a`, `_sad_quad_fringe_b`,
-and `_sad_quad_fringe_theta` on a quad-fringe map. The tests confirm these are
-preserved when present and absent when not.
+Recognised SAD soft quadrupolar fringe maps round-trip through a compact,
+self-contained generated helper. Tests check the numeric map, standard
+environment metadata, the live dependency on an existing QUAD strength
+variable, and a reversal-only map whose leading minus sign is stripped by the
+writer. Generic Taylor maps continue to use literal coefficient arrays.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

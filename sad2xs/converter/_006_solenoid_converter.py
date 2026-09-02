@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-29
+Date:       2026-09-01
 ================================================================================
 """
 
@@ -18,11 +18,10 @@ Date:       2026-08-29
 ################################################################################
 import logging
 
-import xtrack as xt
 import numpy as np
+import xtrack as xt
 
 from ..types import ConfigLike
-from ._000_fringe_helpers import get_sad_k1_fringe_metadata
 
 logger  = logging.getLogger(__name__)
 
@@ -466,8 +465,9 @@ def convert_solenoids(
                 # bound-solenoid region.
                 elif isinstance(
                         environment.element_dict[element],
-                        xt.SecondOrderTaylorMap) and get_sad_k1_fringe_metadata(
-                            line[element]) is not None:
+                        xt.SecondOrderTaylorMap) and element in (
+                            environment.metadata.get("sad2xs", {}).get(
+                                "soft_quadrupolar_fringes", {})):
                     if not isinstance(ks, (int, float, np.number)) or not np.isclose(ks, 0.0):
                         zero_bz_fringe_maps.add(element.lstrip("-"))
                     continue

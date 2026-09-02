@@ -40,6 +40,9 @@ class ConfigLike(Protocol):
     _test_mode:                     bool
     _replace_repeated_elements:     bool
     _install_offset_markers:        bool
+    _import_sad_bend_fringes:       bool
+    _import_sad_quad_fringes:       bool
+    _import_sad_mult_fringes:       bool
 
     ASCII_LOGO:                     str
 

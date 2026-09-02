@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 import xtrack as xt
 
+from sad2xs.helpers import species_from_mass_and_charge
 from sad2xs.converter._000_helpers import (
     combine_k0_sk0,
     divide_integrated_strength,
@@ -28,7 +29,6 @@ from sad2xs.converter._000_helpers import (
     get_element_misalignments,
     is_effectively_zero,
     only_index_nonzero,
-    species_from_mass_and_charge,
     validate_element_lengths,
     values_provably_equal,
     values_provably_opposite)

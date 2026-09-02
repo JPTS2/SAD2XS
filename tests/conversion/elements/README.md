@@ -40,9 +40,9 @@ to extend.
 | `test_map.py` | 6 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
-| `test_mult.py` | 59 | 0 | — |
+| `test_mult.py` | 62 | 0 | — |
 | `test_oct.py` | 41 | 0 | — |
-| `test_quad.py` | 51 | 0 | — |
+| `test_quad.py` | 56 | 0 | — |
 | `test_sext.py` | 41 | 0 | — |
 | `test_sol.py` | 172 | 0 | — |
 
@@ -87,7 +87,7 @@ per-element defaults.
 
 ### `test_mult.py` note
 
-The K1 soft-edge section pins the zero-BZ MULT map at three levels: derived
+The soft quadrupolar (K1/SK1) section pins the MULT map at three levels: derived
 coefficients (including SK1 and both signs of F1), full SAD-vs-Xsuite tracking,
 and every body-selection branch that can retain or discard K1. The companion
 solenoid test verifies that a powered overlapping BZ raises the explicit
@@ -197,6 +197,12 @@ representations. Correctors (`ANGLE == 0`) and MULT-derived dipoles never
 carry a nonzero curvature and are confirmed unaffected.
 
 ### `test_quad.py` default edge fringe note
+
+The soft quadrupolar tests separately cover positive and negative K1, signed
+length, the existing scalar strength-variable dependency, and the associated
+pi/2 field-frame change when K1 crosses zero. The very-short-QUAD case remains
+numeric because Xsuite represents its body as a thin `Multipole`, which has no
+existing scalar `k1` variable to reuse.
 
 SAD applies a default hard-edge quadrupole fringe kick (gated by `DISFRIN`,
 verified against real SAD in `tests/sad/test_quad.py`). Xsuite's

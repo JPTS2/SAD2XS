@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-29
+Date:       2026-09-01
 ================================================================================
 """
 
@@ -19,11 +19,8 @@ Date:       2026-08-29
 import numpy as np
 import xtrack as xt
 
-from ._000_fringe_helpers import (
-    get_sad_k1_fringe_metadata,
-    rotate_sad_k1_fringe_taylor_map,
-    sad_k1_fringe_taylor_coeffs,
-    set_sad_k1_fringe_a)
+from ._000_helpers import negate_sad_value
+from ._005_line_converter import create_reversed_component
 
 ################################################################################
 # Line Element Order Reversal
@@ -38,11 +35,11 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
     becomes the new entry edge and vice versa), solenoid ks is
     negated, solenoid GEO reference-shift Translations (name suffix
     "_dxy") are negated since the former exit boundary is now the
-    entrance, and SAD K1 soft-edge SecondOrderTaylorMaps are rebuilt in place
-    for their new role. Standalone COORD-derived Translations (no
-    "_dxy" suffix) are left unchanged, since a COORD offset is a fixed
-    geometric property of the beampipe and does not flip sign under
-    reversal (verified against SAD's own `-LINE` output for both
+    entrance, and SAD soft quadrupolar SecondOrderTaylorMap occurrences
+    are replaced by their reversed definitions. Standalone COORD-derived
+    Translations (no "_dxy" suffix) are left unchanged, since a COORD
+    offset is a fixed geometric property of the beampipe and does not flip
+    sign under reversal (verified against SAD's own `-LINE` output for both
     cases).
 
     Parameters
@@ -61,45 +58,53 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
     # Copy the line for changes
     ########################################
     env             = line.env
-    env_elements    = list(set(env.elements.keys()))
+    env_elements    = set(env.elements.keys())
 
     ########################################
     # Reverse Element Order
     ########################################
     line.mirror()
 
+    # Taylor maps are not direction-symmetric. Replace each occurrence with
+    # its opposite-face counterpart; mutating the shared definition would
+    # also alter any forward occurrence elsewhere in the environment.
+    fringe_names = env.metadata.get(
+        "sad2xs", {}).get("soft_quadrupolar_fringes", {})
+    for index, name in enumerate(line.element_names):
+        if name not in fringe_names:
+            continue
+        if name.startswith("-"):
+            line.element_names[index] = name[1:]
+        else:
+            line.element_names[index] = create_reversed_component(
+                f"-{name}", env)
+
     ########################################
     # Get tables
     ########################################
-    tt          = line.get_table(attr = True)
-    tt_bend     = tt.rows[
+    tt            = line.get_table(attr = True)
+    tt_bend       = tt.rows[
         (tt.element_type == "Bend") | (tt.element_type == "RBend")]
-    tt_sol      = tt.rows[tt.element_type == "UniformSolenoid"]
-    tt_dxy      = tt.rows[tt.element_type == "Translation"]
-    tt_k1_fringe = tt.rows[tt.element_type == "SecondOrderTaylorMap"]
+    tt_sol        = tt.rows[tt.element_type == "UniformSolenoid"]
+    tt_dxy        = tt.rows[tt.element_type == "Translation"]
 
     ########################################
     # Get unique elements
     ########################################
-    unique_bends    = list(set([name.split("::")[0] for name in tt_bend.name]))
-    unique_sols     = list(set([name.split("::")[0] for name in tt_sol.name]))
-    unique_dxys     = list(set([name.split("::")[0] for name in tt_dxy.name]))
-    unique_k1_fringes = list(set(
-        [name.split("::")[0] for name in tt_k1_fringe.name]))
+    unique_bends      = list(set([name.split("::")[0] for name in tt_bend.name]))
+    unique_sols       = list(set([name.split("::")[0] for name in tt_sol.name]))
+    unique_dxys       = list(set([name.split("::")[0] for name in tt_dxy.name]))
 
     ########################################
     # Get only the non-reversed and handle reverse later
     ########################################
     # This only applies to the elements that can keep the minus sign
-    unique_bends    = list(set(
+    unique_bends      = list(set(
         [name[1:] if name.startswith("-") else name for name in unique_bends]))
-    unique_sols     = list(set(
+    unique_sols       = list(set(
         [name[1:] if name.startswith("-") else name for name in unique_sols]))
-    unique_dxys     = list(set(
+    unique_dxys       = list(set(
         [name[1:] if name.startswith("-") else name for name in unique_dxys]))
-    unique_k1_fringes = list(set(
-        [name[1:] if name.startswith("-") else name
-         for name in unique_k1_fringes]))
 
     ########################################
     # Bend Adjustments
@@ -128,39 +133,6 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
             exit_hgap                   = env[bend].edge_exit_hgap
             env[bend].edge_entry_hgap   = exit_hgap
             env[bend].edge_exit_hgap    = entry_hgap
-
-    ########################################
-    # SAD K1 Soft-Edge Fringe Adjustments
-    ########################################
-    for fringe_name in unique_k1_fringes:
-
-        # Handling trying forward and reverse
-        for candidate_name in [fringe_name, "-" + fringe_name]:
-
-            if candidate_name not in env_elements:
-                continue
-
-            element = env[candidate_name]
-            metadata = get_sad_k1_fringe_metadata(element)
-            if metadata is None:
-                # An unrelated SecondOrderTaylorMap stays untouched.
-                continue
-
-            # The side that survives reversal serves the OPPOSITE role
-            # (entrance <-> exit), using the SAME (a, b) it was always
-            # built with -- only the kick's sign convention flips
-            # (tquad.f applies +a at the entrance, -a at the exit; see
-            # the element converter). The frame rotation is a
-            # fixed geometric property of the magnet (ROTATE+akang(K1))
-            # and does not change under reversal.
-            a, b, frame_rotation = metadata
-            k, R, T = rotate_sad_k1_fringe_taylor_map(
-                frame_rotation, *sad_k1_fringe_taylor_coeffs(-a, b))
-
-            element.k = k
-            element.R = R
-            element.T = T
-            set_sad_k1_fringe_a(element, -a)
 
     ########################################
     # Solenoid Adjustments
@@ -209,8 +181,49 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
 
     return line
 
+########################################
+# SAD Soft Quadrupolar Fringe Reflection
+########################################
+def _reflect_sad_soft_quadrupolar_fringes(
+        line:           xt.Line,
+        *,
+        horizontal:     bool) -> None:
+    """
+    Reflect SAD soft quadrupolar maps with the rest of the lattice.
+
+    Parameters
+    ----------
+    line : xtrack.Line
+        Line containing the maps to reflect.
+    horizontal : bool
+        If ``True``, reflect x/px and ``shift_x``; otherwise reflect y/py and
+        ``shift_y``.
+
+    Returns
+    -------
+    None
+    """
+    environment = line.env
+    fringes     = environment.metadata.get(
+        "sad2xs", {}).get("soft_quadrupolar_fringes", {})
+    for name in set(line.element_names):
+        if name not in fringes:
+            continue
+        parameters     = fringes[name]
+        field_rotation = negate_sad_value(parameters["field_rotation"])
+        if horizontal:
+            parameters["shift_x"] = negate_sad_value(parameters["shift_x"])
+        else:
+            parameters["shift_y"] = negate_sad_value(parameters["shift_y"])
+        parameters["field_rotation"] = field_rotation
+        element           = environment[name]
+        element.shift_x   = parameters["shift_x"]
+        element.shift_y   = parameters["shift_y"]
+        element.rot_s_rad = negate_sad_value(field_rotation)
+
+
 ################################################################################
-# Line Bend Direction Reversal
+# Horizontal Survey Reflection
 ################################################################################
 def reverse_line_survey_horizontal(line: xt.Line) -> xt.Line:
     """
@@ -247,33 +260,33 @@ def reverse_line_survey_horizontal(line: xt.Line) -> xt.Line:
     # Copy the line for changes
     ########################################
     env             = line.env
-    env_elements    = list(set(env.elements.keys()))
+    env_elements    = set(env.elements.keys())
 
     ########################################
     # Get tables
     ########################################
-    tt      = line.get_table(attr = True)
-    tt_bend = tt.rows[
+    tt            = line.get_table(attr = True)
+    tt_bend       = tt.rows[
         (tt.element_type == "Bend") | (tt.element_type == "RBend")]
-    tt_quad = tt.rows[tt.element_type == "Quadrupole"]
-    tt_sext = tt.rows[tt.element_type == "Sextupole"]
-    tt_oct  = tt.rows[tt.element_type == "Octupole"]
-    tt_mult = tt.rows[tt.element_type == "Multipole"]
-    tt_sol  = tt.rows[tt.element_type == "UniformSolenoid"]
-    tt_dxy  = tt.rows[tt.element_type == "Translation"]
-    tt_rot  = tt.rows[tt.element_type == "Rotation"]
+    tt_quad       = tt.rows[tt.element_type == "Quadrupole"]
+    tt_sext       = tt.rows[tt.element_type == "Sextupole"]
+    tt_oct        = tt.rows[tt.element_type == "Octupole"]
+    tt_mult       = tt.rows[tt.element_type == "Multipole"]
+    tt_sol        = tt.rows[tt.element_type == "UniformSolenoid"]
+    tt_dxy        = tt.rows[tt.element_type == "Translation"]
+    tt_rot        = tt.rows[tt.element_type == "Rotation"]
 
     ########################################
     # Get unique elements
     ########################################
-    unique_bends    = list(set([name.split("::")[0] for name in tt_bend.name]))
-    unique_quads    = list(set([name.split("::")[0] for name in tt_quad.name]))
-    unique_sexts    = list(set([name.split("::")[0] for name in tt_sext.name]))
-    unique_octs     = list(set([name.split("::")[0] for name in tt_oct.name]))
-    unique_mults    = list(set([name.split("::")[0] for name in tt_mult.name]))
-    unique_sols     = list(set([name.split("::")[0] for name in tt_sol.name]))
-    unique_dxys     = list(set([name.split("::")[0] for name in tt_dxy.name]))
-    unique_rots     = list(set([name.split("::")[0] for name in tt_rot.name]))
+    unique_bends      = list(set([name.split("::")[0] for name in tt_bend.name]))
+    unique_quads      = list(set([name.split("::")[0] for name in tt_quad.name]))
+    unique_sexts      = list(set([name.split("::")[0] for name in tt_sext.name]))
+    unique_octs       = list(set([name.split("::")[0] for name in tt_oct.name]))
+    unique_mults      = list(set([name.split("::")[0] for name in tt_mult.name]))
+    unique_sols       = list(set([name.split("::")[0] for name in tt_sol.name]))
+    unique_dxys       = list(set([name.split("::")[0] for name in tt_dxy.name]))
+    unique_rots       = list(set([name.split("::")[0] for name in tt_rot.name]))
 
     ########################################
     # Get only the non-reversed and handle reverse later
@@ -287,6 +300,8 @@ def reverse_line_survey_horizontal(line: xt.Line) -> xt.Line:
         [name[1:] if name.startswith("-") else name for name in unique_dxys]))
     unique_rots     = list(set(
         [name[1:] if name.startswith("-") else name for name in unique_rots]))
+
+    _reflect_sad_soft_quadrupolar_fringes(line, horizontal = True)
 
     ########################################
     # Bend Adjustments
@@ -468,7 +483,7 @@ def reverse_line_survey_horizontal(line: xt.Line) -> xt.Line:
     return line
 
 ################################################################################
-# Line Bend Direction Reversal (Vertical)
+# Vertical Survey Reflection
 ################################################################################
 def reverse_line_survey_vertical(line: xt.Line) -> xt.Line:
     """
@@ -520,46 +535,48 @@ def reverse_line_survey_vertical(line: xt.Line) -> xt.Line:
     # Copy the line for changes
     ########################################
     env             = line.env
-    env_elements    = list(set(env.elements.keys()))
+    env_elements    = set(env.elements.keys())
 
     ########################################
     # Get tables
     ########################################
-    tt      = line.get_table(attr = True)
-    tt_bend = tt.rows[
+    tt            = line.get_table(attr = True)
+    tt_bend       = tt.rows[
         (tt.element_type == "Bend") | (tt.element_type == "RBend")]
-    tt_quad = tt.rows[tt.element_type == "Quadrupole"]
-    tt_sext = tt.rows[tt.element_type == "Sextupole"]
-    tt_oct  = tt.rows[tt.element_type == "Octupole"]
-    tt_mult = tt.rows[tt.element_type == "Multipole"]
-    tt_sol  = tt.rows[tt.element_type == "UniformSolenoid"]
-    tt_dxy  = tt.rows[tt.element_type == "Translation"]
-    tt_rot  = tt.rows[tt.element_type == "Rotation"]
+    tt_quad       = tt.rows[tt.element_type == "Quadrupole"]
+    tt_sext       = tt.rows[tt.element_type == "Sextupole"]
+    tt_oct        = tt.rows[tt.element_type == "Octupole"]
+    tt_mult       = tt.rows[tt.element_type == "Multipole"]
+    tt_sol        = tt.rows[tt.element_type == "UniformSolenoid"]
+    tt_dxy        = tt.rows[tt.element_type == "Translation"]
+    tt_rot        = tt.rows[tt.element_type == "Rotation"]
 
     ########################################
     # Get unique elements
     ########################################
-    unique_bends    = list(set([name.split("::")[0] for name in tt_bend.name]))
-    unique_quads    = list(set([name.split("::")[0] for name in tt_quad.name]))
-    unique_sexts    = list(set([name.split("::")[0] for name in tt_sext.name]))
-    unique_octs     = list(set([name.split("::")[0] for name in tt_oct.name]))
-    unique_mults    = list(set([name.split("::")[0] for name in tt_mult.name]))
-    unique_sols     = list(set([name.split("::")[0] for name in tt_sol.name]))
-    unique_dxys     = list(set([name.split("::")[0] for name in tt_dxy.name]))
-    unique_rots     = list(set([name.split("::")[0] for name in tt_rot.name]))
+    unique_bends      = list(set([name.split("::")[0] for name in tt_bend.name]))
+    unique_quads      = list(set([name.split("::")[0] for name in tt_quad.name]))
+    unique_sexts      = list(set([name.split("::")[0] for name in tt_sext.name]))
+    unique_octs       = list(set([name.split("::")[0] for name in tt_oct.name]))
+    unique_mults      = list(set([name.split("::")[0] for name in tt_mult.name]))
+    unique_sols       = list(set([name.split("::")[0] for name in tt_sol.name]))
+    unique_dxys       = list(set([name.split("::")[0] for name in tt_dxy.name]))
+    unique_rots       = list(set([name.split("::")[0] for name in tt_rot.name]))
 
     ########################################
     # Get only the non-reversed and handle reverse later
     ########################################
     # This only applies to the elements that can keep the minus sign
-    unique_bends    = list(set(
+    unique_bends      = list(set(
         [name[1:] if name.startswith("-") else name for name in unique_bends]))
-    unique_sols     = list(set(
+    unique_sols       = list(set(
         [name[1:] if name.startswith("-") else name for name in unique_sols]))
-    unique_dxys     = list(set(
+    unique_dxys       = list(set(
         [name[1:] if name.startswith("-") else name for name in unique_dxys]))
-    unique_rots     = list(set(
+    unique_rots       = list(set(
         [name[1:] if name.startswith("-") else name for name in unique_rots]))
+
+    _reflect_sad_soft_quadrupolar_fringes(line, horizontal = False)
 
     ########################################
     # Bend Adjustments
