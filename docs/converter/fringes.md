@@ -42,7 +42,7 @@ Every fringe parameter must be a concrete number. A deferred (symbolic) expressi
 | Element | Convention |
 | --- | --- |
 | `BEND` | sign-based: `> 0` both edges, `-1` entrance only, `-2` exit only, `<= -3` neither, `0` no import |
-| `QUAD`, `MULT` | membership: `1` entrance only, `2` exit only, `3` both. `<= -4` is a master disable on `QUAD`'s hard edge |
+| `QUAD`, `MULT` | integer membership: `1` entrance only, `2` exit only, `3` both. SAD truncates a non-integral input value when reading this integer-valued keyword. `<= -4` is a master disable on `QUAD`'s hard edge |
 | `CAVI` | `1` entrance only, `2` exit only, anything else non-negative enables both, any negative value disables entirely |
 
 `SEXT` and `OCT` have no `FRINGE` keyword at all.
@@ -114,7 +114,7 @@ A quadrupole with no length is a no-op. SAD itself defines `F1 = F2 = 0` for a t
 
 SAD's kick is non-polynomial in `delta` — it contains `exp(a/(1+delta))` and `1/(1+delta)**2` terms. The converter Taylor-expands to `O(delta)` and builds an `xt.SecondOrderTaylorMap`.
 
-The expansion is a hand-derived closed form, cross-checked to machine precision against an independent symbolic derivation over a wide `(a, b)` grid. It is not evaluated symbolically at runtime.
+The expansion is a hand-derived closed form, cross-checked to machine precision against an independent symbolic derivation over a wide `(a, b)` grid. For a thick `QUAD`, its coefficients depend on the body's existing scalar `k1_{name}` or `k1s_{name}` optics variable. No fringe-only strength variables are introduced. A `MULT` fringe remains numeric, matching the writer's existing treatment of MULT strength arrays.
 
 This is exact for the electron and positron lattices it targets, where Xsuite's `pzeta` equals SAD's `delta`. It is **not** verified for lower-`beta0` species.
 
@@ -132,11 +132,18 @@ Keeping the body's bare name matters beyond cosmetics. Twiss alignment originall
 
 ### Surviving a line reversal
 
-Each fringe map stores the source-neutral `(a, b, frame_rotation)` it was
-built from as plain attributes: `_sad_k1_fringe_a`, `_sad_k1_fringe_b`, and
-`_sad_k1_fringe_frame_rotation`.
+The canonical map uses Xsuite's standard element-frame transform:
+`rot_s_rad` is the negative of SAD's normal-field frame angle. The map itself
+therefore stays in a compact normal-quadrupole form; SAD2XS does not manually
+rotate the `R` and `T` tensors.
 
-These are ordinary Python attributes, not xofields. Xsuite has no field for them, but the object carries them through line building and `line.mirror()`. This lets the reversal step rebuild each map's coefficients in place under `-LINE` or `reverse_element_order`. Only the surviving side's `a` flips sign; `b` and `theta` are unchanged.
+The source-neutral `(a, b, field_rotation, shift_x, shift_y)` record is held
+once in `Environment.metadata`, rather than copied into private element
+attributes. Reversal creates an occurrence-specific opposite-face map with
+`a -> -a`; it never mutates a shared forward map. This matters when one line
+contains both `Q1` and `-Q1`. Survey reflection changes the field-frame angle
+and the relevant offset, while leaving the normal-frame Taylor coefficients
+unchanged.
 
 ### Requires Xsuite 0.59.0
 
@@ -168,18 +175,23 @@ The K1 part is imported with the same second-order Taylor-map machinery as a
 `QUAD`. For integrated normal and skew strengths `K1` and `SK1`,
 
 ```text
-akk = |K1 + i SK1| / L
-a   = -akk * f1_raw^2 / 24
+akk = |K1 + i SK1| / |L|
+a   = -akk * f1_raw * |f1_raw| / 24
 b   =  akk * f2_raw
 theta = ROTATE + akang(K1 + i SK1)
 ```
 
-The entrance map uses `a`; the exit uses `-a`. `b` keeps its sign. Both signs
-of `F1` were checked against the real SAD binary: the square is literal, not
-`F1*abs(F1)`. Active faces bracket the complete converted MULT body, including
-a generic multipole, an auto- or user-simplified quadrupole, and an RF-sliced
-body. A user replacement that discards K1/SK1 also discards the fringe and
-raises a warning.
+The entrance map uses `a`; the exit uses `-a`. `b` keeps its sign. Unlike the
+precomputed QUAD table, `tmulte.f` passes the raw signed face length to
+`tqlfre.f`, whose live formula is `F1*abs(F1)`. Both signs are pinned by a
+real-SAD regression. Active faces bracket the complete converted MULT body,
+including a generic multipole, an auto- or user-simplified quadrupole, and an
+RF-sliced body. A user replacement that discards K1/SK1 also discards the
+fringe and raises a warning.
+
+MULT face parameters are deliberately numeric. The converter and writer do
+not create a large family of per-order MULT strength variables solely to make
+the fringe tunable.
 
 `DROT` is not applied to the converted MULT body. An active linear fringe with
 nonzero `DROT` is therefore warned about and skipped rather than rotating only

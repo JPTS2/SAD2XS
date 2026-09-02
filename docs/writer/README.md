@@ -84,25 +84,31 @@ The writer's supported set is **not** the same question as which SAD elements th
 
 ## Taylor-map output
 
+Generic first- and second-order Taylor maps are written as full-precision
+coefficient arrays.
+
+SAD soft quadrupolar fringe maps are written differently: one self-contained
+helper is emitted, followed by a compact call for each face containing only
+`a`, `b`, the normal-field rotation, and the two offsets. This preserves a
+thick QUAD fringe's dependency on the existing scalar quadrupole-strength
+variables after reload, without adding fringe variables or requiring the
+generated lattice to import SAD2XS. The defining records live in standard
+`Environment.metadata`; no private fields are added to Xsuite elements.
+
 Generic `xt.FirstOrderTaylorMap` and `xt.SecondOrderTaylorMap` elements are
 serialised as literal arrays at full double precision, not as optics variables.
 
 Their coefficients are not physically meaningful knobs a user would retune, and a second-order map's `T` tensor would produce an unusable number of variables.
 
-Recognised SAD K1 soft-edge maps are compact instead. The generated file
-defines one self-contained builder and calls it with only `(a, b,
-frame_rotation)`. This avoids repeating a mostly-zero `6x6x6` tensor for every
-QUAD or MULT face. The same call attaches `_sad_k1_fringe_a`,
-`_sad_k1_fringe_b`, and `_sad_k1_fringe_frame_rotation` through `env.new`, so
-the optics metadata and reversal support survive a write/reload cycle without
-loose post-construction assignments. Pre-0.4 QUAD metadata remains readable and
-uses the literal compatibility path. See [fringe models](../converter/fringes.md).
-
 ## Limitations
 
 **The writer is not a general Xsuite serialiser.** It handles the element classes listed above, and it still carries assumptions from being the final step of a SAD2XS conversion rather than a standalone tool.
 
-**Deferred expressions are baked to literal floats.** An `xt.Line` built with xdeps expressions loses those expressions on write: the generated file contains the evaluated numbers. Structure and values survive a round trip; the dependency graph does not.
+**Most deferred expressions are baked to literal floats.** An arbitrary
+`xt.Line` built with xdeps expressions generally loses those expressions on
+write: the generated file contains evaluated numbers. The explicit exception
+is a recognised SAD soft quadrupolar fringe, whose dependency on the existing
+QUAD strength variables is preserved by its compact helper call.
 
 Both are tracked in the [issue tracker](https://github.com/JPTS2/sad2xs/issues).
 
