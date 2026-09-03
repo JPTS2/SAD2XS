@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-23
+Date:       2026-09-03
 ================================================================================
 """
 
@@ -161,7 +161,7 @@ Converted using the SAD2XS Converter
 Authors:    J. Salvesen
 Contact:    john.salvesen@cern.ch
 ================================================================================
-Conversion Date: {today.strftime("%d/%m/%Y")}
+Conversion Date: {today.isoformat()}
 \"\"\"
 
 ################################################################################
