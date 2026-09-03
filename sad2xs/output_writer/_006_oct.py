@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-09-03
 ================================================================================
 """
 
@@ -20,7 +20,7 @@ import xtrack as xt
 import xdeps as xd
 import numpy as np
 
-from ._000_helpers import extract_multipole_information, \
+from ._000_helpers import extract_multipole_information, get_value_string, \
     generate_magnet_for_replication_names, check_is_simple_quad_sext_oct, \
     check_is_skew_quad_sext_oct, get_knl_string
 from ..types import ConfigLike
@@ -277,10 +277,10 @@ def create_octupole_optics_file_information(
 
         if k3 is not None:
             output_string += f"""
-    {f"k3_{oct}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k3_{oct}") + 4)}{"= "}{k3:.24f},"""
+    {f"k3_{oct}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k3_{oct}") + 4)}{"= "}{get_value_string(k3)},"""
         if k3s is not None:
             output_string += f"""
-    {f"k3s_{oct}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k3s_{oct}") + 4)}{"= "}{k3s:.24f},"""
+    {f"k3s_{oct}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k3s_{oct}") + 4)}{"= "}{get_value_string(k3s)},"""
 
     ########################################
     # Return

@@ -19,6 +19,7 @@ Does not require the SAD binary.
 | `test_magnet_length_precision.py` | 5 | 0 | — |
 | `test_writer_observability.py` | 3 | 0 | — |
 | `test_writer_preserves_input_line.py` | 3 | 0 | — |
+| `test_value_formatting.py` | 19 | 0 | — |
 
 - `test_line_roundtrip.py` — end-to-end roundtrip with a directly
   constructed Xsuite line containing all supported element types (drift, bend,
@@ -75,6 +76,13 @@ Does not require the SAD binary.
 
 - `test_writer_preserves_input_line.py` — neither `write_lattice` nor
   `write_optics` mutates the `xt.Line` it is given.
+
+- `test_value_formatting.py` — `get_value_string`, the single place every
+  emitted scalar is formatted: exact round trip for a range of magnitudes
+  (10 parametrised cases), shortest-form output, tiny values that fixed-point
+  formatting would round to zero, NumPy scalars written as plain floats,
+  infinity and NaN written as `float(...)` calls, expressions written as
+  double-quoted strings, and `get_knl_string` sharing the same formatting.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

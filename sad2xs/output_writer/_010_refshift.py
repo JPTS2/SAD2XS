@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-09-03
 ================================================================================
 """
 
@@ -19,7 +19,7 @@ Date:       2026-07-21
 import xtrack as xt
 import xdeps as xd
 
-from ._000_helpers import get_parentname, get_variablename
+from ._000_helpers import get_parentname, get_value_string, get_variablename
 from ..types import ConfigLike
 
 ################################################################################
@@ -303,10 +303,10 @@ def create_refshift_optics_file_information(
 
             if dx != 0:
                 output_string += f"""
-    {f"dx_{translation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"dx_{translation_variable_name}") + 4)}{"= "}{dx:.24f},"""
+    {f"dx_{translation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"dx_{translation_variable_name}") + 4)}{"= "}{get_value_string(dx)},"""
             if dy != 0:
                 output_string += f"""
-    {f"dy_{translation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"dy_{translation_variable_name}") + 4)}{"= "}{dy:.24f},"""
+    {f"dy_{translation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"dy_{translation_variable_name}") + 4)}{"= "}{get_value_string(dy)},"""
 
         output_string += "\n"
 
@@ -326,7 +326,7 @@ def create_refshift_optics_file_information(
 
             if dz != 0:
                 output_string += f"""
-    {f"dz_{timedelay_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"dz_{timedelay_variable_name}") + 4)}{"= "}{dz:.24f},"""
+    {f"dz_{timedelay_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"dz_{timedelay_variable_name}") + 4)}{"= "}{get_value_string(dz)},"""
 
         output_string += "\n"
 
@@ -348,13 +348,13 @@ def create_refshift_optics_file_information(
 
             if chi1 != 0:
                 output_string += f"""
-    {f"chi1_{rotation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"chi1_{rotation_variable_name}") + 4)}{"= "}{chi1:.24f},"""
+    {f"chi1_{rotation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"chi1_{rotation_variable_name}") + 4)}{"= "}{get_value_string(chi1)},"""
             if chi2 != 0:
                 output_string += f"""
-    {f"chi2_{rotation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"chi2_{rotation_variable_name}") + 4)}{"= "}{chi2:.24f},"""
+    {f"chi2_{rotation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"chi2_{rotation_variable_name}") + 4)}{"= "}{get_value_string(chi2)},"""
             if chi3 != 0:
                 output_string += f"""
-    {f"chi3_{rotation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"chi3_{rotation_variable_name}") + 4)}{"= "}{chi3:.24f},"""
+    {f"chi3_{rotation_variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"chi3_{rotation_variable_name}") + 4)}{"= "}{get_value_string(chi3)},"""
 
     ########################################
     # Return

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-09-03
 ================================================================================
 """
 
@@ -19,7 +19,7 @@ Date:       2026-07-21
 import xtrack as xt
 import xdeps as xd
 
-from ._000_helpers import get_parentname
+from ._000_helpers import get_parentname, get_value_string
 from ..types import ConfigLike
 
 ################################################################################
@@ -117,7 +117,7 @@ def _optics_variable_line(variable_name: str, value: float, config: ConfigLike) 
     """
     padding = " " * (config.OUTPUT_STRING_SEP - len(variable_name) + 4)
     return f"""
-    {variable_name}{padding}{"= "}{value:.24f},"""
+    {variable_name}{padding}{"= "}{get_value_string(value)},"""
 
 ################################################################################
 # Lattice File

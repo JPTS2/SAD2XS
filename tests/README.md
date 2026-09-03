@@ -35,7 +35,7 @@ description.
 
 ## Suite Total
 
-**2420 tests**, counted as instances collected by pytest, so each
+**2439 tests**, counted as instances collected by pytest, so each
 parametrisation counts separately.
 
 | Folder | Tests |
@@ -48,7 +48,7 @@ parametrisation counts separately.
 | `conversion/` (top level) | 91 |
 | `sad_helpers/` | 83 |
 | `ci/` | 103 |
-| `writer/pipeline/` | 61 |
+| `writer/pipeline/` | 80 |
 | `xsuite_helpers/` | 59 |
 | `observability/` | 18 |
 | `packaging/` | 22 |
@@ -56,7 +56,7 @@ parametrisation counts separately.
 | `installation/` | 187 |
 | `xtrack/` | 9 |
 | `docs/` | 14 |
-| **Total** | **2420** |
+| **Total** | **2439** |
 
 Each folder README gives the per-file breakdown, and those per-file counts sum
 to the folder totals above. Reproduce any of these with

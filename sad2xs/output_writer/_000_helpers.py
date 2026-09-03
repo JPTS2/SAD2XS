@@ -149,6 +149,41 @@ def generate_magnet_for_replication_names(
     return names
 
 ################################################################################
+# Values to strings
+################################################################################
+def get_value_string(value: float | str) -> str:
+    """
+    Format a scalar attribute as a Python literal.
+
+    A string is an optics-variable expression, reproduced as a
+    double-quoted literal. A number is written as its shortest exact
+    representation, which reads back as the same float.
+
+    Infinities and NaN have no literal spelling in Python, so they are
+    written as `float(...)` calls. The generated optics file does not
+    import NumPy, so `np.inf` cannot be used.
+
+    Parameters
+    ----------
+    value : float or str
+        The attribute value to format.
+
+    Returns
+    -------
+    str
+        A Python string, float, or `float(...)` literal.
+    """
+    if isinstance(value, str):
+        return f""""{value}\""""
+
+    number = float(value)
+    if np.isnan(number):
+        return """float("nan")"""
+    if np.isinf(number):
+        return """float("inf")""" if number > 0 else """float("-inf")"""
+    return repr(number)
+
+################################################################################
 # KNL/KSL arrays to strings
 ################################################################################
 def get_knl_string(knl_array: np.ndarray) -> str:
@@ -164,8 +199,8 @@ def get_knl_string(knl_array: np.ndarray) -> str:
     Returns
     -------
     str
-        A string like "[1.0e+00, 0, 2.5e-01]", with any trailing run
-        of zero entries omitted, or "[]" if every entry is zero.
+        A string like "[1.0, 0.0, 0.25]", with any trailing run of
+        zero entries omitted, or "[]" if every entry is zero.
     """
     # If all zero, just give an empty array
     if np.all(knl_array == 0):
@@ -180,10 +215,7 @@ def get_knl_string(knl_array: np.ndarray) -> str:
             break
 
         # Fromat the knl value
-        if knl == 0:
-            knl_substring   = "0"
-        else:
-            knl_substring   = f"{knl:.24e}"
+        knl_substring   = get_value_string(knl)
 
         # Append to the string
         if i == 0:
@@ -194,28 +226,6 @@ def get_knl_string(knl_array: np.ndarray) -> str:
     # Close the string
     knl_string += "]"
     return knl_string
-
-def get_value_string(value: float | str) -> str:
-    """
-    Format a scalar attribute as a Python literal.
-
-    A string is an optics-variable expression, reproduced as a
-    double-quoted literal. A number is written to full round-trip
-    precision.
-
-    Parameters
-    ----------
-    value : float or str
-        The attribute value to format.
-
-    Returns
-    -------
-    str
-        A Python string or float literal.
-    """
-    if isinstance(value, str):
-        return f'"{value}"'
-    return f"{float(value):.24e}"
 
 ################################################################################
 # Extract Magnet Information

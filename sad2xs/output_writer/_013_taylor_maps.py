@@ -32,12 +32,8 @@ def _format_taylor_map_array(values) -> str:
 
     Recurses over `values`'s dimensions (1D for `k`/`m0`, 2D for `R`/
     `m1`, 3D for `T`), so the same helper covers every array shape
-    these elements carry. Every float is written to full round-trip
-    precision (`.24e`), matching the KNL/KSL convention
-    (`get_knl_string`) rather than the `.24f` used for single physical
-    scalars elsewhere in this package -- these coefficients can span
-    many orders of magnitude and are not individually meaningful
-    physical quantities on their own.
+    these elements carry. Every float is written by `get_value_string`,
+    like every other scalar in this package.
 
     Parameters
     ----------
@@ -52,7 +48,7 @@ def _format_taylor_map_array(values) -> str:
     """
     array = np.asarray(values)
     if array.ndim == 0:
-        return f"{float(array):.24e}"
+        return get_value_string(float(array))
     return "[" + ", ".join(
         _format_taylor_map_array(sub_array) for sub_array in array) + "]"
 
@@ -255,7 +251,7 @@ def create_taylor_map_lattice_file_information(
 env.new(
     name        = "{name}",
     prototype   = xt.FirstOrderTaylorMap,
-    length      = {element.length:.24f},
+    length      = {get_value_string(element.length)},
     m0          = {_format_taylor_map_array(element.m0)},
     m1          = {_format_taylor_map_array(element.m1)})"""
 
@@ -297,13 +293,13 @@ _create_sad_soft_quadrupolar_fringe(
 env.new(
     name        = "{name}",
     prototype   = xt.SecondOrderTaylorMap,
-    length      = {element.length:.24f},
+    length      = {get_value_string(element.length)},
     k           = {_format_taylor_map_array(element.k)},
     R           = {_format_taylor_map_array(element.R)},
     T           = {_format_taylor_map_array(element.T)},
-    shift_x     = {element.shift_x:.24e},
-    shift_y     = {element.shift_y:.24e},
-    rot_s_rad   = {element.rot_s_rad:.24e})"""
+    shift_x     = {get_value_string(element.shift_x)},
+    shift_y     = {get_value_string(element.shift_y)},
+    rot_s_rad   = {get_value_string(element.rot_s_rad)})"""
 
     ########################################
     # Return
