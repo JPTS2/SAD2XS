@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-09-03
 ================================================================================
 """
 
@@ -194,6 +194,28 @@ def get_knl_string(knl_array: np.ndarray) -> str:
     # Close the string
     knl_string += "]"
     return knl_string
+
+def get_value_string(value: float | str) -> str:
+    """
+    Format a scalar attribute as a Python literal.
+
+    A string is an optics-variable expression, reproduced as a
+    double-quoted literal. A number is written to full round-trip
+    precision.
+
+    Parameters
+    ----------
+    value : float or str
+        The attribute value to format.
+
+    Returns
+    -------
+    str
+        A Python string or float literal.
+    """
+    if isinstance(value, str):
+        return f'"{value}"'
+    return f"{float(value):.24e}"
 
 ################################################################################
 # Extract Magnet Information

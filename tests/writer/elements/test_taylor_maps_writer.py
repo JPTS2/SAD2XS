@@ -352,8 +352,22 @@ def test_sad_soft_quadrupolar_fringe_writer_is_compact_and_reproducible(tmp_path
 
     assert source.count("def _create_sad_soft_quadrupolar_fringe(") == 1
     assert source.count("_create_sad_soft_quadrupolar_fringe(") == 3
-    assert "field_rotation  = 0.125" in source
+    assert f"field_rotation  = {0.125:.24e}" in source
     assert source.count("T           = [[[") == 1
+
+    calls = [
+        block.split(")")[0] for block in
+        source.split("\n_create_sad_soft_quadrupolar_fringe(\n")[1:]]
+    assert len(calls) == 2
+    m1_call, m2_call = calls
+
+    # Offsets are emitted only when non-zero; the helper defaults them
+    assert "shift_x" in m1_call and "shift_y" in m1_call
+    assert "shift_x" not in m2_call and "shift_y" not in m2_call
+
+    # Emitted arguments use the writer's double-quoted, full-precision style
+    assert '"m1"' in m1_call and "'" not in m1_call
+    assert f"a               = {-3.125E-05:.24e}" in m1_call
 
     env = xt.Environment()
     env.call(str(output_dir / "lattice.py"))

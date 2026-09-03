@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-01
+Date:       2026-09-03
 ================================================================================
 """
 
@@ -19,7 +19,7 @@ Date:       2026-09-01
 import numpy as np
 import xtrack as xt
 
-from ._000_helpers import get_parentname
+from ._000_helpers import get_parentname, get_value_string
 from ..types import ConfigLike
 
 ################################################################################
@@ -77,9 +77,38 @@ def _create_sad_soft_quadrupolar_fringe(
         a,
         b,
         field_rotation,
-        shift_x,
-        shift_y):
-    """Build SAD's second-order K1/SK1 soft-edge fringe map."""
+        shift_x = 0.0,
+        shift_y = 0.0):
+    """
+    Add one SAD K1/SK1 soft-edge map to an Xsuite environment.
+
+    The physical map is stored in the element's canonical k, R, and T
+    coefficients. Its five defining quantities are recorded once in
+    Environment.metadata, so a reloaded lattice carries the same fringe
+    information as a freshly converted one.
+
+    Parameters
+    ----------
+    environment : xtrack.Environment
+        Environment receiving the new element.
+    name : str
+        Name of the new SecondOrderTaylorMap element.
+    a : float or str
+        Dimensionless signed F1 coefficient for this face.
+    b : float or str
+        F2 coefficient in metres for this face.
+    field_rotation : float or str
+        SAD transverse field-frame rotation in radians.
+    shift_x : float or str, optional
+        Horizontal displacement of the magnet axis in metres. Defaults to
+        zero.
+    shift_y : float or str, optional
+        Vertical displacement of the magnet axis in metres. Defaults to zero.
+
+    Returns
+    -------
+    None
+    """
     def resolve(value):
         return environment.vars.new_expr(value) if isinstance(value, str) else value
 
@@ -128,8 +157,7 @@ def _create_sad_soft_quadrupolar_fringe(
         "b":              b,
         "field_rotation": field_rotation,
         "shift_x":        shift_x,
-        "shift_y":        shift_y,
-    }
+        "shift_y":        shift_y}
 '''
 
 ################################################################################
@@ -250,12 +278,19 @@ env.new(
             output_string += f"""
 _create_sad_soft_quadrupolar_fringe(
     environment     = env,
-    name            = {name!r},
-    a               = {parameters["a"]!r},
-    b               = {parameters["b"]!r},
-    field_rotation  = {parameters["field_rotation"]!r},
-    shift_x         = {parameters["shift_x"]!r},
-    shift_y         = {parameters["shift_y"]!r})"""
+    name            = "{name}",
+    a               = {get_value_string(parameters["a"])},
+    b               = {get_value_string(parameters["b"])},
+    field_rotation  = {get_value_string(parameters["field_rotation"])}"""
+
+            # Offsets are zero for most fringes, and default to zero in the helper
+            for offset in ("shift_x", "shift_y"):
+                value = parameters[offset]
+                if isinstance(value, str) or value != 0.0:
+                    output_string += f""",
+    {offset:<15} = {get_value_string(value)}"""
+
+            output_string += ")"
             continue
 
         output_string   += f"""
