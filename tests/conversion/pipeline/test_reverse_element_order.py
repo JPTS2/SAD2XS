@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-08-29
 ================================================================================
 """
 ################################################################################
@@ -22,7 +22,11 @@ import pytest
 import xtrack as xt
 
 import sad2xs as s2x
-from sad2xs.sad_helpers import track_sad, rebuild_sad_lattice
+from sad2xs.sad_helpers import (
+    rebuild_sad_lattice,
+    track_sad,
+    transfer_matrix_sad)
+from tests.support.coupled_optics import linear_transfer_matrix_4d
 
 ################################################################################
 # Default Behaviour
@@ -822,7 +826,7 @@ def test_pipeline_reverse_element_order_translation_physics_matches_sad(tmp_path
 
 
 ################################################################################
-# QUAD Linear Fringe Field Adjustment (_import_sad_quad_fringes)
+# QUAD Soft Quadrupolar Fringe Adjustment
 ################################################################################
 def test_pipeline_reverse_element_order_quad_fringe_matches_sad_reversed_line(tmp_path):
     """
@@ -886,3 +890,56 @@ def test_pipeline_reverse_element_order_quad_fringe_matches_sad_reversed_line(tm
             f"Xsuite reverse_element_order=True QUAD fringe tracking "
             f"`{coord}` should match SAD's native -LINE reversed tracking. "
             f"Xsuite: {xs_val:.6e}, SAD: {sad_val:.6e}.")
+
+
+def test_pipeline_reverse_element_order_mult_fringe_matches_sad_reversed_line(
+        tmp_path):
+    """A reversed signed-F1 MULT fringe response should match SAD ``-LINE``."""
+    lattice_content = (
+        "MOMENTUM = 1.0 GEV;\n"
+        "MULT M1 = (L=1.0 K1=0.05 "
+        "F1K1F=-0.05 F1K1B=0.03 F2K1F=0.02 F2K1B=-0.01 "
+        "FRINGE=1 DISFRIN=1)\n"
+        "     M0 = (L=1.0 K1=0.05 "
+        "F1K1F=-0.05 F1K1B=0.03 F2K1F=0.02 F2K1B=-0.01 "
+        "FRINGE=0 DISFRIN=1);\n"
+        "MARK START=() END=();\n"
+        "LINE TEST=(START M1 END);\n"
+        "LINE TESTOFF=(START M0 END);\n"
+        "LINE TESTREV=(-TEST);\n"
+        "LINE TESTREVOFF=(-TESTOFF);\n")
+    lattice_path = tmp_path / "rev_mult_fringe.sad"
+    lattice_path.write_text(lattice_content)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        sad_on = transfer_matrix_sad(lattice_path.name, "TESTREV")
+        sad_off = transfer_matrix_sad(lattice_path.name, "TESTREVOFF")
+    finally:
+        os.chdir(cwd)
+
+    line_on = s2x.convert_sad_to_xsuite(
+        sad_lattice_path       = str(lattice_path),
+        output_directory       = "N/A",
+        line_name              = "TEST",
+        reverse_element_order  = True,
+        SIMPLIFY_MULTIPOLES    = False,
+        _verbose               = False,
+        _test_mode             = True)
+    line_off = s2x.convert_sad_to_xsuite(
+        sad_lattice_path       = str(lattice_path),
+        output_directory       = "N/A",
+        line_name              = "TEST",
+        reverse_element_order  = True,
+        SIMPLIFY_MULTIPOLES    = False,
+        _import_sad_mult_fringes = False,
+        _verbose               = False,
+        _test_mode             = True)
+
+    sad_response = sad_on - sad_off
+    xsuite_response = (
+        linear_transfer_matrix_4d(line_on)
+        - linear_transfer_matrix_4d(line_off))
+    np.testing.assert_allclose(
+        xsuite_response, sad_response, rtol=2e-4, atol=2e-10)

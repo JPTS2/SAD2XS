@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-06
+Date:       2026-09-01
 ================================================================================
 """
 
@@ -18,10 +18,11 @@ Date:       2026-08-06
 ################################################################################
 import logging
 
-import xtrack as xt
 import numpy as np
+import xtrack as xt
 
 from ..types import ConfigLike
+from ._000_helpers import is_effectively_zero
 
 logger  = logging.getLogger(__name__)
 
@@ -77,8 +78,10 @@ def convert_solenoids(
     if "sol" not in parsed_elements:
         logger.info("No solenoids in lattice: skipping solenoid corrections")
         return
-    solenoids   = parsed_elements["sol"]
-    n_converted = 0
+    solenoids: dict                      = parsed_elements["sol"]
+    n_converted: int                     = 0
+    powered_dipole_elements: set[str]    = set()
+    powered_offset_fringes: set[str]     = set()
 
     ########################################
     # Get bound and geo solenoids
@@ -271,6 +274,10 @@ def convert_solenoids(
                     rotation    = line[element].rot_s_rad
                     knl         = [f"{k0} * {length}", f"{k1} * {length}"]
 
+                    if not is_effectively_zero(ks, tol = 0.0) \
+                            and not is_effectively_zero(k0, tol = 0.0):
+                        powered_dipole_elements.add(element.lstrip("-"))
+
                     x0          = -1 * (shift_x * np.cos(rotation) + \
                         shift_y * np.sin(rotation))
                     y0          = -1 * (shift_y * np.cos(rotation) - \
@@ -433,29 +440,62 @@ def convert_solenoids(
                     shift_y     = line[element].shift_y
                     rotation    = line[element].rot_s_rad
 
+                    if not is_effectively_zero(ks, tol = 0.0) and (
+                            not is_effectively_zero(knl[0], tol = 0.0)
+                            or not is_effectively_zero(ksl[0], tol = 0.0)):
+                        powered_dipole_elements.add(element.lstrip("-"))
+
                     x0          = -1 * (shift_x * np.cos(rotation) + \
                         shift_y * np.sin(rotation))
                     y0          = -1 * (shift_y * np.cos(rotation) - \
                         shift_x * np.sin(rotation))
 
-                    environment.element_dict.pop(element)                       # type: ignore
-                    environment.new(
-                        name				= element,
-                        prototype			= xt.UniformSolenoid,
-                        length				= length,
-                        ks					= ks,
-                        knl					= knl,
-                        ksl					= ksl,
-                        order				= config.MAX_KNL_ORDER,
-                        shift_x		        = shift_x,
-                        shift_y		        = shift_y,
-                        rot_s_rad           = rotation,
-                        x0                  = x0,
-                        y0                  = y0)
+                    new_element_name = f"{element}_{solenoid_suffix}"
+                    if new_element_name not in environment.element_dict:  # type: ignore
+                        environment.new(
+                            name        = new_element_name,
+                            prototype   = xt.UniformSolenoid,
+                            length      = length,
+                            ks          = ks,
+                            knl         = knl,
+                            ksl         = ksl,
+                            order       = config.MAX_KNL_ORDER,
+                            shift_x     = shift_x,
+                            shift_y     = shift_y,
+                            rot_s_rad   = rotation,
+                            x0          = x0,
+                            y0          = y0)
+                    line.element_names[idx] = new_element_name
 
                     n_converted += 1
                     logger.debug(
-                        f"Converted Multipole {element} to solenoid with ks = {ks}")
+                        f"Converted Multipole {element} to solenoid "
+                        f"{new_element_name} with ks = {ks}")
+                    continue
+
+                # Solenoid segment edges supply the local canonical transform,
+                # so the centred source fringe map remains unchanged.
+                elif isinstance(
+                        environment.element_dict[element],
+                        xt.SecondOrderTaylorMap):
+                    source_map = line[element]
+                    if element not in environment.metadata.get(
+                            "sad2xs", {}).get(
+                                "soft_quadrupolar_fringes", {}):
+                        logger.warning(
+                            f"Element {element} in line {line_name} has not "
+                            "been converted")
+                        continue
+                    if is_effectively_zero(ks, tol = 0.0):
+                        continue
+                    if float(source_map.shift_x) != 0.0 \
+                            or float(source_map.shift_y) != 0.0:
+                        source_name = element.lstrip("-")
+                        for suffix in ("_fringe_in", "_fringe_out"):
+                            if source_name.endswith(suffix):
+                                source_name = source_name[:-len(suffix)]
+                                break
+                        powered_offset_fringes.add(source_name)
                     continue
 
                 # Known thin elements that don't need conversion
@@ -478,6 +518,28 @@ def convert_solenoids(
                 else:
                     logger.warning(
                         f"Element {element} in line {line_name} has not been converted")
+
+    if powered_dipole_elements:
+        logger.warning(
+            f"{len(powered_dipole_elements)} element(s) have "
+            "K0/SK0 body components inside powered bound-solenoid "
+            "regions. Xtrack's split solenoid/multipole map differs from "
+            "SAD's combined paraxial body map and can accumulate orbit and "
+            "coupled-optics differences.")
+        logger.debug(
+            "Elements affected by the powered-solenoid K0/SK0 body "
+            "limitation: " + ", ".join(sorted(powered_dipole_elements)))
+
+    if powered_offset_fringes:
+        logger.warning(
+            f"{len(powered_offset_fringes)} offset element(s) "
+            "with SAD K1 soft-edge fringes occur inside powered bound-solenoid "
+            "regions. SAD's combined DX/DY and local-BZ convention is not "
+            "reproduced exactly.")
+        logger.debug(
+            "Offset elements with K1 fringes affected by the powered-solenoid "
+            "limitation: "
+            + ", ".join(sorted(powered_offset_fringes)))
 
     logger.info(f"Converted {n_converted} elements inside solenoid regions")
 

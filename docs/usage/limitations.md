@@ -20,9 +20,12 @@ Each of these is a known, characterised difference, not an open bug. Most raise 
 | Effect | Impact | Warns |
 | --- | --- | --- |
 | Solenoid fringe kick not modelled | solenoid optics, spin tracking | yes |
+| `MULT` K0/SK0 body inside powered solenoid | accumulated orbit/coupled-optics residual | yes |
+| Offset `MULT` K1 fringe inside powered solenoid | local DX/DY convention differs | yes |
 | Cavity RF-focusing kick not modelled | low-energy, high-gradient RF | yes |
 | Offset bend reference-orbit convention | bends with `ANGLE != 0` and `DX`/`DY` | yes |
 | `MULT` simplified to a bend | residual at `O(theta^4)` | yes |
+| `MULT` K1 fringe with `DROT` | fringe skipped | yes |
 | Hard-edge fringe gating ignored | bends and quadrupoles with `DISFRIN` | **no** |
 | Quadrupole fringe radiation untested | quadrupole fringe | no |
 | Radiation against SAD | sextupole, octupole, multipole, solenoid | no |
@@ -37,6 +40,16 @@ Neither `xt.UniformSolenoid` nor `xt.VariableSolenoid` implements the term. For 
 The same limitation applies to spin tracking. Spin precession is highly sensitive to the fine field detail at the fringe, so this converter is not a reliable tool for spin-tracking studies through solenoid lattices.
 
 See [solenoid conversion](../converter/solenoids.md).
+
+SAD uses `tsolque` for a combined paraxial solenoid--multipole body map.
+Xtrack's `UniformSolenoid` instead splits an exact solenoid drift and
+multipole kicks. For a `MULT` carrying `K0` or `SK0` inside a powered bound
+solenoid, the two maps are not identical even after the Xtrack integrator is
+converged. An isolated SAD regression shows that about `99.7%` of the small
+K0- or SK0-dependent linear response is absent from the split Xtrack
+representation for its test parameters. Conversion warns once with the
+affected count; debug logging names the elements. A source-derived corrective
+body map is not yet implemented.
 
 ## Cavities
 
@@ -60,13 +73,20 @@ See [element conversion](../converter/elements.md).
 
 ## Fringe fields
 
-SAD has several distinct fringe mechanisms. Two are imported, both on by default: the bend soft-edge fringe and the quadrupole linear fringe.
+SAD has several distinct fringe mechanisms. Three are imported, all on by default: the bend soft-edge fringe, the quadrupole linear fringe, and the K1 part of the MULT linear fringe.
 
-The rest are not imported. Most importantly, **`DISFRIN` is not read for bends or quadrupoles**. A lattice that deliberately disables the hard-edge fringe still gets that fringe after conversion. This limitation is silent: no warning is raised.
+The rest are not imported. Most importantly, **`DISFRIN` is not read for bends or quadrupoles**, and MULT's dipole soft edge and generic hard edge remain absent. A lattice that deliberately disables the bend or quadrupole hard-edge fringe still gets that fringe after conversion. This limitation is silent: no warning is raised.
 
 The imported bend fringe once carried an off-momentum residual of a few percent. Xsuite 0.57.0 corrected the momentum scaling that caused it, and it is below the supported minimum, so the residual no longer applies.
 
 The quadrupole fringe is modelled as a thin second-order Taylor map. This reproduces the optics correctly, but whether the map radiates is untested. Treat radiation results through quadrupole fringes with caution.
+
+The MULT K1 map uses the same representation. In a powered bound-solenoid
+region, adjacent Xtrack solenoid segment edges supply the local canonical
+transformation for centred maps; direct SAD F1 and F2 regressions pin that
+composition. The combined offset DX/DY and local-field convention is not
+reproduced exactly, so such elements raise one warning and remain a stated
+limitation.
 
 See [fringe models](../converter/fringes.md).
 

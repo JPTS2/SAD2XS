@@ -369,11 +369,18 @@ A SAD `MULT` combines two kinds of content in a single element:
 - QUAD-style quadrupole content: `K1`, with soft-edge
   `F1`/`F2`/`F1K1F`/`F2K1F`/`F1K1B`/`F2K1B`.
 
-Its source, `tmulti.f`, mirrors `tquad.f` almost line-for-line. A `MULT`
-with only `K1` set, and no other order content, gives **bit-identical**
-tracking output to the equivalent `QUAD`, including every pinned reference
-value (`tests/sad/test_mult.py`,
-`test_mult_k1_f1_f2_matches_sad_reference_values`).
+Its source, `tmulte.f`, mirrors the quadrupole path closely. A `MULT` with
+only `K1` set and positive face lengths gives bit-identical tracking output
+to the equivalent `QUAD` in the pinned reference cases. The parameter path is
+not identical for signed face lengths: `tsetfringepe` passes raw MULT face
+values to `tqlfre`, whereas the QUAD path uses its precomputed table.
+
+For combined normal/skew K1 content, the linear soft-edge coefficients use
+`abs(K1+i*SK1)/abs(L)` and the frame angle uses
+`ROTATE+akang(K1+i*SK1)`. The live formula in `tqlfre.f` retains the face
+sign:
+`a=-abs(K1+i*SK1)/abs(L)*f1_raw*abs(f1_raw)/24`.
+The negative-F1 real-SAD regression pins this signed form directly.
 
 `FRINGE`, internally `mfring`, uses the **same `{1, 2, 3}` numbering as
 `QUAD`**: `1` is entrance-only, `2` is exit-only, and `3` is both. It
@@ -382,6 +389,9 @@ quad-style linear fringe, the `FB1`/`FB2` dipole-style linear fringe, and
 the `DISFRIN`-gated hard-edge kick all read the same `mfring` value to
 select the entrance or the exit. This was confirmed against the real binary
 for `FB1`/`FB2` (`test_mult_fb1_fb2_fringe_mode_gates_entrance_exit`).
+Although the tracking source calls `NINT`, SAD's input layer has already
+truncated this integer-valued keyword: for example, `FRINGE=1.5` tracks
+bit-identically to `FRINGE=1`, not `FRINGE=2`.
 
 This explains a finding recorded above. A `K0`-only `MULT` and the
 equivalent `K0`-only `BEND`, both given the same `FRINGE=1`, `FB1`, and

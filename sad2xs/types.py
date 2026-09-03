@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-09-01
 ================================================================================
 """
 
@@ -40,6 +40,9 @@ class ConfigLike(Protocol):
     _test_mode:                     bool
     _replace_repeated_elements:     bool
     _install_offset_markers:        bool
+    _import_sad_bend_fringes:       bool
+    _import_sad_quad_fringes:       bool
+    _import_sad_mult_fringes:       bool
 
     ASCII_LOGO:                     str
 
@@ -72,6 +75,7 @@ class ConfigLike(Protocol):
     INTEGRATOR_SEXT:                str
     INTEGRATOR_OCT:                 str
     INTEGRATOR_MULT:                str
+    INTEGRATOR_SOL:                 str
     INTEGRATOR_CAVI:                str
 
     N_INTEGRATOR_KICKS_BEND:        int

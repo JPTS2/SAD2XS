@@ -352,10 +352,10 @@ def test_declared_failure_counts_match_known_issues():
 
 def test_folder_and_suite_totals_match_collection():
     """
-    The Suite Total table in `tests/README.md` matches what pytest collects.
+    The Suite Total headline and table match what pytest collects.
 
-    Checks each folder row and the total. The same updater fixes a failure
-    here, including the contribution of this file itself.
+    Checks the prose headline, each folder row, and the table total. The same
+    updater fixes a failure here, including the contribution of this file.
     """
     counts     = inventory.collected_counts()
     totals     = inventory.folder_totals(counts)
@@ -373,6 +373,14 @@ def test_folder_and_suite_totals_match_collection():
                 f"collected {collected}")
 
     total = sum(counts.values())
+    headline = re.search(r"\*\*(\d+) tests\*\*", readme)
+    if headline is None:
+        violations.append("tests/README.md: no Suite Total headline")
+    elif int(headline.group(1)) != total:
+        violations.append(
+            f"tests/README.md: headline says {headline.group(1)}, "
+            f"collected {total}")
+
     match = re.search(r"\| \*\*Total\*\* \| \*\*(\d+)\*\* \|", readme)
     if match is None:
         violations.append("tests/README.md: no Total row in the Suite Total table")

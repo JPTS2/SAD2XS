@@ -41,7 +41,9 @@ How each SAD element family is converted into Xsuite elements.
 
 ## Thin and thick elements
 
-A magnetic element with no length, or zero length, converts to `xt.Multipole` rather than its typed Xsuite class. The typed classes describe a thick element; a thin one is a pure kick.
+A magnetic element with no length, or exactly zero length, converts to `xt.Multipole` rather than its typed Xsuite class. The typed classes describe a thick element; a thin one is a pure kick.
+
+For every SAD element with a concrete length, SAD2XS requires either `L == 0` or `abs(L) >= Config.MAGNET_LENGTH_PRECISION` (1 nm by default). Values between those limits are rejected rather than being classified inconsistently by floating-point tolerances. A length expression is checked at its initial converted value.
 
 For a thin bend this matters beyond bookkeeping. The converter sets `hxl` to `k0l`, so the element still bends the reference orbit and generates dispersion. Dropping that would silently change the optics.
 
@@ -108,6 +110,11 @@ A SAD `MULT` can mean several different things, so the converter takes the first
 **4. Otherwise** — a true `xt.Multipole` carrying every order up to `MAX_KNL_ORDER`.
 
 Cases 2 and 3 both canonicalise a `K0`/`SK0`-only rotation the same way the bend converter does, and both require a non-zero length, because integrated strengths must be divided by length.
+
+An active K1 soft-edge fringe wraps whichever body representation is selected
+between entrance and exit Taylor maps. The body retains the bare SAD name and
+the wrapper uses `{name}_compound`. See [fringe models](fringes.md) for handling
+inside powered solenoids, `DROT`, and unsupported fringe terms.
 
 ### The dipole fringe residual when a MULT is simplified
 

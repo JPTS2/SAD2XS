@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-09-01
 ================================================================================
 """
 ################################################################################
@@ -17,7 +17,57 @@ Date:       2026-07-29
 ################################################################################
 import numpy as np
 import pytest
+import xtrack as xt
 import sad2xs as s2x
+
+################################################################################
+# SAD Soft Quadrupolar Fringe Reflection
+################################################################################
+def test_reverse_survey_vertical_reflects_soft_quadrupolar_fringe(
+        write_lattice):
+    """The semantic fringe map must follow the body's vertical mirror."""
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        QUAD Q1=(L=0.5 K1=0.1 F1=0.02 F2=0.01 FRINGE=3
+                 DX=0.0012 DY=-0.0008 ROTATE=0.2 DISFRIN=1);
+        SOL S1=(BZ=0.1 BOUND=1 GEO=1 DISFRIN=1)
+            S2=(BZ=0.1 BOUND=1 DISFRIN=1);
+        MARK START=() END=();
+        LINE TEST=(START S1 Q1 S2 END);
+        """,
+        filename = "reverse_vertical_k1_fringe.sad")
+    forward = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path), output_directory = "N/A",
+        _verbose = False, _test_mode = True)
+    reflected = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path), output_directory = "N/A",
+        reverse_survey_vertical = True,
+        _verbose = False, _test_mode = True)
+
+    for name in ("q1_fringe_in", "q1_fringe_out"):
+        assert reflected[name].shift_x == pytest.approx(forward[name].shift_x)
+        assert reflected[name].shift_y == pytest.approx(-forward[name].shift_y)
+        assert reflected[name].rot_s_rad == pytest.approx(
+            -forward[name].rot_s_rad)
+
+        forward_particle = xt.Particles(
+            p0c = 1.0E9, x = 1.1e-3, px = -2.0e-4,
+            y = -0.7e-3, py = 3.0e-4, zeta = 2.0e-3, delta = 0.01)
+        reflected_particle = forward_particle.copy()
+        reflected_particle.y  *= -1
+        reflected_particle.py *= -1
+        forward[name].track(forward_particle)
+        reflected[name].track(reflected_particle)
+        np.testing.assert_allclose(
+            [reflected_particle.x[0], reflected_particle.px[0],
+             reflected_particle.y[0], reflected_particle.py[0],
+             reflected_particle.zeta[0]],
+            [forward_particle.x[0], forward_particle.px[0],
+             -forward_particle.y[0], -forward_particle.py[0],
+             forward_particle.zeta[0]],
+            rtol = 1e-13,
+            atol = 1e-15)
 
 ################################################################################
 # Bend Adjustments

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-24
+Date:       2026-09-01
 ================================================================================
 """
 
@@ -19,6 +19,10 @@ Date:       2026-07-24
 import logging
 
 import xtrack as xt
+
+from ._000_helpers import (
+    create_sad_soft_quadrupolar_fringe,
+    negate_sad_value)
 
 logger  = logging.getLogger(__name__)
 
@@ -67,6 +71,8 @@ def create_reversed_component(
     """
 
     assert component.startswith("-"), """Component must start with "-" to be reversed"""
+    soft_quadrupolar_fringes = environment.metadata.get(
+        "sad2xs", {}).get("soft_quadrupolar_fringes", {})
 
     # Cannot overwrite elements, so must remove and recreate
     if component in environment.element_dict:
@@ -134,6 +140,21 @@ def create_reversed_component(
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
+    # SAD Soft Quadrupolar Fringe
+    ########################################
+    elif component[1:] in soft_quadrupolar_fringes:
+        parameters = soft_quadrupolar_fringes[component[1:]]
+        reversed_a = negate_sad_value(parameters["a"])
+        create_sad_soft_quadrupolar_fringe(
+            environment,
+            name              = component,
+            a                 = reversed_a,
+            b                 = parameters["b"],
+            field_rotation    = parameters["field_rotation"],
+            shift_x           = parameters["shift_x"],
+            shift_y           = parameters["shift_y"])
+
+    ########################################
     # Offset Marker (Mark, Moni, BeamBeam all convert to xt.Marker)
     ########################################
     elif isinstance(environment.element_dict[component[1:]], xt.Marker) \
@@ -158,8 +179,8 @@ def convert_lines(
     """
     Build every parsed SAD LINE as an Xsuite line, handling reversals.
 
-    A component referencing a quad-fringe compound (`{name}_compound`,
-    see `convert_quadrupoles`) is first redirected there from the bare
+    A component referencing a soft-edge-fringe compound (`{name}_compound`)
+    is first redirected there from the bare
     `{name}` SAD element name. Reversed line references (`-LINENAME`)
     are then resolved in three passes: (1) reversed real (imported)
     sublines have their element order reversed and every component
@@ -211,11 +232,11 @@ def convert_lines(
         components = list(components)
 
         ########################################################################
-        # Handle quad-fringe compound references
+        # Handle soft-edge-fringe compound references
         ########################################################################
-        # convert_quadrupoles names a fringe/body compound's wrapping line
-        # "{name}_compound" so the quadrupole body can keep the bare SAD
-        # name -- redirect any component referencing "{name}" onto it.
+        # Element converters name a fringe/body compound's wrapping line
+        # "{name}_compound" so the body can keep the bare SAD name. Redirect
+        # any component referencing "{name}" onto it.
         for i, component in enumerate(components):
             is_reversed     = component.startswith("-")
             base_name       = component[1:] if is_reversed else component
@@ -243,7 +264,8 @@ def convert_lines(
 
                 reverse_handled_components  = []
                 for component in reversed_line_elements:
-                    component   = create_reversed_component(component, environment, offset_marker_names)
+                    component = create_reversed_component(
+                        component, environment, offset_marker_names)
                     reverse_handled_components.append(component)
 
                 environment.new_line(
@@ -274,15 +296,23 @@ def convert_lines(
                     components[i] = reversed_line_name
                     continue
 
-                reversed_line_elements  = environment.lines[component[1:]].element_names
+                reversed_line_elements = list(
+                    environment.lines[component[1:]].element_names)
 
-                # If it is a generated subline, do not reverse the order of the elements
-                # Just negate the individual elements
+                fringe_names = environment.metadata.get(
+                    "sad2xs", {}).get("soft_quadrupolar_fringes", {})
+                if any(name in fringe_names for name in reversed_line_elements):
+                    # Unlike coordinate wrappers, the compound represents
+                    # distinct entrance/body/exit maps. SAD's -NAME operator
+                    # traverses those maps in the opposite order.
+                    reversed_line_elements.reverse()
+
                 reversed_line_elements  = [f"-{elem}" for elem in reversed_line_elements]
 
                 reverse_handled_components  = []
                 for component in reversed_line_elements:
-                    component   = create_reversed_component(component, environment, offset_marker_names)
+                    component = create_reversed_component(
+                        component, environment, offset_marker_names)
                     reverse_handled_components.append(component)
 
                 environment.new_line(

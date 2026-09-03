@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-06
+Date:       2026-09-01
 ================================================================================
 """
 ################################################################################
@@ -22,6 +22,7 @@ import pytest
 import sad2xs as s2x
 import xtrack as xt
 
+from sad2xs.config import Config
 from sad2xs.converter._004_element_converter import convert_quadrupoles
 from sad2xs.sad_helpers import track_sad
 from tests.support.config import (
@@ -1215,14 +1216,14 @@ def test_quad_conversion_matches_sad_tracking_for_element_rotation(
 # docs/reference/sad-behaviour.md. Defaults to True, as
 # _import_sad_bend_fringes does.
 ################################################################################
-def _quad_fringe_lattice_text(fringe_params, k1 = 0.3):
+def _quad_fringe_lattice_text(fringe_params, k1 = 0.3, length = 1.0):
     """
     A single-quadrupole lattice carrying the given fringe parameters.
     """
     return f"""\
     MOMENTUM    = 1.0 GEV;
 
-    QUAD        TEST_QUAD   = (L = 1.0 K1 = {k1} {fringe_params});
+    QUAD        TEST_QUAD   = (L = {length} K1 = {k1} {fringe_params});
 
     MARK        START       = ()
                 END         = ();
@@ -1309,7 +1310,8 @@ def test_quad_fringe_import_builds_subline_with_both_sides(write_lattice):
     that order.
     """
     lattice_path = write_lattice(
-        _quad_fringe_lattice_text("F1=0.02 F2=0.01 FRINGE=3"),
+        _quad_fringe_lattice_text(
+            "F1=0.02 F2=0.01 FRINGE=3 DX=0.0012 DY=-0.0008"),
         filename = "quad_fringe_import_both_sides.sad")
 
     line = s2x.convert_sad_to_xsuite(
@@ -1327,6 +1329,9 @@ def test_quad_fringe_import_builds_subline_with_both_sides(write_lattice):
         "The entrance fringe element should be a SecondOrderTaylorMap.")
     assert isinstance(line["test_quad_fringe_out"], xt.SecondOrderTaylorMap), (
         "The exit fringe element should be a SecondOrderTaylorMap.")
+    for name in ("test_quad_fringe_in", "test_quad_fringe_out"):
+        assert line[name].shift_x == pytest.approx(0.0012)
+        assert line[name].shift_y == pytest.approx(-0.0008)
     assert isinstance(line["test_quad"], xt.Quadrupole), (
         "The quadrupole body should still be a native Xsuite Quadrupole, "
         "keeping the original SAD element name.")
@@ -1359,10 +1364,66 @@ def test_quad_fringe_import_builds_only_active_side(write_lattice):
         "FRINGE=1 should NOT build an exit fringe element -- there is "
         "nothing active on that side to model.")
 
-def test_quad_fringe_import_matches_sad_tracking(write_lattice, tmp_path):
+
+def test_quad_fringe_import_uses_sad_integer_keyword_semantics(write_lattice):
+    """SAD's input layer truncates FRINGE=1.5 to entrance-only mode 1."""
+    lattice_path = write_lattice(
+        _quad_fringe_lattice_text(
+            "F1K1F=0.05 F1K1B=-0.03 FRINGE=1.5"),
+        filename = "quad_fringe_nint.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path         = str(lattice_path),
+        output_directory         = "N/A",
+        _verbose                 = False,
+        _test_mode               = True,
+        _import_sad_quad_fringes = True)
+
+    assert "test_quad_fringe_in" in line.element_names
+    assert "test_quad_fringe_out" not in line.element_names
+
+
+def test_quad_above_length_precision_remains_thick_with_fringe(write_lattice):
     """
-    Converted QUAD with F1/F2/FRINGE=3 (positive K1) should match SAD
-    tracking, once _import_sad_quad_fringes=True.
+    A QUAD shorter than NumPy's default closeness tolerance but above the
+    SAD2XS length precision is thick in SAD and must remain thick in Xsuite.
+    """
+    length = 5 * Config().MAGNET_LENGTH_PRECISION
+    lattice_path = write_lattice(
+        _quad_fringe_lattice_text(
+            "F1K1F=0.05 FRINGE=1", k1 = 1.0e-12, length = length),
+        filename = "quad_fringe_short_thick.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path         = str(lattice_path),
+        output_directory         = "N/A",
+        _verbose                 = False,
+        _test_mode               = True,
+        _import_sad_quad_fringes = True)
+
+    assert line.element_names == ["test_quad_fringe_in", "test_quad"]
+    assert isinstance(line["test_quad"], xt.Quadrupole), (
+        "A resolved nonzero length above MAGNET_LENGTH_PRECISION must not be "
+        "collapsed to a thin Multipole by a generic closeness tolerance.")
+    assert line["test_quad"].length == pytest.approx(length)
+
+
+@pytest.mark.parametrize(
+    "alignment_parameters",
+    [
+        "",
+        "DX=0.0012 DY=-0.0008 ROTATE=0.2",
+    ],
+    ids = ["centred", "offset-and-rotated"])
+def test_quad_fringe_import_matches_sad_tracking(
+        write_lattice,
+        tmp_path,
+        alignment_parameters):
+    """
+    Converted centred and aligned QUAD fringes should match SAD tracking.
+
+    The aligned case pins the combined DX/DY/ROTATE frame order used by the
+    standard Xsuite ``shift_x``/``shift_y``/``rot_s_rad`` transformation.
     """
     x_init, px_init, y_init, py_init, zeta_init, delta_init = \
         _standard_five_particle_offsets()
@@ -1370,7 +1431,9 @@ def test_quad_fringe_import_matches_sad_tracking(write_lattice, tmp_path):
     cwd = os.getcwd()
     os.chdir(tmp_path)
     try:
-        lattice_text = _quad_fringe_lattice_text("F1=0.02 F2=0.01 FRINGE=3", k1 = 0.3)
+        lattice_text = _quad_fringe_lattice_text(
+            f"F1=0.02 F2=0.01 FRINGE=3 {alignment_parameters}",
+            k1 = 0.3)
         lattice_path = write_lattice(
             lattice_text, filename = "quad_fringe_import_tracking.sad")
 
@@ -1473,3 +1536,97 @@ def test_quad_fringe_import_matches_sad_tracking_negative_k1(write_lattice, tmp_
             err_msg = (
                 f"Converted K1<0 QUAD F1/F2 fringe tracking `{coord}` "
                 "should match SAD once _import_sad_quad_fringes=True."))
+
+
+def test_negative_length_quad_fringe_matches_sad_tracking(
+        write_lattice,
+        tmp_path):
+    """The fringe frame must follow SAD's signed-length `akang`."""
+    x_init, px_init, y_init, py_init, zeta_init, delta_init = \
+        _standard_five_particle_offsets()
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        lattice_path = write_lattice(
+            _quad_fringe_lattice_text(
+                "F1=0.02 F2=0.01 FRINGE=3 DISFRIN=1",
+                k1 = 0.3,
+                length = -1.0),
+            filename = "quad_fringe_negative_length.sad")
+        sad_particles = track_sad(
+            lattice_filepath = lattice_path.name,
+            line_name = "TEST_LINE",
+            x_init = x_init,
+            px_init = px_init,
+            y_init = y_init,
+            py_init = py_init,
+            zeta_init = zeta_init,
+            delta_init = delta_init,
+            n_turns = 1,
+            rfsw = True,
+            rad = False,
+            fluc = False,
+            radcod = False,
+            radtaper = False,
+            turn_by_turn_monitor = False,
+            with_progress = False,
+            wall_time = 30)
+        line = s2x.convert_sad_to_xsuite(
+            sad_lattice_path = str(lattice_path),
+            output_directory = "N/A",
+            _verbose = False,
+            _test_mode = True)
+        xs_particles = track_xsuite_particles(
+            line, x_init, px_init, y_init, py_init, zeta_init, delta_init)
+    finally:
+        os.chdir(cwd)
+
+    for coordinate in ("x", "px", "y", "py"):
+        np.testing.assert_allclose(
+            getattr(xs_particles, coordinate),
+            sad_particles[coordinate],
+            rtol = 1e-6,
+            atol = 1e-9,
+            err_msg = (
+                "A negative-length QUAD soft quadrupolar fringe should use "
+                f"SAD's signed-length field frame for `{coordinate}`."))
+
+
+def test_quad_fringe_follows_the_existing_strength_variable(write_lattice):
+    """Changing the QUAD strength must update its derived fringe map."""
+    lattice_path = write_lattice(
+        _quad_fringe_lattice_text("F1=0.02 F2=0.01 FRINGE=3"),
+        filename = "quad_fringe_strength_variable.sad")
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = "N/A",
+        _verbose = False,
+        _test_mode = True)
+
+    initial_k1 = line["test_quad"].k1
+    initial_R  = np.asarray(line["test_quad_fringe_in"].R).copy()
+    line.env["k1_test_quad"] *= 2.0
+
+    assert line["test_quad"].k1 == pytest.approx(2.0 * initial_k1)
+    assert not np.array_equal(line["test_quad_fringe_in"].R, initial_R), (
+        "The soft quadrupolar fringe should follow the QUAD's existing "
+        "k1 strength variable.")
+
+
+def test_quad_fringe_field_frame_follows_strength_sign(write_lattice):
+    """Changing the existing K1 variable through zero must rotate the fringe."""
+    lattice_path = write_lattice(
+        _quad_fringe_lattice_text("F1=0.02 F2=0.01 FRINGE=3"),
+        filename = "quad_fringe_strength_sign.sad")
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = "N/A",
+        _verbose = False,
+        _test_mode = True)
+
+    line.env["k1_test_quad"] *= -1.0
+
+    assert line["test_quad_fringe_in"].rot_s_rad == pytest.approx(-np.pi / 2), (
+        "A negative normal K1 should rotate SAD's positive local fringe "
+        "field by pi/2, using Xsuite's opposite element-frame sign.")

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-09-01
 ================================================================================
 """
 
@@ -294,7 +294,7 @@ def convert_sad_to_xsuite(
     tt_sext     = tt.rows[tt.element_type == "Sextupole"]
     tt_oct      = tt.rows[tt.element_type == "Octupole"]
     tt_mult     = tt.rows[tt.element_type == "Multipole"]
-    tt_sol      = tt.rows[tt.element_type == "Solenoid"]
+    tt_sol      = tt.rows[tt.element_type == "UniformSolenoid"]
     tt_cavi     = tt.rows[tt.element_type == "Cavity"]
 
     line.set(
@@ -327,6 +327,7 @@ def convert_sad_to_xsuite(
         num_multipole_kicks = config.N_INTEGRATOR_KICKS_MULT)
     line.set(
         tt_sol,
+        integrator          = config.INTEGRATOR_SOL,
         num_multipole_kicks = config.N_INTEGRATOR_KICKS_SOL)
     line.set(
         tt_cavi,

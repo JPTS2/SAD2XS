@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-06
+Date:       2026-09-01
 ================================================================================
 """
 
@@ -46,6 +46,7 @@ class Config:
     _install_offset_markers:        bool            = True
     _import_sad_bend_fringes:       bool            = True
     _import_sad_quad_fringes:       bool            = True
+    _import_sad_mult_fringes:       bool            = True
 
     ############################################################################
     # Constants
@@ -147,6 +148,7 @@ class Config:
     INTEGRATOR_SEXT:                str             = "yoshida4"
     INTEGRATOR_OCT:                 str             = "yoshida4"
     INTEGRATOR_MULT:                str             = "yoshida4"
+    INTEGRATOR_SOL:                 str             = "yoshida4"
     INTEGRATOR_CAVI:                str             = "yoshida4"
 
     N_INTEGRATOR_KICKS_BEND:        int             = 20
@@ -154,7 +156,7 @@ class Config:
     N_INTEGRATOR_KICKS_SEXT:        int             = 14
     N_INTEGRATOR_KICKS_OCT:         int             = 14
     N_INTEGRATOR_KICKS_MULT:        int             = 14
-    N_INTEGRATOR_KICKS_SOL:         int             = 20
+    N_INTEGRATOR_KICKS_SOL:         int             = 14
 
     ABSOLUTE_TIME_CAVI:             bool            = False
 
@@ -183,6 +185,7 @@ class Config:
     MARKER_INSERTION_TOLERANCE:     float           = 1E-9
 
     ########################################
-    # Writer Magnet Length Precision
+    # Element Length Precision
     ########################################
+    # Minimum absolute nonzero concrete element length; exactly zero is thin.
     MAGNET_LENGTH_PRECISION:        float           = 1E-9

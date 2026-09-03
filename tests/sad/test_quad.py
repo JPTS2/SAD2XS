@@ -268,6 +268,38 @@ def test_quad_fringe_mode_gates_entrance_exit(tmp_path):
             "identically to FRINGE=0 -- unlike BEND, QUAD's FRINGE is a "
             "strict {1,2,3} membership test, not sign-graded.")
 
+
+def test_quad_fringe_mode_uses_integer_keyword_semantics(tmp_path):
+    """SAD's input layer truncates FRINGE=1.5 to mode 1 before tracking."""
+    x_vals, px_vals = np.array([1e-3]), np.array([2e-3])
+    y_vals, py_vals = np.array([-1.5e-3]), np.array([0.5e-3])
+
+    def run(fringe):
+        body = (
+            "QUAD Q1=(L=1.0 K1=0.3 F1K1F=0.05 F1K1B=-0.03 "
+            f"F2K1F=0.02 F2K1B=-0.01 FRINGE={fringe});\n"
+            "MARK START=() END=(); LINE TEST=(START Q1 END);")
+        return _track_quad_probe(
+            tmp_path, body, f"quad_integer_fringe_{fringe}.sad",
+            x_vals, px_vals, y_vals, py_vals)
+
+    results = {mode: run(mode) for mode in (0, 1, 1.5, 2, 3)}
+    transverse = {
+        mode: np.concatenate([
+            result[coordinate] for coordinate in ("x", "px", "y", "py")])
+        for mode, result in results.items()}
+
+    np.testing.assert_allclose(
+        transverse[1.5], transverse[1], rtol = 0.0, atol = 1e-15,
+        err_msg = "FRINGE=1.5 should truncate to entrance-only mode 1.")
+    for other_mode in (0, 2, 3):
+        assert not np.allclose(
+            transverse[1.5], transverse[other_mode],
+            rtol = 0.0, atol = 1e-15), (
+            "FRINGE=1.5 should match only mode 1, not "
+            f"mode {other_mode}.")
+
+
 def test_quad_fringe_mode_also_gates_hard_edge_fringe_sides(tmp_path):
     """
     FRINGE also gates which side of the DISFRIN hard-edge fringe applies

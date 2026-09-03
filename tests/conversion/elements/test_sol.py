@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-08-29
 ================================================================================
 """
 ################################################################################
@@ -27,7 +27,7 @@ from scipy.constants import c as clight
 
 from sad2xs.config import Config
 from sad2xs.converter._004_element_converter import convert_solenoids
-from sad2xs.sad_helpers import track_sad
+from sad2xs.sad_helpers import track_sad, transfer_matrix_sad
 from tests.support.config import (
     DELTA_DELTA_ATOL,
     DELTA_DELTA_RTOL,
@@ -41,7 +41,9 @@ from tests.support.config import (
     DELTA_Y_RTOL,
     DELTA_ZETA_ATOL,
     DELTA_ZETA_RTOL)
-from tests.support.coupled_optics import edwards_teng_optics_at
+from tests.support.coupled_optics import (
+    edwards_teng_optics_at,
+    linear_transfer_matrix_4d)
 from tests.support.diagnostics import (
     diagnostic_report_path,
     write_tracking_failure_report,
@@ -59,6 +61,7 @@ def _sol_expected_ks(bz, p0c = 1.0E9):
     Return the expected Xsuite solenoid ks from SAD BZ at the test momentum.
     """
     return bz * clight / p0c
+
 
 def _set_reference_environment(environment, p0c = 1.0E9, q0 = 1.0):
     """
@@ -713,6 +716,7 @@ def test_sol_pipeline_converts_elements_between_bound_solenoids(write_lattice):
 
     line = s2x.convert_sad_to_xsuite(
         sad_lattice_path = str(lattice_path),
+        line_name        = "TEST_LINE",
         output_directory = "N/A",
         _verbose         = False,
         _test_mode       = True)
@@ -752,6 +756,7 @@ def test_sol_pipeline_thin_cavity_between_bound_solenoids_needs_no_conversion(
 
     line = s2x.convert_sad_to_xsuite(
         sad_lattice_path = str(lattice_path),
+        line_name        = "TEST_LINE",
         output_directory = "N/A",
         _verbose         = False,
         _test_mode       = True)
@@ -833,6 +838,7 @@ def test_sol_pipeline_thick_rf_mult_multipole_slices_embed_solenoid_field(
 
     line = s2x.convert_sad_to_xsuite(
         sad_lattice_path = str(lattice_path),
+        line_name        = "TEST_LINE",
         output_directory = "N/A",
         _verbose         = False,
         _test_mode       = True)
@@ -840,7 +846,7 @@ def test_sol_pipeline_thick_rf_mult_multipole_slices_embed_solenoid_field(
     n_slices = Config().N_SLICES_MULT_RF
 
     for i in range(n_slices):
-        mult_slice = line[f"m1_mult_{i}"]
+        mult_slice = line[f"m1_mult_{i}_sol_in"]
         assert isinstance(mult_slice, xt.UniformSolenoid), (
             f"RF-MULT Multipole slice m1_mult_{i} between bound solenoids "
             "should be embedded into a UniformSolenoid, same as a plain "
@@ -891,6 +897,305 @@ def test_sol_pipeline_requires_geometric_solenoid_in_bound_pair(write_lattice):
             output_directory = "N/A",
             _verbose         = False,
             _test_mode       = True)
+
+
+########################################
+# Powered K1 Soft-Edge Fringes
+########################################
+def test_centered_mult_k1_fringe_inside_powered_solenoid_keeps_source_map(
+        write_lattice, caplog):
+    """Solenoid segment edges should conjugate a centred K1 fringe map."""
+    lattice_path = write_lattice(
+        _bound_solenoid_lattice(
+            bz = 0.1,
+            middle_element = (
+                "MULT M1=(L=0.5 K1=0.1 F1=0.02 F2=0.01 "
+                "FRINGE=3 DISFRIN=1);"),
+            middle_name = "M1"),
+        filename = "mult_fringe_inside_powered_solenoid.sad")
+
+    caplog.set_level(
+        logging.WARNING,
+        logger = "sad2xs.converter._006_solenoid_converter")
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        line_name        = "TEST_LINE",
+        output_directory = "N/A",
+        _verbose         = False,
+        _test_mode       = True)
+
+    assert isinstance(line["m1_sol_in"], xt.UniformSolenoid)
+    assert line["m1_sol_in"].ks == pytest.approx(_sol_expected_ks(0.1))
+    fringe_names = [
+        name for name in line.element_names if "m1_fringe_" in name]
+    assert fringe_names == ["m1_fringe_in", "m1_fringe_out"]
+    assert "combined paraxial body map" not in caplog.text
+    assert "offset element(s) with SAD K1 soft-edge fringes" not in caplog.text
+
+
+def test_offset_mult_k1_fringes_in_powered_solenoid_warn_once(
+        write_lattice, caplog):
+    """Offset K1 fringe maps in powered BZ should raise one clear warning."""
+    lattice_path = write_lattice(
+        _bound_solenoid_lattice(
+            bz = 0.1,
+            middle_element = """
+                MULT M1=(L=0.5 K1=0.1 F1=0.02 FRINGE=3 DX=0.001 DISFRIN=1)
+                     M2=(L=0.5 K1=0.1 F1=0.02 FRINGE=3 DY=-0.002 DISFRIN=1);""",
+            line_expression = "START SOL_IN M1 M2 SOL_OUT END"),
+        filename = "offset_mult_fringes_inside_powered_solenoid.sad")
+
+    caplog.set_level(
+        logging.DEBUG,
+        logger = "sad2xs.converter._006_solenoid_converter")
+    s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        line_name        = "TEST_LINE",
+        output_directory = "N/A",
+        _verbose         = False,
+        _test_mode       = True)
+
+    warnings = [
+        record for record in caplog.records
+        if record.levelno == logging.WARNING
+        and "offset element(s) with SAD K1 soft-edge fringes"
+        in record.getMessage()]
+    assert len(warnings) == 1, (
+        "Offset K1 fringes in powered BZ should emit one summary warning. "
+        f"Got: {[record.getMessage() for record in caplog.records]!r}")
+    assert warnings[0].getMessage().startswith(
+        "2 offset element(s) with SAD K1 soft-edge fringes")
+    debug_details = [
+        record.getMessage() for record in caplog.records
+        if record.levelno == logging.DEBUG
+        and "Offset elements with K1 fringes" in record.getMessage()]
+    assert debug_details == [
+        "Offset elements with K1 fringes affected by the powered-solenoid "
+        "limitation: m1, m2"
+    ], "Debug logging should name the elements behind the summary warning."
+
+
+########################################
+# K0/SK0 Body Limitation
+########################################
+def test_mult_dipole_body_in_powered_solenoid_warns_once(
+        write_lattice, caplog):
+    """K0/SK0 in powered BZ should expose the known body-map difference."""
+    lattice_path = write_lattice(
+        _bound_solenoid_lattice(
+            bz = 0.1,
+            middle_element = """
+                MULT M1=(L=0.5 K0=0.001 K1=0.1 DISFRIN=1)
+                     M2=(L=0.5 SK0=-0.002 K1=0.1 DISFRIN=1);""",
+            line_expression = "START SOL_IN M1 M2 SOL_OUT END"),
+        filename = "mult_dipole_body_inside_powered_solenoid.sad")
+
+    caplog.set_level(
+        logging.DEBUG,
+        logger = "sad2xs.converter._006_solenoid_converter")
+    s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        line_name        = "TEST_LINE",
+        output_directory = "N/A",
+        _verbose         = False,
+        _test_mode       = True)
+
+    warnings = [
+        record for record in caplog.records
+        if record.levelno == logging.WARNING
+        and "combined paraxial body map" in record.getMessage()]
+    assert len(warnings) == 1, (
+        "K0/SK0 bodies in powered BZ should emit one summary warning. "
+        f"Got: {[record.getMessage() for record in caplog.records]!r}")
+    assert warnings[0].getMessage().startswith("2 element(s)")
+    debug_details = [
+        record.getMessage() for record in caplog.records
+        if record.levelno == logging.DEBUG
+        and "K0/SK0 body limitation" in record.getMessage()]
+    assert debug_details == [
+        "Elements affected by the powered-solenoid K0/SK0 body limitation: "
+        "m1, m2"
+    ], "Debug logging should name the elements behind the summary warning."
+
+
+@pytest.mark.parametrize("dipole_parameter", ["K0", "SK0"])
+def test_mult_dipole_body_in_powered_solenoid_has_measured_matrix_residual(
+        write_lattice, tmp_path, dipole_parameter):
+    """The K0/SK0 response should expose the accepted combined-body difference."""
+    matrices = {"sad": {}, "xsuite": {}}
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        for state, strength in (("off", 0.0), ("on", 0.001)):
+            lattice_text = _bound_solenoid_lattice(
+                bz = 1.0,
+                middle_element = (
+                    f"MULT M1=(L=0.5 K1=0.1 "
+                    f"{dipole_parameter}={strength} DISFRIN=1);"),
+                middle_name = "M1")
+            lattice_path = write_lattice(
+                lattice_text,
+                filename = (
+                    f"mult_{dipole_parameter.lower()}_powered_bz_{state}.sad"))
+            matrices["sad"][state] = transfer_matrix_sad(
+                lattice_filepath = lattice_path.name,
+                line_name        = "TEST_LINE")[:4, :4]
+            line = s2x.convert_sad_to_xsuite(
+                sad_lattice_path      = str(lattice_path),
+                line_name             = "TEST_LINE",
+                output_directory      = "N/A",
+                SIMPLIFY_MULTIPOLES   = False,
+                _verbose              = False,
+                _test_mode            = True)
+            matrices["xsuite"][state] = linear_transfer_matrix_4d(line)
+    finally:
+        os.chdir(cwd)
+
+    sad_response = matrices["sad"]["on"] - matrices["sad"]["off"]
+    xsuite_response = matrices["xsuite"]["on"] - matrices["xsuite"]["off"]
+    response_scale = np.max(np.abs(sad_response))
+    residual = np.max(np.abs(xsuite_response - sad_response))
+    assert response_scale > 1e-10
+    assert residual / response_scale == pytest.approx(0.997, abs = 0.002), (
+        f"{dipole_parameter} in powered BZ should retain the measured "
+        "SAD/Xsuite combined-body response residual. The isolated response "
+        "is almost entirely missing in the split Xtrack representation. "
+        f"Measured relative maximum: {residual / response_scale:.6e}.")
+
+
+def test_shared_mult_keeps_one_fringe_map_and_context_specific_bodies(
+        write_lattice):
+    """Solenoid context belongs on each body, not on the shared face maps."""
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        MULT M1 = (L=0.5 K1=0.1 F1=0.02 FRINGE=3 DISFRIN=1);
+        SOL S1 = (BZ=0.1 BOUND=1 GEO=1 DISFRIN=1)
+            S2 = (BZ=0.1 BOUND=1 DISFRIN=1)
+            S3 = (BZ=-0.2 BOUND=1 GEO=1 DISFRIN=1)
+            S4 = (BZ=-0.2 BOUND=1 DISFRIN=1)
+            S5 = (BZ=0.0 BOUND=1 GEO=1 DISFRIN=1)
+            S6 = (BZ=0.0 BOUND=1 DISFRIN=1);
+        MARK START=() END=();
+        LINE TEST_LINE = (START S1 M1 S2 S3 M1 S4 S5 M1 S6 END);
+        """,
+        filename = "shared_mult_fringe_in_inconsistent_solenoids.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        line_name        = "TEST_LINE",
+        output_directory = "N/A",
+        SIMPLIFY_MULTIPOLES = False,
+        _verbose         = False,
+        _test_mode       = True)
+
+    fringe_names = [
+        name for name in line.element_names if "m1_fringe_" in name]
+    assert fringe_names == [
+        "m1_fringe_in", "m1_fringe_out",
+        "m1_fringe_in", "m1_fringe_out",
+        "m1_fringe_in", "m1_fringe_out"]
+    assert isinstance(line["m1_s1"], xt.UniformSolenoid)
+    assert isinstance(line["m1_s3"], xt.UniformSolenoid)
+    assert isinstance(line["m1"], xt.Multipole)
+
+
+########################################
+# Powered K1 Soft-Edge SAD Tracking
+########################################
+@pytest.mark.parametrize(
+    "case_name, fringe_name, fringe_value, bz, rotation",
+    [
+        ("f1_positive_bz", "F1", 0.4,  1.0,  0.0),
+        ("f1_negative_bz", "F1", 0.4, -1.0,  0.3),
+        ("f2_positive_bz", "F2", 0.03, 1.0,  0.0),
+        ("f2_negative_bz", "F2", 0.03, -1.0, -0.2),
+    ])
+def test_centered_powered_mult_fringe_response_matches_sad_tracking(
+        write_lattice, tmp_path, case_name, fringe_name, fringe_value, bz,
+        rotation):
+    """Adjacent solenoid segment edges should reproduce SAD's local-BZ face."""
+    initial = {
+        "x": np.array([0.0, 1.0e-6, -0.8e-6]),
+        "px": np.array([0.0, -0.6e-6, 0.9e-6]),
+        "y": np.array([0.0, 0.7e-6, 1.1e-6]),
+        "py": np.array([0.0, 0.8e-6, -0.5e-6]),
+        "zeta": np.zeros(3),
+        "delta": np.array([0.0, 1.0e-6, -1.0e-6]),
+    }
+
+    def lattice(fringe):
+        return _bound_solenoid_lattice(
+            bz = bz,
+            middle_element = (
+                "MULT M1=(L=0.5 K1=0.1 "
+                f"{fringe_name}={fringe_value if fringe else 0.0} "
+                f"ROTATE={rotation} "
+                f"FRINGE={3 if fringe else 0} DISFRIN=1);"),
+            middle_name = "M1")
+
+    sad_results = {}
+    xsuite_results = {}
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        for state in ("off", "on"):
+            lattice_text = lattice(state == "on")
+            lattice_path = write_lattice(
+                lattice_text,
+                filename = f"mult_powered_{case_name}_{state}.sad")
+            sad_results[state] = track_sad(
+                lattice_filepath     = lattice_path.name,
+                line_name            = "TEST_LINE",
+                x_init               = initial["x"],
+                px_init              = initial["px"],
+                y_init               = initial["y"],
+                py_init              = initial["py"],
+                zeta_init            = initial["zeta"],
+                delta_init           = initial["delta"],
+                n_turns              = 1,
+                rfsw                 = False,
+                rad                  = False,
+                fluc                 = False,
+                radcod               = False,
+                radtaper             = False,
+                turn_by_turn_monitor = False,
+                with_progress        = False,
+                wall_time            = 30)
+            line = s2x.convert_sad_to_xsuite(
+                sad_lattice_path = str(lattice_path),
+                line_name        = "TEST_LINE",
+                output_directory = "N/A",
+                SIMPLIFY_MULTIPOLES = False,
+                _verbose         = False,
+                _test_mode       = True)
+            xsuite_results[state] = track_xsuite_particles(
+                line,
+                initial["x"], initial["px"],
+                initial["y"], initial["py"],
+                initial["zeta"], initial["delta"])
+    finally:
+        os.chdir(cwd)
+
+    sad_coordinates = {
+        key: _sol_sad_coordinates(sad_results["on"])[key]
+        - _sol_sad_coordinates(sad_results["off"])[key]
+        for key in ("x", "px", "y", "py", "zeta")}
+    xsuite_coordinates = {
+        key: _sol_xsuite_coordinates(xsuite_results["on"])[key]
+        - _sol_xsuite_coordinates(xsuite_results["off"])[key]
+        for key in ("x", "px", "y", "py", "zeta")}
+    for coordinate in ("x", "px", "y", "py"):
+        response_scale = np.max(np.abs(sad_coordinates[coordinate]))
+        residual = np.max(np.abs(
+            xsuite_coordinates[coordinate] - sad_coordinates[coordinate]))
+        assert response_scale > 1e-10
+        assert residual / response_scale < 1e-5, (
+            f"Powered {fringe_name} response in {coordinate} has relative "
+            f"SAD/Xsuite residual {residual / response_scale:.6e}.")
+    np.testing.assert_allclose(
+        xsuite_coordinates["zeta"], sad_coordinates["zeta"],
+        rtol = 0.0, atol = 2e-14)
 
 def test_sol_pipeline_preserves_reversed_bound_solenoid_order(write_lattice):
     """
@@ -1694,7 +1999,7 @@ def test_sol_powered_reference_shift_orbit_matches_sad_at_end(
         (
             "MULT        TEST_MULT   = (K1 = 0.2);",
             "TEST_MULT",
-            "test_mult",
+            "test_mult_sol_in",
             0.0,
             [0.0, 0.2],
         ),
@@ -1723,6 +2028,7 @@ def test_sol_pipeline_preserves_supported_elements_inside_solenoid_region(
 
     line = s2x.convert_sad_to_xsuite(
         sad_lattice_path = str(lattice_path),
+        line_name        = "TEST_LINE",
         output_directory = "N/A",
         _verbose         = False,
         _test_mode       = True)

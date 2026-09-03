@@ -29,7 +29,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from sad2xs.xsuite_helpers import align_xsuite_twiss_with_sad_twiss, \
-    assert_xsuite_matches_sad_twiss, compute_s_sad, plot_xsuite_sad_comparison
+    assert_xsuite_matches_sad_twiss, compute_s_sad, DEFAULT_TWISS_TOLERANCES, \
+    plot_xsuite_sad_comparison
 
 ################################################################################
 # User Parameters
@@ -42,6 +43,12 @@ LINE_NAME                   = "RING"
 EDWARDS_TENG_COLUMNS   = {
     "betx": "betx_edw_teng", "bety": "bety_edw_teng",
     "alfx": "alfx_edw_teng", "alfy": "alfy_edw_teng"}
+
+# Native SAD retains the SOL hard-edge fringe, which SAD2XS does not yet match.
+NATIVE_SAD_TOLERANCES = {
+    column: values.copy() for column, values in DEFAULT_TWISS_TOLERANCES.items()}
+for column in ("betx", "bety", "alfx", "alfy"):
+    NATIVE_SAD_TOLERANCES[column]["rtol"] = 1.2E-3
 
 ################################################################################
 # Load Reference Data
@@ -60,7 +67,16 @@ LINE["F1", "ESCL*"]         = 0;
 LINE["F1", "ESCR*"]         = 0;""",
     output_filepath             = REBUILT_SAD_LATTICE_PATH)
 
-twp_sad  = s2x.sad_helpers.twiss_sad(
+twp_sad = s2x.sad_helpers.twiss_sad(
+    lattice_filepath            = SAD_LATTICE_PATH,
+    line_name                   = LINE_NAME,
+    calc6d                      = False,
+    closed                      = True,
+    rfsw                        = True,
+    reverse_element_order       = False,
+    reverse_survey_horizontal   = False,
+    additional_commands         = "")
+twp_sad_rebuilt = s2x.sad_helpers.twiss_sad(
     lattice_filepath            = REBUILT_SAD_LATTICE_PATH,
     line_name                   = LINE_NAME,
     calc6d                      = False,
@@ -69,7 +85,16 @@ twp_sad  = s2x.sad_helpers.twiss_sad(
     reverse_element_order       = False,
     reverse_survey_horizontal   = False,
     additional_commands         = "")
-twe_sad  = s2x.sad_helpers.twiss_sad(
+twe_sad = s2x.sad_helpers.twiss_sad(
+    lattice_filepath            = SAD_LATTICE_PATH,
+    line_name                   = LINE_NAME,
+    calc6d                      = False,
+    closed                      = True,
+    rfsw                        = True,
+    reverse_element_order       = False,
+    reverse_survey_horizontal   = True,
+    additional_commands         = "")
+twe_sad_rebuilt = s2x.sad_helpers.twiss_sad(
     lattice_filepath            = REBUILT_SAD_LATTICE_PATH,
     line_name                   = LINE_NAME,
     calc6d                      = False,
@@ -165,10 +190,12 @@ if RUN_ASSERTS:
     assert_xsuite_matches_sad_twiss(
         xsuite_aligned          = twp_xs_aligned,
         sad_aligned             = twp_sad_aligned,
+        tolerances              = NATIVE_SAD_TOLERANCES,
         xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
     assert_xsuite_matches_sad_twiss(
         xsuite_aligned          = twe_xs_aligned,
         sad_aligned             = twe_sad_aligned,
+        tolerances              = NATIVE_SAD_TOLERANCES,
         xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
 
 ################################################################################
@@ -181,11 +208,13 @@ if RUN_ASSERTS:
 plot_xsuite_sad_comparison(
     xsuite_aligned          = twp_xs_aligned,
     sad_aligned             = twp_sad_aligned,
-    xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
+    xsuite_column_overrides = EDWARDS_TENG_COLUMNS,
+    title_prefix            = "Positron: original SAD")
 # plot_xsuite_sad_comparison(
 #     xsuite_aligned          = twe_xs_aligned,
 #     sad_aligned             = twe_sad_aligned,
-#     xsuite_column_overrides = EDWARDS_TENG_COLUMNS)
+#     xsuite_column_overrides = EDWARDS_TENG_COLUMNS,
+#     title_prefix            = "Electron: original SAD")
 
 ########################################
 # IR Comparison Plots
@@ -195,7 +224,8 @@ plot_xsuite_sad_comparison(
     sad_aligned             = twp_sad_aligned,
     xsuite_column_overrides = EDWARDS_TENG_COLUMNS,
     ele_start               = "BC2.2",
-    ele_stop                = "LD2.3")
+    ele_stop                = "LD2.3",
+    title_prefix            = "Positron IR: original SAD")
 
 ########################################
 # Overall Survey

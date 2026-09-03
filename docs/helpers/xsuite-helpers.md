@@ -165,14 +165,16 @@ naming), and raises if any SAD element found no match.
 Tried in order, each only for elements still unmatched, always checked
 against `s_tol` before being accepted:
 
-1. **SAD's exact name**, ranked by `s` if placed more than once.
+1. **SAD's exact name**, matched by physical `s` if placed more than once.
 2. **SAD's dot-suffixed family name** (distinct SAD elements sharing a
    sad2xs-generated Xsuite base name, e.g. same-length gap-filling drifts),
-   ranked by `s`, pooling the plain and `-`-prefixed (reversed-sub-line)
-   variant of the Xsuite name.
+   matched by physical `s`, pooling the plain and `-`-prefixed
+   (reversed-sub-line) variant of the Xsuite name. If a reversed compound's
+   fringe and body share that position, the first table row is its entrance
+   face and is selected once.
 3. **sad2xs's solenoid-interior rename**, `{name}_{neighbouring_solenoid}`
    (or `{base}_{neighbouring_solenoid}` for a family placement), pooled
-   across every neighbouring solenoid and ranked by `s` like pass 2 — the
+   across every neighbouring solenoid and matched by `s` like pass 2 — the
    neighbour's name isn't known in advance, so candidates come from a
    string-prefix search over Xsuite's own names.
 

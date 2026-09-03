@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-09-01
 ================================================================================
 """
 ################################################################################
@@ -18,7 +18,6 @@ Date:       2026-07-21
 import numpy as np
 import xtrack as xt
 
-from ..helpers import species_from_mass_and_charge
 from ..types import SadValue
 
 ################################################################################
@@ -63,6 +62,79 @@ def parse_expression(expression: int | float | str) -> SadValue:
     else:
         raise TypeError(
             f"Unsupported type: {type(expression)}. Expected str, int, or float.")
+
+########################################
+# Negate SAD Value
+########################################
+def negate_sad_value(value: SadValue) -> SadValue:
+    """
+    Negate a numeric SAD value or deferred expression.
+
+    Parameters
+    ----------
+    value : float or str
+        Numeric value or expression to negate.
+
+    Returns
+    -------
+    float or str
+        Negated number, or a parenthesised negated expression.
+    """
+    return f"-({value})" if isinstance(value, str) else -value
+
+################################################################################
+# Element Length Validation
+################################################################################
+def validate_element_lengths(
+        parsed_elements:    dict[str, dict],
+        environment:        xt.Environment,
+        minimum_length:     float) -> None:
+    """
+    Reject concrete nonzero lengths below the conversion precision.
+
+    SAD distinguishes an exactly zero (thin) element from every nonzero
+    (thick) element. Enforcing a minimum resolved length prevents different
+    converter paths from making inconsistent tolerance-based decisions near
+    zero. Length expressions are evaluated at their initial Xsuite values.
+
+    Parameters
+    ----------
+    parsed_elements : dict
+        Parsed SAD elements, grouped by element type and name.
+    environment : xt.Environment
+        Environment containing the converted SAD variables used to evaluate
+        length expressions.
+    minimum_length : float
+        Smallest permitted absolute nonzero length, in metres.
+
+    Raises
+    ------
+    ValueError
+        If `minimum_length` is not positive, or a concrete element length is
+        nonzero with an absolute value smaller than `minimum_length`.
+    """
+    if minimum_length <= 0.0:
+        raise ValueError(
+            "MAGNET_LENGTH_PRECISION must be greater than zero, got "
+            f"{minimum_length!r}.")
+
+    for element_type, elements in parsed_elements.items():
+        for element_name, parameters in elements.items():
+            if "l" not in parameters:
+                continue
+
+            length = parse_expression(parameters["l"])
+            if isinstance(length, str):
+                length = environment.eval(length)
+            if length == 0.0:
+                continue
+            if abs(length) < minimum_length:
+                raise ValueError(
+                    f"{element_type.upper()} element {element_name!r} has "
+                    f"nonzero length {length:.17g} m, below "
+                    f"MAGNET_LENGTH_PRECISION={minimum_length:.17g} m. "
+                    "Use exactly zero for a thin element or increase its "
+                    "absolute length.")
 
 ################################################################################
 # Zero Check
@@ -472,7 +544,8 @@ def only_index_nonzero(
     idx : int
         The multipole order index that is allowed to be non-zero.
     tol : float
-        Absolute tolerance for "zero" (see `is_effectively_zero`).
+        Absolute tolerance for zero integrated strength (see
+        `is_effectively_zero`). Length uses exact-zero semantics.
 
     Returns
     -------
@@ -482,9 +555,8 @@ def only_index_nonzero(
         non-numeric string value counts as non-zero); and at least
         one of `knl[idx]`/`ksl[idx]` is non-zero within `tol`.
     """
-    if isinstance(length, (int, float)):
-        if abs(length) <= tol:
-            return False
+    if isinstance(length, (int, float)) and length == 0.0:
+        return False
 
     max_len = max(len(knl), len(ksl))
     for arr in (knl, ksl):
@@ -503,6 +575,191 @@ def only_index_nonzero(
     return True
 
 ################################################################################
-# Reference Particle Species
-# Canonical definition: sad2xs/helpers.py
+# SAD Soft Quadrupolar Fringe Maps
 ################################################################################
+
+########################################
+# SAD Quadrupolar Field Rotation
+########################################
+def sad_quadrupolar_field_rotation(
+        k1:     float,
+        sk1:    float   = 0.0,
+        length: float   = 1.0) -> float:
+    """
+    Return the rotation from the element frame to SAD's normal field frame.
+
+    SAD represents the normal and skew linear fields by the complex quantity
+    ``(K1 + i SK1) * L``. Rotating transverse coordinates by half its complex
+    phase makes that field purely normal and focusing. The factor one-half is
+    the quadrupole's two-fold azimuthal symmetry. A negative real field is
+    therefore represented by a ``pi/2`` frame rotation rather than by a
+    negative local gradient. This is SAD's ``akang`` operation in
+    ``tfloor.f``.
+
+    The same operation applies to a dedicated SAD ``QUAD`` and to the
+    K1/SK1 component of a SAD ``MULT``.
+
+    Parameters
+    ----------
+    k1 : float
+        SAD normal linear multipole coefficient.
+    sk1 : float, optional
+        SAD skew linear multipole coefficient. Defaults to zero.
+    length : float, optional
+        Signed element length in metres. Its sign determines the field-frame
+        orientation for a reversed-length element. Defaults to one metre.
+
+    Returns
+    -------
+    float
+        Counter-clockwise transverse frame rotation in radians, using SAD's
+        sign convention.
+    """
+    value = complex(k1, sk1) * length
+    if value.imag == 0.0:
+        return np.pi / 2.0 if value.real < 0.0 else 0.0
+    return 0.5 * np.arctan2(value.imag, value.real)
+
+########################################
+# Calculate SAD Soft Quadrupolar Fringe Map
+########################################
+def sad_soft_quadrupolar_fringe_coefficients(
+        environment:       xt.Environment,
+        a:                 SadValue,
+        b:                 SadValue
+        ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Calculate a centred SAD K1/SK1 soft-edge map in the element frame.
+
+    These coefficients are the second-order expansion of SAD's ``tqlfre``
+    map at zero local longitudinal field, about ``delta = 0``. The map uses
+    Xsuite ``pzeta`` for SAD ``delta`` and is therefore intended for the
+    ultrarelativistic electron and positron lattices supported by SAD2XS.
+    This is the quadrupole-field fringe shared by SAD ``QUAD`` elements and
+    the K1/SK1 component of SAD ``MULT`` elements; it does not represent the
+    other MULT fringe mechanisms. The caller places this normal-field map in
+    the magnet frame with Xsuite's standard ``rot_s_rad`` transform.
+
+    Parameters
+    ----------
+    environment : xtrack.Environment
+        Environment used to resolve string expressions and create live Xdeps
+        expressions when a QUAD strength is varied.
+    a : float or str
+        Dimensionless signed F1 coefficient. The caller changes its sign
+        between the entrance and exit faces.
+    b : float or str
+        F2 coefficient in metres. Its sign is unchanged between faces.
+
+    Returns
+    -------
+    k : numpy.ndarray
+        Constant six-dimensional Taylor coefficient in the element frame.
+    R : numpy.ndarray
+        Linear ``6 x 6`` Taylor coefficient in the element frame.
+    T : numpy.ndarray
+        Quadratic ``6 x 6 x 6`` Taylor coefficient in the element frame.
+    """
+    a_value = environment.vars.new_expr(a) if isinstance(a, str) else a
+    b_value = environment.vars.new_expr(b) if isinstance(b, str) else b
+    if isinstance(a_value, (int, float, np.number)):
+        exp_a       = np.exp(a_value)
+        exp_minus_a = np.exp(-a_value)
+    else:
+        exp_a       = environment.functions.exp(a_value)
+        exp_minus_a = environment.functions.exp(-a_value)
+
+    k = np.zeros(6, dtype = object)
+    R = np.zeros((6, 6), dtype = object)
+    T = np.zeros((6, 6, 6), dtype = object)
+
+    R[0, 0] = exp_a
+    R[0, 1] = b_value
+    R[1, 1] = exp_minus_a
+    R[2, 2] = exp_minus_a
+    R[2, 3] = -b_value
+    R[3, 3] = exp_a
+    R[4, 4] = 1.0
+    R[5, 5] = 1.0
+
+    T[0, 0, 5] = T[0, 5, 0] = -a_value * exp_a / 2.0
+    T[0, 1, 5] = T[0, 5, 1] = -b_value
+    T[1, 1, 5] = T[1, 5, 1] = a_value * exp_minus_a / 2.0
+    T[2, 2, 5] = T[2, 5, 2] = a_value * exp_minus_a / 2.0
+    T[2, 3, 5] = T[2, 5, 3] = b_value
+    T[3, 3, 5] = T[3, 5, 3] = -a_value * exp_a / 2.0
+    T[4, 1, 1] = -b_value * exp_minus_a * (1.0 + a_value / 2.0)
+    T[4, 3, 3] = b_value * exp_a * (1.0 - a_value / 2.0)
+    T[4, 0, 1] = T[4, 1, 0] = -a_value / 2.0
+    T[4, 2, 3] = T[4, 3, 2] = a_value / 2.0
+
+    return k, R, T
+
+########################################
+# Create SAD Soft Quadrupolar Fringe Element
+########################################
+def create_sad_soft_quadrupolar_fringe(
+        environment:       xt.Environment,
+        name:              str,
+        a:                 SadValue,
+        b:                 SadValue,
+        field_rotation:    SadValue,
+        shift_x:           SadValue = 0.0,
+        shift_y:           SadValue = 0.0) -> None:
+    """
+    Add one SAD K1/SK1 soft-edge map to an Xsuite environment.
+
+    The physical map is stored in the element's canonical ``k``, ``R``, and
+    ``T`` coefficients. Its five defining quantities are recorded once in
+    ``Environment.metadata`` so reversal and the writer need not infer them
+    from the Taylor tensors or add private fields to the Xsuite element.
+
+    Parameters
+    ----------
+    environment : xtrack.Environment
+        Environment receiving the new element.
+    name : str
+        Name of the new ``SecondOrderTaylorMap`` element.
+    a : float or str
+        Dimensionless signed F1 coefficient for this face.
+    b : float or str
+        F2 coefficient in metres for this face.
+    field_rotation : float or str
+        SAD transverse field-frame rotation in radians.
+    shift_x : float or str, optional
+        Horizontal displacement of the magnet axis in metres. Defaults to
+        zero.
+    shift_y : float or str, optional
+        Vertical displacement of the magnet axis in metres. Defaults to zero.
+
+    Returns
+    -------
+    None
+    """
+    k, R, T = sad_soft_quadrupolar_fringe_coefficients(
+        environment,
+        a = a,
+        b = b)
+
+    rot_s_rad = negate_sad_value(field_rotation)
+
+    environment.new(
+        name        = name,
+        prototype   = xt.SecondOrderTaylorMap,
+        length      = 0.0,
+        k           = k,
+        R           = R,
+        T           = T,
+        shift_x     = shift_x,
+        shift_y     = shift_y,
+        rot_s_rad   = rot_s_rad)
+
+    sad2xs  = environment.metadata.setdefault("sad2xs", {})
+    fringes = sad2xs.setdefault("soft_quadrupolar_fringes", {})
+    fringes[name] = {
+        "a":              a,
+        "b":              b,
+        "field_rotation": field_rotation,
+        "shift_x":        shift_x,
+        "shift_y":        shift_y,
+    }

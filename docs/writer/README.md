@@ -20,7 +20,7 @@ The modules live in `sad2xs/output_writer/`. The entry points themselves are in 
 - [The lattice file](#the-lattice-file)
 - [The optics file](#the-optics-file)
 - [Supported elements](#supported-elements)
-- [Taylor maps are written as literals](#taylor-maps-are-written-as-literals)
+- [Taylor-map output](#taylor-map-output)
 - [Limitations](#limitations)
 
 ## The lattice file
@@ -39,7 +39,7 @@ The order matters. Later steps depend on earlier ones existing, and the offset-m
 
 Identical elements are written once and reused through `env.new(..., mode="clone")` rather than repeated.
 
-Grouping is by length. `quantize_length` rounds lengths to a set precision so that elements which are identical in practice are recognised as such, rather than being written separately because of floating-point noise.
+Grouping is by length. `quantize_length` rounds lengths to `Config.MAGNET_LENGTH_PRECISION` so that elements which are identical in practice are recognised as such, rather than being written separately because of floating-point noise. The converter uses the same value as its minimum absolute nonzero concrete element length, keeping the thin/thick decision consistent with the writer's resolution.
 
 ### Reversed elements
 
@@ -82,19 +82,33 @@ The writer's supported set is **not** the same question as which SAD elements th
 
 `xt.LimitRectEllipse` is the one class the policy test does not cover. It is serialised, and it is tested by the element-level aperture writer tests in `tests/writer/elements/test_aper_writer.py`, but it has no row in the policy test.
 
-## Taylor maps are written as literals
+## Taylor-map output
 
-`xt.FirstOrderTaylorMap` and `xt.SecondOrderTaylorMap` are serialised as literal arrays at full double precision, not as optics variables.
+Generic first- and second-order Taylor maps are written as full-precision
+coefficient arrays.
+
+SAD soft quadrupolar fringe maps are written differently: one self-contained
+helper is emitted, followed by a compact call for each face containing only
+`a`, `b`, the normal-field rotation, and the two offsets. This preserves a
+thick QUAD fringe's dependency on the existing scalar quadrupole-strength
+variables after reload, without adding fringe variables or requiring the
+generated lattice to import SAD2XS. The defining records live in standard
+`Environment.metadata`; no private fields are added to Xsuite elements.
+
+Generic `xt.FirstOrderTaylorMap` and `xt.SecondOrderTaylorMap` elements are
+serialised as literal arrays at full double precision, not as optics variables.
 
 Their coefficients are not physically meaningful knobs a user would retune, and a second-order map's `T` tensor would produce an unusable number of variables.
-
-Quad-fringe maps additionally carry `_sad_quad_fringe_a`, `_sad_quad_fringe_b`, and `_sad_quad_fringe_theta` as plain attributes. The writer preserves these when present, because the reversal step needs them. See [fringe models](../converter/fringes.md).
 
 ## Limitations
 
 **The writer is not a general Xsuite serialiser.** It handles the element classes listed above, and it still carries assumptions from being the final step of a SAD2XS conversion rather than a standalone tool.
 
-**Deferred expressions are baked to literal floats.** An `xt.Line` built with xdeps expressions loses those expressions on write: the generated file contains the evaluated numbers. Structure and values survive a round trip; the dependency graph does not.
+**Most deferred expressions are baked to literal floats.** An arbitrary
+`xt.Line` built with xdeps expressions generally loses those expressions on
+write: the generated file contains evaluated numbers. The explicit exception
+is a recognised SAD soft quadrupolar fringe, whose dependency on the existing
+QUAD strength variables is preserved by its compact helper call.
 
 Both are tracked in the [issue tracker](https://github.com/JPTS2/sad2xs/issues).
 

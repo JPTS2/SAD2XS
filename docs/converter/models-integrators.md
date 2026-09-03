@@ -45,7 +45,7 @@ That method caught two real biases that a single-trial sweep would have missed: 
 | Octupole | `mat-kick-mat` | `yoshida4` | 14 |
 | Multipole | `mat-kick-mat` | `yoshida4` | 14 |
 | Cavity | `drift-kick-drift-exact` | `yoshida4` | — |
-| Solenoid | no `model` attribute | — | 20 |
+| Solenoid | no `model` attribute | `yoshida4` | 14 (two 7-kick blocks) |
 
 A zero-angle SAD `CORRECTOR` converts to a plain `xt.Bend`, so correctors follow the Bend row.
 
@@ -192,7 +192,7 @@ A rectangular-bend hypothesis, `e1 = e2 = angle/2`, was tested separately and ru
 
 The solenoid has no `model` attribute, so the model choice does not apply.
 
-Its own field, `ks` or `ks_profile`, is fully thick whatever the kick count. This includes a genuine linear ramp on `VariableSolenoid`, not only a constant field. A pure solenoid therefore needs no kick budget at all.
+Its own field, `ks` or `ks_profile`, is fully thick whatever the kick count. This includes a genuine linear ramp on `VariableSolenoid`, not only a constant field. A pure solenoid therefore needs no kick budget at all. When the solenoid also carries `knl` or `ksl` content, SAD2XS explicitly uses `yoshida4`; the configured count of 14 selects two complete seven-kick blocks internally.
 
 A solenoid carrying additional `knl` or `ksl` content is different. Treat it like any other `yoshida4`-tracked element.
 

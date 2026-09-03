@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-08-29
 ================================================================================
 """
 ################################################################################
@@ -82,6 +82,60 @@ def test_mult_rejects_bz(sad_rejects):
         "MULT M1 = (L=1.0 BZ=0.1);\n"
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START M1 END);")
+
+
+def test_mult_k1_soft_edge_matches_sad_reference_values(tmp_path):
+    """Pin SAD's signed-F1, skew-K1 zero-BZ MULT soft-edge behaviour."""
+    lattice = tmp_path / "mult_k1_soft_edge_reference.sad"
+    lattice.write_text(
+        "MOMENTUM = 1.0 GEV;\n"
+        "MULT M1 = (L=1.0 K1=0.03 SK1=0.04 K2=0.02 "
+        "F1=-0.02 F2=0.01 FRINGE=3 DISFRIN=1);\n"
+        "MARK START=() END=();\n"
+        "LINE TEST=(START M1 END);\n")
+    initial = {
+        "x_init":     np.array([1e-3, -2e-3, 3e-3, -1.5e-3]),
+        "px_init":    np.array([2e-3, 1.5e-3, -1e-3, -0.5e-3]),
+        "y_init":     np.array([-1.5e-3, 2.5e-3, -0.5e-3, 1e-3]),
+        "py_init":    np.array([0.5e-3, -1e-3, 2e-3, 1.5e-3]),
+        "zeta_init":  np.zeros(4),
+        "delta_init": np.zeros(4),
+    }
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        result = track_sad(
+            lattice_filepath = lattice.name,
+            line_name        = "TEST",
+            n_turns          = 1,
+            rfsw             = False,
+            rad              = False,
+            fluc             = False,
+            radcod           = False,
+            radtaper         = False,
+            turn_by_turn_monitor = False,
+            with_progress    = False,
+            wall_time        = 30,
+            **initial)
+    finally:
+        os.chdir(cwd)
+
+    expected = {
+        "x": [0.0029491975576896663, -0.00043261337798525945,
+              0.001961338996657533, -0.0019466197271480194],
+        "px": [0.0018905491174308312, 0.0016168130673187573,
+               -0.0010538900284404636, -0.00037816297226527066],
+        "y": [-0.0009887145869658903, 0.0015020747339901063,
+              0.001555402838140819, 0.0024887101408945156],
+        "py": [0.0005418643853453135, -0.0009890866782368015,
+               0.0021149774963213318, 0.0014829739181530122],
+    }
+    for coordinate, reference in expected.items():
+        np.testing.assert_allclose(
+            result[coordinate], reference, rtol = 1e-10, atol = 1e-14,
+            err_msg = (
+                f"SAD {coordinate} changed for the pinned MULT K1/SK1 "
+                "soft-edge reference lattice."))
 
 ################################################################################
 # Effect on Twiss and tracking
@@ -632,6 +686,38 @@ def test_mult_k1_fringe_mode_gates_entrance_exit(tmp_path):
     assert entry != pytest.approx(exit_), (
         "FRINGE=1 (entrance-only) and FRINGE=2 (exit-only) should give "
         "different kicks for asymmetric F1K1F/F1K1B/F2K1F/F2K1B.")
+
+
+def test_mult_k1_fringe_mode_uses_integer_keyword_semantics(tmp_path):
+    """SAD's input layer truncates FRINGE=1.5 to mode 1 before tracking."""
+    x_vals, px_vals = np.array([1e-3]), np.array([2e-3])
+    y_vals, py_vals = np.array([-1.5e-3]), np.array([0.5e-3])
+
+    def run(fringe):
+        body = (
+            "MULT M1=(L=1.0 K1=0.3 F1K1F=0.05 F1K1B=-0.03 "
+            f"F2K1F=0.02 F2K1B=-0.01 FRINGE={fringe});\n"
+            "MARK START=() END=(); LINE TEST=(START M1 END);")
+        return _track_mult_probe(
+            tmp_path, body, f"mult_nint_{fringe}.sad",
+            x_vals, px_vals, y_vals, py_vals)
+
+    results = {mode: run(mode) for mode in (0, 1, 1.5, 2, 3)}
+    transverse = {
+        mode: np.concatenate([
+            result[coordinate] for coordinate in ("x", "px", "y", "py")])
+        for mode, result in results.items()}
+
+    np.testing.assert_allclose(
+        transverse[1.5], transverse[1], rtol = 0.0, atol = 1e-15,
+        err_msg = "FRINGE=1.5 should truncate to entrance-only mode 1.")
+    for other_mode in (0, 2, 3):
+        assert not np.allclose(
+            transverse[1.5], transverse[other_mode],
+            rtol = 0.0, atol = 1e-15), (
+            "FRINGE=1.5 should match only mode 1, not "
+            f"mode {other_mode}.")
+
 
 def test_mult_k1_f1_f2_matches_sad_reference_values(tmp_path):
     """
