@@ -53,6 +53,16 @@ Several helpers decide whether an element qualifies for a compact one-line form:
 
 An element qualifies only when every attribute outside the compact form is at its default. This is easy to get wrong when a new field is added: a bend carrying only `fint` and `hgap` once qualified as simple, and was written with those fields silently dropped. Any new serialised attribute must also be added to the corresponding check.
 
+### Number formatting
+
+Every scalar goes through `get_value_string`. A number is written as its
+shortest exact representation, which reads back as the same float. A string is
+an optics-variable expression, written as a double-quoted literal.
+
+Infinity and NaN have no literal spelling in Python, so they are written as
+`float("inf")`, `float("-inf")`, and `float("nan")`. The optics file does not
+import NumPy, so `np.inf` cannot be used.
+
 ## The optics file
 
 The optics file calls `env.vars.update(...)` with every live optics variable in a single keyword-argument block: bend, corrector, quadrupole, sextupole, and octupole strengths, cavity RF parameters, reference shifts, and aperture bounds.

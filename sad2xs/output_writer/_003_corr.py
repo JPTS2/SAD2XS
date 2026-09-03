@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-09-03
 ================================================================================
 """
 
@@ -20,7 +20,7 @@ import xtrack as xt
 import xdeps as xd
 import numpy as np
 
-from ._000_helpers import extract_corrector_information, \
+from ._000_helpers import extract_corrector_information, get_value_string, \
     generate_magnet_for_replication_names, check_is_simple_bend_corr, get_knl_string
 from ..types import ConfigLike
 
@@ -164,16 +164,16 @@ env.new(
     edge_exit_angle_fdown   = {corr.edge_exit_angle_fdown}"""
                 if corr.edge_entry_fint != 0:
                     corr_generation += f""",
-    edge_entry_fint         = {corr.edge_entry_fint:.24f}"""
+    edge_entry_fint         = {get_value_string(corr.edge_entry_fint)}"""
                 if corr.edge_entry_hgap != 0:
                     corr_generation += f""",
-    edge_entry_hgap         = {corr.edge_entry_hgap:.24f}"""
+    edge_entry_hgap         = {get_value_string(corr.edge_entry_hgap)}"""
                 if corr.edge_exit_fint != 0:
                     corr_generation += f""",
-    edge_exit_fint          = {corr.edge_exit_fint:.24f}"""
+    edge_exit_fint          = {get_value_string(corr.edge_exit_fint)}"""
                 if corr.edge_exit_hgap != 0:
                     corr_generation += f""",
-    edge_exit_hgap          = {corr.edge_exit_hgap:.24f}"""
+    edge_exit_hgap          = {get_value_string(corr.edge_exit_hgap)}"""
                 # Append shifts if they exist
                 if corr.shift_x != 0:
                     corr_generation += f""",
@@ -242,16 +242,16 @@ env.new(
     edge_exit_angle_fdown   = {corr.edge_exit_angle_fdown}"""
                 if corr.edge_entry_fint != 0:
                     corr_generation += f""",
-    edge_entry_fint         = {corr.edge_entry_fint:.24f}"""
+    edge_entry_fint         = {get_value_string(corr.edge_entry_fint)}"""
                 if corr.edge_entry_hgap != 0:
                     corr_generation += f""",
-    edge_entry_hgap         = {corr.edge_entry_hgap:.24f}"""
+    edge_entry_hgap         = {get_value_string(corr.edge_entry_hgap)}"""
                 if corr.edge_exit_fint != 0:
                     corr_generation += f""",
-    edge_exit_fint          = {corr.edge_exit_fint:.24f}"""
+    edge_exit_fint          = {get_value_string(corr.edge_exit_fint)}"""
                 if corr.edge_exit_hgap != 0:
                     corr_generation += f""",
-    edge_exit_hgap          = {corr.edge_exit_hgap:.24f}"""
+    edge_exit_hgap          = {get_value_string(corr.edge_exit_hgap)}"""
                 # Append shifts if they exist
                 if corr.shift_x != 0:
                     corr_generation += f""",
@@ -320,16 +320,16 @@ env.new(
     edge_exit_angle_fdown   = {corr.edge_exit_angle_fdown}"""
                 if corr.edge_entry_fint != 0:
                     corr_generation += f""",
-    edge_entry_fint         = {corr.edge_entry_fint:.24f}"""
+    edge_entry_fint         = {get_value_string(corr.edge_entry_fint)}"""
                 if corr.edge_entry_hgap != 0:
                     corr_generation += f""",
-    edge_entry_hgap         = {corr.edge_entry_hgap:.24f}"""
+    edge_entry_hgap         = {get_value_string(corr.edge_entry_hgap)}"""
                 if corr.edge_exit_fint != 0:
                     corr_generation += f""",
-    edge_exit_fint          = {corr.edge_exit_fint:.24f}"""
+    edge_exit_fint          = {get_value_string(corr.edge_exit_fint)}"""
                 if corr.edge_exit_hgap != 0:
                     corr_generation += f""",
-    edge_exit_hgap          = {corr.edge_exit_hgap:.24f}"""
+    edge_exit_hgap          = {get_value_string(corr.edge_exit_hgap)}"""
                 # Append shifts if they exist
                 if corr.shift_x != 0:
                     corr_generation += f""",
@@ -449,10 +449,10 @@ def create_corrector_optics_file_information(
 
         if k0 is not None:
             output_string += f"""
-    {f"k0_{corr_variable}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k0_{corr_variable}") + 4)}{"= "}{k0:.24f},"""
+    {f"k0_{corr_variable}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k0_{corr_variable}") + 4)}{"= "}{get_value_string(k0)},"""
         if k1 is not None:
             output_string += f"""
-    {f"k1_{corr_variable}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k1_{corr_variable}") + 4)}{"= "}{k1:.24f},"""
+    {f"k1_{corr_variable}"}{" " * (config.OUTPUT_STRING_SEP - len(f"k1_{corr_variable}") + 4)}{"= "}{get_value_string(k1)},"""
 
     ########################################
     # Return

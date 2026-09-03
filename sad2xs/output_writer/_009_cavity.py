@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-09-03
 ================================================================================
 """
 
@@ -21,7 +21,7 @@ import xtrack as xt
 import xdeps as xd
 
 
-from ._000_helpers import get_parentname, get_variablename
+from ._000_helpers import get_parentname, get_value_string, get_variablename
 from ..types import ConfigLike
 
 ################################################################################
@@ -246,14 +246,14 @@ def create_cavity_optics_file_information(
 
         if harmonic != 0:
             output_string += f"""
-    {f"harm_{variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"harm_{variable_name}") + 4)}{"= "}{harmonic:.24f},"""
+    {f"harm_{variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"harm_{variable_name}") + 4)}{"= "}{get_value_string(harmonic)},"""
         else:
             output_string += f"""
-    {f"freq_{variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"freq_{variable_name}") + 4)}{"= "}{freq:.24f},"""
+    {f"freq_{variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"freq_{variable_name}") + 4)}{"= "}{get_value_string(freq)},"""
         output_string += f"""
-    {f"volt_{variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"volt_{variable_name}") + 4)}{"= "}{volt:.24f},"""
+    {f"volt_{variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"volt_{variable_name}") + 4)}{"= "}{get_value_string(volt)},"""
         output_string += f"""
-    {f"phase_{variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"phase_{variable_name}") + 4)}{"= "}{phase:.24f},"""
+    {f"phase_{variable_name}"}{" " * (config.OUTPUT_STRING_SEP - len(f"phase_{variable_name}") + 4)}{"= "}{get_value_string(phase)},"""
 
     ########################################
     # Return

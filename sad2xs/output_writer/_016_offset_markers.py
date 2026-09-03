@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-09-03
 ================================================================================
 """
 
@@ -18,7 +18,7 @@ Date:       2026-07-29
 ################################################################################
 import textwrap
 
-from ._000_helpers import get_parentname
+from ._000_helpers import get_parentname, get_value_string
 from ..types import ConfigLike
 
 ################################################################################
@@ -91,7 +91,8 @@ length   = line.get_length()
     for i, (offset_marker, insert_at_s_values) in enumerate(offset_marker_locations.items()):
 
         offset_marker           = get_parentname(offset_marker)
-        insert_s_values_string  = "[" + ", ".join([f"{s:.12f}" for s in insert_at_s_values]) + "]"
+        insert_s_values_string  = "[" + ", ".join(
+            [get_value_string(s) for s in insert_at_s_values]) + "]"
         insertion_string        = f""""{offset_marker}":{" " * (config.OUTPUT_STRING_SEP - len(offset_marker) + 4)}{insert_s_values_string}"""
 
         if i == 0:
