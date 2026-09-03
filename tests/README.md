@@ -35,7 +35,7 @@ description.
 
 ## Suite Total
 
-**2419 tests**, counted as instances collected by pytest, so each
+**2420 tests**, counted as instances collected by pytest, so each
 parametrisation counts separately.
 
 | Folder | Tests |
