@@ -49,14 +49,14 @@ parametrisation counts separately.
 | `sad_helpers/` | 83 |
 | `ci/` | 103 |
 | `writer/pipeline/` | 61 |
-| `xsuite_helpers/` | 58 |
+| `xsuite_helpers/` | 59 |
 | `observability/` | 18 |
 | `packaging/` | 22 |
 | `examples/` | 17 |
 | `installation/` | 187 |
 | `xtrack/` | 9 |
 | `docs/` | 14 |
-| **Total** | **2419** |
+| **Total** | **2420** |
 
 Each folder README gives the per-file breakdown, and those per-file counts sum
 to the folder totals above. Reproduce any of these with

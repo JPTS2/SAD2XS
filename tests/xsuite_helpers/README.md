@@ -22,7 +22,7 @@ Does not require the SAD binary.
 | `test_reference_energy.py` | 14 | 0 | — |
 | `test_symplecticity.py` | 4 | 0 | — |
 | `test_twiss_assertions.py` | 4 | 0 | — |
-| `test_twiss_alignment.py` | 9 | 0 | — |
+| `test_twiss_alignment.py` | 10 | 0 | — |
 | `test_comparison_plots.py` | 27 | 0 | — |
 
 ---

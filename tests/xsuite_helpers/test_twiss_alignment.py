@@ -65,6 +65,30 @@ def test_dot_suffixed_family_match():
     assert list(sad_aligned.name) == ["d1.0", "d1.1"]
     assert list(xs_aligned.name)  == ["d1.0", "d1.1"]
 
+def test_reversed_compound_family_matches_each_physical_entrance():
+    """
+    Independently numbered reversed fringe and body definitions at one
+    placement must count as one family occurrence, with the entrance fringe
+    selected for optics comparison and later occurrences left unshifted.
+    """
+    sad = _table(
+        ["QF.1", "QF.2", "QF.3"],
+        [1.0, 2.0, 3.0])
+    xsuite = _table(
+        [
+            "qf_fringe_in.0", "qf.0",
+            "-qf_fringe_out.0", "qf.1",
+            "-qf_fringe_out.1", "qf.2",
+        ],
+        [1.0, 1.0, 2.0, 2.0, 3.0, 3.0])
+
+    xs_aligned, sad_aligned = align_xsuite_twiss_with_sad_twiss(
+        xsuite, sad, use_s_sad = False)
+
+    assert list(sad_aligned.name) == ["QF.1", "QF.2", "QF.3"]
+    assert list(xs_aligned.name) == [
+        "qf_fringe_in.0", "-qf_fringe_out.0", "-qf_fringe_out.1"]
+
 ################################################################################
 # Pass 3: solenoid-interior rename
 ################################################################################

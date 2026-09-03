@@ -197,14 +197,14 @@ def align_xsuite_twiss_with_sad_twiss(
     n_sad       = len(sad_names)
     sad_s       = np.asarray(sad_twiss.s, dtype = float)
 
-    sad_positions_by_base  = defaultdict(list)
-    for i, name in enumerate(sad_names):
-        sad_positions_by_base[name.lower()].append(i)
+    sad_rows_by_name  = defaultdict(list)
+    for sad_row, name in enumerate(sad_names):
+        sad_rows_by_name[name.lower()].append(sad_row)
 
     ########################################
     # Xsuite side (drop the trailing "_end_point" row, if present).
-    # Matching/ranking always uses raw xs_s, never s_sad -- s_sad isn't
-    # constant across a solenoid-boundary compound's own pieces.
+    # Match SAD's physical s, corrected for reference-frame TimeDelays
+    # where that information is available.
     ########################################
     xs_names    = [str(n) for n in xsuite_twiss.name]
     xs_s        = np.asarray(xsuite_twiss.s, dtype = float)
@@ -220,197 +220,176 @@ def align_xsuite_twiss_with_sad_twiss(
     # on s must still resolve to the earlier row).
     ########################################
     face_row_for_placement     = {}
-    for i, (name, s) in enumerate(zip(xs_names, xs_s)):
-        collapsed   = _collapse_slicing(name)
-        prev        = face_row_for_placement.get(collapsed)
-        if prev is None or i < prev[0]:
-            face_row_for_placement[collapsed]  = (i, s)
-    for i, name in enumerate(xs_names):
+    for row, name in enumerate(xs_names):
+        placement_name  = _collapse_slicing(name)
+        previous_row    = face_row_for_placement.get(placement_name)
+        if previous_row is None or row < previous_row:
+            face_row_for_placement[placement_name]  = row
+    for row, name in enumerate(xs_names):
         if name.endswith("_entry"):
-            base    = name[:-len("_entry")]
-            prev    = face_row_for_placement.get(base)
-            if prev is None or i < prev[0]:
-                face_row_for_placement[base]   = (i, xs_s[i])
+            placement_name  = name[:-len("_entry")]
+            previous_row    = face_row_for_placement.get(placement_name)
+            if previous_row is None or row < previous_row:
+                face_row_for_placement[placement_name]  = row
 
-    # Repeat-suffixed placements by stripped base; only consulted after an
+    # Repeat-suffixed placements by family name; only consulted after an
     # exact-match miss, so a real SAD ".<digits>" name (e.g. "QEAP.44") is
     # never mistaken for one.
-    repeat_candidates_by_base  = defaultdict(list)
-    xs_family_bases            = set()
-    for collapsed, hit in face_row_for_placement.items():
-        base, index = _parse_repeat_suffix(collapsed.lower())
-        if index is not None:
-            repeat_candidates_by_base[base].append(hit)
-            xs_family_bases.add(base)
+    xsuite_repeat_rows_by_family  = defaultdict(list)
+    xsuite_repeat_families        = set()
+    for placement_name, row in face_row_for_placement.items():
+        family_name, repeat_index  = _parse_repeat_suffix(
+            placement_name.lower())
+        if repeat_index is not None:
+            xsuite_repeat_rows_by_family[family_name].append(row)
+            xsuite_repeat_families.add(family_name)
 
     ########################################
     # Matching machinery
     ########################################
-    matched_sad_idx = []
-    matched_xs_idx  = []
-    rejected_s_tol  = []
-    claimed_sad     = set()
-    claimed_xs      = set()
+    matched_sad_rows     = []
+    matched_xsuite_rows  = []
+    rejected_s_tol       = []
+    claimed_sad_rows     = set()
+    claimed_xsuite_rows  = set()
 
-    def _accept(sad_i: int, row_idx: int, s_xs: float) -> None:
+    def _position_match(
+            sad_rows:       list[int],
+            candidates:     Iterable[int]) -> None:
         """
-        Accept or reject a candidate SAD-to-Xsuite row match by
-        `s_tol`, recording it in the shared matched/claimed state on
-        acceptance.
+        Match one SAD name/family group by physical longitudinal position.
 
-        Acceptance always checks `s_for_tol` (s_sad where available),
-        not the raw `s_xs` used for ranking.
+        A reversed compound can put a ``-name_fringe_*`` row and the
+        direction-symmetric ``name`` body at the same placement. Xtrack
+        numbers those repeated definitions independently, so ordinal
+        suffixes cannot identify the placement. Match within `s_tol`
+        instead, choosing the earliest table row when several compound
+        pieces share a position; that row is the physical entrance face.
 
         Parameters
         ----------
-        sad_i : int
-            Index into `sad_names`/`sad_s` of the candidate SAD
-            element.
-        row_idx : int
-            Index into `xs_names`/`xs_s` of the candidate Xsuite row.
-        s_xs : float
-            The candidate row's ranking `s` value (unused for the
-            tolerance check itself, kept for the rejection log).
+        sad_rows : list of int
+            SAD element indices for one name/family group.
+        candidates : iterable of int
+            Xsuite row indices carrying a compatible name.
         """
-        # Acceptance always checks s_for_tol (s_sad where available), not
-        # the raw s_xs used for ranking.
-        s_compare   = s_for_tol[row_idx]
-        if abs(s_compare - sad_s[sad_i]) > s_tol:
-            rejected_s_tol.append((sad_names[sad_i], sad_s[sad_i], s_compare))
-            return
-        matched_sad_idx.append(sad_i)
-        matched_xs_idx.append(row_idx)
-        claimed_sad.add(sad_i)
-        claimed_xs.add(row_idx)
-
-    def _rank_match(
-            sad_idx_sorted_by_s:    list[int],
-            candidates:             Iterable[tuple[int, float]]) -> None:
-        """
-        Pair SAD elements to Xsuite candidates in matching rank order
-        by `s`, then hand each pair to `_accept`.
-
-        Both `sad_idx_sorted_by_s` and `candidates` are sorted by
-        position and paired index-for-index, so the Nth-lowest-s SAD
-        element gets the Nth-lowest-s remaining candidate -- correct
-        when a family's members are consistently ordered on both
-        sides, which every caller of `_rank_match` in this function
-        already ensures.
-
-        Parameters
-        ----------
-        sad_idx_sorted_by_s : list of int
-            SAD element indices for one name/family group, sorted by
-            `s`.
-        candidates : iterable of tuple of (int, float)
-            `(row_idx, s_xs)` Xsuite row candidates for the same
-            group; already-claimed rows are filtered out and the rest
-            sorted by `s_xs` before pairing.
-        """
-        candidates  = sorted(
-            {c for c in candidates if c[0] not in claimed_xs},
-            key = lambda c: c[1])
-        for rank, sad_i in enumerate(sad_idx_sorted_by_s):
-            if rank >= len(candidates):
+        available_rows  = set(candidates) - claimed_xsuite_rows
+        for sad_row in sorted(sad_rows, key = lambda row: sad_s[row]):
+            if not available_rows:
                 break
-            row_idx, s_xs   = candidates[rank]
-            _accept(sad_i, row_idx, s_xs)
+
+            nearest_xsuite_row = min(
+                available_rows,
+                key = lambda row: (
+                    abs(s_for_tol[row] - sad_s[sad_row]), row))
+            xsuite_s  = s_for_tol[nearest_xsuite_row]
+            if abs(xsuite_s - sad_s[sad_row]) > s_tol:
+                rejected_s_tol.append(
+                    (sad_names[sad_row], sad_s[sad_row], xsuite_s))
+                continue
+
+            matched_sad_rows.append(sad_row)
+            matched_xsuite_rows.append(nearest_xsuite_row)
+            claimed_sad_rows.add(sad_row)
+            claimed_xsuite_rows.add(nearest_xsuite_row)
+            available_rows.remove(nearest_xsuite_row)
 
     ########################################
     # Pass 1: SAD's exact name
     ########################################
-    for base, sad_idx_list in sad_positions_by_base.items():
+    for name, sad_rows in sad_rows_by_name.items():
         # A SAD name that itself looks like "base.N" (e.g. "LXL28467.1")
         # could coincidentally match an unrelated xtrack repeat -- defer to pass 2.
-        self_base, self_index  = _parse_repeat_suffix(base)
-        if self_index is not None and (
-                self_base in xs_family_bases
-                or f"-{self_base}" in xs_family_bases):
+        family_name, repeat_index  = _parse_repeat_suffix(name)
+        if repeat_index is not None and (
+                family_name in xsuite_repeat_families
+                or f"-{family_name}" in xsuite_repeat_families):
             continue
 
         candidates  = []
-        exact_hit   = face_row_for_placement.get(base)
-        if exact_hit is not None:
-            candidates.append(exact_hit)
-        if len(sad_idx_list) > 1 or exact_hit is None:
-            candidates.extend(repeat_candidates_by_base.get(base, []))
+        exact_row   = face_row_for_placement.get(name)
+        if exact_row is not None:
+            candidates.append(exact_row)
+        if len(sad_rows) > 1 or exact_row is None:
+            candidates.extend(xsuite_repeat_rows_by_family.get(name, []))
         if candidates:
-            _rank_match(sad_idx_list, candidates)
+            _position_match(sad_rows, candidates)
 
     ########################################
     # Pass 2: SAD's dot-suffixed family name
     ########################################
-    sad_family_groups   = defaultdict(list)
-    for i, name in enumerate(sad_names):
-        if i in claimed_sad:
+    sad_rows_by_family  = defaultdict(list)
+    for sad_row, name in enumerate(sad_names):
+        if sad_row in claimed_sad_rows:
             continue
-        base, sad_index     = _parse_repeat_suffix(name.lower())
-        if sad_index is not None:
-            sad_family_groups[base].append(i)
+        family_name, repeat_index  = _parse_repeat_suffix(name.lower())
+        if repeat_index is not None:
+            sad_rows_by_family[family_name].append(sad_row)
 
-    for base, sad_idx_list in sad_family_groups.items():
+    for family_name, sad_rows in sad_rows_by_family.items():
         # Pool the plain and "-"-prefixed variant: a family can be split
         # across both if some placements came via a reversed sub-line.
-        pool    = list(repeat_candidates_by_base.get(base, []))
-        pool    += repeat_candidates_by_base.get(f"-{base}", [])
-        for candidate_base in (base, f"-{base}"):
-            exact_hit   = face_row_for_placement.get(candidate_base)
-            if exact_hit is not None:
-                pool.append(exact_hit)
-        if pool:
-            _rank_match(sorted(sad_idx_list, key = lambda i: sad_s[i]), pool)
+        candidates  = list(xsuite_repeat_rows_by_family.get(family_name, []))
+        candidates  += xsuite_repeat_rows_by_family.get(f"-{family_name}", [])
+        for candidate_name in (family_name, f"-{family_name}"):
+            exact_row   = face_row_for_placement.get(candidate_name)
+            if exact_row is not None:
+                candidates.append(exact_row)
+        if candidates:
+            _position_match(sad_rows, candidates)
 
     ########################################
     # Pass 3: solenoid-interior rename ({name}_{neighbouring_solenoid}).
     # The neighbour isn't known in advance, so candidates are found by
     # string-prefix search; `s_tol` guards against a coincidental match.
     ########################################
-    for i, name in enumerate(sad_names):
-        if i in claimed_sad:
+    for sad_row, name in enumerate(sad_names):
+        if sad_row in claimed_sad_rows:
             continue
         prefix  = f"{name.lower()}_"
-        for xs_name, (row_idx, s_xs) in face_row_for_placement.items():
-            if xs_name.startswith(prefix) and row_idx not in claimed_xs \
-                    and abs(s_xs - sad_s[i]) <= s_tol:
-                _accept(i, row_idx, s_xs)
-                break
+        candidates  = [
+            xsuite_row
+            for xsuite_name, xsuite_row in face_row_for_placement.items()
+            if xsuite_name.startswith(prefix)]
+        _position_match([sad_row], candidates)
 
     # Same family-pooling as pass 2, but keyed on "{base}_{neighbour}" --
     # a repeated element's neighbour can alternate along the family.
-    sad_interior_groups     = defaultdict(list)
-    for i, name in enumerate(sad_names):
-        if i in claimed_sad:
+    sad_interior_rows_by_family  = defaultdict(list)
+    for sad_row, name in enumerate(sad_names):
+        if sad_row in claimed_sad_rows:
             continue
-        base, sad_index = _parse_repeat_suffix(name.lower())
-        if sad_index is not None:
-            sad_interior_groups[base].append(i)
+        family_name, repeat_index  = _parse_repeat_suffix(name.lower())
+        if repeat_index is not None:
+            sad_interior_rows_by_family[family_name].append(sad_row)
 
-    for base, sad_idx_list in sad_interior_groups.items():
-        prefix  = f"{base}_"
-        pool    = [
-            hit
-            for xs_base, hits in repeat_candidates_by_base.items()
-            if xs_base.startswith(prefix)
-            for hit in hits]
-        if pool:
-            _rank_match(sorted(sad_idx_list, key = lambda i: sad_s[i]), pool)
+    for family_name, sad_rows in sad_interior_rows_by_family.items():
+        prefix  = f"{family_name}_"
+        candidates  = [
+            xsuite_row
+            for xsuite_family, xsuite_rows in xsuite_repeat_rows_by_family.items()
+            if xsuite_family.startswith(prefix)
+            for xsuite_row in xsuite_rows]
+        if candidates:
+            _position_match(sad_rows, candidates)
 
     ########################################
     # Assemble result
     ########################################
-    order               = np.argsort(matched_sad_idx) if matched_sad_idx else np.array([], dtype = int)
-    matched_sad_idx     = np.array(matched_sad_idx, dtype = int)[order]
-    matched_xs_idx      = np.array(matched_xs_idx, dtype = int)[order]
+    order = np.argsort(matched_sad_rows) \
+        if matched_sad_rows else np.array([], dtype = int)
+    matched_sad_rows     = np.array(matched_sad_rows, dtype = int)[order]
+    matched_xsuite_rows  = np.array(matched_xsuite_rows, dtype = int)[order]
 
     matched_mask            = np.zeros(n_sad, dtype = bool)
-    matched_mask[matched_sad_idx]  = True
+    matched_mask[matched_sad_rows]  = True
     unmatched_sad_names     = [sad_names[i] for i in range(n_sad) if not matched_mask[i]]
     unmatched_xsuite_names  = [
         name for i, name in enumerate(xs_names)
-        if i not in set(matched_xs_idx.tolist())]
+        if i not in set(matched_xsuite_rows.tolist())]
 
     logger.info(
-        f"align_xsuite_twiss_with_sad_twiss: matched {len(matched_sad_idx)}/{n_sad} "
+        f"align_xsuite_twiss_with_sad_twiss: matched {len(matched_sad_rows)}/{n_sad} "
         f"SAD elements ({len(unmatched_sad_names)} unmatched, {len(rejected_s_tol)} "
         f"rejected by s_tol={s_tol:g}); dropped {len(unmatched_xsuite_names)}/"
         f"{len(xs_names)} Xsuite-only rows.")
@@ -426,8 +405,8 @@ def align_xsuite_twiss_with_sad_twiss(
         f"{unmatched_sad_names[:20]}"
         + (" ..." if len(unmatched_sad_names) > 20 else ""))
 
-    xsuite_aligned  = xsuite_twiss.rows[matched_xs_idx]
+    xsuite_aligned  = xsuite_twiss.rows[matched_xsuite_rows]
     if s_sad is not None:
-        xsuite_aligned.s_sad   = s_sad[matched_xs_idx]
+        xsuite_aligned.s_sad   = s_sad[matched_xsuite_rows]
 
     return xsuite_aligned, sad_twiss
