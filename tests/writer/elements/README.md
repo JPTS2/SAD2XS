@@ -59,6 +59,8 @@ environment metadata, the live dependency on an existing QUAD strength
 variable, and a reversal-only map whose leading minus sign is stripped by the
 writer. Generic Taylor maps continue to use literal coefficient arrays.
 
+The call omits `shift_x` and `shift_y` when they are zero; the helper defaults them.
+
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
 SPDX-License-Identifier: Apache-2.0

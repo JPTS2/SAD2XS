@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-01
+Date:       2026-09-03
 ================================================================================
 """
 ################################################################################
@@ -761,5 +761,4 @@ def create_sad_soft_quadrupolar_fringe(
         "b":              b,
         "field_rotation": field_rotation,
         "shift_x":        shift_x,
-        "shift_y":        shift_y,
-    }
+        "shift_y":        shift_y}
