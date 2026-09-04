@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-01
+Date:       2026-09-03
 ================================================================================
 """
 
@@ -19,7 +19,7 @@ Date:       2026-09-01
 import numpy as np
 import xtrack as xt
 
-from ._000_helpers import negate_sad_value
+from ._000_helpers import canonicalize_dipole_rotation, negate_sad_value
 from ._005_line_converter import create_reversed_component
 
 ################################################################################
@@ -222,6 +222,46 @@ def _reflect_sad_soft_quadrupolar_fringes(
         element.rot_s_rad = negate_sad_value(field_rotation)
 
 
+########################################
+# Canonical Dipole Rotation Restoration
+########################################
+def _restore_canonical_dipole_rotation(element: xt.Bend) -> None:
+    """
+    Return a reflected dipole to its canonical rotation.
+
+    A reflection negates ``rot_s_rad``, which turns the canonical
+    +pi/2 of a vertical dipole into -pi/2. The two differ by a pi
+    rotation about s, so the same element is recovered by restoring
+    the canonical rotation and applying that rotation's parity to the
+    fields: the dipole strength, the edge angles, and the even
+    multipole orders negate, while ``k1`` and the odd orders are
+    unchanged.
+
+    Parameters
+    ----------
+    element : xtrack.Bend
+        The reflected dipole to restore, modified in place.
+
+    Returns
+    -------
+    None
+    """
+    rotation, field_sign = canonicalize_dipole_rotation(element.rot_s_rad)
+
+    if field_sign == -1:
+        element.angle                  *= -1
+        element.k0                     *= -1
+        element.edge_entry_angle       *= -1
+        element.edge_exit_angle        *= -1
+        element.edge_entry_angle_fdown *= -1
+        element.edge_exit_angle_fdown  *= -1
+        for even_order in np.arange(0, element._order + 1, 2):
+            element.knl[even_order] *= -1
+            element.ksl[even_order] *= -1
+
+    element.rot_s_rad = rotation
+
+
 ################################################################################
 # Horizontal Survey Reflection
 ################################################################################
@@ -335,6 +375,8 @@ def reverse_line_survey_horizontal(line: xt.Line) -> xt.Line:
             env[bend].shift_x   *= -1
             env[bend].shift_y   *= +1
             env[bend].rot_s_rad *= -1
+
+            _restore_canonical_dipole_rotation(env[bend])
 
     ########################################
     # Quadrupole Adjustments
@@ -607,6 +649,8 @@ def reverse_line_survey_vertical(line: xt.Line) -> xt.Line:
             env[bend].shift_x   *= +1
             env[bend].shift_y   *= -1
             env[bend].rot_s_rad *= -1
+
+            _restore_canonical_dipole_rotation(env[bend])
 
     ########################################
     # Quadrupole Adjustments

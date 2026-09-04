@@ -294,7 +294,7 @@ transformed to stay consistent with that mirrored lattice.
 
 | Element | Parameters changed |
 |---|---|
-| Bend | `angle`, `k0` negate; `edge_entry_angle`, `edge_exit_angle` both negate; even-order `knl` negate, odd-order `ksl` negate; `shift_x` negates, `rot_s_rad` negates |
+| Bend | `angle`, `k0` negate; `edge_entry_angle`, `edge_exit_angle` both negate; even-order `knl` negate, odd-order `ksl` negate; `shift_x` negates, `rot_s_rad` negates and is then restored to its canonical value |
 | Quadrupole | `k1s` negates; knl/ksl parity pattern; `shift_x` negates, `rot_s_rad` negates |
 | Sextupole | `k2` negates; knl/ksl parity pattern; offsets negate |
 | Octupole | `k3s` negates; knl/ksl parity pattern; offsets negate |
@@ -362,7 +362,7 @@ A plain SEXT's `k2` is *also* unchanged here. This is the case that differs from
 
 | Element | Parameters changed |
 |---|---|
-| Bend | `angle`, `k0`, `edge_entry_angle`, `edge_exit_angle` unchanged; `knl` unchanged, `ksl` negates (all orders); `shift_y` negates, `rot_s_rad` negates, `shift_x` unchanged |
+| Bend | `angle`, `k0`, `edge_entry_angle`, `edge_exit_angle` unchanged; `knl` unchanged, `ksl` negates (all orders); `shift_y` negates, `rot_s_rad` negates and is then restored to its canonical value, `shift_x` unchanged |
 | Quadrupole | `k1` unchanged, `k1s` negates; knl/ksl uniform pattern; `shift_y` negates, `rot_s_rad` negates |
 | Sextupole | `k2` unchanged, `k2s` negates; knl/ksl uniform pattern; offsets as above |
 | Octupole | `k3` unchanged, `k3s` negates; knl/ksl uniform pattern; offsets as above |
@@ -376,15 +376,23 @@ A plain SEXT's `k2` is *also* unchanged here. This is the case that differs from
 A `BEND` with `ROTATE = +-pi/2` — a genuine vertical bend — does **not** get
 its direction flipped via `angle`/`k0`: those stay in the element's own
 frame and are unaffected by this flag (see table above). SAD2XS's element
-converter (`_canonicalize_dipole_rotation` in
-`sad2xs/converter/_004_element_converter.py`) canonicalises any SAD
+converter (`canonicalize_dipole_rotation` in
+`sad2xs/converter/_000_helpers.py`) canonicalises any SAD
 `ROTATE = +-pi/2` on a `BEND` to a fixed `rot_s_rad = +pi/2`, carrying the
 bend's up/down direction in the sign of `angle`/`k0` instead. The direction
-flip this flag applies to a vertical bend therefore happens entirely through
-`rot_s_rad` negating (`+pi/2 -> -pi/2`), not through `angle`. This is easy to
-misread as "vertical bends aren't handled" from the table alone — they are,
-just on a different parameter than a horizontal-plane bend's direction flip
-uses.
+flip this flag applies to a vertical bend therefore happens on `rot_s_rad`,
+not on `angle`. This is easy to misread as "vertical bends aren't handled"
+from the table alone — they are, just on a different parameter than a
+horizontal-plane bend's direction flip uses.
+
+Negating `rot_s_rad` takes a vertical bend out of that canonical form, to
+`-pi/2`. Each reflection therefore restores the canonical rotation afterwards:
+the rotation returns to `+pi/2` and the pi rotation between the two forms is
+absorbed into the field signs, so `angle`, `k0`, both edge angles, and the
+even multipole orders negate while `k1` and the odd orders are unchanged. The
+element is unchanged physically. Without this step a reflected vertical
+corrector reaches the writer at `-pi/2`, where it is serialised as a skew
+corrector rather than a vertical one.
 
 **Verified against real xtrack tracking, not just algebra**: for each
 element type (including a `Bend` at `rot_s_rad` of `0`, `+pi/2`, and a

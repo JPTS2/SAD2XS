@@ -26,8 +26,8 @@ each parametrisation separately.
 | `test_multipole_replacements.py` | 8 | 0 | — |
 | `test_offset_markers.py` | 27 | 0 | — |
 | `test_reference_particle.py` | 11 | 0 | — |
-| `test_reverse_survey_horizontal.py` | 14 | 0 | — |
-| `test_reverse_survey_vertical.py` | 14 | 0 | — |
+| `test_reverse_survey_horizontal.py` | 19 | 0 | — |
+| `test_reverse_survey_vertical.py` | 19 | 0 | — |
 | `test_reverse_charge_sign.py` | 6 | 0 | — |
 | `test_reverse_element_order.py` | 18 | 0 | — |
 | `test_reversed_component_syntax.py` | 11 | 0 | — |
@@ -55,6 +55,13 @@ Covers offset marker resolution and installation:
   is skipped, and the other markers still survive;
 - symbolic `s` expressions resolve through the line's `xt.Environment`, not
   through a bare `eval()`.
+
+### `test_reverse_survey_horizontal.py` and `test_reverse_survey_vertical.py` note
+
+Both reflections negate `rot_s_rad`, which would leave a vertical dipole at
+-pi/2 instead of its canonical +pi/2. The canonical-rotation tests check that
+the reflected dipole keeps a canonical rotation, and that the canonical form
+tracks identically to the non-canonical one it replaces.
 
 ### `test_reverse_charge_sign.py` note
 
