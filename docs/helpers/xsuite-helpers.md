@@ -9,8 +9,9 @@ built directly) with real accelerating cavities in it.
 Unlike `sad2xs.sad_helpers`, this package has no extra dependencies —
 `xtrack` and `numpy` are already required by core sad2xs — so it is imported
 eagerly as part of `import sad2xs`, not lazily. The one exception is
-`plot_xsuite_sad_comparison`, which lazily imports `matplotlib` inside the
-function body — install it with the `plotting` extra
+`plot_xsuite_sad_comparison`, whose module imports `matplotlib` on demand
+through a single accessor rather than at module level — install it with the
+`plotting` extra
 (`pip install sad2xs[plotting]`) to use it; the rest of the package needs
 nothing extra.
 
@@ -35,6 +36,8 @@ nothing extra.
   onto SAD's own twiss table, element by element, by name and `s`.
 - `plot_xsuite_sad_comparison`: overlay (and optionally difference) plots of
   an aligned Xsuite/SAD twiss pair.
+- `PLOT_GROUPS`: the quantity groups `plot_xsuite_sad_comparison` can
+  draw, one figure each.
 - `assert_xsuite_matches_sad_twiss`: assert an aligned Xsuite/SAD twiss pair
   agrees within per-column tolerance.
 - `check_symplecticity`: check a line's one-turn R matrix is symplectic,
@@ -216,8 +219,19 @@ For coupled (Edwards-Teng) optics, pass `xsuite_column_overrides` to both
 same background bars `xt.TwissTable.plot()` draws, reused as-is via
 `lattice_only=True`) behind each overlay row by default
 (`show_lattice=True`), built from `xsuite_aligned` — no extra data needed.
+
+The aligned table holds only the rows that matched a SAD element, so the
+ribbon it produces shows only those. A quadrupole with SAD soft fringes
+matches its entrance-face fringe map, which carries no strength, so it draws
+no bar. Pass the full, unaligned Xsuite twiss as `lattice_twiss` to draw the
+ribbon from the whole lattice instead. The curves still come from the aligned
+tables, and the plotted `s` range is unchanged.
 `groups` selects which quantity groups to draw (default: all of
-`AVAILABLE_GROUPS`); `ele_start`/`ele_stop` narrow both tables (and the
+`PLOT_GROUPS`, importable from `sad2xs.xsuite_helpers`). Each group is
+one figure of two quantities: `orbit_xy` (`x`, `y`), `orbit_pxpy` (`px`,
+`py`), `longitudinal` (`zeta`, `delta`), `beta` (`betx`, `bety`), `alpha`
+(`alfx`, `alfy`), `dispersion` (`dx`, `dy`), and `ddispersion` (`dpx`,
+`dpy`). `ele_start`/`ele_stop` narrow both tables (and the
 ribbon) to one element range by name, so the same function serves a
 full-ring overview and an IP close-up:
 
