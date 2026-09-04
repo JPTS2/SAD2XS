@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-09-04
 ================================================================================
 """
 ################################################################################
@@ -19,7 +19,6 @@ import logging
 import re
 from collections.abc import Iterable
 from pathlib import Path
-from types import ModuleType
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -30,6 +29,28 @@ if TYPE_CHECKING:
     import matplotlib.figure
 
 logger  = logging.getLogger(__name__)
+
+################################################################################
+# Matplotlib access
+################################################################################
+def _matplotlib():
+    """
+    Import matplotlib, the one optional dependency in this package.
+
+    `sad2xs.xsuite_helpers` is imported eagerly by `import sad2xs`, so
+    matplotlib cannot be imported at module level: it ships in the
+    `plotting` extra, and everything else here works without it. This is
+    the single place it enters the module.
+
+    Returns
+    -------
+    tuple of (module, type, type)
+        `(pyplot, PatchCollection, Rectangle)`.
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.collections import PatchCollection
+    from matplotlib.patches import Rectangle
+    return plt, PatchCollection, Rectangle
 
 ################################################################################
 # Quantity groups -- one figure per group, one row pair per quantity.
@@ -65,7 +86,7 @@ _RELATIVE_DIFF_COLUMNS  = {"betx", "bety"}
 
 _SI_PREFIXES    = {-3: "m", -6: "μ", -9: "n", -12: "p"}
 
-AVAILABLE_GROUPS    = tuple(_QUANTITY_GROUPS)
+PLOT_GROUPS = tuple(_QUANTITY_GROUPS)
 
 ################################################################################
 # Small helpers
@@ -91,24 +112,6 @@ def _zero_small_values(array: np.ndarray, tol: float) -> np.ndarray:
     array   = np.array(array, dtype = float)
     array[np.abs(array) < tol]  = 0
     return array
-
-def _sanitize_filename_stem(text: str) -> str:
-    """
-    Turn `text` into a safe filename stem: lowercase, with any run of
-    non-alphanumeric characters collapsed to a single underscore and no
-    leading/trailing underscore.
-
-    Parameters
-    ----------
-    text : str
-        Arbitrary text (e.g. `title_prefix`) to use in a filename.
-
-    Returns
-    -------
-    str
-        `text`, lowercased and sanitized for use as a filename stem.
-    """
-    return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
 
 def _difference(xs_values: np.ndarray, sad_values: np.ndarray, sad_column: str) -> np.ndarray:
     """
@@ -198,38 +201,6 @@ def _scaled_label(label: str, exponent: int) -> str:
         return f"{label[:-3]}[{_SI_PREFIXES[exponent]}m]"
     return rf"{label} ($\times 10^{{{exponent}}}$)"
 
-def _window_one_table(
-        table:      xt.Table,
-        ele_start:  str | None,
-        ele_stop:   str | None) -> tuple[xt.Table, np.ndarray]:
-    """
-    Find `[ele_start, ele_stop]` in one table's own `name` column and
-    return the rows in between (inclusive), plus the row-index array used.
-
-    Parameters
-    ----------
-    table : xt.Table
-        The table to search and window.
-    ele_start : str or None
-        Name of the first element to keep (inclusive).
-    ele_stop : str or None
-        Name of the last element to keep (inclusive).
-
-    Returns
-    -------
-    tuple of (xt.Table, numpy.ndarray)
-        The windowed table, and the row-index array applied.
-    """
-    names   = [str(n).lower() for n in table.name]
-    last    = len(names) - 1
-    lo  = names.index(ele_start.lower()) if ele_start is not None else 0
-    hi  = names.index(ele_stop.lower()) if ele_stop is not None else last
-    if hi < lo:
-        lo, hi  = hi, lo
-
-    idx = np.arange(lo, hi + 1)
-    return table.rows[idx], idx
-
 def _window_by_element(
         xsuite_aligned: xt.Table,
         sad_aligned:    xt.Table,
@@ -238,11 +209,11 @@ def _window_by_element(
         *,
         aligned:        bool = True) -> tuple[xt.Table, xt.Table]:
     """
-    Cut both tables to the row range [ele_start, ele_stop].
+    Cut both tables to the row range [ele_start, ele_stop], inclusive.
 
     Matched by element name, case-insensitive, the same way
-    `align_xsuite_twiss_with_sad_twiss` matches names. No-op if
-    neither `ele_start` nor `ele_stop` is given.
+    `align_xsuite_twiss_with_sad_twiss` matches names. No-op if neither
+    bound is given.
 
     Parameters
     ----------
@@ -251,35 +222,34 @@ def _window_by_element(
     sad_aligned : xt.Table
         SAD-side table.
     ele_start : str or None
-        Name of the first element to keep (inclusive).
+        Name of the first element to keep.
     ele_stop : str or None
-        Name of the last element to keep (inclusive).
+        Name of the last element to keep.
     aligned : bool, optional
-        Default `True`: the two tables are same-length and row-matched
-        (e.g. from `align_xsuite_twiss_with_sad_twiss`), so the row range
-        is found once against `sad_aligned.name` and the same index array
-        applied to both. `False`: the tables aren't row-matched (possibly
-        different lengths), so each is searched and windowed against its
-        own `name` column independently.
+        Default `True`: the tables are row-matched, so the range is found
+        once against `sad_aligned` and the same rows taken from both.
+        `False`: each table is searched against its own `name` column.
 
     Returns
     -------
     tuple of (xt.Table, xt.Table)
-        `(xsuite_aligned, sad_aligned)`, windowed to the requested
-        row range.
+        `(xsuite_aligned, sad_aligned)`, windowed to the row range.
     """
+    def row_range(table: xt.Table) -> np.ndarray:
+        names   = [str(n).lower() for n in table.name]
+        lo  = names.index(ele_start.lower()) if ele_start is not None else 0
+        hi  = names.index(ele_stop.lower()) if ele_stop is not None else len(names) - 1
+        return np.arange(min(lo, hi), max(lo, hi) + 1)
+
     if ele_start is None and ele_stop is None:
         return xsuite_aligned, sad_aligned
 
     if not aligned:
-        xsuite_windowed, _  = _window_one_table(
-            xsuite_aligned, ele_start, ele_stop)
-        sad_windowed, _     = _window_one_table(
-            sad_aligned, ele_start, ele_stop)
-        return xsuite_windowed, sad_windowed
+        return (xsuite_aligned.rows[row_range(xsuite_aligned)],
+                sad_aligned.rows[row_range(sad_aligned)])
 
-    sad_windowed, idx   = _window_one_table(sad_aligned, ele_start, ele_stop)
-    return xsuite_aligned.rows[idx], sad_windowed
+    rows    = row_range(sad_aligned)
+    return xsuite_aligned.rows[rows], sad_aligned.rows[rows]
 
 ################################################################################
 # Lattice ribbon -- Xsuite's own element-type bars (xt.TwissTable.plot),
@@ -290,7 +260,7 @@ def _window_by_element(
 ################################################################################
 def _draw_lattice_ribbon(
         overlay_ax:     "matplotlib.axes.Axes",
-        xsuite_aligned: xt.Table,
+        lattice_twiss:  xt.Table,
         cache:          dict) -> tuple["matplotlib.axes.Axes", list, list]:
     """
     First call (`cache["bars"] is None`): let `xt.TwissTable.plot
@@ -304,7 +274,7 @@ def _draw_lattice_ribbon(
     overlay_ax : matplotlib.axes.Axes
         The axis to draw the ribbon onto (or copy it onto, on
         subsequent calls).
-    xsuite_aligned : xt.Table
+    lattice_twiss : xt.Table
         The table to draw the ribbon from, on the first call.
     cache : dict
         Shared cache dict with keys "bars" and "legend", populated on
@@ -319,7 +289,7 @@ def _draw_lattice_ribbon(
         ribbon drawn behind it on a separate, hidden-axis twin.
     """
     if cache["bars"] is None:
-        pl  = xsuite_aligned.plot(lattice_only = True, ax = overlay_ax, x = "s", grid = False)
+        pl  = lattice_twiss.plot(lattice_only = True, ax = overlay_ax, x = "s", grid = False)
         cache["bars"]   = [
             (bar.get_x(), bar.get_y(), bar.get_width(), bar.get_height(), bar.get_facecolor())
             for bar in pl.lattice.patches]
@@ -331,8 +301,7 @@ def _draw_lattice_ribbon(
     # Every bar can have a different height (magnitude-scaled per magnet),
     # so one PatchCollection of individually-sized rectangles -- a single
     # artist -- replaces what would otherwise be one Rectangle per magnet.
-    from matplotlib.collections import PatchCollection
-    from matplotlib.patches import Rectangle
+    _, PatchCollection, Rectangle    = _matplotlib()
 
     ribbon_ax   = overlay_ax.twinx()
     ribbon_ax.set_zorder(0)
@@ -355,7 +324,6 @@ def _draw_lattice_ribbon(
 # One quantity-group figure
 ################################################################################
 def _plot_group(
-        plt:                        ModuleType,
         xsuite_aligned:             xt.Table,
         sad_aligned:                xt.Table,
         title:                      str,
@@ -366,7 +334,8 @@ def _plot_group(
         xsuite_column_overrides:    dict[str, str],
         zero_tol:                   float,
         title_prefix:               str | None,
-        lattice_cache:              dict | None
+        lattice_cache:              dict | None,
+        lattice_twiss:              xt.Table
         ) -> tuple["matplotlib.figure.Figure", list["matplotlib.axes.Axes"]]:
     """
     Draw one quantity-group figure: one overlay (+ optional
@@ -374,10 +343,6 @@ def _plot_group(
 
     Parameters
     ----------
-    plt : module
-        The `matplotlib.pyplot` module (passed in rather than
-        imported here, so this stays a pure helper of
-        `plot_xsuite_sad_comparison`, which does the lazy import).
     xsuite_aligned : xt.Table
         Xsuite-side aligned table (already windowed, if requested).
     sad_aligned : xt.Table
@@ -403,6 +368,9 @@ def _plot_group(
     lattice_cache : dict or None
         Shared cache for `_draw_lattice_ribbon`, or None to skip
         drawing the lattice ribbon.
+    lattice_twiss : xt.Table
+        The table the ribbon is drawn from, independent of the tables
+        the curves are drawn from.
 
     Returns
     -------
@@ -410,6 +378,8 @@ def _plot_group(
         The figure and its axes (overlay and, if `include_diff`,
         difference axes interleaved).
     """
+    plt, _, _   = _matplotlib()
+
     # Constrained layout keeps legend/labels correctly spaced at any figsize.
     fig     = plt.figure(figsize = figsize, layout = "constrained")
 
@@ -454,7 +424,12 @@ def _plot_group(
 
         if lattice_cache is not None:
             plot_ax, lattice_handles, lattice_labels  = _draw_lattice_ribbon(
-                overlay_ax, xsuite_aligned, lattice_cache)
+                overlay_ax, lattice_twiss, lattice_cache)
+            # Xtrack sets the x limits from the ribbon's own table, which is
+            # the whole lattice when a full twiss is drawn behind a window.
+            # A single-row window has no width to restore.
+            if np.min(s_sad) < np.max(s_sad):
+                plot_ax.set_xlim(float(np.min(s_sad)), float(np.max(s_sad)))
             # Only the axis that triggered the real xtrack computation gets
             # its own auto-drawn legend (bars copied onto other axes don't)
             # -- drop it, the combined SAD/Xsuite + bar-type legend below
@@ -539,13 +514,14 @@ def plot_xsuite_sad_comparison(
         zero_tol:                   float                   = 1E-12,
         title_prefix:               str | None              = None,
         show_lattice:               bool                    = True,
+        lattice_twiss:              xt.Table | None         = None,
         aligned:                    bool                    = True,
         save_dir:                   str | None              = None,
         save_format:                str                     = "pdf"
         ) -> dict[str, tuple["matplotlib.figure.Figure", list["matplotlib.axes.Axes"]]]:
     """
     Overlay Xsuite against SAD for each quantity group in `groups` (default
-    `AVAILABLE_GROUPS`, i.e. all of them), one figure per group, with an
+    `PLOT_GROUPS`, i.e. all of them), one figure per group, with an
     optional difference row flush under each overlay row. Does not call
     `plt.show()` -- that's the caller's choice.
 
@@ -556,9 +532,19 @@ def plot_xsuite_sad_comparison(
         from `align_xsuite_twiss_with_sad_twiss`. With `aligned=False`, any
         two twiss tables -- no length/row-matching requirement.
     groups : iterable of str, optional
-        Subset of `AVAILABLE_GROUPS` to draw. `AVAILABLE_GROUPS` is
-        `("orbit_xy", "orbit_pxpy", "longitudinal", "beta", "alpha",
-        "dispersion", "ddispersion")`.
+        Subset of `PLOT_GROUPS` to draw, one figure each. Every
+        group draws two quantities:
+
+        - `"orbit_xy"`: `x`, `y`
+        - `"orbit_pxpy"`: `px`, `py`
+        - `"longitudinal"`: `zeta`, `delta`
+        - `"beta"`: `betx`, `bety`
+        - `"alpha"`: `alfx`, `alfy`
+        - `"dispersion"`: `dx`, `dy`
+        - `"ddispersion"`: `dpx`, `dpy`
+
+        Each is a SAD twiss column name, which `xsuite_column_overrides`
+        can remap on the Xsuite side.
     ele_start, ele_stop : str, optional
         Element names bounding the row range plotted, inclusive (matched
         against `sad_aligned.name` when `aligned=True`; against each
@@ -587,8 +573,15 @@ def plot_xsuite_sad_comparison(
         to distinguish multiple calls for different twiss modes.
     show_lattice : bool, optional
         Default `True`: draw Xsuite's own element-type ribbon (as in
-        `xt.TwissTable.plot()`) behind each overlay row, from
-        `xsuite_aligned`.
+        `xt.TwissTable.plot()`) behind each overlay row.
+    lattice_twiss : xt.Table, optional
+        The table the ribbon is drawn from. Default `None`: draw it
+        from `xsuite_aligned`, which shows only the elements that
+        matched a SAD row. Pass the full, unaligned Xsuite twiss
+        instead to draw the whole lattice. That matters for a magnet
+        whose matched row is not the row carrying its strength: a
+        quadrupole with SAD soft fringes matches its entrance-face
+        fringe map, whose `k1l` is zero, so it draws no bar.
     aligned : bool, optional
         Default `True`: `xsuite_aligned`/`sad_aligned` are same-length and
         row-matched. Set `False` to overlay two tables that aren't --
@@ -614,10 +607,8 @@ def plot_xsuite_sad_comparison(
     Returns
     -------
     dict[str, (Figure, list[Axes])]
-        One entry per plotted group, keyed by its `AVAILABLE_GROUPS` name.
+        One entry per plotted group, keyed by its `PLOT_GROUPS` name.
     """
-    import matplotlib.pyplot as plt    # lazy: xsuite_helpers stays dependency-free
-
     if not aligned and include_diff:
         logger.warning(
             "plot_xsuite_sad_comparison: aligned=False, forcing "
@@ -632,22 +623,27 @@ def plot_xsuite_sad_comparison(
     # cache means Xsuite computes the ribbon for real exactly once, no
     # matter how many groups/axes end up showing it.
     lattice_cache   = {"bars": None, "legend": None} if show_lattice else None
+    if lattice_twiss is None:
+        lattice_twiss   = xsuite_aligned
 
     figures = {}
-    for key in (groups if groups is not None else AVAILABLE_GROUPS):
+    for key in (groups if groups is not None else PLOT_GROUPS):
         title, quantities   = _QUANTITY_GROUPS[key]
         figures[key]        = _plot_group(
-            plt, xsuite_aligned, sad_aligned, title, quantities,
+            xsuite_aligned, sad_aligned, title, quantities,
             figsize                     = figsize,
             include_diff                = include_diff,
             xsuite_column_overrides     = xsuite_column_overrides,
             zero_tol                    = zero_tol,
             title_prefix                = title_prefix,
-            lattice_cache               = lattice_cache)
+            lattice_cache               = lattice_cache,
+            lattice_twiss               = lattice_twiss)
 
     if save_dir is not None:
         Path(save_dir).mkdir(parents = True, exist_ok = True)
-        stem    = title_prefix and _sanitize_filename_stem(title_prefix)
+        # Lowercased, non-alphanumeric runs collapsed: a safe filename stem.
+        stem    = title_prefix and re.sub(
+            r"[^a-z0-9]+", "_", title_prefix.lower()).strip("_")
         prefix  = f"{stem}_" if stem else ""
         for key, (fig, _) in figures.items():
             fig.savefig(f"{save_dir}/{prefix}{key}.{save_format}")

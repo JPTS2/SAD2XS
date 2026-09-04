@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-09-04
 ================================================================================
 """
 ################################################################################
@@ -24,14 +24,14 @@ import xtrack as xt
 
 from sad2xs.xsuite_helpers import plot_xsuite_sad_comparison
 from sad2xs.xsuite_helpers.comparison_plots import (
-    AVAILABLE_GROUPS,
+    PLOT_GROUPS,
     _scale_exponent,
     _scaled_label)
 
 ################################################################################
 # Helpers
 ################################################################################
-# Every column any AVAILABLE_GROUPS quantity needs, on the SAD side.
+# Every column any PLOT_GROUPS quantity needs, on the SAD side.
 _QUANTITY_COLUMNS   = [
     "x", "y", "px", "py", "zeta", "delta",
     "betx", "bety", "alfx", "alfy", "dx", "dy", "dpx", "dpy"]
@@ -85,6 +85,35 @@ def _all_ribbon_types_pair():
         "bety": np.array(xsuite.bety) * 1.01})
     return xsuite, sad
 
+
+def _dropped_strength_pair():
+    """
+    An aligned pair whose Xsuite rows exclude the quadrupole body.
+
+    This is what `align_xsuite_twiss_with_sad_twiss` produces for a
+    quadrupole with SAD soft fringes: the entrance-face row it matches
+    is the fringe map, which carries no strength. Returned alongside the
+    full twiss, which does contain the body.
+    """
+    env = xt.Environment()
+    env.particle_ref   = xt.Particles(p0c = 1.0E9)
+    line    = env.new_line(components = [
+        env.new("q1_fringe_in", xt.Marker, at = 0.75),
+        env.new("q1", xt.Quadrupole, k1 = 0.3, length = 0.5, at = 1.0),
+        env.new("b1", xt.Bend, angle = 0.05, length = 1.0, at = 3.0)])
+    line.build_tracker()
+    full    = line.twiss4d(betx = 5.0, bety = 5.0)
+
+    keep    = [i for i, name in enumerate(full.name) if str(name) != "q1"]
+    aligned = full.rows[keep]
+
+    values  = {col: np.full(len(aligned), 1.2) for col in _QUANTITY_COLUMNS}
+    sad     = xt.Table({
+        "name": np.array(aligned.name),
+        "s":    np.array(aligned.s),
+        **values})
+    return aligned, sad, full
+
 ################################################################################
 # plot_xsuite_sad_comparison
 ################################################################################
@@ -105,7 +134,7 @@ def test_returns_one_figure_per_requested_group():
 
 def test_omitting_groups_defaults_to_all_available():
     """
-    Omitting `groups` should plot every group in AVAILABLE_GROUPS;
+    Omitting `groups` should plot every group in PLOT_GROUPS;
     `include_diff=False` should drop the difference row, leaving only
     the overlay axis per quantity.
     """
@@ -113,7 +142,7 @@ def test_omitting_groups_defaults_to_all_available():
 
     figures = plot_xsuite_sad_comparison(xsuite, sad, include_diff = False)
 
-    assert set(figures) == set(AVAILABLE_GROUPS)
+    assert set(figures) == set(PLOT_GROUPS)
     fig, axs    = figures["beta"]
     assert len(axs) == 2  # 2 quantities, no diff row
 
@@ -232,7 +261,7 @@ def test_second_group_axis_autoscales_to_real_data_not_ribbon_scale():
     """
     xsuite, sad = _aligned_pair()
 
-    # "orbit_xy" is drawn first (AVAILABLE_GROUPS order) and is the one
+    # "orbit_xy" is drawn first (PLOT_GROUPS order) and is the one
     # that seeds the lattice cache; "beta" is drawn from the reused branch.
     fig, axs    = plot_xsuite_sad_comparison(
         xsuite, sad, groups = ["orbit_xy", "beta"])["beta"]
@@ -477,3 +506,76 @@ def test_save_dir_filenames_include_sanitized_title_prefix(tmp_path):
         save_dir = str(save_dir), title_prefix = "First IP")
 
     assert {p.name for p in save_dir.iterdir()} == {"first_ip_beta.pdf"}
+
+
+
+################################################################################
+# Lattice ribbon source
+################################################################################
+def _ribbon_bar_count(figure) -> int:
+    """Count ribbon bars, drawn as patches once and as a collection after."""
+    patches     = sum(len(ax.patches) for ax in figure.axes)
+    collected   = sum(
+        len(collection.get_paths())
+        for ax in figure.axes for collection in ax.collections)
+    return patches + collected
+
+
+def test_ribbon_from_aligned_table_misses_unmatched_magnets():
+    """
+    The aligned table holds only the rows that matched a SAD element, so
+    a magnet whose matched row carries no strength draws no bar. This is
+    the default, and the reason `lattice_twiss` exists.
+    """
+    aligned, sad, _ = _dropped_strength_pair()
+
+    fig, _  = plot_xsuite_sad_comparison(
+        aligned, sad, groups = ["beta"], include_diff = False)["beta"]
+
+    assert _ribbon_bar_count(fig) < 4, (
+        "The quadrupole body is absent from the aligned table, so its bar "
+        "should be missing from the ribbon drawn from that table.")
+
+
+def test_ribbon_from_full_twiss_includes_unmatched_magnets():
+    """
+    Passing the full twiss as `lattice_twiss` should draw every magnet,
+    independently of which rows the curves are drawn from.
+    """
+    aligned, sad, full  = _dropped_strength_pair()
+
+    fig_aligned, _  = plot_xsuite_sad_comparison(
+        aligned, sad, groups = ["beta"], include_diff = False)["beta"]
+    fig_full, _     = plot_xsuite_sad_comparison(
+        aligned, sad, groups = ["beta"], include_diff = False,
+        lattice_twiss = full)["beta"]
+
+    assert _ribbon_bar_count(fig_full) > _ribbon_bar_count(fig_aligned), (
+        "Drawing the ribbon from the full twiss should add the bars for "
+        "magnets that no SAD row matched. Got "
+        f"{_ribbon_bar_count(fig_full)} bars against "
+        f"{_ribbon_bar_count(fig_aligned)} from the aligned table.")
+
+
+def test_ribbon_from_full_twiss_keeps_the_curves_x_range():
+    """
+    Xtrack sets the x limits from the table it draws, so a full-ring
+    ribbon must not widen a windowed plot back out to the whole ring.
+    """
+    aligned, sad, full  = _dropped_strength_pair()
+
+    fig, axs    = plot_xsuite_sad_comparison(
+        aligned, sad, groups = ["beta"], include_diff = False,
+        lattice_twiss = full,
+        ele_start = "q1_fringe_in", ele_stop = "b1")["beta"]
+
+    windowed        = aligned.rows[
+        [i for i, name in enumerate(aligned.name)
+         if str(name) in ("q1_fringe_in", "b1")]]
+    lo, hi          = axs[0].get_xlim()
+    expected_lo     = float(np.min(windowed.s))
+    expected_hi     = float(np.max(windowed.s))
+
+    assert (lo, hi) == pytest.approx((expected_lo, expected_hi)), (
+        "The ribbon's own x limits should not survive: the plot should keep "
+        f"the windowed range ({expected_lo}, {expected_hi}). Got ({lo}, {hi}).")
