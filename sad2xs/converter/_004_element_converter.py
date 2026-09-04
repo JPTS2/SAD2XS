@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-01
+Date:       2026-09-03
 ================================================================================
 """
 
@@ -35,6 +35,7 @@ from ._000_helpers import (
     divide_integrated_strength,
     define_strength_variable,
     combine_k0_sk0,
+    canonicalize_dipole_rotation,
     create_sad_soft_quadrupolar_fringe,
     parse_rf_parameters,
     sad_quadrupolar_field_rotation,
@@ -333,44 +334,6 @@ def convert_drifts(parsed_elements: dict[str, dict], environment: xt.Environment
 ################################################################################
 # Convert Bends
 ################################################################################
-def _canonicalize_dipole_rotation(rotation: SadValue) -> tuple[SadValue, int]:
-    """
-    Return the SAD-origin canonical dipole rotation and field sign.
-
-    Xsuite Bend has one dipole field direction plus an element
-    rotation. For SAD-origin dipoles, equivalent pi and -pi/2 rotations
-    are represented by a field sign flip instead; vertical dipoles use
-    +pi/2. Symbolic (deferred) rotations are passed through unchanged
-    with a field sign of +1, since their runtime value is not known at
-    conversion time.
-
-    Parameters
-    ----------
-    rotation : float or str
-        The element's rotation, in radians (Xsuite sign convention),
-        or a deferred expression string.
-
-    Returns
-    -------
-    tuple of (float or str, int)
-        `(canonical_rotation, field_sign)`, where `field_sign` is +1 or
-        -1 and should multiply the dipole field strength (e.g. k0l).
-    """
-    if not isinstance(rotation, (int, float, np.number)):
-        return rotation, +1
-
-    if np.isclose(rotation, 0.0):
-        return 0.0, +1
-    if np.isclose(abs(rotation), np.pi):
-        return 0.0, -1
-    if np.isclose(rotation, np.pi / 2):
-        return np.pi / 2, +1
-    if np.isclose(rotation, -np.pi / 2):
-        return np.pi / 2, -1
-
-    return rotation, +1
-
-
 def _has_nonzero_offset(shift_x: SadValue, shift_y: SadValue, tol: float) -> bool:
     """
     True if either misalignment is symbolic (treated conservatively as
@@ -477,7 +440,7 @@ def convert_bends(
     ANGLE are correctors, handled by `convert_correctors` instead.
 
     Any rotation that SAD encodes as a field-sign flip (pi or -pi/2,
-    see `_canonicalize_dipole_rotation`) is absorbed into k0/k1 rather
+    see `canonicalize_dipole_rotation`) is absorbed into k0/k1 rather
     than left as an element rotation.
 
     Warns once for the whole lattice if any ANGLE != 0 bend also has a
@@ -514,7 +477,7 @@ def convert_bends(
                 shift_x, shift_y, rotation = get_element_misalignments(ele_vars)
                 if _has_nonzero_offset(shift_x, shift_y, config.TRANSFORM_SHIFT_TOL):
                     offset_bends.append(ele_name)
-                rotation, field_sign = _canonicalize_dipole_rotation(rotation)
+                rotation, field_sign = canonicalize_dipole_rotation(rotation)
                 if field_sign == -1:
                     k0l = -k0l if isinstance(k0l, (int, float, np.number)) else f"-({k0l})"
                 environment.new(
@@ -553,7 +516,7 @@ def convert_bends(
             # Thin/zero-length bend → Multipole; hxl required for reference orbit
             # bending and dispersion generation (without it px and dpx are wrong)
             if isinstance(length, float) and length == 0.0:
-                rotation, field_sign = _canonicalize_dipole_rotation(rotation)
+                rotation, field_sign = canonicalize_dipole_rotation(rotation)
                 if field_sign == -1:
                     k0l = -k0l if isinstance(k0l, (int, float, np.number)) else f"-({k0l})"
                 environment.new(
@@ -580,7 +543,7 @@ def convert_bends(
 
             edge_entry_angle    = f"{e1} * {k0l} + {ae1}"
             edge_exit_angle     = f"{e2} * {k0l} + {ae2}"
-            rotation, field_sign = _canonicalize_dipole_rotation(rotation)
+            rotation, field_sign = canonicalize_dipole_rotation(rotation)
             if field_sign == -1:
                 if isinstance(angle, (int, float, np.number)):
                     angle = -angle
@@ -692,7 +655,7 @@ def convert_correctors(
             if length == 0:
                 k0l = parse_expression(ele_vars.get("k0", 0.0))
                 k1l = parse_expression(ele_vars.get("k1", 0.0))
-                rotation, field_sign = _canonicalize_dipole_rotation(rotation)
+                rotation, field_sign = canonicalize_dipole_rotation(rotation)
                 if field_sign == -1:
                     k0l = -k0l if isinstance(k0l, (int, float, np.number)) else f"-({k0l})"
                 environment.new(
@@ -712,7 +675,7 @@ def convert_correctors(
             if "k1" in ele_vars:
                 k1l = parse_expression(ele_vars["k1"])
             k1  = divide_integrated_strength(k1l, length)
-            rotation, field_sign = _canonicalize_dipole_rotation(rotation)
+            rotation, field_sign = canonicalize_dipole_rotation(rotation)
             if field_sign == -1:
                 k0 = -k0 if isinstance(k0, (int, float, np.number)) else f"-({k0})"
 
@@ -1405,7 +1368,7 @@ def convert_multipoles(
        order up to `config.MAX_KNL_ORDER`.
 
     Cases 2-3 both canonicalize any k0/sk0-only rotation the same way
-    `convert_bends` does (see `_canonicalize_dipole_rotation`), and
+    `convert_bends` does (see `canonicalize_dipole_rotation`), and
     both require a non-zero length (integrated strengths must be
     divided by length).
 
@@ -1550,7 +1513,7 @@ def convert_multipoles(
                 if replace_type == "Bend":
 
                     k0l, rotation           = combine_k0_sk0(knl[0], ksl[0], rotation)
-                    rotation, field_sign    = _canonicalize_dipole_rotation(rotation)
+                    rotation, field_sign    = canonicalize_dipole_rotation(rotation)
                     if field_sign == -1:
                         k0l = -k0l if isinstance(k0l, (int, float, np.number)) else f"-({k0l})"
 
@@ -1686,7 +1649,7 @@ def convert_multipoles(
                 dipole_simplified_mults.append(ele_name)
 
                 k0l, rotation           = combine_k0_sk0(knl[0], ksl[0], rotation)
-                rotation, field_sign    = _canonicalize_dipole_rotation(rotation)
+                rotation, field_sign    = canonicalize_dipole_rotation(rotation)
                 if field_sign == -1:
                     k0l = -k0l if isinstance(k0l, (int, float, np.number)) else f"-({k0l})"
 

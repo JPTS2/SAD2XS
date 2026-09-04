@@ -475,6 +475,46 @@ def combine_k0_sk0(
     return k0l, rotation
 
 ################################################################################
+# Canonical Dipole Rotation
+################################################################################
+def canonicalize_dipole_rotation(rotation: SadValue) -> tuple[SadValue, int]:
+    """
+    Return the SAD-origin canonical dipole rotation and field sign.
+
+    Xsuite Bend has one dipole field direction plus an element
+    rotation. For SAD-origin dipoles, equivalent pi and -pi/2 rotations
+    are represented by a field sign flip instead; vertical dipoles use
+    +pi/2. Symbolic (deferred) rotations are passed through unchanged
+    with a field sign of +1, since their runtime value is not known at
+    conversion time.
+
+    Parameters
+    ----------
+    rotation : float or str
+        The element's rotation, in radians (Xsuite sign convention),
+        or a deferred expression string.
+
+    Returns
+    -------
+    tuple of (float or str, int)
+        `(canonical_rotation, field_sign)`, where `field_sign` is +1 or
+        -1 and should multiply the dipole field strength (e.g. k0l).
+    """
+    if not isinstance(rotation, (int, float, np.number)):
+        return rotation, +1
+
+    if np.isclose(rotation, 0.0):
+        return 0.0, +1
+    if np.isclose(abs(rotation), np.pi):
+        return 0.0, -1
+    if np.isclose(rotation, np.pi / 2):
+        return np.pi / 2, +1
+    if np.isclose(rotation, -np.pi / 2):
+        return np.pi / 2, -1
+
+    return rotation, +1
+
+################################################################################
 # Compute Element Misalignments
 ################################################################################
 def get_element_misalignments(
