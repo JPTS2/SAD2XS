@@ -235,13 +235,17 @@ def convert_sad_to_xsuite(
         line            = env.lines[line_name.lower()]
         selected_line   = line_name
     else:
-        line_lengths    = {line: env.lines[line].get_length() for line in env.lines}
+        sad_line_names  = parsed_lattice_data["lines"]
+        line_lengths    = {
+            name: env.lines[name].get_length() for name in sad_line_names}
 
         # If several are the same length, check also number of elements (thin elements)
         if max(line_lengths.values()) != 0:
             longest_line    = max(line_lengths, key = lambda line: line_lengths[line])
         else:
-            line_lengths    = {line: len(env.lines[line].element_names) for line in env.lines}
+            line_lengths    = {
+                name: len(env.lines[name].element_names)
+                for name in sad_line_names}
             longest_line    = max(line_lengths, key = lambda line: line_lengths[line])
 
         line            = env.lines[longest_line]

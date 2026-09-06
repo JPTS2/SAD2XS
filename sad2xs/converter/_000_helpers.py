@@ -1150,18 +1150,12 @@ def sad_mult_fringe_parameters(
             "FRINGE must be a concrete number to import a MULT fringe, got "
             f"a deferred expression: {fringe_mode!r}.")
     fringe_mode = int(fringe_mode)
-    if fringe_mode not in (1, 2, 3):
-        return {}
-    if not isinstance(length, (int, float, np.number)):
-        raise ValueError(
-            f"L must be a concrete number to import the active fringe of "
-            f"SAD MULT {ele_name}, got {length!r}.")
 
-    faces = []
+    soft_face_names = []
     if fringe_mode in (1, 3):
-        faces.append("in")
+        soft_face_names.append("in")
     if fringe_mode in (2, 3):
-        faces.append("out")
+        soft_face_names.append("out")
 
     ########################################
     # Read Hard-Fringe Switch
@@ -1172,6 +1166,24 @@ def sad_mult_fringe_parameters(
             "DISFRIN must be a concrete number to import a MULT fringe, got "
             f"a deferred expression: {disfrin!r}.")
     hard_enabled = disfrin == 0.0
+    if not hard_enabled:
+        hard_faces = []
+    elif fringe_mode == 1:
+        hard_faces = ["in"]
+    elif fringe_mode == 2:
+        hard_faces = ["out"]
+    else:
+        hard_faces = ["in", "out"]
+
+    faces = [
+        side for side in ("in", "out")
+        if side in soft_face_names or side in hard_faces]
+    if not faces:
+        return {}
+    if not isinstance(length, (int, float, np.number)):
+        raise ValueError(
+            f"L must be a concrete number to import the active fringe of "
+            f"SAD MULT {ele_name}, got {length!r}.")
 
     ########################################
     # Read Soft Quadrupolar Faces
@@ -1180,7 +1192,7 @@ def sad_mult_fringe_parameters(
     has_quadrupole = not (
         is_effectively_zero(knl[1], tol = 0.0)
         and is_effectively_zero(ksl[1], tol = 0.0))
-    if has_quadrupole:
+    if has_quadrupole and soft_face_names:
         face_values = {
             key: parse_expression(ele_vars.get(key, 0.0))
             for key in (
@@ -1193,7 +1205,7 @@ def sad_mult_fringe_parameters(
                     f"{value!r}.")
 
         for side, suffix in (("in", "f"), ("out", "b")):
-            if side not in faces:
+            if side not in soft_face_names:
                 continue
             f1_raw = face_values["f1"] + face_values[f"f1k1{suffix}"]
             f2_raw = face_values["f2"] + face_values[f"f2k1{suffix}"]
@@ -1248,7 +1260,7 @@ def sad_mult_fringe_parameters(
     ########################################
     result = {
         "faces":          tuple(faces),
-        "hard_enabled":   hard_enabled,
+        "hard_faces":     tuple(hard_faces),
         "length":         float(length),
         "alignment":      alignment,
         "k0":             knl[0],
@@ -1263,9 +1275,10 @@ def sad_mult_fringe_parameters(
     has_dipole = not (
         is_effectively_zero(knl[0], tol = 0.0)
         and is_effectively_zero(ksl[0], tol = 0.0))
-    result["unsupported_soft_dipole"] = has_dipole and any(
-        not is_effectively_zero(parse_expression(ele_vars[key]), tol = 0.0)
-        for key in ("fb1", "fb2") if key in ele_vars)
+    result["unsupported_soft_dipole"] = (
+        has_dipole and bool(soft_face_names) and any(
+            not is_effectively_zero(parse_expression(ele_vars[key]), tol = 0.0)
+            for key in ("fb1", "fb2") if key in ele_vars))
     result["unsupported_higher_hard"] = hard_enabled and any(
         not is_effectively_zero(value, tol = 0.0)
         for value in knl[2:] + ksl[2:])
@@ -1283,6 +1296,13 @@ def sad_mult_fringe_parameters(
             b = magnitude * f2_raw
             result["soft"][side] = (a, b)
 
+    has_active_fringe = (
+        bool(result["soft"])
+        or has_supported_hard_edge
+        or result["unsupported_soft_dipole"]
+        or result["unsupported_higher_hard"])
+    if not has_active_fringe:
+        return {}
     if scalar_values["drot"] != 0.0:
         logger.warning(
             f"SAD MULT {ele_name} has an active fringe and nonzero DROT. "
@@ -1365,7 +1385,6 @@ def install_sad_mult_fringes(
     # Identify Retained Components
     ########################################
     soft              = fringe["soft"]
-    hard_enabled      = fringe["hard_enabled"]
     has_k0            = fringe["k0"] != 0.0 or fringe["sk0"] != 0.0
     has_k1            = fringe["k1"] != 0.0 or fringe["sk1"] != 0.0
     retains_soft      = representation in ("multipole", "quadrupole")
@@ -1393,8 +1412,8 @@ def install_sad_mult_fringes(
     # Configure Native Body Edges
     ########################################
     if representation in ("quadrupole", "bend"):
-        edge_entry_active = hard_enabled and "in" in fringe["faces"]
-        edge_exit_active  = hard_enabled and "out" in fringe["faces"]
+        edge_entry_active = "in" in fringe["hard_faces"]
+        edge_exit_active  = "out" in fringe["hard_faces"]
         body = environment[ele_name]
         body.edge_entry_active = edge_entry_active
         body.edge_exit_active  = edge_exit_active
@@ -1411,9 +1430,10 @@ def install_sad_mult_fringes(
     face_components = {"in": [], "out": []}
     for side in fringe["faces"]:
         is_exit       = side == "out"
-        hard_k0       = fringe["k0"] if hard_enabled and explicit_hard else 0.0
-        hard_sk0      = fringe["sk0"] if hard_enabled and explicit_hard else 0.0
-        hard_k1       = hard_enabled and explicit_hard and has_k1
+        hard_face     = side in fringe["hard_faces"]
+        hard_k0       = fringe["k0"] if hard_face and explicit_hard else 0.0
+        hard_sk0      = fringe["sk0"] if hard_face and explicit_hard else 0.0
+        hard_k1       = hard_face and explicit_hard and has_k1
         taylor_active = side in soft or hard_k0 != 0.0 or hard_sk0 != 0.0
 
         if not is_exit and hard_k1:
