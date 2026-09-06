@@ -615,6 +615,208 @@ def only_index_nonzero(
     return True
 
 ################################################################################
+# SAD Hard Dipolar Fringe Maps
+################################################################################
+def sad_hard_dipolar_fringe_coefficients(
+        k0:         float,
+        sk0:        float,
+        length:     float,
+        is_exit:    bool) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Calculate SAD's hard K0/SK0 edge through second polynomial order.
+
+    The map is the quadratic truncation of the ``nord == 2`` branch of
+    SAD's ``ttfrin``, conjugated by the normal/skew field rotation used by
+    ``ttfrins``. ``k0`` and ``sk0`` are integrated strengths. The signed
+    element length therefore enters explicitly when recovering the local
+    field. The omitted longitudinal term begins at third transverse order.
+
+    Parameters
+    ----------
+    k0, sk0 : float
+        Integrated normal and skew dipole strengths.
+    length : float
+        Signed element length in metres.
+    is_exit : bool
+        Whether to calculate the exit-face map.
+
+    Returns
+    -------
+    k : numpy.ndarray
+        Zero constant six-dimensional Taylor coefficient.
+    R : numpy.ndarray
+        Identity linear ``6 x 6`` Taylor coefficient.
+    T : numpy.ndarray
+        Quadratic ``6 x 6 x 6`` Taylor coefficient in the element frame.
+
+    Raises
+    ------
+    ValueError
+        If ``length`` is zero while either integrated strength is nonzero.
+    """
+    magnitude = np.hypot(k0, sk0)
+    if magnitude == 0.0:
+        return np.zeros(6), np.eye(6), np.zeros((6, 6, 6))
+    if length == 0.0:
+        raise ValueError(
+            "A nonzero SAD hard dipolar fringe requires a nonzero length.")
+
+    face_sign = -1.0 if is_exit else 1.0
+    scale     = face_sign * magnitude / length
+
+    local = np.zeros((6, 6, 6))
+    local[0, 2, 2] = 0.5 * scale
+    local[3, 1, 2] = local[3, 2, 1] = -0.5 * scale
+
+    angle    = np.arctan2(sk0, k0)
+    cosine   = np.cos(angle)
+    sine     = np.sin(angle)
+    rotation = np.eye(6)
+    rotation[0, 0] = rotation[1, 1] = cosine
+    rotation[0, 2] = rotation[1, 3] = -sine
+    rotation[2, 0] = rotation[3, 1] = sine
+    rotation[2, 2] = rotation[3, 3] = cosine
+
+    tensor = np.einsum(
+        "ia,abc,bj,ck->ijk",
+        rotation.T,
+        local,
+        rotation,
+        rotation)
+    return np.zeros(6), np.eye(6), tensor
+
+################################################################################
+# Second-Order Taylor-Map Composition
+################################################################################
+def compose_second_order_taylor_coefficients(
+        first:      xt.SecondOrderTaylorMap,
+        second:     xt.SecondOrderTaylorMap
+        ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Compose two Taylor maps, discarding polynomial orders above two.
+
+    The returned coefficients represent ``second(first(z))`` in one common
+    local frame. The input maps carry no alignment because the parent
+    magnet's alignment is applied once to the final composite element.
+
+    Parameters
+    ----------
+    first, second : xtrack.SecondOrderTaylorMap
+        Maps in tracking order, expressed in the same local frame. Their
+        alignment fields must be zero during coefficient composition.
+
+    Returns
+    -------
+    k : numpy.ndarray
+        Constant coefficient of the composite map.
+    R : numpy.ndarray
+        Linear coefficient of the composite map.
+    T : numpy.ndarray
+        Quadratic coefficient of the composite map.
+
+    Raises
+    ------
+    ValueError
+        If either input map still carries an alignment transformation.
+    """
+    alignment_fields = (
+        "shift_x", "shift_y", "shift_s",
+        "rot_x_rad", "rot_y_rad", "rot_s_rad",
+        "rot_s_rad_no_frame", "rot_shift_anchor")
+    for name, element in (("first", first), ("second", second)):
+        if any(float(getattr(element, field)) != 0.0
+                for field in alignment_fields):
+            raise ValueError(
+                f"The {name} Taylor map must be expressed in the common "
+                "local frame before composition.")
+
+    k_first  = np.asarray(first.k)
+    R_first  = np.asarray(first.R)
+    T_first  = np.asarray(first.T)
+    k_second = np.asarray(second.k)
+    R_second = np.asarray(second.R)
+    T_second = np.asarray(second.T)
+
+    k = k_second + R_second @ k_first + np.einsum(
+        "imn,m,n->i", T_second, k_first, k_first)
+    R = R_second @ R_first
+    R += np.einsum("imn,m,nj->ij", T_second, k_first, R_first)
+    R += np.einsum("imn,mj,n->ij", T_second, R_first, k_first)
+    T = np.einsum("im,mjk->ijk", R_second, T_first)
+    T += np.einsum(
+        "imn,mj,nk->ijk", T_second, R_first, R_first)
+    T += np.einsum(
+        "imn,m,njk->ijk", T_second, k_first, T_first)
+    T += np.einsum(
+        "imn,mjk,n->ijk", T_second, T_first, k_first)
+    return k, R, T
+
+
+def rotate_second_order_taylor_coefficients(
+        element:       xt.SecondOrderTaylorMap,
+        rotation:      float
+        ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Rotate Taylor coefficients into a parent element's local frame.
+
+    The input map is defined in its own field frame. ``rotation`` is the
+    Xtrack ``rot_s_rad`` that relates that field frame to the parent magnet
+    frame. Only this relative field rotation is folded into ``k``, ``R`` and
+    ``T``. The parent magnet's ``shift_x``, ``shift_y`` and ``rot_s_rad`` are
+    not folded in; they must be assigned to the final composite fringe so the
+    fringe remains on the same physical axis as its magnet.
+
+    Parameters
+    ----------
+    element : xtrack.SecondOrderTaylorMap
+        Unaligned Taylor map in its field frame.
+    rotation : float
+        Rotation from the parent magnet frame to the map's field frame, in
+        Xtrack's ``rot_s_rad`` convention.
+
+    Returns
+    -------
+    k : numpy.ndarray
+        Constant coefficient in the parent magnet frame.
+    R : numpy.ndarray
+        Linear coefficient in the parent magnet frame.
+    T : numpy.ndarray
+        Quadratic coefficient in the parent magnet frame.
+
+    Raises
+    ------
+    ValueError
+        If the input map is aligned rather than being a field-frame map.
+    """
+    alignment_fields = (
+        "shift_x", "shift_y", "shift_s",
+        "rot_x_rad", "rot_y_rad", "rot_s_rad",
+        "rot_s_rad_no_frame", "rot_shift_anchor")
+    if any(float(getattr(element, name)) != 0.0
+            for name in alignment_fields):
+        raise ValueError(
+            "The Taylor map must be unaligned before its field rotation is "
+            "folded into the parent frame.")
+
+    cosine      = np.cos(rotation)
+    sine        = np.sin(rotation)
+    coordinates = np.eye(6)
+    coordinates[0, 0] = coordinates[1, 1] = cosine
+    coordinates[0, 2] = coordinates[1, 3] = sine
+    coordinates[2, 0] = coordinates[3, 1] = -sine
+    coordinates[2, 2] = coordinates[3, 3] = cosine
+
+    k = coordinates.T @ np.asarray(element.k)
+    R = coordinates.T @ np.asarray(element.R) @ coordinates
+    T = np.einsum(
+        "ia,abc,bj,ck->ijk",
+        coordinates.T,
+        np.asarray(element.T),
+        coordinates,
+        coordinates)
+    return k, R, T
+
+################################################################################
 # SAD Soft Quadrupolar Fringe Maps
 ################################################################################
 
