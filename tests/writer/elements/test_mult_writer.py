@@ -136,6 +136,47 @@ def test_mult_writer_preserves_element_order(tmp_path):
         f"Reloaded: {list(reloaded_line.element_names)}.")
 
 
+########################################
+# Multipole Edges
+########################################
+def test_multipole_edge_writer_preserves_physical_parameters(tmp_path):
+    """Entry/exit edges and their parent-frame alignment must round-trip."""
+    env = xt.Environment()
+    env.new(name = "start", prototype = xt.Marker)
+    env.new(name = "end", prototype = xt.Marker)
+    env.elements["edge_in"] = xt.MultipoleEdge(
+        kn = [0.0, 0.2], ks = [0.0, -0.1], order = 1,
+        is_exit = False, shift_x = 1.2e-3, shift_y = -0.8e-3,
+        rot_s_rad = 0.2)
+    env.elements["edge_out"] = xt.MultipoleEdge(
+        kn = [0.0, 0.2], ks = [0.0, -0.1], order = 1,
+        is_exit = True, shift_x = 1.2e-3, shift_y = -0.8e-3,
+        rot_s_rad = 0.2)
+    line = env.new_line(
+        name = "test", components = ["start", "edge_in", "edge_out", "end"])
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
+
+    reloaded = _writer_roundtrip(line, tmp_path)
+
+    assert list(reloaded.element_names) == list(line.element_names)
+    for name, is_exit in (("edge_in", 0), ("edge_out", 1)):
+        np.testing.assert_array_equal(reloaded[name].kn, [0.0, 0.2])
+        np.testing.assert_array_equal(reloaded[name].ks, [0.0, -0.1])
+        assert reloaded[name].order == 1
+        assert reloaded[name].is_exit == is_exit
+        assert reloaded[name].shift_x == pytest.approx(1.2e-3)
+        assert reloaded[name].shift_y == pytest.approx(-0.8e-3)
+        assert reloaded[name].rot_s_rad == pytest.approx(0.2)
+
+    source = (tmp_path / "writer_output" / "test_lattice.py").read_text()
+    assert 'kn          = [0.0, 0.2]' in source
+    assert 'ks          = [0.0, -0.1]' in source
+    assert 'shift_x     = 0.0012' in source
+    assert 'shift_x     = "0.0012"' not in source
+    assert "mult_hard_quadrupolar_edges" not in reloaded.env.metadata.get(
+        "sad2xs", {})
+
+
 ################################################################################
 # Field Preservation
 ################################################################################

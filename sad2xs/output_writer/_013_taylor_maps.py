@@ -70,18 +70,16 @@ def _sad_fringe_taylor_map_helper_source() -> str:
 def _create_sad_fringe_taylor_map(
         environment,
         name,
-        a,
-        b,
-        field_rotation,
-        shift_x = 0.0,
-        shift_y = 0.0):
+        soft_quadrupole = None,
+        hard_dipole = None,
+        alignment = None,
+        is_exit = False):
     """
-    Add one SAD K1/SK1 soft-edge map to an Xsuite environment.
+    Add one supported SAD fringe Taylor map to an Xsuite environment.
 
     The physical map is stored in the element's canonical k, R, and T
-    coefficients. Its five defining quantities are recorded once in
-    Environment.metadata, so a reloaded lattice carries the same fringe
-    information as a freshly converted one.
+    coefficients. Its physical inputs are recorded in Environment.metadata,
+    so reversal can reconstruct the opposite face after reloading.
 
     Parameters
     ----------
@@ -89,53 +87,142 @@ def _create_sad_fringe_taylor_map(
         Environment receiving the new element.
     name : str
         Name of the new SecondOrderTaylorMap element.
-    a : float or str
-        Dimensionless signed F1 coefficient for this face.
-    b : float or str
-        F2 coefficient in metres for this face.
-    field_rotation : float or str
-        SAD transverse field-frame rotation in radians.
-    shift_x : float or str, optional
-        Horizontal displacement of the magnet axis in metres. Defaults to
-        zero.
-    shift_y : float or str, optional
-        Vertical displacement of the magnet axis in metres. Defaults to zero.
+    soft_quadrupole : dict or None, optional
+        Soft F1/F2 component in its quadrupolar field frame.
+    hard_dipole : dict or None, optional
+        Hard K0/SK0 component in the parent magnet frame.
+    alignment : dict or None, optional
+        Parent magnet shift_x, shift_y, and rot_s_rad.
+    is_exit : bool, optional
+        Whether this is the exit face.
 
     Returns
     -------
     None
     """
+    ########################################
+    # Value Helpers
+    ########################################
     def resolve(value):
-        return environment.vars.new_expr(value) if isinstance(value, str) else value
+        if isinstance(value, str):
+            return environment.vars.new_expr(value)
+        return value
 
     def exponential(value):
         if isinstance(value, (int, float, np.number)):
             return np.exp(value)
         return environment.functions.exp(value)
 
-    a_value = resolve(a)
-    b_value = resolve(b)
-    exp_a   = exponential(a_value)
-    exp_ma  = exponential(-a_value)
+    def negate(value):
+        if isinstance(value, (int, float, np.number)):
+            return -value
+        return f"-({value})"
 
-    k = np.zeros(6, dtype = object)
-    R = np.zeros((6, 6), dtype = object)
-    T = np.zeros((6, 6, 6), dtype = object)
-    R[0, 0], R[0, 1], R[1, 1] = exp_a, b_value, exp_ma
-    R[2, 2], R[2, 3], R[3, 3] = exp_ma, -b_value, exp_a
-    R[4, 4] = R[5, 5] = 1.0
-    T[0, 0, 5] = T[0, 5, 0] = -a_value * exp_a / 2.0
-    T[0, 1, 5] = T[0, 5, 1] = -b_value
-    T[1, 1, 5] = T[1, 5, 1] = a_value * exp_ma / 2.0
-    T[2, 2, 5] = T[2, 5, 2] = a_value * exp_ma / 2.0
-    T[2, 3, 5] = T[2, 5, 3] = b_value
-    T[3, 3, 5] = T[3, 5, 3] = -a_value * exp_a / 2.0
-    T[4, 1, 1] = -b_value * exp_ma * (1.0 + a_value / 2.0)
-    T[4, 3, 3] = b_value * exp_a * (1.0 - a_value / 2.0)
-    T[4, 0, 1] = T[4, 1, 0] = -a_value / 2.0
-    T[4, 2, 3] = T[4, 3, 2] = a_value / 2.0
+    ########################################
+    # Taylor Operations
+    ########################################
+    def rotate(coefficients, rotation):
+        k_local, R_local, T_local = coefficients
+        cosine = np.cos(rotation)
+        sine   = np.sin(rotation)
+        coordinates = np.eye(6)
+        coordinates[0, 0] = coordinates[1, 1] = cosine
+        coordinates[0, 2] = coordinates[1, 3] = sine
+        coordinates[2, 0] = coordinates[3, 1] = -sine
+        coordinates[2, 2] = coordinates[3, 3] = cosine
+        return (
+            coordinates.T @ k_local,
+            coordinates.T @ R_local @ coordinates,
+            np.einsum(
+                "ia,abc,bj,ck->ijk", coordinates.T, T_local,
+                coordinates, coordinates))
 
-    rot_s_rad = -resolve(field_rotation)
+    def compose(first, second):
+        k_first, R_first, T_first    = first
+        k_second, R_second, T_second = second
+        k_result = k_second + R_second @ k_first + np.einsum(
+            "imn,m,n->i", T_second, k_first, k_first)
+        R_result = R_second @ R_first
+        R_result += np.einsum(
+            "imn,m,nj->ij", T_second, k_first, R_first)
+        R_result += np.einsum(
+            "imn,mj,n->ij", T_second, R_first, k_first)
+        T_result = np.einsum("im,mjk->ijk", R_second, T_first)
+        T_result += np.einsum(
+            "imn,mj,nk->ijk", T_second, R_first, R_first)
+        T_result += np.einsum(
+            "imn,m,njk->ijk", T_second, k_first, T_first)
+        T_result += np.einsum(
+            "imn,mjk,n->ijk", T_second, T_first, k_first)
+        return k_result, R_result, T_result
+
+    ########################################
+    # Parent Alignment
+    ########################################
+    alignment = {} if alignment is None else alignment.copy()
+    alignment.setdefault("shift_x",   0.0)
+    alignment.setdefault("shift_y",   0.0)
+    alignment.setdefault("rot_s_rad", 0.0)
+
+    ########################################
+    # Soft Quadrupolar Map
+    ########################################
+    if soft_quadrupole is None:
+        soft = np.zeros(6), np.eye(6), np.zeros((6, 6, 6))
+    else:
+        a_value = resolve(soft_quadrupole["a"])
+        b_value = resolve(soft_quadrupole["b"])
+        exp_a   = exponential(a_value)
+        exp_ma  = exponential(-a_value)
+        k_soft  = np.zeros(6, dtype = object)
+        R_soft  = np.zeros((6, 6), dtype = object)
+        T_soft  = np.zeros((6, 6, 6), dtype = object)
+        R_soft[0, 0], R_soft[0, 1], R_soft[1, 1] = exp_a, b_value, exp_ma
+        R_soft[2, 2], R_soft[2, 3], R_soft[3, 3] = exp_ma, -b_value, exp_a
+        R_soft[4, 4] = R_soft[5, 5] = 1.0
+        T_soft[0, 0, 5] = T_soft[0, 5, 0] = -a_value * exp_a / 2.0
+        T_soft[0, 1, 5] = T_soft[0, 5, 1] = -b_value
+        T_soft[1, 1, 5] = T_soft[1, 5, 1] = a_value * exp_ma / 2.0
+        T_soft[2, 2, 5] = T_soft[2, 5, 2] = a_value * exp_ma / 2.0
+        T_soft[2, 3, 5] = T_soft[2, 5, 3] = b_value
+        T_soft[3, 3, 5] = T_soft[3, 5, 3] = -a_value * exp_a / 2.0
+        T_soft[4, 1, 1] = -b_value * exp_ma * (1.0 + a_value / 2.0)
+        T_soft[4, 3, 3] = b_value * exp_a * (1.0 - a_value / 2.0)
+        T_soft[4, 0, 1] = T_soft[4, 1, 0] = -a_value / 2.0
+        T_soft[4, 2, 3] = T_soft[4, 3, 2] = a_value / 2.0
+        soft = k_soft, R_soft, T_soft
+        relative_rotation = soft_quadrupole.get("relative_rotation", 0.0)
+        if relative_rotation != 0.0:
+            soft = rotate(soft, relative_rotation)
+
+    ########################################
+    # Hard Dipolar Map
+    ########################################
+    coefficients = soft
+    if hard_dipole is not None:
+        magnitude = np.hypot(hard_dipole["k0"], hard_dipole["sk0"])
+        k_hard    = np.zeros(6)
+        R_hard    = np.eye(6)
+        T_hard    = np.zeros((6, 6, 6))
+        if magnitude != 0.0:
+            face_sign = -1.0 if is_exit else 1.0
+            scale     = face_sign * magnitude / hard_dipole["length"]
+            T_hard[0, 2, 2] = 0.5 * scale
+            T_hard[3, 1, 2] = T_hard[3, 2, 1] = -0.5 * scale
+            angle = np.arctan2(hard_dipole["sk0"], hard_dipole["k0"])
+            # Field conjugation is opposite to a map-to-parent frame rotation.
+            hard = rotate((k_hard, R_hard, T_hard), -angle)
+        else:
+            hard = k_hard, R_hard, T_hard
+        if is_exit:
+            coefficients = compose(soft, hard)
+        else:
+            coefficients = compose(hard, soft)
+
+    ########################################
+    # Create Fringe Element
+    ########################################
+    k, R, T = coefficients
     environment.new(
         name        = name,
         prototype   = xt.SecondOrderTaylorMap,
@@ -143,17 +230,35 @@ def _create_sad_fringe_taylor_map(
         k           = k,
         R           = R,
         T           = T,
-        shift_x     = shift_x,
-        shift_y     = shift_y,
-        rot_s_rad   = rot_s_rad)
+        **alignment)
+
+    ########################################
+    # Store Physical Metadata
+    ########################################
     sad2xs  = environment.metadata.setdefault("sad2xs", {})
     fringes = sad2xs.setdefault("fringe_taylor_maps", {})
-    fringes[name] = {
-        "a":              a,
-        "b":              b,
-        "field_rotation": field_rotation,
-        "shift_x":        shift_x,
-        "shift_y":        shift_y}
+    if soft_quadrupole is None:
+        metadata = {
+            "a": 0.0, "b": 0.0,
+            "field_rotation": negate(alignment["rot_s_rad"])}
+    else:
+        relative_rotation = soft_quadrupole.get("relative_rotation", 0.0)
+        field_rotation = negate(alignment["rot_s_rad"])
+        if relative_rotation != 0.0:
+            field_rotation = -relative_rotation - alignment["rot_s_rad"]
+        metadata = {
+            "a": soft_quadrupole["a"], "b": soft_quadrupole["b"],
+            "field_rotation": field_rotation}
+        if relative_rotation != 0.0:
+            metadata["relative_rotation"] = relative_rotation
+    metadata["shift_x"] = alignment["shift_x"]
+    metadata["shift_y"] = alignment["shift_y"]
+    if hard_dipole is not None or "relative_rotation" in metadata:
+        metadata["parent_rotation"] = alignment["rot_s_rad"]
+        metadata["is_exit"]         = is_exit
+    if hard_dipole is not None:
+        metadata["hard_dipole"] = hard_dipole
+    fringes[name] = metadata
 '''
 
 ################################################################################
@@ -173,11 +278,11 @@ def create_taylor_map_lattice_file_information(
     (m0, m1) is a distinct, per-element derived result. Each generic map is
     therefore written with the full coefficient arrays as literals.
 
-    SAD soft quadrupolar fringe maps are emitted as compact calls containing
-    their physical ``a``, ``b``, field rotation, and offsets. A short local
-    helper reconstructs the canonical Taylor coefficients and preserves live
-    QUAD-strength expressions without making the generated file import
-    SAD2XS. Generic maps retain literal tensor serialization.
+    Registered SAD fringe maps are emitted as compact calls containing their
+    physical soft-quadrupolar and hard-dipolar components plus the parent
+    alignment. A local helper reconstructs the canonical Taylor coefficients
+    and preserves live QUAD-strength expressions without making the generated
+    file import SAD2XS. Generic maps retain literal tensor serialization.
 
     Parameters
     ----------
@@ -271,22 +376,58 @@ env.new(
 
         if source_name in fringe_parameters:
             parameters = fringe_parameters[source_name]
-            output_string += f"""
-_create_sad_fringe_taylor_map(
-    environment     = env,
-    name            = "{name}",
-    a               = {get_value_string(parameters["a"])},
-    b               = {get_value_string(parameters["b"])},
-    field_rotation  = {get_value_string(parameters["field_rotation"])}"""
+            soft_quadrupole = "None"
+            if parameters["a"] != 0.0 or parameters["b"] != 0.0:
+                soft_quadrupole = f'''{{
+        "a": {get_value_string(parameters["a"])},
+        "b": {get_value_string(parameters["b"])}'''
+                if "relative_rotation" in parameters:
+                    soft_quadrupole += f''',
+        "relative_rotation": {get_value_string(parameters["relative_rotation"])}'''
+                soft_quadrupole += "}"
 
-            # Offsets are zero for most fringes, and default to zero in the helper
-            for offset in ("shift_x", "shift_y"):
-                value = parameters[offset]
-                if isinstance(value, str) or value != 0.0:
-                    output_string += f""",
-    {offset:<15} = {get_value_string(value)}"""
+            hard_dipole = "None"
+            if "hard_dipole" in parameters:
+                hard = parameters["hard_dipole"]
+                hard_dipole = f'''{{
+        "k0": {get_value_string(hard["k0"])},
+        "sk0": {get_value_string(hard["sk0"])},
+        "length": {get_value_string(hard["length"])}}}'''
 
-            output_string += ")"
+            parent_rotation = parameters.get("parent_rotation")
+            if parent_rotation is None:
+                field_rotation = parameters["field_rotation"]
+                parent_rotation = (
+                    f"-({field_rotation})" if isinstance(field_rotation, str)
+                    else -field_rotation)
+
+            alignment_values = {
+                "shift_x":   parameters["shift_x"],
+                "shift_y":   parameters["shift_y"],
+                "rot_s_rad": parent_rotation}
+            active_alignment = {
+                key: value for key, value in alignment_values.items()
+                if isinstance(value, str) or value != 0.0}
+            alignment = "None"
+            if active_alignment:
+                alignment = "{\n" + ",\n".join(
+                    f'        "{key}": {get_value_string(value)}'
+                    for key, value in active_alignment.items()) + "}"
+            arguments = [
+                "    environment         = env",
+                f'    name                = "{name}"']
+            if soft_quadrupole != "None":
+                arguments.append(
+                    f"    soft_quadrupole     = {soft_quadrupole}")
+            if hard_dipole != "None":
+                arguments.append(
+                    f"    hard_dipole         = {hard_dipole}")
+            if alignment != "None":
+                arguments.append(f"    alignment           = {alignment}")
+            if parameters.get("is_exit", False):
+                arguments.append("    is_exit             = True")
+            output_string += "\n_create_sad_fringe_taylor_map(\n"
+            output_string += ",\n".join(arguments) + ")"
             continue
 
         output_string   += f"""

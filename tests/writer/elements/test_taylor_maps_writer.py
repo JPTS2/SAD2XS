@@ -22,6 +22,7 @@ import xtrack as xt
 from sad2xs.converter._000_helpers import (
     create_sad_fringe_taylor_map)
 from sad2xs.converter._005_line_converter import create_reversed_component
+from sad2xs.converter._007_reversals import reverse_line_element_order
 from tests.support.writer_helpers import write_and_load as _shared_write_and_load
 
 ################################################################################
@@ -355,7 +356,7 @@ def test_sad_soft_quadrupolar_fringe_writer_is_compact_and_reproducible(tmp_path
 
     assert source.count("def _create_sad_fringe_taylor_map(") == 1
     assert source.count("_create_sad_fringe_taylor_map(") == 3
-    assert f"field_rotation  = {0.125!r}" in source
+    assert f'"rot_s_rad": {-0.125!r}' in source
     assert source.count("T           = [[[") == 1
 
     calls = [
@@ -370,7 +371,7 @@ def test_sad_soft_quadrupolar_fringe_writer_is_compact_and_reproducible(tmp_path
 
     # Emitted arguments use the writer's double-quoted, full-precision style
     assert '"m1"' in m1_call and "'" not in m1_call
-    assert f"a               = {-3.125E-05!r}" in m1_call
+    assert f'"a": {-3.125E-05!r}' in m1_call
 
     env = xt.Environment()
     env.call(str(output_dir / "lattice.py"))
@@ -419,6 +420,92 @@ def test_sad_soft_quadrupolar_fringe_writer_preserves_quad_dependency(tmp_path):
     assert not np.array_equal(reloaded_line["m1"].R, initial_R), (
         "Writing and reloading should preserve the fringe's dependency on "
         "the existing QUAD strength variable.")
+
+
+def test_complete_mult_fringe_writer_preserves_maps_order_and_tracking(tmp_path):
+    """The five-element MULT model must be self-contained after reloading."""
+    env       = xt.Environment()
+    alignment = {"shift_x": 1.2e-3, "shift_y": -0.8e-3, "rot_s_rad": 0.2}
+    env.elements["m1_hard_edge_in"] = xt.MultipoleEdge(
+        kn = [0.0, 0.2], ks = [0.0, -0.06], order = 1,
+        is_exit = False, **alignment)
+    env.elements["m1_hard_edge_out"] = xt.MultipoleEdge(
+        kn = [0.0, 0.2], ks = [0.0, -0.06], order = 1,
+        is_exit = True, **alignment)
+    env.metadata.setdefault("sad2xs", {})[
+        "mult_hard_quadrupolar_edges"] = {
+            "m1_hard_edge_in": {}, "m1_hard_edge_out": {}}
+    for side, is_exit in (("in", False), ("out", True)):
+        create_sad_fringe_taylor_map(
+            env,
+            name                = f"m1_fringe_{side}",
+            soft_quadrupole     = {
+                "a": -3.125e-5 if not is_exit else 3.125e-5,
+                "b": 0.006,
+                "relative_rotation": -0.075},
+            hard_dipole         = {
+                "k0": 0.001, "sk0": -0.0007, "length": 0.5},
+            alignment           = alignment,
+            is_exit            = is_exit)
+    env.elements["m1"] = xt.Multipole(
+        length = 0.5, knl = [0.001, 0.1], ksl = [-0.0007, 0.03],
+        _isthick = True, **alignment)
+    components = [
+        "m1_hard_edge_in", "m1_fringe_in", "m1",
+        "m1_fringe_out", "m1_hard_edge_out"]
+    line = env.new_line(name = "test", components = components)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
+    table = line.get_table()
+    mults = table.rows[table.element_type == "Multipole"]
+    line.set(
+        mults,
+        model               = "mat-kick-mat",
+        integrator          = "yoshida4",
+        num_multipole_kicks = 14)
+
+    original_coefficients = {
+        name: (np.asarray(line[name].k).copy(),
+               np.asarray(line[name].R).copy(),
+               np.asarray(line[name].T).copy())
+        for name in ("m1_fringe_in", "m1_fringe_out")}
+    initial = xt.Particles(
+        "electron", p0c = 1.0E9,
+        x = [1e-3, -2e-3, 0.4e-3],
+        px = [2e-4, -1e-4, 0.3e-4],
+        y = [-0.5e-3, 0.7e-3, 0.9e-3],
+        py = [0.3e-4, -0.2e-4, 0.6e-4],
+        zeta = [0.0, 1e-3, -2e-3], delta = [0.0, 0.01, -0.01])
+    expected = initial.copy()
+    line.track(expected)
+
+    reloaded = _writer_roundtrip(line, tmp_path)
+
+    assert list(reloaded.element_names) == components
+    assert reloaded["m1_hard_edge_in"].is_exit == 0
+    assert reloaded["m1_hard_edge_out"].is_exit == 1
+    for name, coefficients in original_coefficients.items():
+        for actual, expected_coefficient in zip(
+                (reloaded[name].k, reloaded[name].R, reloaded[name].T),
+                coefficients):
+            np.testing.assert_allclose(
+                actual, expected_coefficient, rtol = 1e-14, atol = 5e-17)
+
+    actual = initial.copy()
+    reloaded.track(actual)
+    for coordinate in ("x", "px", "y", "py", "zeta", "delta"):
+        np.testing.assert_allclose(
+            getattr(actual, coordinate), getattr(expected, coordinate),
+            rtol = 0.0, atol = 1e-15)
+
+    source = (tmp_path / "writer_output" / "test_lattice.py").read_text()
+    assert source.count("def _create_sad_fringe_taylor_map(") == 1
+
+    reverse_line_element_order(reloaded)
+    assert list(reloaded.element_names) == [
+        "-m1_hard_edge_out", "-m1_fringe_out", "m1",
+        "-m1_fringe_in", "-m1_hard_edge_in"]
+    assert reloaded["-m1_hard_edge_out"].is_exit == 0
+    assert reloaded["-m1_hard_edge_in"].is_exit == 1
 
 
 def test_reversal_only_soft_quadrupolar_fringe_writes_under_root_name(tmp_path):
