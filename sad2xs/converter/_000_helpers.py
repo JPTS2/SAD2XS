@@ -1326,6 +1326,9 @@ def _create_sad_mult_hard_quadrupolar_edge(
         order       = 1,
         is_exit     = is_exit,
         **alignment)
+    sad2xs = environment.metadata.setdefault("sad2xs", {})
+    hard_edges = sad2xs.setdefault("mult_hard_quadrupolar_edges", {})
+    hard_edges[name] = {}
 
 ########################################
 # Install SAD MULT Fringes
