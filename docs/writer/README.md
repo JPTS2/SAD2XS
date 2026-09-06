@@ -80,7 +80,7 @@ The writer's supported set is **not** the same question as which SAD elements th
 | `xt.Drift` | |
 | `xt.Bend` | two distinct paths: `h != 0`, and corrector with `h = 0` |
 | `xt.Quadrupole`, `xt.Sextupole`, `xt.Octupole` | |
-| `xt.Multipole` | |
+| `xt.Multipole`, `xt.MultipoleEdge` | edge strengths, face flag and alignment are preserved |
 | `xt.UniformSolenoid` | |
 | `xt.Cavity` | |
 | `xt.Translation`, `xt.TimeDelay`, `xt.Rotation` | the reference shifts |
@@ -97,13 +97,19 @@ The writer's supported set is **not** the same question as which SAD elements th
 Generic first- and second-order Taylor maps are written as full-precision
 coefficient arrays.
 
-SAD soft quadrupolar fringe maps are written differently: one self-contained
-helper is emitted, followed by a compact call for each face containing only
-`a`, `b`, the normal-field rotation, and the two offsets. This preserves a
-thick QUAD fringe's dependency on the existing scalar quadrupole-strength
-variables after reload, without adding fringe variables or requiring the
-generated lattice to import SAD2XS. The defining records live in standard
+Recognised SAD fringe Taylor maps are written differently: one self-contained
+helper is emitted, followed by a compact call for each face containing its
+physical soft-quadrupole and/or hard-dipole inputs and parent alignment. This
+preserves a thick QUAD fringe's dependency on the existing scalar
+quadrupole-strength variable, and reconstructs a MULT composite map without
+writing dense tensors or adding fringe strength variables. The generated
+lattice does not import SAD2XS. Reconstruction records live in standard
 `Environment.metadata`; no private fields are added to Xsuite elements.
+
+SAD-generated `MultipoleEdge` elements are written with their normal/skew
+strength arrays, order, entrance/exit flag and alignment. Only edges already
+registered as SAD fringes retain reversal metadata after reload; a generic
+user-created edge remains generic.
 
 Generic `xt.FirstOrderTaylorMap` and `xt.SecondOrderTaylorMap` elements are
 serialised as literal arrays at full double precision, not as optics variables.
@@ -117,8 +123,9 @@ Their coefficients are not physically meaningful knobs a user would retune, and 
 **Most deferred expressions are baked to literal floats.** An arbitrary
 `xt.Line` built with xdeps expressions generally loses those expressions on
 write: the generated file contains evaluated numbers. The explicit exception
-is a recognised SAD soft quadrupolar fringe, whose dependency on the existing
-QUAD strength variables is preserved by its compact helper call.
+is a recognised SAD fringe Taylor map. A QUAD map keeps its dependency on the
+existing strength variable; a numeric MULT composite keeps its compact
+physical reconstruction inputs.
 
 Both are tracked in the [issue tracker](https://github.com/JPTS2/sad2xs/issues).
 

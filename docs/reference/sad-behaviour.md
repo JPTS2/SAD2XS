@@ -421,16 +421,18 @@ term.** The hard-edge gate in `tmulti.f` checks only `mfring /= 1` and
 hard-edge sides fully active on a `MULT`, while the identical value disables
 both on a `QUAD`.
 
-The `K0`/`SK0` dipole-fringe transfer-matrix finding above, where `FRINGE=1`
-zeroes `m43`/`m21` exactly and `DISFRIN` does not control it, comes from a
-different code path. It is a Twiss and linear-map-level fact from SAD's
-`CALC4D` and `TransferMatrix[]` machinery, not from the particle-tracking
-`tmulti` routine described here.
+The `K0`/`SK0` dipole-fringe transfer-matrix finding above comes from a
+different code path. SAD Twiss passes `DISFRIN == 0` as the general fringe
+switch and `DISK0FR == 0` independently to its dipole-component map. Particle
+tracking instead puts the complete field-order loop, including order zero,
+behind `DISFRIN` and has no corresponding `DISK0FR` gate.
 
-The two findings are complementary, not in tension. `DISFRIN` does affect
-tracked orbits through a `MULT` carrying `K1` or higher-order content, by
-the hard-edge mechanism above. It leaves the fringe term of the `K0`-order
-linear map exactly as `FRINGE` alone sets it.
+An isolated K0+K1 or SK0+K1 MULT confirms the consequence. SAD tracking and
+Twiss agree to about `1e-11` or better when `DISFRIN` and `DISK0FR` are equal,
+but differ by about `2e-6` when exactly one is set. The result is stable across
+finite-difference step, normal/skew K0 and local BZ. Thus `DISFRIN=1` alone
+does not define a fringe-free reference consistently for SAD tracking and
+Twiss.
 
 ## `SEXT`/`OCT` `DISFRIN` hard-edge fringe
 

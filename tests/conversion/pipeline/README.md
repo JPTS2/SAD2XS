@@ -26,10 +26,10 @@ each parametrisation separately.
 | `test_multipole_replacements.py` | 8 | 0 | — |
 | `test_offset_markers.py` | 27 | 0 | — |
 | `test_reference_particle.py` | 11 | 0 | — |
-| `test_reverse_survey_horizontal.py` | 19 | 0 | — |
-| `test_reverse_survey_vertical.py` | 19 | 0 | — |
+| `test_reverse_survey_horizontal.py` | 20 | 0 | — |
+| `test_reverse_survey_vertical.py` | 20 | 0 | — |
 | `test_reverse_charge_sign.py` | 6 | 0 | — |
-| `test_reverse_element_order.py` | 18 | 0 | — |
+| `test_reverse_element_order.py` | 19 | 0 | — |
 | `test_reversed_component_syntax.py` | 11 | 0 | — |
 
 ### `test_convert_sad_to_xsuite.py` note
@@ -75,15 +75,23 @@ reversal to electron and antiproton, `p0c`/`mass0` isolation, and the
 Covers SAD's per-element `-NAME` reversal syntax, through
 `create_reversed_component`. This is a separate path from the whole-line
 `-LINE` reversal covered by `test_reverse_element_order.py`.
-That coverage includes asymmetric QUAD and MULT soft quadrupolar fringes
-checked against SAD's native `-NAME` transfer map, including a line containing
-both forward and reversed occurrences. The face sign and occurrence isolation
-are therefore not inferred only from the in-memory representation.
+This coverage includes asymmetric QUAD and MULT soft fringes checked against
+SAD's native `-NAME` transfer map, including a line containing both forward
+and reversed occurrences. The face sign and occurrence isolation are
+therefore not inferred only from the in-memory representation.
 
 It covers direction-symmetric reuse for drifts and quadrupoles, solenoid `ks`
 negation, the bend edge-angle swap, and the bend `fint`/`hgap` swap. Two
 tracking comparisons run against SAD's own per-element-reversed line, with the
 poleface angle and the soft-edge fringe isolated from each other.
+
+### Complete MULT fringe reversal note
+
+`test_reverse_element_order.py` checks the supported hard and soft MULT
+components against SAD's native `-LINE` tracking map. It also pins component
+order, entry/exit flags and double-reversal restoration. The horizontal and
+vertical survey-reflection suites separately check the reflected strengths,
+alignments and mixed-grid tracking of the complete fringe model.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

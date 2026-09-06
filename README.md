@@ -150,10 +150,12 @@ The test suite covers parser, converter elements, conversion pipeline, writer, S
 See [docs/development/testing.md](docs/development/testing.md) for full details.
 
 ## Limitations
-The quadrupole fringe is converted as a thin second-order Taylor map.
-This reproduces the optics correctly.
-It is not known whether the map radiates, and this is untested.
-Treat radiation results through quadrupole fringes with caution.
+Quadrupole and supported MULT fringe terms are converted with thin
+second-order Taylor maps; MULT also uses native K1/SK1 multipole edges. This
+model is validated for orbital tracking and optics over its regression range,
+not for spin, radiation, or dynamic-aperture amplitudes. See the
+[fringe-model documentation](docs/converter/fringes.md) for the supported
+terms and explicit limitations.
 
 For the current list of open issues, see the [GitHub issue tracker](https://github.com/JPTS2/sad2xs/issues).
 
