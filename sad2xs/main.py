@@ -349,6 +349,15 @@ def convert_sad_to_xsuite(
 
     line.configure_quadrupole_model(edge = config.EDGE_MODEL_QUAD)
 
+    ########################################
+    # Set SAD FRINGE/DISFRIN Settings for MULT Elements
+    ########################################
+    native_mult_edges = line.env.metadata.get(
+        "sad2xs", {}).get("mult_native_fringe_faces", {})
+    for element_name, faces in native_mult_edges.items():
+        line[element_name].edge_entry_active = faces["edge_entry_active"]
+        line[element_name].edge_exit_active  = faces["edge_exit_active"]
+
     ############################################################################
     # Line reversals
     ############################################################################

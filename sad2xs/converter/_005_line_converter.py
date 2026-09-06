@@ -147,12 +147,15 @@ def create_reversed_component(
         reversed_a = negate_sad_value(parameters["a"])
         create_sad_fringe_taylor_map(
             environment,
-            name              = component,
-            a                 = reversed_a,
-            b                 = parameters["b"],
-            field_rotation    = parameters["field_rotation"],
-            shift_x           = parameters["shift_x"],
-            shift_y           = parameters["shift_y"])
+            name                = component,
+            soft_quadrupole     = {
+                "a": reversed_a,
+                "b": parameters["b"]},
+            alignment           = {
+                "shift_x":   parameters["shift_x"],
+                "shift_y":   parameters["shift_y"],
+                "rot_s_rad": negate_sad_value(
+                    parameters["field_rotation"])})
 
     ########################################
     # Offset Marker (Mark, Moni, BeamBeam all convert to xt.Marker)

@@ -301,12 +301,14 @@ def _build_soft_quadrupolar_fringe_line(a, b, field_rotation):
     env.new(name = "end", prototype = xt.Marker)
     create_sad_fringe_taylor_map(
         env,
-        name              = "m1",
-        a                 = a,
-        b                 = b,
-        field_rotation    = field_rotation,
-        shift_x           = 1.2e-3,
-        shift_y           = -0.8e-3)
+        name                = "m1",
+        soft_quadrupole     = {
+            "a": a,
+            "b": b},
+        alignment           = {
+            "shift_x":   1.2e-3,
+            "shift_y":   -0.8e-3,
+            "rot_s_rad": -field_rotation})
     line = env.new_line(name = "test", components = ["start", "m1", "end"])
     line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
     return line
@@ -320,10 +322,11 @@ def test_sad_soft_quadrupolar_fringe_writer_is_compact_and_reproducible(tmp_path
         field_rotation = 0.125)
     create_sad_fringe_taylor_map(
         line.env,
-        name              = "m2",
-        a                 = 2.5E-05,
-        b                 = -0.004,
-        field_rotation    = -0.2)
+        name                = "m2",
+        soft_quadrupole     = {
+            "a": 2.5E-05,
+            "b": -0.004},
+        alignment           = {"rot_s_rad": 0.2})
     generic_k    = np.zeros(6)
     generic_k[0] = 0.25
     line.env.new(
@@ -399,10 +402,12 @@ def test_sad_soft_quadrupolar_fringe_writer_preserves_quad_dependency(tmp_path):
         length = 1.0, k1 = "k1_q1")
     create_sad_fringe_taylor_map(
         env,
-        name = "m1",
-        a = "-1.0e-4 * sqrt(k1_q1**2)",
-        b = "2.0e-2 * sqrt(k1_q1**2)",
-        field_rotation = "0.5 * atan2(0.0, k1_q1)")
+        name                = "m1",
+        soft_quadrupole     = {
+            "a": "-1.0e-4 * sqrt(k1_q1**2)",
+            "b": "2.0e-2 * sqrt(k1_q1**2)"},
+        alignment           = {
+            "rot_s_rad": "-(0.5 * atan2(0.0, k1_q1))"})
     line = env.new_line(
         name = "test", components = ["start", "m1", "q1", "end"])
     line.particle_ref = xt.Particles("electron", p0c = 1.0E9)

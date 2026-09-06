@@ -1487,8 +1487,138 @@ def test_mult_conversion_matches_sad_tracking_for_thin_multipole(
         ])
 
 ################################################################################
-# Linear F1/F2 Fringe Import
+# MULT Fringe Import
 ################################################################################
+def test_mult_supported_fringes_use_five_elements_in_sad_order(
+        parsed_elements, xsuite_environment):
+    """A fully active MULT should use the validated five-element model."""
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "m1",
+            element_variables = {
+                "l": 0.5, "k0": 0.02, "sk0": -0.01,
+                "k1": 0.12, "sk1": 0.03,
+                "f1": 0.02, "f2": 0.01, "fringe": 3.0,
+                "dx": 1.2e-3, "dy": -0.8e-3, "rotate": 0.17}),
+        environment                  = xsuite_environment,
+        user_multipole_replacements = None,
+        config                       = _mult_config(simplify = False))
+
+    assert xsuite_environment.lines["m1_compound"].element_names == [
+        "m1_hard_edge_in",
+        "m1_fringe_in",
+        "m1",
+        "m1_fringe_out",
+        "m1_hard_edge_out"]
+
+    body = xsuite_environment["m1"]
+    for name in (
+            "m1_hard_edge_in", "m1_fringe_in",
+            "m1_fringe_out", "m1_hard_edge_out"):
+        fringe = xsuite_environment[name]
+        assert fringe.shift_x == pytest.approx(body.shift_x)
+        assert fringe.shift_y == pytest.approx(body.shift_y)
+        assert fringe.rot_s_rad == pytest.approx(body.rot_s_rad)
+
+    entrance = xsuite_environment["m1_hard_edge_in"]
+    exit_    = xsuite_environment["m1_hard_edge_out"]
+    np.testing.assert_allclose(entrance.kn, [0.0, 0.24])
+    np.testing.assert_allclose(entrance.ks, [0.0, 0.06])
+    assert entrance.order == exit_.order == 1
+    assert entrance.is_exit == 0
+    assert exit_.is_exit == 1
+
+
+@pytest.mark.parametrize(
+    "parameters, expected_names",
+    [
+        (
+            {"k0": 0.02, "k1": 0.1, "f1": 0.02, "fringe": 1.0},
+            ["m1_hard_edge_in", "m1_fringe_in", "m1"]),
+        (
+            {"k0": 0.02, "k1": 0.1, "f1": 0.02, "fringe": 2.0},
+            ["m1", "m1_fringe_out", "m1_hard_edge_out"]),
+        (
+            {"k0": 0.02, "fringe": 3.0},
+            ["m1_fringe_in", "m1", "m1_fringe_out"]),
+        (
+            {"k1": 0.1, "fringe": 3.0},
+            ["m1_hard_edge_in", "m1", "m1_hard_edge_out"]),
+        (
+            {"k0": 0.02, "k1": 0.1, "fringe": 3.0, "disk0fr": 1.0},
+            [
+                "m1_hard_edge_in", "m1_fringe_in", "m1",
+                "m1_fringe_out", "m1_hard_edge_out"]),
+        (
+            {
+                "k0": 0.02, "k1": 0.1, "f1": 0.02,
+                "fringe": 3.0, "disfrin": 1.0},
+            ["m1_fringe_in", "m1", "m1_fringe_out"]),
+        (
+            {
+                "k0": 0.02, "k1": 0.1, "f1": 0.02,
+                "fringe": 3.0, "disfrin": 0.5},
+            ["m1_fringe_in", "m1", "m1_fringe_out"]),
+    ])
+def test_mult_fringe_builds_only_active_physical_components(
+        parsed_elements, xsuite_environment, parameters, expected_names):
+    """Face gates and DISFRIN should never create identity placeholders."""
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "m1",
+            element_variables = {"l": 0.5, **parameters}),
+        environment                  = xsuite_environment,
+        user_multipole_replacements = None,
+        config                       = _mult_config(simplify = False))
+
+    assert xsuite_environment.lines["m1_compound"].element_names \
+        == expected_names
+
+
+@pytest.mark.parametrize("parameter", ["k0", "sk0", "k1", "sk1"])
+def test_active_mult_hard_fringe_rejects_deferred_strengths(
+        parsed_elements, xsuite_environment, parameter):
+    """Tracking-derived hard-edge coefficients must not freeze expressions."""
+    with pytest.raises(ValueError, match = "concrete K0, SK0, K1, and SK1"):
+        convert_multipoles(
+            parsed_elements = parsed_elements(
+                element_type      = "mult",
+                element_name      = "m1",
+                element_variables = {
+                    "l": 0.5, "k0": 0.02, "k1": 0.1,
+                    parameter: "strength", "fringe": 3.0}),
+            environment                  = xsuite_environment,
+            user_multipole_replacements = None,
+            config                       = _mult_config(simplify = False))
+
+
+@pytest.mark.parametrize(
+    "parameter, message",
+    [
+        ("l", "L must be a concrete number"),
+        ("rotate", "require a concrete ROTATE"),
+        ("dx", "require concrete DX and DY"),
+        ("dy", "require concrete DX and DY"),
+    ])
+def test_active_mult_hard_fringe_rejects_deferred_geometry(
+        parsed_elements, xsuite_environment, parameter, message):
+    """Hard maps must not freeze deferred length or alignment values."""
+    element_variables = {
+        "l": 0.5, "k0": 0.02, "k1": 0.1, "fringe": 3.0,
+        parameter: "geometry"}
+    with pytest.raises(ValueError, match = message):
+        convert_multipoles(
+            parsed_elements = parsed_elements(
+                element_type      = "mult",
+                element_name      = "m1",
+                element_variables = element_variables),
+            environment                  = xsuite_environment,
+            user_multipole_replacements = None,
+            config                       = _mult_config(simplify = False))
+
+
 def test_mult_soft_quadrupolar_fringe_defaults_on_and_brackets_body(write_lattice):
     """An active thick MULT fringe should bracket the unchanged body by default."""
     lattice_path = write_lattice(
@@ -1533,9 +1663,13 @@ def test_mult_soft_quadrupolar_fringe_preserves_f1_sign_and_includes_sk1(
     expected_a = -magnitude * (-0.02) * abs(-0.02) / 24.0
     expected_b = magnitude * 0.01
     expected_theta = 0.5 * np.arctan2(0.04 * 0.5, 0.03 * 0.5)
-    assert fringe.R[0, 0] == pytest.approx(np.exp(expected_a))
-    assert fringe.R[0, 1] == pytest.approx(expected_b)
-    assert fringe.rot_s_rad == pytest.approx(-expected_theta)
+    parameters = xsuite_environment.metadata[
+        "sad2xs"]["fringe_taylor_maps"]["m1_fringe_in"]
+    assert parameters["a"] == pytest.approx(expected_a)
+    assert parameters["b"] == pytest.approx(expected_b)
+    assert parameters["field_rotation"] == pytest.approx(expected_theta)
+    assert fringe.rot_s_rad == pytest.approx(
+        xsuite_environment["m1"].rot_s_rad)
     assert fringe.shift_x == pytest.approx(1.2e-3)
     assert fringe.shift_y == pytest.approx(-0.8e-3)
     assert "m1_fringe_out" not in xsuite_environment.element_dict
@@ -1576,9 +1710,15 @@ def test_negative_length_mult_fringe_uses_positive_local_magnitude(
     fringe    = xsuite_environment["m1_fringe_in"]
     magnitude = 0.1 / 0.5
     expected_a = -magnitude * 0.02**2 / 24.0
-    assert fringe.R[0, 0] == pytest.approx(np.exp(expected_a))
-    assert fringe.R[0, 1] == pytest.approx(magnitude * 0.01)
-    assert fringe.rot_s_rad == pytest.approx(-np.pi / 2.0)
+    parameters = xsuite_environment.metadata[
+        "sad2xs"]["fringe_taylor_maps"]["m1_fringe_in"]
+    assert parameters["a"] == pytest.approx(expected_a)
+    assert parameters["b"] == pytest.approx(magnitude * 0.01)
+    assert parameters["field_rotation"] == pytest.approx(np.pi / 2.0)
+    assert fringe.rot_s_rad == pytest.approx(
+        xsuite_environment["m1"].rot_s_rad)
+    np.testing.assert_allclose(
+        xsuite_environment["m1_hard_edge_in"].kn, [0.0, -0.2])
 
 
 def test_mult_above_length_precision_remains_thick_with_fringe(write_lattice):
@@ -1665,6 +1805,30 @@ def test_mult_soft_quadrupolar_fringe_wraps_user_quadrupole_replacement(
     assert isinstance(xsuite_environment["m1"], xt.Quadrupole)
     assert xsuite_environment.lines["m1_compound"].element_names == [
         "m1_fringe_in", "m1", "m1_fringe_out"]
+    assert xsuite_environment["m1"].edge_entry_active == 1
+    assert xsuite_environment["m1"].edge_exit_active == 1
+
+
+def test_mult_quadrupole_replacement_retains_disabled_hard_edges(write_lattice):
+    """Global model setup must not override a MULT's DISFRIN setting."""
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        MULT M1 = (L=0.5 K1=0.1 F1=0.02 FRINGE=3 DISFRIN=1);
+        MARK START=() END=();
+        LINE TEST_LINE=(START M1 END);
+        """,
+        filename = "mult_quadrupole_disfrin.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path             = str(lattice_path),
+        output_directory             = "N/A",
+        user_multipole_replacements  = {"m1": "Quadrupole"},
+        _verbose                     = False,
+        _test_mode                   = True)
+
+    assert line["m1"].edge_entry_active == 0
+    assert line["m1"].edge_exit_active == 0
 
 
 def test_mult_soft_quadrupolar_fringe_is_skipped_when_replacement_discards_k1(
@@ -1686,6 +1850,76 @@ def test_mult_soft_quadrupolar_fringe_is_skipped_when_replacement_discards_k1(
     assert "replacement discards K1/SK1" in caplog.text
 
 
+@pytest.mark.parametrize(
+    "replacement, element_type",
+    [
+        ("Bend", xt.Bend),
+        ("Sextupole", xt.Sextupole),
+        ("Octupole", xt.Octupole),
+    ])
+def test_mult_replacements_that_discard_k1_do_not_keep_its_fringes(
+        parsed_elements, xsuite_environment, caplog,
+        replacement, element_type):
+    """Every non-quadrupolar replacement should discard K1 fringe terms."""
+    caplog.set_level(logging.WARNING)
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "m1",
+            element_variables = {
+                "l": 0.5, "k0": 0.01, "k1": 0.1,
+                "k2": 0.2, "k3": 0.3, "f1": 0.02, "fringe": 3.0}),
+        environment                  = xsuite_environment,
+        user_multipole_replacements = {"m1": replacement},
+        config                       = _mult_config(simplify = False))
+
+    assert isinstance(xsuite_environment["m1"], element_type)
+    assert "m1_compound" not in xsuite_environment.lines
+    assert "discards K1/SK1" in caplog.text
+
+
+def test_mult_quadrupole_replacement_discards_only_k0_fringe(
+        parsed_elements, xsuite_environment, caplog):
+    """A Quadrupole replacement should keep soft K1 but not hard K0."""
+    caplog.set_level(logging.WARNING)
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "m1",
+            element_variables = {
+                "l": 0.5, "k0": 0.01, "k1": 0.1,
+                "f1": 0.02, "fringe": 3.0}),
+        environment                  = xsuite_environment,
+        user_multipole_replacements = {"m1": "Quadrupole"},
+        config                       = _mult_config(simplify = False))
+
+    assert xsuite_environment.lines["m1_compound"].element_names == [
+        "m1_fringe_in", "m1", "m1_fringe_out"]
+    assert "discards K0/SK0" in caplog.text
+
+
+def test_unsupported_mult_fringe_categories_warn_once(
+        xsuite_environment, caplog):
+    """Unsupported soft-dipole and higher hard orders warn by category."""
+    caplog.set_level(logging.WARNING)
+    convert_multipoles(
+        parsed_elements = {
+            "mult": {
+                "m1": {
+                    "l": 0.5, "k0": 0.01, "k2": 0.2,
+                    "fb1": 0.03, "fringe": 3.0},
+                "m2": {
+                    "l": 0.5, "sk0": 0.01, "sk2": -0.2,
+                    "fb2": 0.04, "fringe": 3.0}}},
+        environment                  = xsuite_environment,
+        user_multipole_replacements = None,
+        config                       = _mult_config(simplify = False))
+
+    messages = [record.getMessage() for record in caplog.records]
+    assert sum("FB1/FB2" in message for message in messages) == 1
+    assert sum("above K1/SK1" in message for message in messages) == 1
+
+
 def test_mult_soft_quadrupolar_fringe_wraps_complete_rf_sliced_body(
         parsed_elements, xsuite_environment):
     """RF slicing should remain inside, rather than replace, the fringe faces."""
@@ -1701,8 +1935,8 @@ def test_mult_soft_quadrupolar_fringe_wraps_complete_rf_sliced_body(
         config = _mult_config(simplify = False))
 
     names = xsuite_environment.lines["m1_compound"].element_names
-    assert names[0] == "m1_fringe_in"
-    assert names[-1] == "m1_fringe_out"
+    assert names[:2] == ["m1_hard_edge_in", "m1_fringe_in"]
+    assert names[-2:] == ["m1_fringe_out", "m1_hard_edge_out"]
     assert any("m1_cavi_" in name for name in names)
 
 
@@ -1785,6 +2019,87 @@ def test_mult_soft_quadrupolar_fringe_response_matches_sad_in_6d(
                 f"The off-momentum MULT fringe response in {coordinate} "
                 "should match SAD to within the documented second-order "
                 "Taylor truncation."))
+
+
+def test_mult_hard_fringe_response_matches_sad_on_mixed_6d_grid(
+        write_lattice, tmp_path):
+    """The supported hard-edge response should follow SAD tracking in 6D."""
+    signs = np.array([
+        [0,  0,  0,  0,  0,  0],
+        [1,  0,  0,  0,  0,  0],
+        [0, -1,  0,  0,  0,  0],
+        [0,  0,  1,  0,  0,  0],
+        [0,  0,  0, -1,  0,  0],
+        [1, -1,  1, -1,  1,  1],
+        [-1, 1,  1, -1, -1, 1],
+        [1,  1, -1, -1, 1, -1],
+        [-1, -1, -1, -1, -1, -1]],
+        dtype = float)
+    initial = signs * np.array(
+        [1e-4, 1e-4, 1e-4, 1e-4, 1e-3, 1e-3])
+    sad_coordinates    = {}
+    xsuite_coordinates = {}
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        for state, disfrin in (("off", 1), ("on", 0)):
+            lattice_text = f"""\
+            MOMENTUM = 1.0 GEV;
+            MULT M1 = (
+                L=0.5 K0=0.001 SK0=-0.0007 K1=0.1 SK1=0.03
+                F1=0.02 F2=0.01 FRINGE=3 DISFRIN={disfrin});
+            MARK START=() END=();
+            LINE TEST_LINE=(START M1 END);
+            """
+            lattice_path = write_lattice(
+                lattice_text,
+                filename = f"mult_hard_fringe_{state}.sad")
+            sad_coordinates[state] = _mult_sad_coordinates(track_sad(
+                lattice_filepath     = lattice_path.name,
+                line_name            = "TEST_LINE",
+                x_init               = initial[:, 0],
+                px_init              = initial[:, 1],
+                y_init               = initial[:, 2],
+                py_init              = initial[:, 3],
+                zeta_init            = initial[:, 4],
+                delta_init           = initial[:, 5],
+                n_turns              = 1,
+                rfsw                 = False,
+                rad                  = False,
+                fluc                 = False,
+                radcod               = False,
+                radtaper             = False,
+                turn_by_turn_monitor = False,
+                with_progress        = False,
+                wall_time            = 30))
+            line = s2x.convert_sad_to_xsuite(
+                sad_lattice_path      = str(lattice_path),
+                line_name             = "TEST_LINE",
+                output_directory      = "N/A",
+                SIMPLIFY_MULTIPOLES   = False,
+                _verbose              = False,
+                _test_mode            = True)
+            xsuite_coordinates[state] = _mult_xsuite_coordinates(
+                track_xsuite_particles(line, *initial.T))
+    finally:
+        os.chdir(cwd)
+
+    for coordinate in ("x", "px", "y", "py", "zeta", "delta"):
+        sad_response = (
+            np.asarray(sad_coordinates["on"][coordinate])
+            - np.asarray(sad_coordinates["off"][coordinate]))
+        xsuite_response = (
+            np.asarray(xsuite_coordinates["on"][coordinate])
+            - np.asarray(xsuite_coordinates["off"][coordinate]))
+        np.testing.assert_allclose(
+            xsuite_response,
+            sad_response,
+            rtol = 2e-3,
+            atol = 5e-13,
+            err_msg = (
+                f"The enabled-minus-DISFRIN hard-edge response in "
+                f"{coordinate} should match SAD tracking."))
 
 
 def test_negative_length_mult_fringe_response_matches_sad(

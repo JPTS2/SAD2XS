@@ -506,6 +506,7 @@ def convert_solenoids(
                         xt.TimeDelay,
                         xt.Rotation,
                         xt.Marker,
+                        xt.MultipoleEdge,
                         xt.LimitEllipse,
                         xt.LimitRect,
                         xt.LimitRectEllipse)):

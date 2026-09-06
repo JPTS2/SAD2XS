@@ -80,12 +80,14 @@ def test_fringe_reflection_only_mutates_recognised_line_occurrences():
     for name in ("active", "unused"):
         create_sad_fringe_taylor_map(
             environment,
-            name              = name,
-            a                 = -3.0E-05,
-            b                 = 0.006,
-            field_rotation    = 0.2,
-            shift_x           = 1.2E-03,
-            shift_y           = -0.8E-03)
+            name                = name,
+            soft_quadrupole     = {
+                "a": -3.0E-05,
+                "b": 0.006},
+            alignment           = {
+                "shift_x":   1.2E-03,
+                "shift_y":   -0.8E-03,
+                "rot_s_rad": -0.2})
     environment.new(
         name        = "generic",
         prototype   = xt.SecondOrderTaylorMap,
