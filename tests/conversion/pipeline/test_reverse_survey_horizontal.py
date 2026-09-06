@@ -20,9 +20,9 @@ import pytest
 import xtrack as xt
 import sad2xs as s2x
 
-from sad2xs.converter._000_helpers import create_sad_soft_quadrupolar_fringe
+from sad2xs.converter._000_helpers import create_sad_fringe_taylor_map
 from sad2xs.converter._007_reversals import (
-    _reflect_sad_soft_quadrupolar_fringes)
+    _reflect_sad_fringe_taylor_maps)
 
 ################################################################################
 # SAD Soft Quadrupolar Fringe Reflection
@@ -78,7 +78,7 @@ def test_fringe_reflection_only_mutates_recognised_line_occurrences():
     """Do not reflect unused fringes or unrelated second-order maps."""
     environment = xt.Environment()
     for name in ("active", "unused"):
-        create_sad_soft_quadrupolar_fringe(
+        create_sad_fringe_taylor_map(
             environment,
             name              = name,
             a                 = -3.0E-05,
@@ -94,7 +94,7 @@ def test_fringe_reflection_only_mutates_recognised_line_occurrences():
     line = environment.new_line(
         name = "test", components = ["active", "generic"])
 
-    _reflect_sad_soft_quadrupolar_fringes(line, horizontal = True)
+    _reflect_sad_fringe_taylor_maps(line, horizontal = True)
 
     assert environment["active"].shift_x == pytest.approx(-1.2E-03)
     assert environment["active"].rot_s_rad == pytest.approx(0.2)

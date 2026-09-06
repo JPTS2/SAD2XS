@@ -481,7 +481,7 @@ def convert_solenoids(
                     source_map = line[element]
                     if element not in environment.metadata.get(
                             "sad2xs", {}).get(
-                                "soft_quadrupolar_fringes", {}):
+                                "fringe_taylor_maps", {}):
                         logger.warning(
                             f"Element {element} in line {line_name} has not "
                             "been converted")

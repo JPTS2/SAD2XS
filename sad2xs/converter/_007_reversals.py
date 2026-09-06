@@ -69,7 +69,7 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
     # its opposite-face counterpart; mutating the shared definition would
     # also alter any forward occurrence elsewhere in the environment.
     fringe_names = env.metadata.get(
-        "sad2xs", {}).get("soft_quadrupolar_fringes", {})
+        "sad2xs", {}).get("fringe_taylor_maps", {})
     for index, name in enumerate(line.element_names):
         if name not in fringe_names:
             continue
@@ -184,7 +184,7 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
 ########################################
 # SAD Soft Quadrupolar Fringe Reflection
 ########################################
-def _reflect_sad_soft_quadrupolar_fringes(
+def _reflect_sad_fringe_taylor_maps(
         line:           xt.Line,
         *,
         horizontal:     bool) -> None:
@@ -205,7 +205,7 @@ def _reflect_sad_soft_quadrupolar_fringes(
     """
     environment = line.env
     fringes     = environment.metadata.get(
-        "sad2xs", {}).get("soft_quadrupolar_fringes", {})
+        "sad2xs", {}).get("fringe_taylor_maps", {})
     for name in set(line.element_names):
         if name not in fringes:
             continue
@@ -341,7 +341,7 @@ def reverse_line_survey_horizontal(line: xt.Line) -> xt.Line:
     unique_rots     = list(set(
         [name[1:] if name.startswith("-") else name for name in unique_rots]))
 
-    _reflect_sad_soft_quadrupolar_fringes(line, horizontal = True)
+    _reflect_sad_fringe_taylor_maps(line, horizontal = True)
 
     ########################################
     # Bend Adjustments
@@ -618,7 +618,7 @@ def reverse_line_survey_vertical(line: xt.Line) -> xt.Line:
     unique_rots       = list(set(
         [name[1:] if name.startswith("-") else name for name in unique_rots]))
 
-    _reflect_sad_soft_quadrupolar_fringes(line, horizontal = False)
+    _reflect_sad_fringe_taylor_maps(line, horizontal = False)
 
     ########################################
     # Bend Adjustments

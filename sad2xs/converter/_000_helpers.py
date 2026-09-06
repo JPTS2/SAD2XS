@@ -736,9 +736,9 @@ def sad_soft_quadrupolar_fringe_coefficients(
     return k, R, T
 
 ########################################
-# Create SAD Soft Quadrupolar Fringe Element
+# Create SAD Fringe Taylor Map
 ########################################
-def create_sad_soft_quadrupolar_fringe(
+def create_sad_fringe_taylor_map(
         environment:       xt.Environment,
         name:              str,
         a:                 SadValue,
@@ -795,7 +795,7 @@ def create_sad_soft_quadrupolar_fringe(
         rot_s_rad   = rot_s_rad)
 
     sad2xs  = environment.metadata.setdefault("sad2xs", {})
-    fringes = sad2xs.setdefault("soft_quadrupolar_fringes", {})
+    fringes = sad2xs.setdefault("fringe_taylor_maps", {})
     fringes[name] = {
         "a":              a,
         "b":              b,

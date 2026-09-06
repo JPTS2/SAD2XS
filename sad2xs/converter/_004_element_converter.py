@@ -36,7 +36,7 @@ from ._000_helpers import (
     define_strength_variable,
     combine_k0_sk0,
     canonicalize_dipole_rotation,
-    create_sad_soft_quadrupolar_fringe,
+    create_sad_fringe_taylor_map,
     parse_rf_parameters,
     sad_quadrupolar_field_rotation,
     values_provably_equal,
@@ -1075,7 +1075,7 @@ def convert_quadrupoles(
             a, b = fringe["in"]
             a, b, field_rotation = _quad_soft_quadrupolar_fringe_expressions(
                 environment, ele_name, a, b, fringe["field_rotation"])
-            create_sad_soft_quadrupolar_fringe(
+            create_sad_fringe_taylor_map(
                 environment,
                 name              = f"{ele_name}_fringe_in",
                 a                 = a,
@@ -1091,7 +1091,7 @@ def convert_quadrupoles(
             a, b = fringe["out"]
             a, b, field_rotation = _quad_soft_quadrupolar_fringe_expressions(
                 environment, ele_name, -a, b, fringe["field_rotation"])
-            create_sad_soft_quadrupolar_fringe(
+            create_sad_fringe_taylor_map(
                 environment,
                 name              = f"{ele_name}_fringe_out",
                 a                 = a,
@@ -1313,7 +1313,7 @@ def _install_mult_soft_quadrupolar_fringes(
     if "in" in fringe:
         a, b = fringe["in"]
         name = f"{ele_name}_fringe_in"
-        create_sad_soft_quadrupolar_fringe(
+        create_sad_fringe_taylor_map(
             environment,
             name              = name,
             a                 = a,
@@ -1326,7 +1326,7 @@ def _install_mult_soft_quadrupolar_fringes(
     if "out" in fringe:
         a, b = fringe["out"]
         name = f"{ele_name}_fringe_out"
-        create_sad_soft_quadrupolar_fringe(
+        create_sad_fringe_taylor_map(
             environment,
             name              = name,
             a                 = -a,

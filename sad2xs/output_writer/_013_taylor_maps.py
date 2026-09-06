@@ -55,19 +55,19 @@ def _format_taylor_map_array(values) -> str:
 ########################################
 # Generated SAD Fringe Helper
 ########################################
-def _sad_soft_quadrupolar_fringe_helper_source() -> str:
+def _sad_fringe_taylor_map_helper_source() -> str:
     """
     Return the self-contained SAD fringe helper for generated lattice files.
 
     Returns
     -------
     str
-        Python source defining `_create_sad_soft_quadrupolar_fringe`. The helper
+        Python source defining `_create_sad_fringe_taylor_map`. The helper
         uses only NumPy and Xtrack objects already imported by the generated
         lattice, so reloading does not depend on SAD2XS being installed.
     """
     return '''
-def _create_sad_soft_quadrupolar_fringe(
+def _create_sad_fringe_taylor_map(
         environment,
         name,
         a,
@@ -147,7 +147,7 @@ def _create_sad_soft_quadrupolar_fringe(
         shift_y     = shift_y,
         rot_s_rad   = rot_s_rad)
     sad2xs  = environment.metadata.setdefault("sad2xs", {})
-    fringes = sad2xs.setdefault("soft_quadrupolar_fringes", {})
+    fringes = sad2xs.setdefault("fringe_taylor_maps", {})
     fringes[name] = {
         "a":              a,
         "b":              b,
@@ -227,12 +227,12 @@ def create_taylor_map_lattice_file_information(
 ############################################################"""
 
     fringe_parameters = line.env.metadata.get(
-        "sad2xs", {}).get("soft_quadrupolar_fringes", {})
+        "sad2xs", {}).get("fringe_taylor_maps", {})
     written_fringe_names = {
         name for name in unique_second_order_names
         if name in fringe_parameters}
     if written_fringe_names:
-        output_string += _sad_soft_quadrupolar_fringe_helper_source()
+        output_string += _sad_fringe_taylor_map_helper_source()
 
     ########################################
     # First order Taylor maps
@@ -272,7 +272,7 @@ env.new(
         if source_name in fringe_parameters:
             parameters = fringe_parameters[source_name]
             output_string += f"""
-_create_sad_soft_quadrupolar_fringe(
+_create_sad_fringe_taylor_map(
     environment     = env,
     name            = "{name}",
     a               = {get_value_string(parameters["a"])},

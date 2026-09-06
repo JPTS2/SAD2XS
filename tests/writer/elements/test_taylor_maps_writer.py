@@ -20,7 +20,7 @@ import pytest
 import xtrack as xt
 
 from sad2xs.converter._000_helpers import (
-    create_sad_soft_quadrupolar_fringe)
+    create_sad_fringe_taylor_map)
 from sad2xs.converter._005_line_converter import create_reversed_component
 from tests.support.writer_helpers import write_and_load as _shared_write_and_load
 
@@ -299,7 +299,7 @@ def _build_soft_quadrupolar_fringe_line(a, b, field_rotation):
     env = xt.Environment()
     env.new(name = "start", prototype = xt.Marker)
     env.new(name = "end", prototype = xt.Marker)
-    create_sad_soft_quadrupolar_fringe(
+    create_sad_fringe_taylor_map(
         env,
         name              = "m1",
         a                 = a,
@@ -318,7 +318,7 @@ def test_sad_soft_quadrupolar_fringe_writer_is_compact_and_reproducible(tmp_path
         a = -3.125E-05,
         b = 0.006,
         field_rotation = 0.125)
-    create_sad_soft_quadrupolar_fringe(
+    create_sad_fringe_taylor_map(
         line.env,
         name              = "m2",
         a                 = 2.5E-05,
@@ -350,14 +350,14 @@ def test_sad_soft_quadrupolar_fringe_writer_is_compact_and_reproducible(tmp_path
         config = Config(_verbose = False))
     source = (output_dir / "lattice.py").read_text()
 
-    assert source.count("def _create_sad_soft_quadrupolar_fringe(") == 1
-    assert source.count("_create_sad_soft_quadrupolar_fringe(") == 3
+    assert source.count("def _create_sad_fringe_taylor_map(") == 1
+    assert source.count("_create_sad_fringe_taylor_map(") == 3
     assert f"field_rotation  = {0.125!r}" in source
     assert source.count("T           = [[[") == 1
 
     calls = [
         block.split(")")[0] for block in
-        source.split("\n_create_sad_soft_quadrupolar_fringe(\n")[1:]]
+        source.split("\n_create_sad_fringe_taylor_map(\n")[1:]]
     assert len(calls) == 2
     m1_call, m2_call = calls
 
@@ -372,7 +372,8 @@ def test_sad_soft_quadrupolar_fringe_writer_is_compact_and_reproducible(tmp_path
     env = xt.Environment()
     env.call(str(output_dir / "lattice.py"))
     reloaded = env["m1"]
-    parameters = env.metadata["sad2xs"]["soft_quadrupolar_fringes"]["m1"]
+    parameters = env.metadata["sad2xs"]["fringe_taylor_maps"]["m1"]
+    assert "soft_quadrupolar_fringes" not in env.metadata["sad2xs"]
     assert parameters["a"] == pytest.approx(-3.125E-05)
     assert parameters["b"] == pytest.approx(0.006)
     assert parameters["field_rotation"] == pytest.approx(0.125)
@@ -384,7 +385,7 @@ def test_sad_soft_quadrupolar_fringe_writer_is_compact_and_reproducible(tmp_path
     np.testing.assert_array_equal(reloaded.T, expected_T)
     assert env["generic"].k[0] == pytest.approx(0.25)
     assert "generic" not in env.metadata[
-        "sad2xs"]["soft_quadrupolar_fringes"]
+        "sad2xs"]["fringe_taylor_maps"]
 
 
 def test_sad_soft_quadrupolar_fringe_writer_preserves_quad_dependency(tmp_path):
@@ -396,7 +397,7 @@ def test_sad_soft_quadrupolar_fringe_writer_preserves_quad_dependency(tmp_path):
     env.new(
         name = "q1", prototype = xt.Quadrupole,
         length = 1.0, k1 = "k1_q1")
-    create_sad_soft_quadrupolar_fringe(
+    create_sad_fringe_taylor_map(
         env,
         name = "m1",
         a = "-1.0e-4 * sqrt(k1_q1**2)",
@@ -431,7 +432,7 @@ def test_reversal_only_soft_quadrupolar_fringe_writes_under_root_name(tmp_path):
 
     assert "m1" in reloaded_line.element_names
     parameters = reloaded_line.env.metadata[
-        "sad2xs"]["soft_quadrupolar_fringes"]["m1"]
+        "sad2xs"]["fringe_taylor_maps"]["m1"]
     assert parameters["a"] == pytest.approx(+3.125E-05)
     np.testing.assert_allclose(reloaded_line["m1"].R, expected_R)
 

@@ -21,7 +21,7 @@ import logging
 import xtrack as xt
 
 from ._000_helpers import (
-    create_sad_soft_quadrupolar_fringe,
+    create_sad_fringe_taylor_map,
     negate_sad_value)
 
 logger  = logging.getLogger(__name__)
@@ -71,8 +71,8 @@ def create_reversed_component(
     """
 
     assert component.startswith("-"), """Component must start with "-" to be reversed"""
-    soft_quadrupolar_fringes = environment.metadata.get(
-        "sad2xs", {}).get("soft_quadrupolar_fringes", {})
+    fringe_taylor_maps = environment.metadata.get(
+        "sad2xs", {}).get("fringe_taylor_maps", {})
 
     # Cannot overwrite elements, so must remove and recreate
     if component in environment.element_dict:
@@ -142,10 +142,10 @@ def create_reversed_component(
     ########################################
     # SAD Soft Quadrupolar Fringe
     ########################################
-    elif component[1:] in soft_quadrupolar_fringes:
-        parameters = soft_quadrupolar_fringes[component[1:]]
+    elif component[1:] in fringe_taylor_maps:
+        parameters = fringe_taylor_maps[component[1:]]
         reversed_a = negate_sad_value(parameters["a"])
-        create_sad_soft_quadrupolar_fringe(
+        create_sad_fringe_taylor_map(
             environment,
             name              = component,
             a                 = reversed_a,
@@ -300,7 +300,7 @@ def convert_lines(
                     environment.lines[component[1:]].element_names)
 
                 fringe_names = environment.metadata.get(
-                    "sad2xs", {}).get("soft_quadrupolar_fringes", {})
+                    "sad2xs", {}).get("fringe_taylor_maps", {})
                 if any(name in fringe_names for name in reversed_line_elements):
                     # Unlike coordinate wrappers, the compound represents
                     # distinct entrance/body/exit maps. SAD's -NAME operator
