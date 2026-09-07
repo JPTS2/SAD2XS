@@ -137,7 +137,7 @@ def convert_sad_to_xsuite(
     ############################################################################
     # Parse Lattice
     ############################################################################
-    log_section_heading("Parsing SAD File", mode = "section")
+    log_section_heading("Parsing SAD File", mode = "banner")
 
     parsed_lattice_data = parse_sad_file(
         sad_lattice_path              = sad_lattice_path,
@@ -191,7 +191,7 @@ def convert_sad_to_xsuite(
     # Convert Elements
     ############################################################################
     # Must run before reverse_charge_sign below -- see docs/converter/line-reversals.md.
-    log_section_heading("Converting Elements", mode = "section")
+    log_section_heading("Converting Elements", mode = "banner")
 
     convert_elements(
         parsed_lattice_data         = parsed_lattice_data,
@@ -433,6 +433,12 @@ def convert_sad_to_xsuite(
         output_directory            = output_directory,
         output_header               = output_header,
         config                      = config)
+
+    ########################################
+    # Reload generated lattice and optics
+    ########################################
+    log_section_heading(
+        "Reloading Generated Lattice and Optics", mode = "section")
 
     ############################################################################
     # Delete and re-initialise

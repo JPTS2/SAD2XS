@@ -174,6 +174,35 @@ def test_verbose_enables_progress_narrative(caplog, capsys, tmp_path):
         f"Diagnostics should never go to stdout. Got: {captured.out!r}")
 
 
+def test_verbose_labels_major_phases_and_generated_file_reload(caplog, tmp_path):
+    """
+    Major conversion phases should use full-width banners. Reloading the
+    generated lattice and optics should have its own subsection, so Xtrack's
+    slicing output is not presented as part of writing the optics file.
+    """
+    lattice_path = _write_fully_specified_lattice(tmp_path)
+    output_dir   = tmp_path / "out"
+    output_dir.mkdir()
+
+    s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = str(output_dir),
+        line_name        = "RING",
+        _verbose         = True)
+
+    messages = [record.getMessage() for record in caplog.records]
+    expected = [
+        f"\n{'#' * 80}\nParsing SAD File\n{'#' * 80}",
+        f"\n{'#' * 80}\nConverting Elements\n{'#' * 80}",
+        f"\n{'#' * 80}\nGenerating Output Files\n{'#' * 80}",
+        f"\n{'#' * 40}\nReloading Generated Lattice and Optics\n{'#' * 40}"]
+
+    indices = [messages.index(message) for message in expected]
+    assert indices == sorted(indices), (
+        "The major phases and generated-file reload should be labelled in "
+        f"conversion order. Got indices: {indices}.")
+
+
 ################################################################################
 # Debug level — set_log_level
 ################################################################################

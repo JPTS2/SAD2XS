@@ -36,7 +36,7 @@ Mixed: the SAD helper output tests require the SAD binary; the rest do not.
 
 | File | Tests | Fail | Failure root cause |
 |------|-------|------|--------------------|
-| `test_quiet_converter_output.py` | 7 | 0 | — |
+| `test_quiet_converter_output.py` | 8 | 0 | — |
 | `test_no_print_statements.py` | 1 | 0 | — |
 | `test_sad_helper_output_controls.py` | 10 | 0 | — |
 
@@ -52,6 +52,7 @@ written to `tmp_path` — does not call the SAD executable. Placed in the
 | `test_quiet_mode_emits_no_progress_records` | no INFO/DEBUG records at the default level |
 | `test_parser_warnings_visible_at_default_level` | electron-mass assumption warns in quiet mode |
 | `test_verbose_enables_progress_narrative` | `_verbose=True` emits INFO records; stdout stays empty |
+| `test_verbose_labels_major_phases_and_generated_file_reload` | major phases use 80-character banners and generated-file reload has a correctly ordered 40-character subsection |
 | `test_set_log_level_debug_enables_debug_records` | `set_log_level("debug")` exposes DEBUG records |
 | `test_set_log_level_rejects_unknown_level` | invalid level raises `ValueError` |
 | `test_formatter_prefixes_warnings_but_not_narrative` | `SAD2XS <LEVEL>:` prefix on WARNING/ERROR only |
