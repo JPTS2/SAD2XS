@@ -968,7 +968,7 @@ def create_sad_fringe_taylor_map(
         soft_quadrupole:    dict | None = None,
         hard_dipole:        dict | None = None,
         alignment:          dict | None = None,
-        is_exit:            bool = False) -> None:
+        is_exit:            bool        = False) -> None:
     """
     Add one supported SAD fringe Taylor map to an Xsuite environment.
 
