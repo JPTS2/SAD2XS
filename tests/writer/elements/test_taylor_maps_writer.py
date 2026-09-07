@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-01
+Date:       2026-09-07
 ================================================================================
 """
 ################################################################################
@@ -390,6 +390,38 @@ def test_sad_soft_quadrupolar_fringe_writer_is_compact_and_reproducible(tmp_path
     assert env["generic"].k[0] == pytest.approx(0.25)
     assert "generic" not in env.metadata[
         "sad2xs"]["fringe_taylor_maps"]
+
+
+def test_hard_only_sad_fringe_helper_matches_converter(tmp_path):
+    """The emitted helper must reproduce a signed hard-only fringe map."""
+    env = xt.Environment()
+    create_sad_fringe_taylor_map(
+        env,
+        name                = "fringe",
+        hard_dipole         = {
+            "k0": -0.001, "sk0": 0.0007, "length": -0.5},
+        alignment           = {
+            "shift_x": -0.6E-03,
+            "shift_y": 0.9E-03,
+            "rot_s_rad": -0.3},
+        is_exit            = False)
+    line = env.new_line(name = "test", components = ["fringe"])
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
+
+    original = line["fringe"]
+    reloaded_line = _writer_roundtrip(line, tmp_path)
+    reloaded      = reloaded_line["fringe"]
+
+    for field in ("k", "R", "T"):
+        np.testing.assert_allclose(
+            getattr(reloaded, field), getattr(original, field),
+            rtol = 1.0E-14, atol = 5.0E-17)
+    for field in ("shift_x", "shift_y", "rot_s_rad"):
+        assert getattr(reloaded, field) == pytest.approx(
+            getattr(original, field))
+    assert reloaded_line.env.metadata[
+        "sad2xs"]["fringe_taylor_maps"]["fringe"] == env.metadata[
+            "sad2xs"]["fringe_taylor_maps"]["fringe"]
 
 
 def test_sad_soft_quadrupolar_fringe_writer_preserves_quad_dependency(tmp_path):

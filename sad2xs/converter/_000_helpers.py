@@ -968,7 +968,7 @@ def create_sad_fringe_taylor_map(
         soft_quadrupole:    dict | None = None,
         hard_dipole:        dict | None = None,
         alignment:          dict | None = None,
-        is_exit:            bool = False) -> None:
+        is_exit:            bool        = False) -> None:
     """
     Add one supported SAD fringe Taylor map to an Xsuite environment.
 
@@ -1329,15 +1329,15 @@ def sad_mult_fringe_parameters(
         or has_supported_hard_edge
         or result["unsupported_soft_dipole"]
         or result["unsupported_higher_hard"])
-    if not has_active_fringe and hard_enabled:
-        return {}
+    if not has_active_fringe:
+        if hard_enabled:
+            return {}
+        return {"edge_policy_only": True, "hard_faces": ()}
     if scalar_values["drot"] != 0.0:
         logger.warning(
             f"SAD MULT {ele_name} has an active fringe and nonzero DROT. "
             "SAD2XS does not apply DROT to the MULT body, so its fringe is "
             "being skipped rather than rotated inconsistently.")
-        return {"edge_policy_only": True, "hard_faces": ()}
-    if not has_active_fringe:
         return {"edge_policy_only": True, "hard_faces": ()}
     return result
 
