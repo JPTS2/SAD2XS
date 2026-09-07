@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-01
+Date:       2026-09-07
 ================================================================================
 """
 ################################################################################
@@ -1835,7 +1835,8 @@ def test_mult_soft_quadrupolar_fringe_can_be_disabled(
 def test_mult_soft_quadrupolar_fringe_with_drot_warns_and_is_skipped(
         parsed_elements, xsuite_environment, caplog):
     """DROT must not be applied only to the fringe while the body ignores it."""
-    caplog.set_level(logging.WARNING, logger = "sad2xs.converter._004_element_converter")
+    caplog.set_level(
+        logging.WARNING, logger = "sad2xs.converter._000_helpers")
     convert_multipoles(
         parsed_elements = parsed_elements(
             element_type      = "mult",
@@ -1849,6 +1850,27 @@ def test_mult_soft_quadrupolar_fringe_with_drot_warns_and_is_skipped(
 
     assert "m1_compound" not in xsuite_environment.lines
     assert "nonzero DROT" in caplog.text
+
+
+def test_mult_drot_without_an_active_fringe_does_not_claim_one_was_skipped(
+        parsed_elements, xsuite_environment, caplog):
+    """An inactive fringe must not produce the active-fringe DROT warning."""
+    caplog.set_level(
+        logging.WARNING, logger = "sad2xs.converter._000_helpers")
+    convert_multipoles(
+        parsed_elements = parsed_elements(
+            element_type      = "mult",
+            element_name      = "m1",
+            element_variables = {
+                "l": 0.5, "k1": 0.1, "fringe": 3.0,
+                "disfrin": 1.0, "drot": 0.01}),
+        environment                  = xsuite_environment,
+        user_multipole_replacements = None,
+        config                       = _mult_config(simplify = False))
+
+    assert "m1_compound" not in xsuite_environment.lines
+    assert "active fringe" not in caplog.text
+    assert "being skipped" not in caplog.text
 
 
 def test_mult_soft_quadrupolar_fringe_wraps_user_quadrupole_replacement(
