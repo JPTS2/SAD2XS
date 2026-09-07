@@ -21,7 +21,7 @@ import sad2xs as s2x
 # Lattice
 ################################################################################
 # Two separate lines each reverse the same subline. The converter builds one
-# "sub_reversed" line for the first reference; the second must reuse it rather
+# reversed line for the first reference; the second must reuse it rather
 # than build it again.
 REPEATED_REVERSED_SUBLINE_LATTICE = """\
 MOMENTUM    = 1.0 GEV;
@@ -88,5 +88,5 @@ def test_reversed_subline_reused_by_two_lines_keeps_element_order(write_lattice)
         f"Got: {list(line.element_names)}.")
 
     assert list(line.env.lines["arc2"].element_names) == expected, (
-        "The second line reusing \"sub_reversed\" should hold the same "
+        "The second line reusing the reversed subline should hold the same "
         f"elements as the first. Got: {list(line.env.lines['arc2'].element_names)}.")

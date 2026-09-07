@@ -32,6 +32,7 @@ each parametrisation separately.
 | `test_reverse_element_order.py` | 19 | 0 | — |
 | `test_reversed_component_syntax.py` | 11 | 0 | — |
 | `test_reversed_subline_reuse.py` | 2 | 0 | — |
+| `test_generated_line_name_collisions.py` | 2 | 0 | — |
 
 ### `test_convert_sad_to_xsuite.py` note
 

@@ -24,6 +24,7 @@ import numpy as np
 from scipy.constants import c as clight
 from scipy.constants import e as qe
 
+from ..config import COMPOUND_LINE_SUFFIX
 from ..types import ConfigLike, SadValue
 from ..helpers import log_section_heading
 from ._000_helpers import (
@@ -1109,7 +1110,7 @@ def convert_quadrupoles(
             components.append(f"{ele_name}_fringe_out")
 
         environment.new_line(
-            name = f"{ele_name}_compound", components = components)
+            name = f"{ele_name}{COMPOUND_LINE_SUFFIX}", components = components)
 
 ################################################################################
 # Convert Sextupoles
