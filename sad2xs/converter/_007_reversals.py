@@ -74,8 +74,12 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
         "sad2xs", {}).get("fringe_taylor_maps", {})
     hard_edge_names = env.metadata.get(
         "sad2xs", {}).get("mult_hard_quadrupolar_edges", {})
+    native_edge_names = env.metadata.get(
+        "sad2xs", {}).get("mult_native_fringe_faces", {})
     for index, name in enumerate(line.element_names):
-        if name not in fringe_names and name not in hard_edge_names:
+        if name not in fringe_names \
+                and name not in hard_edge_names \
+                and name not in native_edge_names:
             continue
         if name.startswith("-"):
             line.element_names[index] = name[1:]

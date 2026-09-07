@@ -331,6 +331,7 @@ env.particle_ref    = {_particle_ref_line}
     # Modelling
     ########################################
     lattice_file_string += create_model_lattice_file_information(
+        line        = line,
         config      = config)
 
     ########################################

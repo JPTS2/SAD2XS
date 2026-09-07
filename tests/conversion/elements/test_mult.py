@@ -25,7 +25,7 @@ import xtrack as xt
 
 from sad2xs.config import Config
 from sad2xs.converter._004_element_converter import convert_elements, convert_multipoles
-from sad2xs.sad_helpers import track_sad, transfer_matrix_sad
+from sad2xs.sad_helpers import track_sad, transfer_matrix_sad, twiss_sad
 from tests.support.config import (
     DELTA_DELTA_ATOL,
     DELTA_DELTA_RTOL,
@@ -49,7 +49,7 @@ from tests.support.diagnostics import (
     write_tracking_failure_report,
     write_twiss_failure_report)
 from tests.support.tracking_helpers import track_xsuite_particles
-from sad2xs.sad_helpers import twiss_sad
+from tests.support.writer_helpers import write_and_load
 
 ################################################################################
 # Shared Tracking Coordinates
@@ -1929,6 +1929,92 @@ def test_typed_mult_native_edge_suppression(
     assert line["m1"].edge_exit_active == 0
     if warning is not None:
         assert warning in caplog.text
+
+
+@pytest.mark.parametrize(
+    "strength, element_type",
+    [("K0", xt.Bend), ("K1", xt.Quadrupole)])
+def test_one_sided_typed_mult_edges_reverse_and_round_trip(
+        write_lattice, tmp_path, strength, element_type):
+    """Forward and -NAME occurrences need distinct, reloadable edge faces."""
+    lattice_path = write_lattice(
+        f"""\
+        MOMENTUM = 1.0 GEV;
+        MULT M1 = (L=0.5 {strength}=0.1 FRINGE=1);
+        MARK START=() END=();
+        LINE TEST_LINE=(START M1 -M1 END);
+        """,
+        filename = f"mult_{strength.lower()}_one_sided_reverse.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path    = str(lattice_path),
+        output_directory    = "N/A",
+        SIMPLIFY_MULTIPOLES = True,
+        _verbose            = False,
+        _test_mode          = True)
+
+    assert list(line.element_names) == ["start", "m1", "-m1", "end"]
+    for candidate in (line, write_and_load(line, tmp_path)[1]):
+        assert isinstance(candidate["m1"], element_type)
+        assert isinstance(candidate["-m1"], element_type)
+        assert candidate["m1"].edge_entry_active == 1
+        assert candidate["m1"].edge_exit_active == 0
+        assert candidate["-m1"].edge_entry_active == 0
+        assert candidate["-m1"].edge_exit_active == 1
+
+
+@pytest.mark.parametrize(
+    "strength, element_type",
+    [("K0", xt.Bend), ("K1", xt.Quadrupole)])
+def test_one_sided_typed_mult_edges_follow_whole_line_reversal(
+        write_lattice, tmp_path, strength, element_type):
+    """A whole-line reversal must move a native MULT edge to the other face."""
+    lattice_path = write_lattice(
+        f"""\
+        MOMENTUM = 1.0 GEV;
+        MULT M1 = (L=0.5 {strength}=0.1 FRINGE=1);
+        MARK START=() END=();
+        LINE TEST_LINE=(START M1 END);
+        """,
+        filename = f"mult_{strength.lower()}_one_sided_line_reverse.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path      = str(lattice_path),
+        output_directory      = "N/A",
+        SIMPLIFY_MULTIPOLES   = True,
+        reverse_element_order = True,
+        _verbose              = False,
+        _test_mode            = True)
+
+    reloaded = write_and_load(line, tmp_path)[1]
+    for candidate, name in ((line, "-m1"), (reloaded, "m1")):
+        assert isinstance(candidate[name], element_type)
+        assert candidate[name].edge_entry_active == 0
+        assert candidate[name].edge_exit_active == 1
+
+
+@pytest.mark.parametrize("sad_control", ["FRINGE=0", "DISFRIN=1"])
+def test_symmetric_typed_mult_quadrupole_reversal_reuses_body(
+        write_lattice, sad_control):
+    """Equal native face flags need no direction-specific QUAD clone."""
+    lattice_path = write_lattice(
+        f"""\
+        MOMENTUM = 1.0 GEV;
+        MULT M1 = (L=0.5 K1=0.1 {sad_control});
+        MARK START=() END=();
+        LINE TEST_LINE=(START M1 -M1 END);
+        """,
+        filename = "mult_k1_symmetric_native_edge_reversal.sad")
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path    = str(lattice_path),
+        output_directory    = "N/A",
+        SIMPLIFY_MULTIPOLES = True,
+        _verbose            = False,
+        _test_mode          = True)
+
+    assert list(line.element_names) == ["start", "m1", "m1", "end"]
+    assert "-m1" not in line.env.element_dict
 
 
 def test_mult_soft_quadrupolar_fringe_is_skipped_when_replacement_discards_k1(

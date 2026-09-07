@@ -16,12 +16,17 @@ Date:       2026-09-01
 ################################################################################
 # Import Packages
 ################################################################################
+import xtrack as xt
+
+from ._000_helpers import get_parentname
 from ..types import ConfigLike
 
 ################################################################################
 # Lattice File
 ################################################################################
-def create_model_lattice_file_information(config: ConfigLike) -> str:
+def create_model_lattice_file_information(
+        line:       xt.Line,
+        config:     ConfigLike) -> str:
     """
     Generate the lattice-file source configuring per-element-type
     models and integrators.
@@ -38,6 +43,9 @@ def create_model_lattice_file_information(config: ConfigLike) -> str:
 
     Parameters
     ----------
+    line : xtrack.Line
+        Converted line whose per-element MULT edge settings must survive
+        global model configuration and writer reload.
     config : ConfigLike
         Converter configuration supplying every model/integrator/
         kick-count setting and `_replace_repeated_elements`.
@@ -115,6 +123,39 @@ line.configure_bend_model(edge = "{config.EDGE_MODEL_BEND}")
 ########################################
 line.configure_quadrupole_model(edge = "{config.EDGE_MODEL_QUAD}")
 """
+
+    ########################################
+    # Restore SAD MULT Native Edge Settings
+    ########################################
+    native_edges = line.env.metadata.get(
+        "sad2xs", {}).get("mult_native_fringe_faces", {})
+    line_names = [
+        get_parentname(name) for name in line.get_table().name
+        if name != "_end_point"]
+    written_edges = {}
+    for source_name, faces in native_edges.items():
+        if source_name not in line_names:
+            continue
+        name = source_name
+        if name.startswith("-") and name[1:] not in line_names:
+            name = name[1:]
+        written_edges[name] = faces
+
+    if written_edges:
+        output_string += """
+########################################
+# Restore SAD MULT Native Edge Settings
+########################################"""
+    for name, faces in written_edges.items():
+        edge_entry_active = bool(faces["edge_entry_active"])
+        edge_exit_active  = bool(faces["edge_exit_active"])
+        output_string += f"""
+line["{name}"].edge_entry_active = {edge_entry_active}
+line["{name}"].edge_exit_active  = {edge_exit_active}
+env.metadata.setdefault("sad2xs", {{}}).setdefault(
+    "mult_native_fringe_faces", {{}})["{name}"] = {{
+        "edge_entry_active": {edge_entry_active},
+        "edge_exit_active":  {edge_exit_active}}}"""
 
     ########################################
     # Replace repeated elements

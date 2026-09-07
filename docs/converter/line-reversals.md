@@ -113,7 +113,25 @@ the sad2xs-reversed Xsuite line (with `_import_sad_bend_fringes=True`).
 Both give matching final `y` and `py` to within the fringe import's
 existing on-momentum tolerance.
 
-### 3. Solenoid ks sign
+### 3. MULT fringe faces
+
+The supported MULT fringe compound is direction-dependent. Reversal exchanges
+the two physical faces and rebuilds each registered component rather than
+reusing its forward map:
+
+- a K1/SK1 `MultipoleEdge` toggles its entrance/exit flag;
+- the F1 soft coefficient changes sign;
+- the K0/SK0 Taylor contribution is rebuilt for the opposite face;
+- the entrance/exit operation order inside each composite Taylor map is
+  exchanged;
+- offsets and the parent field-frame rotation remain attached to the same
+  physical magnet axis.
+
+A MULT simplified to `Bend` or `Quadrupole` uses the corresponding native hard
+edge. Its `edge_entry_active` and `edge_exit_active` flags are exchanged under
+reversal, including after a writer round trip.
+
+### 4. Solenoid ks sign
 
 Reversing the element order means the beam traverses the solenoid field in the
 opposite longitudinal direction. The axial field then acts as if `BZ` had changed
@@ -144,7 +162,7 @@ This test also caught a separate bug. `rebuild_sad_lattice` was silently droppin
 any bound-solenoid GEO lattice with non-unity `CHARGE`. It is fixed in
 `sad2xs/sad_helpers/rebuild_lattice.py`.
 
-### 4. Translations: solenoid GEO vs COORD
+### 5. Translations: solenoid GEO vs COORD
 
 There are two distinct origins for `Translation` elements in the converter:
 
@@ -171,7 +189,7 @@ translations unchanged.
 | `COORD(DX=0.001)` forward | −0.001 | −0.001 | Same — beampipe offset is invariant |
 | `COORD(DX=0.001)` reversed Xsuite | − | −0.001 | Matches SAD reversed ✓ |
 
-### 5. Solenoid GEO reference-transform rotation order
+### 6. Solenoid GEO reference-transform rotation order
 
 A bound GEO solenoid region is defined by a pair of `SOL` elements (e.g.
 `SOL_IN`, `SOL_OUT`), one of which carries `GEO=1` (the reference-frame-defining

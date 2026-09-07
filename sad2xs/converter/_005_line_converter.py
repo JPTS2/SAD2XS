@@ -45,10 +45,11 @@ def create_reversed_component(
     gets its own copy; Marker elements that are SAD OFFSET markers:
     identified rather than cloned, so later offset-marker handling can
     still find them by name), a genuinely reversed clone is created.
-    Every other element type (Drift, Quadrupole, Sextupole, Octupole,
-    Multipole, Cavity, plain Marker, Aperture) is direction-symmetric,
-    so the `-` prefix is simply dropped and the original element
-    reused.
+    A Quadrupole used as a simplified SAD MULT is also cloned when it has
+    one-sided native edge activity. Every other element type (Drift, ordinary
+    Quadrupole, Sextupole, Octupole, Multipole, Cavity, plain Marker,
+    Aperture) is direction-symmetric, so the `-` prefix is simply dropped and
+    the original element reused.
 
     Parameters
     ----------
@@ -76,6 +77,10 @@ def create_reversed_component(
         "sad2xs", {}).get("fringe_taylor_maps", {})
     hard_quadrupolar_edges = environment.metadata.get(
         "sad2xs", {}).get("mult_hard_quadrupolar_edges", {})
+    native_fringe_faces = environment.metadata.get(
+        "sad2xs", {}).get("mult_native_fringe_faces", {})
+    source_name  = component[1:]
+    native_faces = native_fringe_faces.get(source_name)
 
     # Cannot overwrite elements, so must remove and recreate
     if component in environment.element_dict:
@@ -101,6 +106,37 @@ def create_reversed_component(
             environment[component[1:]].edge_exit_hgap
         environment[component].edge_exit_hgap    =\
             environment[component[1:]].edge_entry_hgap
+        environment[component].edge_entry_active =\
+            environment[component[1:]].edge_exit_active
+        environment[component].edge_exit_active  =\
+            environment[component[1:]].edge_entry_active
+        if component[1:] in native_fringe_faces:
+            native_fringe_faces[component] = {
+                "edge_entry_active": bool(
+                    environment[component].edge_entry_active),
+                "edge_exit_active": bool(
+                    environment[component].edge_exit_active)}
+
+    ########################################
+    # SAD MULT represented by a Quadrupole
+    ########################################
+    elif native_faces is not None \
+            and native_faces["edge_entry_active"] \
+            != native_faces["edge_exit_active"] \
+            and isinstance(environment.element_dict[source_name], xt.Quadrupole):
+        environment.new(
+            name      = component,
+            prototype = component[1:],
+            mode      = "clone")
+        environment[component].edge_entry_active =\
+            environment[component[1:]].edge_exit_active
+        environment[component].edge_exit_active  =\
+            environment[component[1:]].edge_entry_active
+        native_fringe_faces[component] = {
+            "edge_entry_active": bool(
+                environment[component].edge_entry_active),
+            "edge_exit_active": bool(
+                environment[component].edge_exit_active)}
 
     ########################################
     # Solenoid
