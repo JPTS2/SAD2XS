@@ -30,7 +30,7 @@ serialises.
 | `test_refshift_writer.py` | 39 | 0 | `xt.Translation`, `xt.TimeDelay`, `xt.Rotation` | every shift and rotation field as an optics expression, zero `default_to_zero` behaviour, all five types in one line |
 | `test_aper_writer.py` | 33 | 0 | `xt.LimitEllipse`, `xt.LimitRect`, `xt.LimitRectEllipse` | bounds, offsets, asymmetric bounds, mixed types |
 | `test_marker_writer.py` | 11 | 0 | `xt.Marker` | type, name, order, multiple markers, start/end convention, offset marker insertion |
-| `test_taylor_maps_writer.py` | 24 | 0 | `xt.FirstOrderTaylorMap`, `xt.SecondOrderTaylorMap` | generic maps as full-precision literals; compact SAD soft and composite maps, live QUAD dependency, reversal and mixed-grid tracking |
+| `test_taylor_maps_writer.py` | 25 | 0 | `xt.FirstOrderTaylorMap`, `xt.SecondOrderTaylorMap` | generic maps as full-precision literals; compact SAD soft and composite maps, live QUAD dependency, reversal and mixed-grid tracking |
 
 ### `test_bend_writer.py` and `test_corr_writer.py` note
 
@@ -54,10 +54,12 @@ interpretation step. Physical correctness is Xsuite's contract, not SAD2XS's.
 ### `test_taylor_maps_writer.py` note
 
 Recognised SAD fringe maps round-trip through one compact, self-contained
-generated helper. Tests check soft-only and composite hard-dipole plus
-soft-quadrupole maps, standard environment metadata, mixed-grid tracking, the
-live dependency on an existing QUAD strength variable, and reversal after
-reload. Generic Taylor maps continue to use literal coefficient arrays.
+generated helper. Tests compare its soft-only, hard-only, and composite maps
+directly with the converter, including signed length, mixed normal/skew field,
+rotation, alignment, standard environment metadata, and mixed-grid tracking.
+They also check the live dependency on an existing QUAD strength variable and
+reversal after reload. Generic Taylor maps continue to use literal coefficient
+arrays.
 
 The call omits `shift_x` and `shift_y` when they are zero; the helper defaults them.
 
