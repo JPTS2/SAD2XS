@@ -111,10 +111,13 @@ A SAD `MULT` can mean several different things, so the converter takes the first
 
 Cases 2 and 3 both canonicalise a `K0`/`SK0`-only rotation the same way the bend converter does, and both require a non-zero length, because integrated strengths must be divided by length.
 
-An active K1 soft-edge fringe wraps whichever body representation is selected
-between entrance and exit Taylor maps. The body retains the bare SAD name and
-the wrapper uses `{name}_compound`. See [fringe models](fringes.md) for handling
-inside powered solenoids, `DROT`, and unsupported fringe terms.
+An active supported fringe wraps the selected body representation. A generic
+MULT can use up to five components: a K1/SK1 `MultipoleEdge` and a composite
+K0/SK0-hard plus F1/F2-soft Taylor map at each side, around the unchanged
+body. Typed quadrupole and bend representations use their native hard edges
+instead of duplicating them. The body retains the bare SAD name and the
+wrapper uses `{name}_compound`. See [fringe models](fringes.md) for the exact
+order, switches, powered-solenoid handling, `DROT`, and unsupported terms.
 
 ### The dipole fringe residual when a MULT is simplified
 
@@ -183,6 +186,10 @@ Once per lattice:
 | any drift with negative length | overlapping geometry or survey rounding; may break tracking, Twiss, or marker insertion |
 | `ANGLE != 0` bend with non-zero `DX`/`DY` | reference-orbit convention not reproduced |
 | `MULT` auto-simplified to a bend or corrector | dipole fringe residual at `O(theta^4)` |
+| `MULT` with active `FB1`/`FB2` soft fringe | soft dipole fringe not modelled |
+| `MULT` with active hard order above K1/SK1 | higher-order hard fringe not modelled |
+| offset `MULT` K1 soft fringe in powered solenoid | combined local-field/offset convention not reproduced |
+| `MULT` carrying K0/SK0 in powered solenoid | combined SAD body map not reproduced |
 | any `xt.Cavity` in the converted line | transverse RF-focusing kick not modelled |
 | `SOL` without `DISFRIN=1` | solenoid fringe kick not modelled |
 
@@ -192,6 +199,7 @@ Per element:
 | --- | --- |
 | `GEO` solenoid that also defines `DZ` | `DZ` is invalid with `GEO` and is ignored |
 | `COORD` with no recognised transform | installed as a no-op translation |
+| active `MULT` fringe with nonzero `DROT` | whole fringe skipped because body `DROT` is unsupported |
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

@@ -21,7 +21,7 @@ import logging
 import xtrack as xt
 
 from ._000_helpers import (
-    create_sad_soft_quadrupolar_fringe,
+    create_sad_fringe_taylor_map,
     negate_sad_value)
 
 logger  = logging.getLogger(__name__)
@@ -39,15 +39,17 @@ def create_reversed_component(
     A reversed component name always starts with `-`. For element
     types whose physics genuinely differs under reversal (Bend:
     entry/exit edge angles AND fringe fields (fint/hgap) swapped;
-    UniformSolenoid: ks negated; Translation/TimeDelay/Rotation: cloned
-    so the reversed line gets its own copy; Marker elements that are
-    SAD OFFSET markers: identified rather than cloned, so later
-    offset-marker handling can still find them by name), a genuinely
-    reversed clone is created.
-    Every other element type (Drift, Quadrupole, Sextupole, Octupole,
-    Multipole, Cavity, plain Marker, Aperture) is direction-symmetric,
-    so the `-` prefix is simply dropped and the original element
-    reused.
+    UniformSolenoid: ks negated; SAD fringe Taylor maps: rebuilt for the
+    opposite face; MULT hard quadrupolar edges: cloned with entry/exit
+    toggled; Translation/TimeDelay/Rotation: cloned so the reversed line
+    gets its own copy; Marker elements that are SAD OFFSET markers:
+    identified rather than cloned, so later offset-marker handling can
+    still find them by name), a genuinely reversed clone is created.
+    A Quadrupole used as a simplified SAD MULT is also cloned when it has
+    one-sided native edge activity. Every other element type (Drift, ordinary
+    Quadrupole, Sextupole, Octupole, Multipole, Cavity, plain Marker,
+    Aperture) is direction-symmetric, so the `-` prefix is simply dropped and
+    the original element reused.
 
     Parameters
     ----------
@@ -71,8 +73,14 @@ def create_reversed_component(
     """
 
     assert component.startswith("-"), """Component must start with "-" to be reversed"""
-    soft_quadrupolar_fringes = environment.metadata.get(
-        "sad2xs", {}).get("soft_quadrupolar_fringes", {})
+    fringe_taylor_maps = environment.metadata.get(
+        "sad2xs", {}).get("fringe_taylor_maps", {})
+    hard_quadrupolar_edges = environment.metadata.get(
+        "sad2xs", {}).get("mult_hard_quadrupolar_edges", {})
+    native_fringe_faces = environment.metadata.get(
+        "sad2xs", {}).get("mult_native_fringe_faces", {})
+    source_name  = component[1:]
+    native_faces = native_fringe_faces.get(source_name)
 
     # Cannot overwrite elements, so must remove and recreate
     if component in environment.element_dict:
@@ -98,6 +106,37 @@ def create_reversed_component(
             environment[component[1:]].edge_exit_hgap
         environment[component].edge_exit_hgap    =\
             environment[component[1:]].edge_entry_hgap
+        environment[component].edge_entry_active =\
+            environment[component[1:]].edge_exit_active
+        environment[component].edge_exit_active  =\
+            environment[component[1:]].edge_entry_active
+        if component[1:] in native_fringe_faces:
+            native_fringe_faces[component] = {
+                "edge_entry_active": bool(
+                    environment[component].edge_entry_active),
+                "edge_exit_active": bool(
+                    environment[component].edge_exit_active)}
+
+    ########################################
+    # SAD MULT represented by a Quadrupole
+    ########################################
+    elif native_faces is not None \
+            and native_faces["edge_entry_active"] \
+            != native_faces["edge_exit_active"] \
+            and isinstance(environment.element_dict[source_name], xt.Quadrupole):
+        environment.new(
+            name      = component,
+            prototype = component[1:],
+            mode      = "clone")
+        environment[component].edge_entry_active =\
+            environment[component[1:]].edge_exit_active
+        environment[component].edge_exit_active  =\
+            environment[component[1:]].edge_entry_active
+        native_fringe_faces[component] = {
+            "edge_entry_active": bool(
+                environment[component].edge_entry_active),
+            "edge_exit_active": bool(
+                environment[component].edge_exit_active)}
 
     ########################################
     # Solenoid
@@ -140,19 +179,39 @@ def create_reversed_component(
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
-    # SAD Soft Quadrupolar Fringe
+    # SAD Fringe Taylor Map
     ########################################
-    elif component[1:] in soft_quadrupolar_fringes:
-        parameters = soft_quadrupolar_fringes[component[1:]]
-        reversed_a = negate_sad_value(parameters["a"])
-        create_sad_soft_quadrupolar_fringe(
+    elif component[1:] in fringe_taylor_maps:
+        parameters = fringe_taylor_maps[component[1:]]
+        parent_rotation = parameters.get(
+            "parent_rotation", negate_sad_value(parameters["field_rotation"]))
+        soft_quadrupole = None
+        if parameters["a"] != 0.0 or parameters["b"] != 0.0:
+            soft_quadrupole = {
+                "a": negate_sad_value(parameters["a"]),
+                "b": parameters["b"]}
+            if "relative_rotation" in parameters:
+                soft_quadrupole["relative_rotation"] = parameters[
+                    "relative_rotation"]
+        create_sad_fringe_taylor_map(
             environment,
-            name              = component,
-            a                 = reversed_a,
-            b                 = parameters["b"],
-            field_rotation    = parameters["field_rotation"],
-            shift_x           = parameters["shift_x"],
-            shift_y           = parameters["shift_y"])
+            name                = component,
+            soft_quadrupole     = soft_quadrupole,
+            hard_dipole         = parameters.get("hard_dipole"),
+            alignment           = {
+                "shift_x":   parameters["shift_x"],
+                "shift_y":   parameters["shift_y"],
+                "rot_s_rad": parent_rotation},
+            is_exit            = not parameters.get("is_exit", False))
+
+    ########################################
+    # SAD MULT Hard Quadrupolar Edge
+    ########################################
+    elif component[1:] in hard_quadrupolar_edges:
+        source = environment.element_dict[component[1:]]
+        environment.element_dict[component] = source.copy()
+        environment[component].is_exit = not source.is_exit
+        hard_quadrupolar_edges[component] = {}
 
     ########################################
     # Offset Marker (Mark, Moni, BeamBeam all convert to xt.Marker)
@@ -300,7 +359,7 @@ def convert_lines(
                     environment.lines[component[1:]].element_names)
 
                 fringe_names = environment.metadata.get(
-                    "sad2xs", {}).get("soft_quadrupolar_fringes", {})
+                    "sad2xs", {}).get("fringe_taylor_maps", {})
                 if any(name in fringe_names for name in reversed_line_elements):
                     # Unlike coordinate wrappers, the compound represents
                     # distinct entrance/body/exit maps. SAD's -NAME operator

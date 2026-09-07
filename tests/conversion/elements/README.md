@@ -40,11 +40,11 @@ to extend.
 | `test_map.py` | 6 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
-| `test_mult.py` | 62 | 0 | — |
+| `test_mult.py` | 104 | 0 | — |
 | `test_oct.py` | 41 | 0 | — |
 | `test_quad.py` | 56 | 0 | — |
 | `test_sext.py` | 41 | 0 | — |
-| `test_sol.py` | 181 | 0 | — |
+| `test_sol.py` | 182 | 0 | — |
 
 ### `test_sol.py` note
 
@@ -87,11 +87,13 @@ per-element defaults.
 
 ### `test_mult.py` note
 
-The soft quadrupolar (K1/SK1) section pins the MULT map at three levels: derived
-coefficients (including SK1 and both signs of F1), full SAD-vs-Xsuite tracking,
-and every body-selection branch that can retain or discard K1. The companion
-solenoid tests verify centred powered-BZ F1/F2 response through adjacent
-segment edges, the single warning for offset powered fringes, reuse of source
+The MULT fringe section pins the five-element orbital model at three levels:
+analytic K0/SK0 and F1/F2 Taylor coefficients, native K1/SK1 edges, and
+enabled-minus-disabled SAD tracking over mixed 6D grids. It covers face gates,
+signs, alignment, minimum length, RF bodies, simplification and replacement
+branches, deferred inputs, unsupported-category warnings, and the exact
+absence of identity placeholders. The companion solenoid tests verify centred
+powered-BZ response, the warning for offset K1 soft fringes, reuse of source
 face maps with context-specific bodies, and the measured K0/SK0 combined-body
 limitation.
 

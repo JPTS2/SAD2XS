@@ -28,6 +28,7 @@ from ..types import ConfigLike, SadValue
 from ..helpers import log_section_heading
 from ._000_helpers import (
     parse_expression,
+    negate_sad_value,
     validate_element_lengths,
     get_element_misalignments,
     is_effectively_zero,
@@ -36,8 +37,10 @@ from ._000_helpers import (
     define_strength_variable,
     combine_k0_sk0,
     canonicalize_dipole_rotation,
-    create_sad_soft_quadrupolar_fringe,
+    create_sad_fringe_taylor_map,
+    install_sad_mult_fringes,
     parse_rf_parameters,
+    sad_mult_fringe_parameters,
     sad_quadrupolar_field_rotation,
     values_provably_equal,
     values_provably_opposite,
@@ -1075,14 +1078,16 @@ def convert_quadrupoles(
             a, b = fringe["in"]
             a, b, field_rotation = _quad_soft_quadrupolar_fringe_expressions(
                 environment, ele_name, a, b, fringe["field_rotation"])
-            create_sad_soft_quadrupolar_fringe(
+            create_sad_fringe_taylor_map(
                 environment,
-                name              = f"{ele_name}_fringe_in",
-                a                 = a,
-                b                 = b,
-                field_rotation    = field_rotation,
-                shift_x           = shift_x,
-                shift_y           = shift_y)
+                name                = f"{ele_name}_fringe_in",
+                soft_quadrupole     = {
+                    "a": a,
+                    "b": b},
+                alignment           = {
+                    "shift_x":   shift_x,
+                    "shift_y":   shift_y,
+                    "rot_s_rad": negate_sad_value(field_rotation)})
             components.append(f"{ele_name}_fringe_in")
 
         components.append(ele_name)
@@ -1091,14 +1096,16 @@ def convert_quadrupoles(
             a, b = fringe["out"]
             a, b, field_rotation = _quad_soft_quadrupolar_fringe_expressions(
                 environment, ele_name, -a, b, fringe["field_rotation"])
-            create_sad_soft_quadrupolar_fringe(
+            create_sad_fringe_taylor_map(
                 environment,
-                name              = f"{ele_name}_fringe_out",
-                a                 = a,
-                b                 = b,
-                field_rotation    = field_rotation,
-                shift_x           = shift_x,
-                shift_y           = shift_y)
+                name                = f"{ele_name}_fringe_out",
+                soft_quadrupole     = {
+                    "a": a,
+                    "b": b},
+                alignment           = {
+                    "shift_x":   shift_x,
+                    "shift_y":   shift_y,
+                    "rot_s_rad": negate_sad_value(field_rotation)})
             components.append(f"{ele_name}_fringe_out")
 
         environment.new_line(
@@ -1149,195 +1156,6 @@ def convert_octupoles(
     """
     for ele_name, ele_vars in parsed_elements["oct"].items():
         _convert_typed_multipole(ele_name, ele_vars, environment, 4, xt.Octupole, "k3")
-
-################################################################################
-# SAD MULT Soft Quadrupolar Fringe
-################################################################################
-def _mult_soft_quadrupolar_fringe_parameters(
-        ele_name:    str,
-        ele_vars:    dict[str, SadValue],
-        config:      ConfigLike) -> dict:
-    """
-    Derive the numeric soft quadrupolar fringe parameters of a SAD MULT.
-
-    MULT strengths remain numeric by design: the writer does not create
-    per-order optics variables for MULT arrays. This function therefore
-    evaluates K1/SK1, the face parameters, and the field rotation once during
-    conversion.
-
-    Parameters
-    ----------
-    ele_name : str
-        SAD MULT element name, used in diagnostics.
-    ele_vars : dict
-        Parsed parameters for that MULT.
-    config : ConfigLike
-        Converter configuration controlling MULT-fringe import.
-
-    Returns
-    -------
-    dict
-        Numeric ``field_rotation`` plus active ``in`` and/or ``out``
-        ``(a, b)`` pairs, or an empty dictionary when no supported face is
-        active.
-
-    Raises
-    ------
-    ValueError
-        If a parameter needed by the supported fringe is deferred rather
-        than numeric.
-    """
-    if not config._import_sad_mult_fringes:
-        return {}
-
-    length = parse_expression(ele_vars.get("l", 0.0))
-    if not isinstance(length, float) or length == 0.0:
-        return {}
-
-    # Do not inspect unrelated deferred ROTATE/DROT expressions on MULTs that
-    # cannot have a soft quadrupolar fringe. This keeps the opt-in analysis
-    # inert for dipole-, sextupole-, and octupole-only elements.
-    if "k1" not in ele_vars and "sk1" not in ele_vars:
-        return {}
-
-    fringe_mode = parse_expression(ele_vars.get("fringe", 0.0))
-    if not isinstance(fringe_mode, float):
-        raise ValueError(
-            "FRINGE must be a concrete number to import the soft quadrupolar "
-            f"MULT fringe, got a deferred expression: {fringe_mode!r}.")
-    # SAD truncates this integer-valued keyword while reading the lattice.
-    fringe_mode = int(fringe_mode)
-    if fringe_mode not in (1, 2, 3):
-        return {}
-
-    face_values = {
-        key: parse_expression(ele_vars.get(key, 0.0))
-        for key in (
-            "f1", "f2", "f1k1f", "f2k1f", "f1k1b", "f2k1b")}
-    for name, value in face_values.items():
-        if not isinstance(value, float):
-            raise ValueError(
-                f"{name.upper()} must be a concrete number to import the "
-                "soft quadrupolar MULT fringe, got a deferred expression: "
-                f"{value!r}.")
-
-    candidate_faces = {}
-    for side, suffix in (("in", "f"), ("out", "b")):
-        if side == "in" and fringe_mode not in (1, 3):
-            continue
-        if side == "out" and fringe_mode not in (2, 3):
-            continue
-        f1_raw = face_values["f1"] + face_values[f"f1k1{suffix}"]
-        f2_raw = face_values["f2"] + face_values[f"f2k1{suffix}"]
-        if f1_raw != 0.0 or f2_raw != 0.0:
-            candidate_faces[side] = (f1_raw, f2_raw)
-    if not candidate_faces:
-        return {}
-
-    scalar_values = {
-        key: parse_expression(ele_vars.get(key, 0.0))
-        for key in ("k1", "sk1", "rotate", "drot")}
-    for name, value in scalar_values.items():
-        if not isinstance(value, float):
-            raise ValueError(
-                f"{name.upper()} must be a concrete number to import the "
-                "soft quadrupolar MULT fringe, got a deferred expression: "
-                f"{value!r}.")
-
-    k1  = scalar_values["k1"]
-    sk1 = scalar_values["sk1"]
-    if k1 == 0.0 and sk1 == 0.0:
-        return {}
-
-    magnitude = np.hypot(k1, sk1) / abs(length)
-    result = {
-        "field_rotation": scalar_values["rotate"]
-        + sad_quadrupolar_field_rotation(k1, sk1, length)}
-    for side, (f1_raw, f2_raw) in candidate_faces.items():
-        # SAD rotates K1+iSK1 into a positive local field before tqlfre.
-        a = -magnitude * f1_raw * abs(f1_raw) / 24.0
-        b = magnitude * f2_raw
-        result[side] = (a, b)
-
-    if scalar_values["drot"] != 0.0:
-        logger.warning(
-            f"SAD MULT {ele_name} has a soft quadrupolar fringe and nonzero "
-            "DROT. SAD2XS does not apply DROT to the MULT body, so its "
-            "fringe is being skipped rather than rotated "
-            "inconsistently.")
-        return {}
-    return result
-
-########################################
-# Install MULT Fringe Maps
-########################################
-def _install_mult_soft_quadrupolar_fringes(
-        environment:    xt.Environment,
-        ele_name:       str,
-        fringe:         dict,
-        shift_x:        float,
-        shift_y:        float,
-        retains_k1:     bool = True) -> None:
-    """
-    Wrap an already-created MULT body with its active quadrupolar face maps.
-
-    Parameters
-    ----------
-    environment : xtrack.Environment
-        Environment containing the converted MULT body.
-    ele_name : str
-        Name shared by the SAD MULT and its converted body or body subline.
-    fringe : dict
-        Output of `_mult_soft_quadrupolar_fringe_parameters`.
-    shift_x, shift_y : float
-        Transverse displacement of the MULT axis in metres.
-    retains_k1 : bool, optional
-        Whether the chosen body representation retains SAD K1/SK1. Defaults
-        to ``True``.
-
-    Returns
-    -------
-    None
-    """
-    if not fringe:
-        return
-    if not retains_k1:
-        logger.warning(
-            f"SAD MULT {ele_name} has an active K1 soft-edge fringe, but its "
-            "user replacement discards K1/SK1. The fringe is being skipped "
-            "because retaining it would contradict the replacement.")
-        return
-
-    components     = []
-    field_rotation = fringe["field_rotation"]
-    if "in" in fringe:
-        a, b = fringe["in"]
-        name = f"{ele_name}_fringe_in"
-        create_sad_soft_quadrupolar_fringe(
-            environment,
-            name              = name,
-            a                 = a,
-            b                 = b,
-            field_rotation    = field_rotation,
-            shift_x           = shift_x,
-            shift_y           = shift_y)
-        components.append(name)
-    components.append(ele_name)
-    if "out" in fringe:
-        a, b = fringe["out"]
-        name = f"{ele_name}_fringe_out"
-        create_sad_soft_quadrupolar_fringe(
-            environment,
-            name              = name,
-            a                 = -a,
-            b                 = b,
-            field_rotation    = field_rotation,
-            shift_x           = shift_x,
-            shift_y           = shift_y)
-        components.append(name)
-    environment.new_line(
-        name = f"{ele_name}_compound", components = components)
-
 
 ################################################################################
 # Convert Multipoles
@@ -1400,13 +1218,12 @@ def convert_multipoles(
         type is given.
     """
 
-    mults   = parsed_elements["mult"]
-    dipole_simplified_mults = []
+    mults                      = parsed_elements["mult"]
+    dipole_simplified_mults    = []
+    soft_dipole_fringe_mults   = []
+    higher_hard_fringe_mults   = []
 
     for ele_name, ele_vars in mults.items():
-
-        fringe = _mult_soft_quadrupolar_fringe_parameters(
-            ele_name, ele_vars, config)
 
         ########################################
         # Initialise parameters
@@ -1432,6 +1249,31 @@ def convert_multipoles(
             ksl.append(0.0)
             if f"sk{ks}" in ele_vars:
                 ksl[ks] = parse_expression(ele_vars[f"sk{ks}"])
+
+        ########################################
+        # Read Fringe Parameters
+        ########################################
+        alignment = {
+            "shift_x":   shift_x,
+            "shift_y":   shift_y,
+            "rot_s_rad": rotation}
+        fringe = sad_mult_fringe_parameters(
+            ele_name,
+            ele_vars,
+            length,
+            knl,
+            ksl,
+            alignment,
+            config)
+
+        if fringe:
+            ########################################
+            # Record Unsupported Fringe Terms
+            ########################################
+            if fringe.get("unsupported_soft_dipole", False):
+                soft_dipole_fringe_mults.append(ele_name)
+            if fringe.get("unsupported_higher_hard", False):
+                higher_hard_fringe_mults.append(ele_name)
 
         ########################################
         # RF Parameters (VOLT/HARM/FREQ) -- interleaved Multipole/Cavity slices
@@ -1478,8 +1320,9 @@ def convert_multipoles(
                 components += [mult_name, cavi_name]
 
             environment.new_line(name = ele_name, components = components)
-            _install_mult_soft_quadrupolar_fringes(
-                environment, ele_name, fringe, shift_x, shift_y)
+            install_sad_mult_fringes(
+                environment, ele_name, fringe,
+                representation = "multipole")
             continue
 
         ########################################
@@ -1531,9 +1374,9 @@ def convert_multipoles(
                         shift_x             = shift_x,
                         shift_y             = shift_y,
                         rot_s_rad           = rotation)
-                    _install_mult_soft_quadrupolar_fringes(
-                        environment, ele_name, fringe, shift_x, shift_y,
-                        retains_k1 = False)
+                    install_sad_mult_fringes(
+                        environment, ele_name, fringe,
+                        representation = "bend")
                     continue
 
                 ########################################
@@ -1561,8 +1404,9 @@ def convert_multipoles(
                         shift_x             = shift_x,
                         shift_y             = shift_y,
                         rot_s_rad           = rotation)
-                    _install_mult_soft_quadrupolar_fringes(
-                        environment, ele_name, fringe, shift_x, shift_y)
+                    install_sad_mult_fringes(
+                        environment, ele_name, fringe,
+                        representation = "quadrupole")
                     continue
 
                 ########################################
@@ -1590,9 +1434,9 @@ def convert_multipoles(
                         shift_x             = shift_x,
                         shift_y             = shift_y,
                         rot_s_rad           = rotation)
-                    _install_mult_soft_quadrupolar_fringes(
-                        environment, ele_name, fringe, shift_x, shift_y,
-                        retains_k1 = False)
+                    install_sad_mult_fringes(
+                        environment, ele_name, fringe,
+                        representation = "discarded")
                     continue
 
                 ########################################
@@ -1620,9 +1464,9 @@ def convert_multipoles(
                         shift_x             = shift_x,
                         shift_y             = shift_y,
                         rot_s_rad           = rotation)
-                    _install_mult_soft_quadrupolar_fringes(
-                        environment, ele_name, fringe, shift_x, shift_y,
-                        retains_k1 = False)
+                    install_sad_mult_fringes(
+                        environment, ele_name, fringe,
+                        representation = "discarded")
                     continue
                 else:
                     raise ValueError(
@@ -1667,6 +1511,9 @@ def convert_multipoles(
                     shift_x             = shift_x,
                     shift_y             = shift_y,
                     rot_s_rad           = rotation)
+                install_sad_mult_fringes(
+                    environment, ele_name, fringe,
+                    representation = "bend")
                 logger.debug(
                     f"Simplified multipole {ele_name} to corrector "
                     "(SIMPLIFY_MULTIPOLES: only k0/sk0 non-zero)")
@@ -1702,8 +1549,9 @@ def convert_multipoles(
                     shift_x             = shift_x,
                     shift_y             = shift_y,
                     rot_s_rad           = rotation)
-                _install_mult_soft_quadrupolar_fringes(
-                    environment, ele_name, fringe, shift_x, shift_y)
+                install_sad_mult_fringes(
+                    environment, ele_name, fringe,
+                    representation = "quadrupole")
                 logger.debug(
                     f"Simplified multipole {ele_name} to Quadrupole "
                     "(SIMPLIFY_MULTIPOLES: only k1/sk1 non-zero)")
@@ -1793,8 +1641,9 @@ def convert_multipoles(
             shift_x     = shift_x,
             shift_y     = shift_y,
             rot_s_rad   = rotation)
-        _install_mult_soft_quadrupolar_fringes(
-            environment, ele_name, fringe, shift_x, shift_y)
+        install_sad_mult_fringes(
+            environment, ele_name, fringe,
+            representation = "multipole")
         continue
 
     if dipole_simplified_mults:
@@ -1806,6 +1655,22 @@ def convert_multipoles(
         logger.debug(
             "Dipole-only MULT elements converted to Bend/corrector elements: "
             + ", ".join(dipole_simplified_mults))
+
+    if soft_dipole_fringe_mults:
+        logger.warning(
+            "SAD MULT soft-dipole FB1/FB2 fringes are not supported and were "
+            "not imported.")
+        logger.debug(
+            "MULT elements with unsupported FB1/FB2 fringes: "
+            + ", ".join(soft_dipole_fringe_mults))
+
+    if higher_hard_fringe_mults:
+        logger.warning(
+            "SAD MULT hard fringes above K1/SK1 are not supported and were "
+            "not imported.")
+        logger.debug(
+            "MULT elements with unsupported higher-order hard fringes: "
+            + ", ".join(higher_hard_fringe_mults))
 
 ################################################################################
 # Convert Cavities

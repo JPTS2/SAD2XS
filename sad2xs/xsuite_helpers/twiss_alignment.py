@@ -28,9 +28,11 @@ logger  = logging.getLogger(__name__)
 _REPEAT_SUFFIX_RE  = re.compile(r"^(.*)\.(\d+)$")
 
 # Suffixes for a SAD element split into several Xsuite placements
-# (solenoid boundary, soft quadrupolar fringe) that _collapse_slicing folds
+# (solenoid boundary or MULT/QUAD fringe) that _collapse_slicing folds
 # back into one; see docs/helpers/xsuite-helpers.md.
-_COMPOUND_SUFFIXES  = {"bound", "dxy", "dz", "rot", "fringe_in", "fringe_out"}
+_COMPOUND_SUFFIXES  = {
+    "bound", "dxy", "dz", "rot",
+    "fringe_in", "fringe_out", "hard_edge_in", "hard_edge_out"}
 _COMPOUND_SUFFIX_RE = re.compile(
     r"_(?:" + "|".join(_COMPOUND_SUFFIXES) + r")(\.\d+)?$")
 

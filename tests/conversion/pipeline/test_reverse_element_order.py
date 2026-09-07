@@ -15,6 +15,7 @@ Date:       2026-08-29
 ################################################################################
 # Required Packages
 ################################################################################
+import copy
 import os
 
 import numpy as np
@@ -26,6 +27,7 @@ from sad2xs.sad_helpers import (
     rebuild_sad_lattice,
     track_sad,
     transfer_matrix_sad)
+from sad2xs.converter._007_reversals import reverse_line_element_order
 from tests.support.coupled_optics import linear_transfer_matrix_4d
 
 ################################################################################
@@ -892,54 +894,145 @@ def test_pipeline_reverse_element_order_quad_fringe_matches_sad_reversed_line(tm
             f"Xsuite: {xs_val:.6e}, SAD: {sad_val:.6e}.")
 
 
+################################################################################
+# MULT Fringe Adjustment
+################################################################################
 def test_pipeline_reverse_element_order_mult_fringe_matches_sad_reversed_line(
         tmp_path):
-    """A reversed signed-F1 MULT fringe response should match SAD ``-LINE``."""
-    lattice_content = (
-        "MOMENTUM = 1.0 GEV;\n"
-        "MULT M1 = (L=1.0 K1=0.05 "
-        "F1K1F=-0.05 F1K1B=0.03 F2K1F=0.02 F2K1B=-0.01 "
-        "FRINGE=1 DISFRIN=1)\n"
-        "     M0 = (L=1.0 K1=0.05 "
-        "F1K1F=-0.05 F1K1B=0.03 F2K1F=0.02 F2K1B=-0.01 "
-        "FRINGE=0 DISFRIN=1);\n"
-        "MARK START=() END=();\n"
-        "LINE TEST=(START M1 END);\n"
-        "LINE TESTOFF=(START M0 END);\n"
-        "LINE TESTREV=(-TEST);\n"
-        "LINE TESTREVOFF=(-TESTOFF);\n")
-    lattice_path = tmp_path / "rev_mult_fringe.sad"
-    lattice_path.write_text(lattice_content)
+    """A reversed mixed MULT fringe response should match SAD ``-LINE``."""
+    initial = np.array([
+        [ 1.0e-3,  2.0e-4, -0.5e-3,  0.3e-4,  0.0e-3,  0.00],
+        [-0.8e-3, -1.5e-4,  0.7e-3, -0.2e-4,  1.0e-3,  0.01],
+        [ 0.4e-3,  0.8e-4,  0.9e-3,  0.6e-4, -2.0e-3, -0.01]])
+    sad_coordinates    = {}
+    xsuite_coordinates = {}
+    lines              = {}
 
     cwd = os.getcwd()
     os.chdir(tmp_path)
     try:
-        sad_on = transfer_matrix_sad(lattice_path.name, "TESTREV")
-        sad_off = transfer_matrix_sad(lattice_path.name, "TESTREVOFF")
+        for state, disfrin in (("off", 1), ("on", 0)):
+            lattice_path = tmp_path / f"rev_mult_fringe_{state}.sad"
+            lattice_path.write_text(
+                "MOMENTUM = 1.0 GEV;\n"
+                "MULT M1 = (L=1.0 K0=0.001 SK0=-0.0007 "
+                "K1=0.1 SK1=0.03 F1K1F=-0.05 F1K1B=0.03 "
+                f"F2K1F=0.02 F2K1B=-0.01 FRINGE=3 DISFRIN={disfrin});\n"
+                "MARK START=() END=();\n"
+                "LINE TEST=(START M1 END);\n"
+                "LINE TESTREV=(-TEST);\n")
+            sad_coordinates[state] = track_sad(
+                lattice_filepath = lattice_path.name,
+                line_name        = "TESTREV",
+                x_init           = initial[:, 0],
+                px_init          = initial[:, 1],
+                y_init           = initial[:, 2],
+                py_init          = initial[:, 3],
+                zeta_init        = initial[:, 4],
+                delta_init       = initial[:, 5],
+                n_turns          = 1,
+                rfsw             = False,
+                with_progress    = False)
+            lines[state] = s2x.convert_sad_to_xsuite(
+                sad_lattice_path       = str(lattice_path),
+                output_directory       = "N/A",
+                line_name              = "TEST",
+                reverse_element_order  = True,
+                SIMPLIFY_MULTIPOLES    = False,
+                _verbose               = False,
+                _test_mode             = True)
     finally:
         os.chdir(cwd)
 
-    line_on = s2x.convert_sad_to_xsuite(
-        sad_lattice_path       = str(lattice_path),
-        output_directory       = "N/A",
-        line_name              = "TEST",
-        reverse_element_order  = True,
-        SIMPLIFY_MULTIPOLES    = False,
-        _verbose               = False,
-        _test_mode             = True)
-    line_off = s2x.convert_sad_to_xsuite(
-        sad_lattice_path       = str(lattice_path),
-        output_directory       = "N/A",
-        line_name              = "TEST",
-        reverse_element_order  = True,
-        SIMPLIFY_MULTIPOLES    = False,
-        _import_sad_mult_fringes = False,
-        _verbose               = False,
-        _test_mode             = True)
+    for state, line in lines.items():
+        particles = xt.Particles(
+            "positron", p0c = 1.0E9,
+            x = initial[:, 0], px = initial[:, 1],
+            y = initial[:, 2], py = initial[:, 3],
+            zeta = initial[:, 4], delta = initial[:, 5])
+        line.track(particles)
+        xsuite_coordinates[state] = {
+            coordinate: np.asarray(getattr(particles, coordinate)).copy()
+            for coordinate in ("x", "px", "y", "py", "zeta", "delta")}
 
-    sad_response = sad_on - sad_off
-    xsuite_response = (
-        linear_transfer_matrix_4d(line_on)
-        - linear_transfer_matrix_4d(line_off))
-    np.testing.assert_allclose(
-        xsuite_response, sad_response, rtol=2e-4, atol=2e-10)
+    assert lines["on"].element_names == (
+        "end",
+        "-m1_hard_edge_out",
+        "-m1_fringe_out",
+        "m1",
+        "-m1_fringe_in",
+        "-m1_hard_edge_in",
+        "start")
+    assert lines["on"]["-m1_hard_edge_out"].is_exit == 0
+    assert lines["on"]["-m1_hard_edge_in"].is_exit == 1
+
+    # The 1e-11 absolute floor covers the documented five-element K0/K1
+    # reordering approximation where the net face response is near zero.
+    for coordinate in ("x", "px", "y", "py", "zeta", "delta"):
+        sad_response = (
+            np.asarray(sad_coordinates["on"][coordinate])
+            - np.asarray(sad_coordinates["off"][coordinate]))
+        xsuite_response = (
+            xsuite_coordinates["on"][coordinate]
+            - xsuite_coordinates["off"][coordinate])
+        np.testing.assert_allclose(
+            xsuite_response, sad_response, rtol = 2e-3, atol = 1e-11)
+
+
+def test_complete_mult_fringe_double_reversal_restores_line(write_lattice):
+    """Two order reversals must restore the complete MULT face model."""
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        MULT M1=(L=0.5 K0=0.001 SK0=-0.0007 K1=0.1 SK1=0.03
+                 F1K1F=-0.05 F1K1B=0.03 F2K1F=0.02 F2K1B=-0.01
+                 FRINGE=3 DX=0.0012 DY=-0.0008 ROTATE=0.2);
+        MARK START=() END=();
+        LINE TEST=(START M1 M1 END);
+        """,
+        filename = "double_reverse_mult_fringe.sad")
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path), output_directory = "N/A",
+        SIMPLIFY_MULTIPOLES = False,
+        _verbose = False, _test_mode = True)
+
+    original_names = tuple(line.element_names)
+    original_metadata = copy.deepcopy(
+        line.env.metadata["sad2xs"]["fringe_taylor_maps"])
+    original_coefficients = {
+        name: (np.asarray(line[name].k).copy(),
+               np.asarray(line[name].R).copy(),
+               np.asarray(line[name].T).copy())
+        for name in ("m1_fringe_in", "m1_fringe_out")}
+    original_edges = {
+        name: (np.asarray(line[name].kn).copy(),
+               np.asarray(line[name].ks).copy(), int(line[name].is_exit))
+        for name in ("m1_hard_edge_in", "m1_hard_edge_out")}
+
+    initial = xt.Particles(
+        p0c = 1.0E9, x = 1.1e-3, px = -2.0e-4,
+        y = -0.7e-3, py = 3.0e-4, zeta = 2.0e-3, delta = 0.01)
+    expected = initial.copy()
+    line.track(expected)
+
+    reverse_line_element_order(line)
+    reverse_line_element_order(line)
+
+    assert tuple(line.element_names) == original_names
+    for name, coefficients in original_coefficients.items():
+        for actual, expected_coefficient in zip(
+                (line[name].k, line[name].R, line[name].T), coefficients):
+            np.testing.assert_array_equal(actual, expected_coefficient)
+    for name, (kn, ks, is_exit) in original_edges.items():
+        np.testing.assert_array_equal(line[name].kn, kn)
+        np.testing.assert_array_equal(line[name].ks, ks)
+        assert line[name].is_exit == is_exit
+    assert {
+        name: line.env.metadata["sad2xs"]["fringe_taylor_maps"][name]
+        for name in original_metadata} == original_metadata
+
+    actual = initial.copy()
+    line.track(actual)
+    for coordinate in ("x", "px", "y", "py", "zeta", "delta"):
+        np.testing.assert_array_equal(
+            getattr(actual, coordinate), getattr(expected, coordinate))

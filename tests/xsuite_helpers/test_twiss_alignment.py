@@ -89,6 +89,22 @@ def test_reversed_compound_family_matches_each_physical_entrance():
     assert list(xs_aligned.name) == [
         "qf_fringe_in.0", "-qf_fringe_out.0", "-qf_fringe_out.1"]
 
+
+def test_mult_hard_edge_is_the_compound_comparison_row():
+    """A MULT compound should align at its earliest physical entrance face."""
+    sad = _table(["QC.1"], [4.0])
+    xsuite = _table(
+        [
+            "qc_hard_edge_in", "qc_fringe_in", "qc",
+            "qc_fringe_out", "qc_hard_edge_out"],
+        [4.0, 4.0, 4.0, 4.5, 4.5])
+
+    xs_aligned, sad_aligned = align_xsuite_twiss_with_sad_twiss(
+        xsuite, sad, use_s_sad = False)
+
+    assert list(sad_aligned.name) == ["QC.1"]
+    assert list(xs_aligned.name) == ["qc_hard_edge_in"]
+
 ################################################################################
 # Pass 3: solenoid-interior rename
 ################################################################################

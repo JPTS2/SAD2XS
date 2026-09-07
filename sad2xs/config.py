@@ -174,6 +174,7 @@ class Config:
         default_factory = lambda: {
         "Marker", "Drift",
         "Bend", "Quadrupole", "Sextupole", "Octupole", "Multipole",
+        "MultipoleEdge",
         "UniformSolenoid",
         "Cavity", "Translation", "TimeDelay", "Rotation",
         "LimitEllipse", "LimitRect", "LimitRectEllipse",

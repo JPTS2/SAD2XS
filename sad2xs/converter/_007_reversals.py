@@ -19,7 +19,10 @@ Date:       2026-09-03
 import numpy as np
 import xtrack as xt
 
-from ._000_helpers import canonicalize_dipole_rotation, negate_sad_value
+from ._000_helpers import (
+    canonicalize_dipole_rotation,
+    create_sad_fringe_taylor_map,
+    negate_sad_value)
 from ._005_line_converter import create_reversed_component
 
 ################################################################################
@@ -35,12 +38,11 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
     becomes the new entry edge and vice versa), solenoid ks is
     negated, solenoid GEO reference-shift Translations (name suffix
     "_dxy") are negated since the former exit boundary is now the
-    entrance, and SAD soft quadrupolar SecondOrderTaylorMap occurrences
-    are replaced by their reversed definitions. Standalone COORD-derived
-    Translations (no "_dxy" suffix) are left unchanged, since a COORD
-    offset is a fixed geometric property of the beampipe and does not flip
-    sign under reversal (verified against SAD's own `-LINE` output for both
-    cases).
+    entrance, and SAD fringe SecondOrderTaylorMap/MultipoleEdge occurrences
+    are replaced by their opposite-face definitions. Standalone COORD-derived
+    Translations (no "_dxy" suffix) are left unchanged, since a COORD offset
+    is a fixed geometric property of the beampipe and does not flip sign
+    under reversal (verified against SAD's own `-LINE` output for both cases).
 
     Parameters
     ----------
@@ -65,13 +67,33 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
     ########################################
     line.mirror()
 
-    # Taylor maps are not direction-symmetric. Replace each occurrence with
-    # its opposite-face counterpart; mutating the shared definition would
+    # Fringe elements are not direction-symmetric. Replace each occurrence
+    # with its opposite-face counterpart; mutating a shared definition would
     # also alter any forward occurrence elsewhere in the environment.
     fringe_names = env.metadata.get(
-        "sad2xs", {}).get("soft_quadrupolar_fringes", {})
+        "sad2xs", {}).get("fringe_taylor_maps", {})
+    hard_edge_names = env.metadata.get(
+        "sad2xs", {}).get("mult_hard_quadrupolar_edges", {})
+    native_edge_names = env.metadata.get(
+        "sad2xs", {}).get("mult_native_fringe_faces", {})
+    fringe_metadata = (
+        fringe_names, hard_edge_names, native_edge_names)
     for index, name in enumerate(line.element_names):
-        if name not in fringe_names:
+        matched_metadata = next(
+            (metadata for metadata in fringe_metadata if name in metadata),
+            None)
+        if matched_metadata is None:
+            # Generated lattices append .N when a shared element is cloned.
+            # Its physical fringe definition is still the unsuffixed one.
+            parent_name, separator, repeat = name.rpartition(".")
+            if separator and repeat.isdigit():
+                matched_metadata = next(
+                    (metadata for metadata in fringe_metadata
+                     if parent_name in metadata),
+                    None)
+                if matched_metadata is not None:
+                    matched_metadata[name] = matched_metadata[parent_name].copy()
+        if matched_metadata is None:
             continue
         if name.startswith("-"):
             line.element_names[index] = name[1:]
@@ -182,14 +204,14 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
     return line
 
 ########################################
-# SAD Soft Quadrupolar Fringe Reflection
+# SAD Fringe Reflection
 ########################################
-def _reflect_sad_soft_quadrupolar_fringes(
+def _reflect_sad_fringes(
         line:           xt.Line,
         *,
         horizontal:     bool) -> None:
     """
-    Reflect SAD soft quadrupolar maps with the rest of the lattice.
+    Reflect registered SAD fringe elements with the rest of the lattice.
 
     Parameters
     ----------
@@ -204,22 +226,67 @@ def _reflect_sad_soft_quadrupolar_fringes(
     None
     """
     environment = line.env
-    fringes     = environment.metadata.get(
-        "sad2xs", {}).get("soft_quadrupolar_fringes", {})
+    sad2xs      = environment.metadata.get("sad2xs", {})
+    fringes     = sad2xs.get("fringe_taylor_maps", {})
+    hard_edges  = sad2xs.get("mult_hard_quadrupolar_edges", {})
+
+    ########################################
+    # Taylor Maps
+    ########################################
     for name in set(line.element_names):
         if name not in fringes:
             continue
-        parameters     = fringes[name]
-        field_rotation = negate_sad_value(parameters["field_rotation"])
+        parameters        = fringes[name].copy()
+        parent_rotation   = parameters.get(
+            "parent_rotation", negate_sad_value(parameters["field_rotation"]))
+        parent_rotation   = negate_sad_value(parent_rotation)
+        relative_rotation = negate_sad_value(
+            parameters.get("relative_rotation", 0.0))
         if horizontal:
             parameters["shift_x"] = negate_sad_value(parameters["shift_x"])
         else:
             parameters["shift_y"] = negate_sad_value(parameters["shift_y"])
-        parameters["field_rotation"] = field_rotation
-        element           = environment[name]
-        element.shift_x   = parameters["shift_x"]
-        element.shift_y   = parameters["shift_y"]
-        element.rot_s_rad = negate_sad_value(field_rotation)
+
+        soft_quadrupole = None
+        if parameters["a"] != 0.0 or parameters["b"] != 0.0:
+            soft_quadrupole = {
+                "a":                  parameters["a"],
+                "b":                  parameters["b"],
+                "relative_rotation": relative_rotation}
+
+        hard_dipole = parameters.get("hard_dipole")
+        if hard_dipole is not None:
+            hard_dipole = hard_dipole.copy()
+            if horizontal:
+                hard_dipole["k0"] = negate_sad_value(hard_dipole["k0"])
+            else:
+                hard_dipole["sk0"] = negate_sad_value(hard_dipole["sk0"])
+
+        environment.element_dict.pop(name)
+        create_sad_fringe_taylor_map(
+            environment,
+            name                = name,
+            soft_quadrupole     = soft_quadrupole,
+            hard_dipole         = hard_dipole,
+            alignment           = {
+                "shift_x":   parameters["shift_x"],
+                "shift_y":   parameters["shift_y"],
+                "rot_s_rad": parent_rotation},
+            is_exit            = parameters.get("is_exit", False))
+
+    ########################################
+    # Hard Quadrupolar Edges
+    ########################################
+    for name in set(line.element_names):
+        if name not in hard_edges:
+            continue
+        edge = environment[name]
+        edge.ks[1] *= -1
+        if horizontal:
+            edge.shift_x *= -1
+        else:
+            edge.shift_y *= -1
+        edge.rot_s_rad *= -1
 
 
 ########################################
@@ -341,7 +408,7 @@ def reverse_line_survey_horizontal(line: xt.Line) -> xt.Line:
     unique_rots     = list(set(
         [name[1:] if name.startswith("-") else name for name in unique_rots]))
 
-    _reflect_sad_soft_quadrupolar_fringes(line, horizontal = True)
+    _reflect_sad_fringes(line, horizontal = True)
 
     ########################################
     # Bend Adjustments
@@ -618,7 +685,7 @@ def reverse_line_survey_vertical(line: xt.Line) -> xt.Line:
     unique_rots       = list(set(
         [name[1:] if name.startswith("-") else name for name in unique_rots]))
 
-    _reflect_sad_soft_quadrupolar_fringes(line, horizontal = False)
+    _reflect_sad_fringes(line, horizontal = False)
 
     ########################################
     # Bend Adjustments

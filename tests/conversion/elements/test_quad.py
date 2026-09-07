@@ -1401,7 +1401,8 @@ def test_quad_above_length_precision_remains_thick_with_fringe(write_lattice):
         _test_mode               = True,
         _import_sad_quad_fringes = True)
 
-    assert line.element_names == ["test_quad_fringe_in", "test_quad"]
+    assert line.element_names == [
+        "start", "test_quad_fringe_in", "test_quad", "end"]
     assert isinstance(line["test_quad"], xt.Quadrupole), (
         "A resolved nonzero length above MAGNET_LENGTH_PRECISION must not be "
         "collapsed to a thin Multipole by a generic closeness tolerance.")

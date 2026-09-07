@@ -25,15 +25,20 @@ This page covers every fringe mechanism SAD applies. For what SAD itself does in
 | `QUAD` | soft-edge, linear | `FRINGE`, `F1`, `F2`, `F1K1F`, `F1K1B`, `F2K1F`, `F2K1B` | **imported** as a Taylor map, on by default |
 | `QUAD` | hard-edge | `DISFRIN`, plus `FRINGE` side gating | edge model applied unconditionally; neither read |
 | `MULT` | K1 soft-edge, linear | `FRINGE`, `F1`, `F2`, per-face K1 terms | **imported** as a Taylor map, on by default |
-| `MULT` | dipole soft-edge and generic hard-edge | `FB1`/`FB2`, `DISFRIN` | not imported |
-| `MULT` | `K0`/`SK0` dipole fringe | — | not reproduced; converter warns |
+| `MULT` | K0/SK0 hard dipole edge | `FRINGE`, `DISFRIN` | **imported** into the Taylor map for a generic `MULT` |
+| `MULT` | K1/SK1 hard multipole edge | `FRINGE`, `DISFRIN` | **imported** as `xt.MultipoleEdge` or a native typed-element edge |
+| `MULT` | dipole soft-edge | `FB1`/`FB2` | not imported; converter warns |
+| `MULT` | hard orders above K1/SK1 | `DISFRIN` | not imported; converter warns |
 | `SEXT`, `OCT` | hard-edge | `DISFRIN` | not modelled |
 | `CAVI` | RF edge-focusing kick | `FRINGE`, `DISFRIN` | not modelled |
 | `SOL` | fringe kick | `DISFRIN` | not modelled; converter warns — see [solenoids](solenoids.md) |
 
-Three private `Config` flags control the imports: `_import_sad_bend_fringes`, `_import_sad_quad_fringes`, and `_import_sad_mult_fringes`. All default to `True`.
+Three private `Config` flags control the imports: `_import_sad_bend_fringes`, `_import_sad_quad_fringes`, and `_import_sad_mult_fringes`. All default to `True`. The MULT flag controls every supported K0/SK0 hard, K1/SK1 hard, and F1/F2 soft component together.
 
-Every fringe parameter must be a concrete number. A deferred (symbolic) expression raises a clear error rather than silently producing wrong values.
+An active MULT hard edge requires concrete strength, length and alignment
+inputs. A deferred value raises a clear error rather than being frozen at its
+current value. QUAD strength dependencies remain live through their Taylor
+maps and through a writer round trip.
 
 ## FRINGE means three different things
 
@@ -169,10 +174,26 @@ A SAD `MULT` combines bend-style content (`ANGLE`, `K0`, soft-edge `FB1`/`FB2`) 
 
 `FRINGE` uses the same `{1, 2, 3}` numbering as `QUAD`, and it selects the side for **all** of the element's fringe sub-mechanisms simultaneously — the quad-style linear fringe, the dipole-style linear fringe, and the `DISFRIN`-gated hard-edge kick all read the same value.
 
-### K1 soft edge: imported
+### Supported orbital model
 
-The K1 part is imported with the same second-order Taylor-map machinery as a
-`QUAD`. For integrated normal and skew strengths `K1` and `SK1`,
+For a thick generic `MULT` with every supported term active, one SAD element
+becomes five Xsuite components:
+
+```text
+MultipoleEdge(K1/SK1 entrance)
+SecondOrderTaylorMap(K0/SK0 hard -> F1/F2 soft)
+MULT body
+SecondOrderTaylorMap(F1/F2 soft -> K0/SK0 hard)
+MultipoleEdge(K1/SK1 exit)
+```
+
+Only active components are created. A one-sided face or a face without one of
+these field components therefore gives a shorter compound, never an identity
+placeholder. An RF-carrying MULT still has one physical fringe at each outer
+face; its internal multipole/cavity slices do not each acquire edges.
+
+The K1 soft part uses the same second-order Taylor-map machinery as a `QUAD`.
+For integrated normal and skew strengths `K1` and `SK1`,
 
 ```text
 akk = |K1 + i SK1| / |L|
@@ -214,8 +235,44 @@ ultrarelativistic electron/positron lattices, not for lower-beta particles.
 Direct SAD tracking validates centred powered F1 and F2 responses, as well as
 zero-BZ F1/F2, signed F1, negative-length, and off-momentum cases.
 
-The dipole-style `FB1`/`FB2` term and the `DISFRIN`-gated generic hard-edge
-kick remain unmodelled.
+The supported K0/SK0 hard edge is a second-order Taylor expansion of SAD's
+order-zero hard-edge map. The K1/SK1 hard edge uses Xtrack's native
+`MultipoleEdge`. Offsets and the field-frame rotation are the same as on the
+parent magnet, so every face acts about the same physical axis as the body.
+
+SAD's exact entrance order is K0/SK0 hard, K1/SK1 hard, then F1/F2 soft; the
+exit is the reverse. The five-element representation precomposes the K0/SK0
+and soft operations, putting the native K1/SK1 edge outside that composite.
+This swaps the K0/SK0 and K1/SK1 operations relative to the exact
+seven-element representation. On the established mixed 6D grid, every
+coordinate remains within `1e-9` of that seven-element control. This is a
+validated release-scale approximation, not an algebraic identity or a
+dynamic-aperture validation.
+
+The model is orbital-only. Neither `SecondOrderTaylorMap` nor
+`MultipoleEdge` transports spin.
+
+### Face and switch semantics
+
+`FRINGE=1/2/3` selects entrance, exit, or both faces for every component.
+Other values disable the soft F1/F2 map but leave both hard faces active,
+matching SAD's tracking path. In particular, `FRINGE=0` is the default and
+`FRINGE=-4` is not the QUAD master-disable on a MULT. `DISFRIN != 0`
+suppresses the supported hard K0/SK0 and K1/SK1 edges, but does not suppress
+an active F1/F2 soft map. SAD's `DISK0FR` is deliberately not read: SAD
+tracking has no such gate, whereas SAD Twiss applies it independently to the
+dipole-component map. Xtrack uses one element map for tracking and Twiss, so
+SAD2XS follows SAD's particle-tracking semantics. A SAD reference with
+`DISFRIN` and `DISK0FR` set differently can therefore have internally
+different tracking and Twiss maps.
+
+The dipole-style `FB1`/`FB2` soft term and hard orders above K1/SK1 remain
+unmodelled. Each produces one warning category per conversion, rather than a
+warning per element or RF slice. Active hard fringes require concrete length,
+strength and alignment values; deferred required values fail clearly instead
+of being frozen at their initial value. A nonzero `DROT` still skips the whole
+active MULT fringe with a warning because SAD2XS does not apply `DROT` to the
+body either.
 
 This face-map support is separate from the thick body convention. If the same
 MULT also carries `K0` or `SK0` inside powered BZ, SAD's combined paraxial
@@ -225,9 +282,12 @@ solenoid/multipole map. SAD2XS warns once for the lattice; see
 
 That body distinction is separate from the offset-fringe limitation above.
 
-### The `K0`/`SK0` dipole fringe residual
+### Simplified K0/SK0 MULTs
 
-A `MULT` with only `K0` set, or only `SK0`, has a dipole-fringe contribution that Xsuite's bend and corrector edge models do not reproduce exactly.
+A `MULT` simplified or replaced by an Xsuite bend/corrector retains the
+existing native bend treatment rather than receiving a duplicate K0/SK0
+Taylor edge. Xsuite's bend and corrector edge models do not reproduce SAD's
+MULT dipole-fringe convention exactly.
 
 SAD's fringe term contributes exactly `m43 = -K0^2/L` to the linear transfer matrix, or `m21` for `SK0`. Xsuite's bend edge models either add `theta^4`-order terms or give zero. The two codes therefore agree at `theta^2` and diverge at `theta^4`.
 

@@ -20,9 +20,9 @@ import pytest
 import xtrack as xt
 import sad2xs as s2x
 
-from sad2xs.converter._000_helpers import create_sad_soft_quadrupolar_fringe
+from sad2xs.converter._000_helpers import create_sad_fringe_taylor_map
 from sad2xs.converter._007_reversals import (
-    _reflect_sad_soft_quadrupolar_fringes)
+    _reflect_sad_fringes)
 
 ################################################################################
 # SAD Soft Quadrupolar Fringe Reflection
@@ -78,23 +78,31 @@ def test_fringe_reflection_only_mutates_recognised_line_occurrences():
     """Do not reflect unused fringes or unrelated second-order maps."""
     environment = xt.Environment()
     for name in ("active", "unused"):
-        create_sad_soft_quadrupolar_fringe(
+        create_sad_fringe_taylor_map(
             environment,
-            name              = name,
-            a                 = -3.0E-05,
-            b                 = 0.006,
-            field_rotation    = 0.2,
-            shift_x           = 1.2E-03,
-            shift_y           = -0.8E-03)
+            name                = name,
+            soft_quadrupole     = {
+                "a": -3.0E-05,
+                "b": 0.006},
+            alignment           = {
+                "shift_x":   1.2E-03,
+                "shift_y":   -0.8E-03,
+                "rot_s_rad": -0.2})
     environment.new(
         name        = "generic",
         prototype   = xt.SecondOrderTaylorMap,
         shift_x     = 2.0E-03,
         rot_s_rad   = -0.3)
+    environment.elements["generic_edge"] = xt.MultipoleEdge(
+        kn = [0.0, 0.2], ks = [0.0, -0.1], shift_x = 3.0E-03)
+    environment.elements["unused_edge"] = xt.MultipoleEdge(
+        kn = [0.0, 0.3], ks = [0.0, -0.2], shift_x = 4.0E-03)
+    environment.metadata["sad2xs"]["mult_hard_quadrupolar_edges"] = {
+        "unused_edge": {}}
     line = environment.new_line(
-        name = "test", components = ["active", "generic"])
+        name = "test", components = ["active", "generic", "generic_edge"])
 
-    _reflect_sad_soft_quadrupolar_fringes(line, horizontal = True)
+    _reflect_sad_fringes(line, horizontal = True)
 
     assert environment["active"].shift_x == pytest.approx(-1.2E-03)
     assert environment["active"].rot_s_rad == pytest.approx(0.2)
@@ -102,6 +110,82 @@ def test_fringe_reflection_only_mutates_recognised_line_occurrences():
     assert environment["unused"].rot_s_rad == pytest.approx(-0.2)
     assert environment["generic"].shift_x == pytest.approx(2.0E-03)
     assert environment["generic"].rot_s_rad == pytest.approx(-0.3)
+    assert environment["generic_edge"].ks[1] == pytest.approx(-0.1)
+    assert environment["generic_edge"].shift_x == pytest.approx(3.0E-03)
+    assert environment["unused_edge"].ks[1] == pytest.approx(-0.2)
+    assert environment["unused_edge"].shift_x == pytest.approx(4.0E-03)
+
+
+################################################################################
+# SAD MULT Fringe Reflection
+################################################################################
+def test_reverse_survey_horizontal_reflects_complete_mult_fringe(
+        write_lattice):
+    """The complete MULT face model must follow the horizontal mirror."""
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        MULT M1=(L=0.5 K0=0.001 SK0=-0.0007 K1=0.1 SK1=0.03
+                 F1=0.02 F2=0.01 FRINGE=3
+                 DX=0.0012 DY=-0.0008 ROTATE=0.2);
+        MARK START=() END=();
+        LINE TEST=(START M1 END);
+        """,
+        filename = "reverse_horizontal_mult_fringe.sad")
+    forward = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path), output_directory = "N/A",
+        SIMPLIFY_MULTIPOLES = False,
+        _verbose = False, _test_mode = True)
+    reflected = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path), output_directory = "N/A",
+        SIMPLIFY_MULTIPOLES = False, reverse_survey_horizontal = True,
+        _verbose = False, _test_mode = True)
+
+    forward_parameters = forward.env.metadata[
+        "sad2xs"]["fringe_taylor_maps"]["m1_fringe_in"]
+    reflected_parameters = reflected.env.metadata[
+        "sad2xs"]["fringe_taylor_maps"]["m1_fringe_in"]
+    assert reflected_parameters["hard_dipole"]["k0"] == pytest.approx(
+        -forward_parameters["hard_dipole"]["k0"])
+    assert reflected_parameters["hard_dipole"]["sk0"] == pytest.approx(
+        forward_parameters["hard_dipole"]["sk0"])
+    assert reflected_parameters["relative_rotation"] == pytest.approx(
+        -forward_parameters["relative_rotation"])
+
+    for side in ("in", "out"):
+        forward_edge   = forward[f"m1_hard_edge_{side}"]
+        reflected_edge = reflected[f"m1_hard_edge_{side}"]
+        assert reflected_edge.kn[1] == pytest.approx(forward_edge.kn[1])
+        assert reflected_edge.ks[1] == pytest.approx(-forward_edge.ks[1])
+        assert reflected_edge.shift_x == pytest.approx(-forward_edge.shift_x)
+        assert reflected_edge.shift_y == pytest.approx(forward_edge.shift_y)
+        assert reflected_edge.rot_s_rad == pytest.approx(
+            -forward_edge.rot_s_rad)
+
+    for side, components in (
+            ("in",  ["m1_hard_edge_in", "m1_fringe_in"]),
+            ("out", ["m1_fringe_out", "m1_hard_edge_out"])):
+        forward_face = forward.env.new_line(
+            name = f"forward_{side}", components = components)
+        reflected_face = reflected.env.new_line(
+            name = f"reflected_{side}", components = components)
+        forward_particle = xt.Particles(
+            p0c = 1.0E9, x = 1.1e-3, px = -2.0e-4,
+            y = -0.7e-3, py = 3.0e-4, zeta = 2.0e-3, delta = 0.01)
+        reflected_particle = forward_particle.copy()
+        reflected_particle.x  *= -1
+        reflected_particle.px *= -1
+        forward_face.track(forward_particle)
+        reflected_face.track(reflected_particle)
+        np.testing.assert_allclose(
+            [reflected_particle.x[0], reflected_particle.px[0],
+             reflected_particle.y[0], reflected_particle.py[0],
+             reflected_particle.zeta[0], reflected_particle.delta[0]],
+            [-forward_particle.x[0], -forward_particle.px[0],
+             forward_particle.y[0], forward_particle.py[0],
+             forward_particle.zeta[0], forward_particle.delta[0]],
+            rtol = 1e-12,
+            atol = 1e-15)
 
 ################################################################################
 # Default Behaviour

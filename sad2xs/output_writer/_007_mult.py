@@ -23,7 +23,7 @@ import numpy as np
 
 from ._000_helpers import extract_multipole_information, \
     generate_magnet_for_replication_names, check_is_simple_unpowered_multipole, \
-    get_knl_string
+    get_knl_string, get_parentname, get_value_string
 from ..types import ConfigLike
 
 ################################################################################
@@ -34,8 +34,8 @@ def create_multipole_lattice_file_information(
         line_table: xd.table.Table,
         config:     ConfigLike) -> str:
     """
-    Generate the lattice-file source for every Xsuite Multipole
-    element.
+    Generate the lattice-file source for every Xsuite Multipole and
+    MultipoleEdge element.
 
     Groups multipoles by quantized length (from
     `extract_multipole_information`), writes one base `xt.Multipole`
@@ -48,6 +48,9 @@ def create_multipole_lattice_file_information(
     quad, sext, oct), multipole strengths are baked into the file as
     literal knl/ksl values, not referenced as live optics variables --
     there is no corresponding `create_multipole_optics_file_information`.
+    MultipoleEdge elements are written directly with their normal/skew
+    strengths, face flag and parent-magnet alignment. Registered SAD edges
+    retain their metadata so lattice reversal remains available after reload.
 
     Parameters
     ----------
@@ -75,13 +78,22 @@ def create_multipole_lattice_file_information(
         mode        = "Multipole",
         config      = config)
 
-    mult_lengths    = np.array(sorted(mults.keys()))
-    mult_names      = generate_magnet_for_replication_names(mults, "mult", config.MAGNET_LENGTH_PRECISION)
+    mult_lengths      = np.array(sorted(mults.keys()))
+    mult_names        = generate_magnet_for_replication_names(mults, "mult", config.MAGNET_LENGTH_PRECISION)
+    sad_fringe_edges  = line.env.metadata.get(
+        "sad2xs", {}).get("mult_hard_quadrupolar_edges", {})
+
+    unique_edge_names = []
+    for edge in line_table.rows[
+            line_table.element_type == "MultipoleEdge"].name:
+        parentname = get_parentname(edge)
+        if parentname not in unique_edge_names:
+            unique_edge_names.append(parentname)
 
     ########################################
-    # Ensure there are multipoles in the line
+    # Ensure there are multipole elements in the line
     ########################################
-    if len(unique_mult_names) == 0:
+    if len(unique_mult_names) == 0 and len(unique_edge_names) == 0:
         return ""
 
     ########################################
@@ -181,6 +193,39 @@ env.new(
 
                 # Write to the file
                 output_string += mult_generation
+
+    ########################################
+    # Multipole Edges
+    ########################################
+    if unique_edge_names:
+        output_string += """
+########################################
+# Multipole Edges
+########################################"""
+
+    for source_name in unique_edge_names:
+        element = line[source_name]
+        name    = source_name
+
+        # Remove the minus sign if no non-minus version exists
+        if name.startswith("-"):
+            root_name = name[1:]
+            if root_name not in unique_edge_names:
+                name = root_name
+
+        output_string += f"""
+env.elements["{name}"] = xt.MultipoleEdge(
+    kn          = {get_knl_string(element.kn)},
+    ks          = {get_knl_string(element.ks)},
+    order       = {int(element.order)},
+    is_exit     = {bool(element.is_exit)},
+    shift_x     = {get_value_string(element.shift_x)},
+    shift_y     = {get_value_string(element.shift_y)},
+    rot_s_rad   = {get_value_string(element.rot_s_rad)})"""
+        if source_name in sad_fringe_edges:
+            output_string += f"""
+env.metadata.setdefault("sad2xs", {{}}).setdefault(
+    "mult_hard_quadrupolar_edges", {{}})["{name}"] = {{}}"""
 
     ########################################
     # Return
