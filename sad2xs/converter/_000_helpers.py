@@ -1128,17 +1128,26 @@ def sad_mult_fringe_parameters(
     Returns
     -------
     dict
-        Numeric physical parameters and the active entrance/exit faces, or an
-        empty dictionary when no thick face is active.
+        Numeric physical parameters and the active entrance/exit faces. A
+        policy-only record is returned when native typed edges must be
+        suppressed without creating a physical fringe component; an empty
+        dictionary means the MULT needs no fringe handling.
 
     Raises
     ------
     ValueError
         If a parameter needed by an active supported fringe is deferred.
     """
-    if not config._import_sad_mult_fringes:
-        return {}
     if isinstance(length, (int, float, np.number)) and length == 0.0:
+        return {}
+
+    supported_strengths = list(knl[:2]) + list(ksl[:2])
+    has_supported_field = any(
+        not is_effectively_zero(value, tol = 0.0)
+        for value in supported_strengths)
+    if not config._import_sad_mult_fringes:
+        if has_supported_field:
+            return {"edge_policy_only": True, "hard_faces": ()}
         return {}
 
     ########################################
@@ -1179,6 +1188,8 @@ def sad_mult_fringe_parameters(
         side for side in ("in", "out")
         if side in soft_face_names or side in hard_faces]
     if not faces:
+        if has_supported_field:
+            return {"edge_policy_only": True, "hard_faces": ()}
         return {}
     if not isinstance(length, (int, float, np.number)):
         raise ValueError(
@@ -1224,7 +1235,6 @@ def sad_mult_fringe_parameters(
                 f"{name.upper()} must be a concrete number to import the "
                 f"MULT fringe, got a deferred expression: {value!r}.")
 
-    supported_strengths = list(knl[:2]) + list(ksl[:2])
     if hard_enabled and any(
             not isinstance(value, (int, float, np.number))
             for value in supported_strengths):
@@ -1301,14 +1311,16 @@ def sad_mult_fringe_parameters(
         or has_supported_hard_edge
         or result["unsupported_soft_dipole"]
         or result["unsupported_higher_hard"])
-    if not has_active_fringe:
+    if not has_active_fringe and hard_enabled:
         return {}
     if scalar_values["drot"] != 0.0:
         logger.warning(
             f"SAD MULT {ele_name} has an active fringe and nonzero DROT. "
             "SAD2XS does not apply DROT to the MULT body, so its fringe is "
             "being skipped rather than rotated inconsistently.")
-        return {}
+        return {"edge_policy_only": True, "hard_faces": ()}
+    if not has_active_fringe:
+        return {"edge_policy_only": True, "hard_faces": ()}
     return result
 
 ########################################
@@ -1382,6 +1394,24 @@ def install_sad_mult_fringes(
         return
 
     ########################################
+    # Configure Native Body Edges
+    ########################################
+    if representation in ("quadrupole", "bend"):
+        edge_entry_active = "in" in fringe["hard_faces"]
+        edge_exit_active  = "out" in fringe["hard_faces"]
+        body = environment[ele_name]
+        body.edge_entry_active = edge_entry_active
+        body.edge_exit_active  = edge_exit_active
+        sad2xs = environment.metadata.setdefault("sad2xs", {})
+        native_edges = sad2xs.setdefault("mult_native_fringe_faces", {})
+        native_edges[ele_name] = {
+            "edge_entry_active": edge_entry_active,
+            "edge_exit_active":  edge_exit_active}
+
+    if fringe.get("edge_policy_only", False):
+        return
+
+    ########################################
     # Identify Retained Components
     ########################################
     soft              = fringe["soft"]
@@ -1407,21 +1437,6 @@ def install_sad_mult_fringes(
         logger.warning(
             f"SAD MULT {ele_name} has an active K1/SK1 hard fringe, but its "
             "replacement discards K1/SK1. That fringe is being skipped.")
-
-    ########################################
-    # Configure Native Body Edges
-    ########################################
-    if representation in ("quadrupole", "bend"):
-        edge_entry_active = "in" in fringe["hard_faces"]
-        edge_exit_active  = "out" in fringe["hard_faces"]
-        body = environment[ele_name]
-        body.edge_entry_active = edge_entry_active
-        body.edge_exit_active  = edge_exit_active
-        sad2xs = environment.metadata.setdefault("sad2xs", {})
-        native_edges = sad2xs.setdefault("mult_native_fringe_faces", {})
-        native_edges[ele_name] = {
-            "edge_entry_active": edge_entry_active,
-            "edge_exit_active":  edge_exit_active}
 
     ########################################
     # Build Explicit Fringe Components

@@ -1270,9 +1270,9 @@ def convert_multipoles(
             ########################################
             # Record Unsupported Fringe Terms
             ########################################
-            if fringe["unsupported_soft_dipole"]:
+            if fringe.get("unsupported_soft_dipole", False):
                 soft_dipole_fringe_mults.append(ele_name)
-            if fringe["unsupported_higher_hard"]:
+            if fringe.get("unsupported_higher_hard", False):
                 higher_hard_fringe_mults.append(ele_name)
 
         ########################################

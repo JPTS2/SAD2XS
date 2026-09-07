@@ -1892,6 +1892,45 @@ def test_mult_quadrupole_replacement_retains_disabled_hard_edges(write_lattice):
     assert line["m1"].edge_exit_active == 0
 
 
+@pytest.mark.parametrize(
+    "sad_control, converter_options, warning",
+    [
+        ("DISFRIN=1", {}, None),
+        ("FRINGE=3", {"_import_sad_mult_fringes": False}, None),
+        ("FRINGE=1 DROT=0.02", {}, "nonzero DROT"),
+    ])
+@pytest.mark.parametrize(
+    "strength, element_type",
+    [("K0", xt.Bend), ("K1", xt.Quadrupole)])
+def test_typed_mult_native_edge_suppression(
+        write_lattice, caplog, sad_control, converter_options,
+        warning, strength, element_type):
+    """Every supported suppression route must disable typed native edges."""
+    lattice_path = write_lattice(
+        f"""\
+        MOMENTUM = 1.0 GEV;
+        MULT M1 = (L=0.5 {strength}=0.1 {sad_control});
+        MARK START=() END=();
+        LINE TEST_LINE=(START M1 END);
+        """,
+        filename = f"mult_{strength.lower()}_native_edge_suppression.sad")
+
+    caplog.set_level(logging.WARNING)
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path    = str(lattice_path),
+        output_directory    = "N/A",
+        SIMPLIFY_MULTIPOLES = True,
+        _verbose            = False,
+        _test_mode          = True,
+        **converter_options)
+
+    assert isinstance(line["m1"], element_type)
+    assert line["m1"].edge_entry_active == 0
+    assert line["m1"].edge_exit_active == 0
+    if warning is not None:
+        assert warning in caplog.text
+
+
 def test_mult_soft_quadrupolar_fringe_is_skipped_when_replacement_discards_k1(
         parsed_elements, xsuite_environment, caplog):
     """A replacement that removes K1 must not retain a contradictory fringe."""
