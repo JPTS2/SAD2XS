@@ -9,12 +9,14 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-03
+Date:       2026-09-07
 ================================================================================
 """
 ################################################################################
 # Required Packages
 ################################################################################
+import ast
+
 import numpy as np
 import pytest
 
@@ -82,8 +84,26 @@ def test_get_value_string_writes_nan_as_a_callable_literal():
 # Expressions
 ################################################################################
 def test_get_value_string_writes_expressions_with_double_quotes():
-    """An optics-variable expression is emitted as a double-quoted string."""
+    """An ordinary optics-variable expression should use the writer style."""
     assert get_value_string("k1_q1 * 0.5") == '"k1_q1 * 0.5"'
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        'name_with_"quotes"',
+        "name_with_'quotes'",
+        "path\\with\\backslashes",
+        "line_one\nline_two\tend",
+        "phase_φ",
+    ])
+def test_get_value_string_escapes_expression_strings(expression):
+    """Every expression should retain double quotes and read back unchanged."""
+    emitted = get_value_string(expression)
+    assert emitted.startswith('"') and emitted.endswith('"')
+    assert ast.literal_eval(emitted) == expression, (
+        f"{expression!r} emitted as {emitted!r}, which does not read back "
+        "unchanged.")
 
 ################################################################################
 # KNL/KSL arrays

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-03
+Date:       2026-09-07
 ================================================================================
 """
 
@@ -155,9 +155,9 @@ def get_value_string(value: float | str) -> str:
     """
     Format a scalar attribute as a Python literal.
 
-    A string is an optics-variable expression, reproduced as a
-    double-quoted literal. A number is written as its shortest exact
-    representation, which reads back as the same float.
+    A string is an optics-variable expression, written as an escaped
+    double-quoted Python literal. A number is written as its shortest exact
+    representation, which reads back as the same value.
 
     Infinities and NaN have no literal spelling in Python, so they are
     written as `float(...)` calls. The generated optics file does not
@@ -174,7 +174,9 @@ def get_value_string(value: float | str) -> str:
         A Python string, float, or `float(...)` literal.
     """
     if isinstance(value, str):
-        return f""""{value}\""""
+        escaped = value.encode("unicode_escape").decode("ascii")
+        escaped = escaped.replace('"', '\\"')
+        return f'"{escaped}"'
 
     number = float(value)
     if np.isnan(number):
