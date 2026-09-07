@@ -247,9 +247,9 @@ def convert_lines(
     shift/thick-cavity sub-lines, which are never reordered) have
     every component negated but keep their order; (3) any remaining
     reversed component (a single element, not a subline) is resolved
-    directly via `create_reversed_component`. Reversed generated
-    sublines are deduplicated by name, so repeated references reuse
-    the same `*_reversed` line.
+    directly via `create_reversed_component`. Reversed sublines, real
+    and generated alike, are deduplicated by name, so repeated
+    references reuse the same `*_reversed` line.
 
     Parameters
     ----------
@@ -313,6 +313,12 @@ def convert_lines(
                     and component[1:] in parsed_lines:
 
                 reversed_line_name      = component[1:] + "_reversed"
+
+                # Check if the line hasn't already been reversed (duplicate element)
+                if reversed_line_name in environment.lines:
+                    components[i] = reversed_line_name
+                    continue
+
                 reversed_line_elements  = environment.lines[component[1:]].element_names
 
                 # If it is a real subline, reverse the order of the elements
