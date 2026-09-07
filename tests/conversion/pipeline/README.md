@@ -26,7 +26,7 @@ each parametrisation separately.
 | `test_multipole_replacements.py` | 8 | 0 | — |
 | `test_offset_markers.py` | 27 | 0 | — |
 | `test_reference_particle.py` | 11 | 0 | — |
-| `test_reverse_survey_horizontal.py` | 20 | 0 | — |
+| `test_reverse_survey_horizontal.py` | 21 | 0 | — |
 | `test_reverse_survey_vertical.py` | 20 | 0 | — |
 | `test_reverse_charge_sign.py` | 6 | 0 | — |
 | `test_reverse_element_order.py` | 19 | 0 | — |

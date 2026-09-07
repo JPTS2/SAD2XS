@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-03
+Date:       2026-09-07
 ================================================================================
 """
 ################################################################################
@@ -72,6 +72,35 @@ def test_reverse_survey_horizontal_reflects_soft_quadrupolar_fringe(
              forward_particle.zeta[0]],
             rtol = 1e-13,
             atol = 1e-15)
+
+
+def test_reflecting_deferred_fringe_expressions_twice_restores_them(
+        write_lattice):
+    """Two reflections should restore expressions without nested negations."""
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        QUAD Q1=(L=0.5 K1=0.1 F1=0.02 F2=0.01 FRINGE=3
+                 DX=0.0012 DY=-0.0008 ROTATE=0.2 DISFRIN=1);
+        MARK START=() END=();
+        LINE TEST=(START Q1 END);
+        """,
+        filename = "double_reflection_deferred_fringe.sad")
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path), output_directory = "N/A",
+        _verbose = False, _test_mode = True)
+    fringes = line.env.metadata["sad2xs"]["fringe_taylor_maps"]
+    original = {
+        name: parameters.copy() for name, parameters in fringes.items()}
+    for parameters in original.values():
+        assert isinstance(parameters["a"], str)
+        assert isinstance(parameters["b"], str)
+        assert isinstance(parameters["field_rotation"], str)
+
+    _reflect_sad_fringes(line, horizontal = True)
+    _reflect_sad_fringes(line, horizontal = True)
+
+    assert fringes == original
 
 
 def test_fringe_reflection_only_mutates_recognised_line_occurrences():
