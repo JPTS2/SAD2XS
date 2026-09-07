@@ -187,10 +187,10 @@ def convert_offset_markers(
     here keeps an unplaceable marker out of the generated file's single
     batched insertion, where one failure would cost every other marker.
 
-    Every moved marker (skipped or not) is removed from `line` here; a
-    surviving one is only re-inserted later, when the lattice file is
-    generated (`sad2xs.output_writer._016_offset_markers`) -- `line`
-    itself never gets it back.
+    Every moved marker (skipped or not) is removed from the intermediate
+    `line` here. A surviving marker is re-inserted when the generated lattice
+    is loaded (`sad2xs.output_writer._016_offset_markers`), before the normal
+    conversion path returns its rebuilt line.
 
     Parameters
     ----------
@@ -259,9 +259,7 @@ def convert_offset_markers(
     ########################################
     logger.debug("Getting line table")
 
-    line.build_tracker()
     tt      = line.get_table(attr = True)
-    line.discard_tracker()
 
     ########################################
     # Get the names of the inserted markers in the line
@@ -396,13 +394,8 @@ def convert_offset_markers(
         f"Converted {len(offset_marker_locations)} offset markers "
         f"({n_locations} insertion points)")
 
-    # A relocated marker belongs only in the generated lattice file, so this is
-    # progress information, not a warning. The names go to DEBUG because on a
-    # real lattice the list runs to dozens.
+    # The names go to DEBUG because on a real lattice the list runs to dozens.
     if offset_marker_locations:
-        logger.info(
-            f"{len(offset_marker_locations)} relocated offset marker(s) are "
-            "present only in the generated lattice file, not the returned line")
         logger.debug(
             f"Relocated offset markers: {sorted(offset_marker_locations)}")
 
