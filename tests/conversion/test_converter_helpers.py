@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-09-07
 ================================================================================
 """
 ################################################################################
@@ -29,6 +29,7 @@ from sad2xs.converter._000_helpers import (
     get_element_length,
     get_element_misalignments,
     is_effectively_zero,
+    negate_sad_value,
     only_index_nonzero,
     rotate_second_order_taylor_coefficients,
     sad_hard_dipolar_fringe_coefficients,
@@ -36,6 +37,28 @@ from sad2xs.converter._000_helpers import (
     validate_element_lengths,
     values_provably_equal,
     values_provably_opposite)
+
+################################################################################
+# negate_sad_value
+################################################################################
+@pytest.mark.parametrize("value", [2.5, -3.0])
+def test_negate_sad_value_negates_numbers(value):
+    """Numeric SAD values should change sign directly."""
+    assert negate_sad_value(value) == -value
+
+
+@pytest.mark.parametrize(
+    "expression, expected",
+    [
+        ("k1_q1",              "-(k1_q1)"),
+        ("-(k1_q1)",           "k1_q1"),
+        ("-((k1_q1) + k1_q2)", "(k1_q1) + k1_q2"),
+        ("-(k1_q1) + k1_q2",   "-(-(k1_q1) + k1_q2)"),
+        ("-(a + b) - (c + d)",  "-(-(a + b) - (c + d))"),
+    ])
+def test_negate_sad_value_keeps_expressions_compact(expression, expected):
+    """Only a complete outer negation should be removed."""
+    assert negate_sad_value(expression) == expected
 
 ################################################################################
 # parse_expression

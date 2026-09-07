@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-03
+Date:       2026-09-07
 ================================================================================
 """
 ################################################################################
@@ -82,9 +82,27 @@ def negate_sad_value(value: SadValue) -> SadValue:
     Returns
     -------
     float or str
-        Negated number, or a parenthesised negated expression.
+        Negated number or parenthesised expression. Negating an expression
+        already enclosed by an outer ``-(...)`` removes that negation.
     """
-    return f"-({value})" if isinstance(value, str) else -value
+    if not isinstance(value, str):
+        return -value
+
+    expression = value.strip()
+    if expression.startswith("-(") and expression.endswith(")"):
+        # The matching close must terminate the complete expression.
+        depth = 0
+        for index, character in enumerate(expression[1:], start = 1):
+            if character == "(":
+                depth += 1
+            elif character == ")":
+                depth -= 1
+            if depth == 0:
+                if index == len(expression) - 1:
+                    return expression[2:-1]
+                break
+
+    return f"-({expression})"
 
 ################################################################################
 # Element Length Validation
