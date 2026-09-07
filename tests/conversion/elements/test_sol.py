@@ -933,14 +933,14 @@ def test_centered_mult_k1_fringe_inside_powered_solenoid_keeps_source_map(
     assert "offset element(s) with SAD K1 soft-edge fringes" not in caplog.text
 
 
-def test_mult_hard_edges_inside_powered_solenoid_are_recognised(
+def test_offset_mult_hard_edges_inside_powered_solenoid_are_recognised(
         write_lattice, caplog):
-    """Supported thin MULT edges need no extra solenoid-body conversion."""
+    """Hard-only MULT faces are recognised without a false K1-soft warning."""
     lattice_path = write_lattice(
         _bound_solenoid_lattice(
             bz = 0.1,
             middle_element = (
-                "MULT M1=(L=0.5 K0=0.01 K1=0.1 FRINGE=3);"),
+                "MULT M1=(L=0.5 K0=0.01 K1=0.1 FRINGE=3 DX=0.001);"),
             middle_name = "M1"),
         filename = "mult_hard_edges_inside_powered_solenoid.sad")
 
@@ -961,6 +961,7 @@ def test_mult_hard_edges_inside_powered_solenoid_are_recognised(
         "has not been converted" in record.getMessage()
         and "hard_edge" in record.getMessage()
         for record in caplog.records)
+    assert "offset element(s) with SAD K1 soft-edge fringes" not in caplog.text
 
 
 def test_offset_mult_k1_fringes_in_powered_solenoid_warn_once(

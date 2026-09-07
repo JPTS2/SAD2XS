@@ -479,14 +479,20 @@ def convert_solenoids(
                         environment.element_dict[element],
                         xt.SecondOrderTaylorMap):
                     source_map = line[element]
-                    if element not in environment.metadata.get(
-                            "sad2xs", {}).get(
-                                "fringe_taylor_maps", {}):
+                    fringe_parameters = environment.metadata.get(
+                        "sad2xs", {}).get("fringe_taylor_maps", {}).get(
+                            element)
+                    if fringe_parameters is None:
                         logger.warning(
                             f"Element {element} in line {line_name} has not "
                             "been converted")
                         continue
                     if is_effectively_zero(ks, tol = 0.0):
+                        continue
+                    if is_effectively_zero(
+                            fringe_parameters["a"], tol = 0.0) \
+                            and is_effectively_zero(
+                                fringe_parameters["b"], tol = 0.0):
                         continue
                     if float(source_map.shift_x) != 0.0 \
                             or float(source_map.shift_y) != 0.0:
