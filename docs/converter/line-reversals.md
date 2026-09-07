@@ -129,7 +129,9 @@ reusing its forward map:
 
 A MULT simplified to `Bend` or `Quadrupole` uses the corresponding native hard
 edge. Its `edge_entry_active` and `edge_exit_active` flags are exchanged under
-reversal, including after a writer round trip.
+reversal, including after a writer round trip. Repeated `{name}.N` occurrences
+inherit the unsuffixed fringe definition and are then reversed independently;
+this avoids mutating a shared forward occurrence elsewhere in the environment.
 
 ### 4. Solenoid ks sign
 

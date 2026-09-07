@@ -450,9 +450,10 @@ def test_complete_mult_fringe_writer_preserves_maps_order_and_tracking(tmp_path)
     env.elements["m1"] = xt.Multipole(
         length = 0.5, knl = [0.001, 0.1], ksl = [-0.0007, 0.03],
         _isthick = True, **alignment)
-    components = [
+    face_model = [
         "m1_hard_edge_in", "m1_fringe_in", "m1",
         "m1_fringe_out", "m1_hard_edge_out"]
+    components = face_model + face_model
     line = env.new_line(name = "test", components = components)
     line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
     table = line.get_table()
@@ -480,15 +481,30 @@ def test_complete_mult_fringe_writer_preserves_maps_order_and_tracking(tmp_path)
 
     reloaded = _writer_roundtrip(line, tmp_path)
 
-    assert list(reloaded.element_names) == components
-    assert reloaded["m1_hard_edge_in"].is_exit == 0
-    assert reloaded["m1_hard_edge_out"].is_exit == 1
+    repeated_components = [
+        f"{name}.{repeat}"
+        for repeat in (0, 1)
+        for name in face_model]
+    assert list(reloaded.element_names) == repeated_components
+    sad2xs_metadata = reloaded.env.metadata["sad2xs"]
+    for repeat in (0, 1):
+        assert f"m1_fringe_in.{repeat}" \
+            in sad2xs_metadata["fringe_taylor_maps"]
+        assert f"m1_hard_edge_in.{repeat}" \
+            in sad2xs_metadata["mult_hard_quadrupolar_edges"]
+    for repeat in (0, 1):
+        assert reloaded[f"m1_hard_edge_in.{repeat}"].is_exit == 0
+        assert reloaded[f"m1_hard_edge_out.{repeat}"].is_exit == 1
     for name, coefficients in original_coefficients.items():
-        for actual, expected_coefficient in zip(
-                (reloaded[name].k, reloaded[name].R, reloaded[name].T),
-                coefficients):
-            np.testing.assert_allclose(
-                actual, expected_coefficient, rtol = 1e-14, atol = 5e-17)
+        for repeat in (0, 1):
+            repeated_name = f"{name}.{repeat}"
+            for actual, expected_coefficient in zip(
+                    (reloaded[repeated_name].k,
+                     reloaded[repeated_name].R,
+                     reloaded[repeated_name].T),
+                    coefficients):
+                np.testing.assert_allclose(
+                    actual, expected_coefficient, rtol = 1e-14, atol = 5e-17)
 
     actual = initial.copy()
     reloaded.track(actual)
@@ -502,10 +518,13 @@ def test_complete_mult_fringe_writer_preserves_maps_order_and_tracking(tmp_path)
 
     reverse_line_element_order(reloaded)
     assert list(reloaded.element_names) == [
-        "-m1_hard_edge_out", "-m1_fringe_out", "m1",
-        "-m1_fringe_in", "-m1_hard_edge_in"]
-    assert reloaded["-m1_hard_edge_out"].is_exit == 0
-    assert reloaded["-m1_hard_edge_in"].is_exit == 1
+        "-m1_hard_edge_out.1", "-m1_fringe_out.1", "m1.1",
+        "-m1_fringe_in.1", "-m1_hard_edge_in.1",
+        "-m1_hard_edge_out.0", "-m1_fringe_out.0", "m1.0",
+        "-m1_fringe_in.0", "-m1_hard_edge_in.0"]
+    for repeat in (0, 1):
+        assert reloaded[f"-m1_hard_edge_out.{repeat}"].is_exit == 0
+        assert reloaded[f"-m1_hard_edge_in.{repeat}"].is_exit == 1
 
 
 def test_reversal_only_soft_quadrupolar_fringe_writes_under_root_name(tmp_path):

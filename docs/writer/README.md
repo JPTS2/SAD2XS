@@ -111,6 +111,12 @@ strength arrays, order, entrance/exit flag and alignment. Only edges already
 registered as SAD fringes retain reversal metadata after reload; a generic
 user-created edge remains generic.
 
+When repeated elements are made independent, SAD2XS clones repeated
+`MultipoleEdge` occurrences explicitly before calling Xtrack's general
+repeated-element helper, which does not currently accept that element type.
+The resulting `{name}.N` copies retain their physical face identity for later
+line reversal.
+
 Generic `xt.FirstOrderTaylorMap` and `xt.SecondOrderTaylorMap` elements are
 serialised as literal arrays at full double precision, not as optics variables.
 

@@ -161,11 +161,55 @@ env.metadata.setdefault("sad2xs", {{}}).setdefault(
     # Replace repeated elements
     ########################################
     if config._replace_repeated_elements:
+        repeated_multipole_edges = []
+        seen_names                = set()
+        for name in line.element_names:
+            if name in seen_names \
+                    and name not in repeated_multipole_edges \
+                    and isinstance(line[name], xt.MultipoleEdge):
+                repeated_multipole_edges.append(name)
+            seen_names.add(name)
+
+        if repeated_multipole_edges:
+            edge_names = repr(tuple(repeated_multipole_edges))
+            output_string += f"""
+########################################
+# Clone repeated MultipoleEdge elements
+########################################
+# Xtrack's generic repeated-element helper cannot clone MultipoleEdge.
+for _edge_name in {edge_names}:
+    _edge_occurrences = [
+        _index for _index, _name in enumerate(line.element_names)
+        if _name == _edge_name]
+    _repeat = 0
+    for _index in _edge_occurrences:
+        _clone_name = f"{{_edge_name}}.{{_repeat}}"
+        while _clone_name in env.elements:
+            _repeat += 1
+            _clone_name = f"{{_edge_name}}.{{_repeat}}"
+        env.elements[_clone_name] = env.elements[_edge_name].copy()
+        line.element_names[_index] = _clone_name
+        _repeat += 1
+"""
         output_string += """
 ########################################
 # Replace repeated elements
 ########################################
-line.replace_all_repeated_elements()"""
+line.replace_all_repeated_elements()
+
+########################################
+# Propagate SAD fringe metadata to clones
+########################################
+_sad2xs_metadata = env.metadata.get("sad2xs", {})
+for _metadata_key in (
+        "fringe_taylor_maps",
+        "mult_hard_quadrupolar_edges",
+        "mult_native_fringe_faces"):
+    _definitions = _sad2xs_metadata.get(_metadata_key, {})
+    for _name in line.element_names:
+        _parent, _separator, _repeat = _name.rpartition(".")
+        if _separator and _repeat.isdigit() and _parent in _definitions:
+            _definitions[_name] = _definitions[_parent].copy()"""
 
     ########################################
     # Return

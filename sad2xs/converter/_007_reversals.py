@@ -76,10 +76,24 @@ def reverse_line_element_order(line: xt.Line) -> xt.Line:
         "sad2xs", {}).get("mult_hard_quadrupolar_edges", {})
     native_edge_names = env.metadata.get(
         "sad2xs", {}).get("mult_native_fringe_faces", {})
+    fringe_metadata = (
+        fringe_names, hard_edge_names, native_edge_names)
     for index, name in enumerate(line.element_names):
-        if name not in fringe_names \
-                and name not in hard_edge_names \
-                and name not in native_edge_names:
+        matched_metadata = next(
+            (metadata for metadata in fringe_metadata if name in metadata),
+            None)
+        if matched_metadata is None:
+            # Generated lattices append .N when a shared element is cloned.
+            # Its physical fringe definition is still the unsuffixed one.
+            parent_name, separator, repeat = name.rpartition(".")
+            if separator and repeat.isdigit():
+                matched_metadata = next(
+                    (metadata for metadata in fringe_metadata
+                     if parent_name in metadata),
+                    None)
+                if matched_metadata is not None:
+                    matched_metadata[name] = matched_metadata[parent_name].copy()
+        if matched_metadata is None:
             continue
         if name.startswith("-"):
             line.element_names[index] = name[1:]
