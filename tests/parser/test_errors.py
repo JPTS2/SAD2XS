@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-09-08
 ================================================================================
 """
 ################################################################################
@@ -277,3 +277,20 @@ def test_unknown_assignment_section_is_deferred_expression(write_lattice):
 
     assert parsed["expressions"]["unknown_value"] == pytest.approx(1.25), (
         "Unknown assignment sections should be parsed as deferred expressions.")
+
+@pytest.mark.parametrize("component", ["0*CELL", "D1*D1"])
+def test_malformed_repetition_raises_clear_error(write_lattice, component):
+    """
+    SAD uses "*" in a LINE only for repetition, and rejects a zero count. Any
+    other use should raise, citing the source line.
+    """
+    lattice_path = write_lattice(
+        f"""\
+        MOMENTUM = 1.0 GEV;
+        LINE CELL = (A B);
+        LINE RING = ({component});
+        """,
+        filename = "error_malformed_repetition.sad")
+
+    with pytest.raises(ValueError, match = r"line 3:"):
+        parse_sad_file(str(lattice_path), Config(_verbose = False))

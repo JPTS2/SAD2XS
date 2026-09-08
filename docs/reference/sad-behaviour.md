@@ -29,6 +29,7 @@ the underlying evidence.
 - [Bend element-offset (`DX`/`DY`) reference-orbit convention](#bend-element-offset-dxdy-reference-orbit-convention)
 - [Twiss conventions in coupled regions (skew quads, solenoids, ...)](#twiss-conventions-in-coupled-regions-skew-quads-solenoids-)
 - [`LINE X = (-Y);` reversal is a MAIN-file declaration, not a live command](#line-x---y-reversal-is-a-main-file-declaration-not-a-live-command)
+- [`N*NAME` repetition in `LINE` definitions](#nname-repetition-in-line-definitions)
 
 ## Solenoid fringe kick (`DISFRIN`)
 
@@ -852,6 +853,77 @@ This was verified directly against real SAD. It gives bit-for-bit identical
 Twiss and survey results to a `LINE REV = (-FWD);` declared natively in the
 lattice file. It also matches element names exactly, where an earlier
 workaround based on a temporary lattice file matched them only partially.
+
+---
+
+## `N*NAME` repetition in `LINE` definitions
+
+SAD accepts a repetition count before a name inside a `LINE` definition.
+`4*CELL` is plain textual repetition: it builds exactly the same element
+sequence as writing `CELL CELL CELL CELL` by hand.
+
+This was verified by comparing the two forms directly. Both produce 20
+elements over 15.5 m for the same `CELL`, with identical element names.
+
+The count may precede a subline or a plain element. Repetitions nest: a line
+containing `4*CELL`, itself referenced as `2*THATLINE`, yields eight copies
+of `CELL`. Whitespace around the `*` is accepted, so `2 * CELL` and `2*CELL`
+are the same.
+
+### Reversal signs
+
+A `-` may sit on either side of the `*`, and one on each side cancels:
+
+| Written | Expands to |
+|---------|------------|
+| `4*CELL` | `CELL CELL CELL CELL` |
+| `-2*CELL` | `-CELL -CELL` |
+| `2*-CELL` | `-CELL -CELL` |
+| `-2*-CELL` | `CELL CELL` |
+
+`-2*CELL` and `2*-CELL` give identical element sequences. `-2*-CELL` runs
+forwards: the two signs cancel rather than compounding.
+
+### Rejected forms
+
+SAD rejects a zero count. `0*CELL` does **not** parse as "insert nothing":
+SAD exits without twissing the lattice. This was confirmed with a controlled
+comparison, three lattices differing only in the count -- `0*CELL` fails,
+while `1*CELL` and `2*CELL` both twiss normally. The same holds for a zero
+count on a plain element, `0*B1`, where dropping the term would still leave
+a valid line.
+
+SAD also rejects every other use of `*` inside a `LINE`: an inline
+parenthesised group (`2*(D1 QF)`), a `*` between two names (`D1*D1`), a bare
+`*`, and a `*` within an element name. A `*` in a `LINE` is therefore always
+a repetition count, never anything else.
+
+SAD reports none of these rejections. It exits with status 64 after its
+startup banner, printing no diagnostic. A caller that checks only for an
+error message, rather than the exit status, sees nothing wrong.
+
+**Consequence.** The parser expands `N*NAME` into N copies of `NAME` when it
+reads the `LINE`, so later stages never see the syntax. This matters because
+element exclusion and offset-marker counting both match component names
+exactly: an unexpanded `4*QF` would never match an excluded `QF`, and would
+count as one SAD element where SAD counts four.
+
+Because a `*` is only ever a repetition, the parser treats any component
+containing a `*` that is not a well-formed `N*NAME` -- zero count included --
+as a malformed `LINE` definition, and raises citing the source line. This
+turns SAD's silent exit into an explicit error.
+
+Covered by `test_repetition_forms_are_accepted` and
+`test_malformed_repetition_forms_are_rejected` in `tests/sad/test_line.py`.
+
+The converter side is covered by
+`test_repetition_count_expands_to_repeated_components` in
+`tests/parser/test_lines.py`, by
+`test_malformed_repetition_raises_clear_error` in
+`tests/parser/test_errors.py`, and by
+`test_repeated_subline_matches_hand_written_expansion` in
+`tests/conversion/pipeline/test_repeated_components.py`, which asserts the
+two forms convert to the same Xsuite line.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
