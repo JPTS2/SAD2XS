@@ -116,7 +116,7 @@ MULT can use up to five components: a K1/SK1 `MultipoleEdge` and a composite
 K0/SK0-hard plus F1/F2-soft Taylor map at each side, around the unchanged
 body. Typed quadrupole and bend representations use their native hard edges
 instead of duplicating them. The body retains the bare SAD name and the
-wrapper uses `{name}_compound`. See [fringe models](fringes.md) for the exact
+wrapper uses `{name}_sad2xscompound`. See [fringe models](fringes.md) for the exact
 order, switches, powered-solenoid handling, `DROT`, and unsupported terms.
 
 ### The dipole fringe residual when a MULT is simplified

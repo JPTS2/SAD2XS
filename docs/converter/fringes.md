@@ -131,7 +131,7 @@ A SAD `QUAD` can become up to three Xsuite elements, so the converter wraps them
 [entrance fringe?, quadrupole body, exit fringe?]
 ```
 
-The physical quadrupole body keeps the element's bare SAD name. Only the wrapping sub-line is renamed, to `{name}_compound`, because an Xsuite environment cannot have an element and a line sharing one name. Any component reference to the bare name is transparently redirected onto the compound.
+The physical quadrupole body keeps the element's bare SAD name. Only the wrapping sub-line is renamed, to `{name}_sad2xscompound`, because an Xsuite environment cannot have an element and a line sharing one name. Any component reference to the bare name is transparently redirected onto the compound.
 
 Keeping the body's bare name matters beyond cosmetics. Twiss alignment originally matched SAD's element row to the body, which is already past the entrance fringe kick — a silent discrepancy in the comparison itself, unrelated to whether the fringe physics was right. It was fixed by treating `_fringe_in` and `_fringe_out` as compound pieces of one placement, the same mechanism already used for the solenoid boundary compound.
 
