@@ -52,7 +52,7 @@ filename; SAD's shell wrapper requires a relative path in the working directory.
 | `test_mark.py` | 30 | 0 | MARK parameters |
 | `test_moni.py` | 30 | 0 | MONI parameters |
 | `test_line.py` | 12 | 0 | LINE definition syntax |
-| `test_line_reversal.py` | 5 | 0 | native `-LINE` reversal sign conventions |
+| `test_line_reversal.py` | 7 | 0 | native `-LINE` reversal sign conventions |
 | `test_reference_particle.py` | 15 | 0 | MOMENTUM, MASS, and CHARGE handling |
 | `test_angle_units.py` | 7 | 0 | ROTATE and ANGLE unit suffixes |
 | `test_parser_behaviors.py` | 29 | 0 | SAD parser quirks, including the comma bug |

@@ -30,6 +30,7 @@ the underlying evidence.
 - [Twiss conventions in coupled regions (skew quads, solenoids, ...)](#twiss-conventions-in-coupled-regions-skew-quads-solenoids-)
 - [`LINE X = (-Y);` reversal is a MAIN-file declaration, not a live command](#line-x---y-reversal-is-a-main-file-declaration-not-a-live-command)
 - [`N*NAME` repetition in `LINE` definitions](#nname-repetition-in-line-definitions)
+- [Bound `GEO` solenoid boundary transforms are derived at `CALC`](#bound-geo-solenoid-boundary-transforms-are-derived-at-calc)
 
 ## Solenoid fringe kick (`DISFRIN`)
 
@@ -924,6 +925,56 @@ The converter side is covered by
 `test_repeated_subline_matches_hand_written_expansion` in
 `tests/conversion/pipeline/test_repeated_components.py`, which asserts the
 two forms convert to the same Xsuite line.
+
+---
+
+## Bound `GEO` solenoid boundary transforms are derived at `CALC`
+
+A bound solenoid pair with `GEO = 1` defines a reference frame that must close
+across the pair. SAD derives the boundary transforms it needs during `CALC`,
+from the solenoid geometry, and tracks with the derived values.
+
+A source file **may** carry those transforms already. It may also carry only
+some of them, or values that differ from the ones SAD derives. Either way SAD
+uses its own, so the source text is not a reliable statement of what SAD
+tracked. Rebuilding a lattice through SAD writes the derived values out, and
+they can differ from the source in sign as well as magnitude.
+
+SAD2XS has only the source text. It does not run `CALC`, and does not derive
+these transforms, so it converts what is written.
+
+### Evidence
+
+Take a bound pair whose entrance carries `GEO = 1` with `DX = 0.02`, and whose
+exit declares no transforms:
+
+    SOL   SOL_IN  = (BZ = 0.1 BOUND = 1 GEO = 1 DISFRIN = 1 DX = 0.02)
+          SOL_OUT = (BZ = 0.1 BOUND = 1 DISFRIN = 1);
+
+Rebuilding through SAD fills `SOL_OUT` in with `DX`, `DZ` and `CHI1` values
+that close the frame. Converting the source directly leaves them at zero, so
+the frame never closes.
+
+The effect appears only downstream of the exit boundary. Inside the pair the
+entrance transform is enough, so a marker between the boundaries agrees either
+way:
+
+| marker | position | from source | from rebuilt |
+|--------|----------|-------------|--------------|
+| inside the pair | between the boundaries | 2.5e-11 | 2.5e-11 |
+| after the exit | downstream | 1.98e-02 | 3.5e-18 |
+
+`1.98e-02` is the entrance `DX` left un-closed: the orbit never comes back.
+
+**Consequence.** Xsuite requires the boundary transforms to be present, so a
+`GEO` chain must be rebuilt through SAD before conversion: `USE` the line, run
+`CALC`, write the beamline out, and convert that file.
+`sad2xs.sad_helpers.rebuild_sad_lattice` does this, and the solenoid
+conversion tests compare against a rebuilt lattice for the same reason.
+
+Covered by `test_bound_solenoid_reference_shift_orbit_matches_sad` and
+`test_three_solenoid_interaction_region_orbit_matches_sad` in
+`tests/conversion/elements/test_sol.py`.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

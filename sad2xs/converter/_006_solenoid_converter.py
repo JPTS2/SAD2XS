@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-07
+Date:       2026-09-08
 ================================================================================
 """
 
@@ -26,6 +26,60 @@ from ..types import ConfigLike
 from ._000_helpers import is_effectively_zero
 
 logger  = logging.getLogger(__name__)
+
+################################################################################
+# Bound Solenoid Component Order
+################################################################################
+# A bound solenoid's transforms are built as bound/dxy/dz/rot. An inbound
+# boundary runs them in reverse so the rotation happens at x=y=0, where it
+# cannot pick up xt.Rotation's position-dependent zeta shift. An outbound
+# boundary keeps the built order, except when the pair's two boundaries differ
+# in reversal.
+INBOUND_COMPONENT_ORDER     = ("rot", "dz", "dxy", "bound")
+OUTBOUND_COMPONENT_ORDER    = ("bound", "dxy", "dz", "rot")
+
+def _reorder_bound_solenoid_components(
+        element_names:      list[str],
+        solenoid:           str,
+        component_order:    tuple[str, ...]) -> list[str]:
+    """
+    Rewrite one bound solenoid's transform components into `component_order`.
+
+    Parameters
+    ----------
+    element_names : list of str
+        The line's current element names.
+    solenoid : str
+        The solenoid whose components to reorder, without a suffix.
+    component_order : tuple of str
+        The component suffixes, in the order they should end up in.
+
+    Returns
+    -------
+    list of str
+        `element_names` with each occurrence of the solenoid's components
+        rewritten into `component_order`.
+    """
+    components  = [f"{solenoid}_{suffix}" for suffix in component_order]
+    bound_idxs  = [
+        i for i, name in enumerate(element_names) if name == f"{solenoid}_bound"]
+    rot_idxs    = [
+        i for i, name in enumerate(element_names) if name == f"{solenoid}_rot"]
+
+    for bound_idx, rot_idx in zip(bound_idxs, rot_idxs):
+
+        # A reversed subline arrives with the compound already flipped, so
+        # _bound may be the last component rather than the first
+        span_start  = min(bound_idx, rot_idx)
+        span_end    = max(bound_idx, rot_idx)
+        assert sorted(element_names[span_start:span_end + 1]) == sorted(components)
+
+        element_names = (
+            element_names[:span_start]
+            + components
+            + element_names[span_end + 1:])
+
+    return element_names
 
 ################################################################################
 # Conversion Function
@@ -1064,113 +1118,16 @@ def solenoid_reference_shift_corrections(
     element_names   = line.element_names.copy()                 # type: ignore
 
     ########################################
-    # Reorder inbound geo solenoids
+    # Reorder the bound solenoid components
     ########################################
-    for inbound_geo_solenoid in inbound_geo_solenoids:
-
-        sol_start_ele   = f"{inbound_geo_solenoid}_bound"
-        sol_end_ele     = f"{inbound_geo_solenoid}_rot"
-
-        # Get the start and end indices
-        start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
-        end_idxs    = [i for i, name in enumerate(element_names) if name == sol_end_ele]
-
-        for start_idx, end_idx in zip(start_idxs, end_idxs):
-            assert start_idx < end_idx
-
-            new_element_names   = []
-            new_element_names   += element_names[:start_idx]
-            bound_elements      = [
-                f"{inbound_geo_solenoid}_rot",
-                f"{inbound_geo_solenoid}_dz",
-                f"{inbound_geo_solenoid}_dxy",
-                f"{inbound_geo_solenoid}_bound"]
-            new_element_names   += bound_elements
-            new_element_names   += element_names[end_idx + 1:]
-
-            element_names       = new_element_names
-
-    ########################################
-    # Reorder inbound non-geo solenoids
-    ########################################
-    for inbound_nongeo_solenoid in inbound_nongeo_solenoids:
-
-        sol_start_ele   = f"{inbound_nongeo_solenoid}_bound"
-        sol_end_ele     = f"{inbound_nongeo_solenoid}_rot"
-
-        # Get the start and end indices
-        start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
-        end_idxs    = [i for i, name in enumerate(element_names) if name == sol_end_ele]
-
-        for start_idx, end_idx in zip(start_idxs, end_idxs):
-            assert start_idx < end_idx
-
-            new_element_names   = []
-            new_element_names   += element_names[:start_idx]
-            bound_elements      = [
-                    f"{inbound_nongeo_solenoid}_rot",
-                    f"{inbound_nongeo_solenoid}_dz",
-                    f"{inbound_nongeo_solenoid}_dxy",
-                    f"{inbound_nongeo_solenoid}_bound"]
-            new_element_names   += bound_elements
-            new_element_names   += element_names[end_idx + 1:]
-
-            element_names       = new_element_names
-
-    ########################################
-    # Reorder outbound solenoids (inbound_reversed == outbound_reversed):
-    # unchanged bound/dxy/dz/rot
-    ########################################
-    for outbound_same_reversal_solenoid in outbound_same_reversal_solenoids:
-
-        sol_start_ele   = f"{outbound_same_reversal_solenoid}_bound"
-        sol_end_ele     = f"{outbound_same_reversal_solenoid}_rot"
-
-        # Get the start and end indices
-        start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
-        end_idxs    = [i for i, name in enumerate(element_names) if name == sol_end_ele]
-
-        for start_idx, end_idx in zip(start_idxs, end_idxs):
-            assert start_idx < end_idx
-
-            new_element_names   = []
-            new_element_names   += element_names[:start_idx]
-            bound_elements      = [
-                f"{outbound_same_reversal_solenoid}_bound",
-                f"{outbound_same_reversal_solenoid}_dxy",
-                f"{outbound_same_reversal_solenoid}_dz",
-                f"{outbound_same_reversal_solenoid}_rot"]
-            new_element_names   += bound_elements
-            new_element_names   += element_names[end_idx + 1:]
-
-            element_names       = new_element_names
-
-    ########################################
-    # Reorder outbound solenoids (inbound_reversed != outbound_reversed):
-    # rotation-first, same as inbound
-    ########################################
-    for outbound_differing_reversal_solenoid in outbound_differing_reversal_solenoids:
-
-        sol_start_ele   = f"{outbound_differing_reversal_solenoid}_bound"
-        sol_end_ele     = f"{outbound_differing_reversal_solenoid}_rot"
-
-        # Get the start and end indices
-        start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
-        end_idxs    = [i for i, name in enumerate(element_names) if name == sol_end_ele]
-
-        for start_idx, end_idx in zip(start_idxs, end_idxs):
-            assert start_idx < end_idx
-
-            new_element_names   = []
-            new_element_names   += element_names[:start_idx]
-            bound_elements      = [
-                f"{outbound_differing_reversal_solenoid}_rot",
-                f"{outbound_differing_reversal_solenoid}_dz",
-                f"{outbound_differing_reversal_solenoid}_dxy",
-                f"{outbound_differing_reversal_solenoid}_bound"]
-            new_element_names   += bound_elements
-            new_element_names   += element_names[end_idx + 1:]
-            element_names       = new_element_names
+    for solenoids, component_order in (
+            (inbound_geo_solenoids,                 INBOUND_COMPONENT_ORDER),
+            (inbound_nongeo_solenoids,              INBOUND_COMPONENT_ORDER),
+            (outbound_same_reversal_solenoids,      OUTBOUND_COMPONENT_ORDER),
+            (outbound_differing_reversal_solenoids, INBOUND_COMPONENT_ORDER)):
+        for solenoid in solenoids:
+            element_names = _reorder_bound_solenoid_components(
+                element_names, solenoid, component_order)
 
     ########################################
     # Update the line

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-29
+Date:       2026-09-08
 ================================================================================
 """
 ################################################################################
@@ -49,7 +49,7 @@ from tests.support.diagnostics import (
     write_tracking_failure_report,
     write_twiss_failure_report)
 from tests.support.tracking_helpers import track_xsuite_particles
-from sad2xs.sad_helpers import twiss_sad
+from sad2xs.sad_helpers import transfer_matrix_sad, twiss_sad
 
 ################################################################################
 # Diagnostic Helpers
@@ -290,7 +290,8 @@ def _bound_solenoid_lattice(
         sol_out_parameters = "",
         middle_element = "DRIFT       SOL_DRIFT   = (L = 1.0);",
         middle_name = "SOL_DRIFT",
-        line_expression = None):
+        line_expression = None,
+        extra_lines = ""):
     """
     Build a standard bound-solenoid SAD lattice around one middle element.
 
@@ -298,6 +299,9 @@ def _bound_solenoid_lattice(
     SAD2XS does not model the SAD solenoid fringe kick — that is the fair
     comparison baseline. Pass `disfrin = False` deliberately to exercise the
     known, accepted divergence this causes (see `test_sol_disfrin_off_...`).
+
+    `extra_lines` is appended after `TEST_LINE`, for tests needing more than
+    one line over the same elements.
     """
     if line_expression is None:
         line_expression = f"START SOL_IN {middle_name} SOL_OUT END"
@@ -316,6 +320,7 @@ def _bound_solenoid_lattice(
                 END         = ();
 
     LINE        TEST_LINE   = ({line_expression});
+{extra_lines}\
     """
 
 def _reference_transform_lattice(
@@ -2139,3 +2144,362 @@ def test_sol_pipeline_rejects_bending_angle_inside_solenoid_region(write_lattice
             output_directory = "N/A",
             _verbose         = False,
             _test_mode       = True)
+
+
+################################################################################
+# Reversed Bound Solenoids
+################################################################################
+# Reversing a line traverses a bound solenoid's reference shifts from the other
+# side, so the entrance solenoid of the reversed line is the forward line's exit
+# solenoid. tests/sad/test_line_reversal.py pins what SAD does with this.
+#
+# MID_IN and MID_OUT sit inside the boundaries. A reference shift is a constant
+# orbit offset, not a transfer-matrix element, so only an orbit comparison at
+# those markers can see whether the shift was applied and in which direction.
+#
+# The body is the standard drift: a focusing element inside a DX-shifted frame
+# carries its own SAD/Xsuite divergence that would swamp what is under test.
+REVERSED_SOLENOID_MIDDLE = """\
+DRIFT       SOL_DRIFT   = (L = 1.0);
+    MARK        MID_IN      = ()
+                MID_OUT     = ();"""
+
+REVERSED_SOLENOID_MIDDLE_NAME = "MID_IN SOL_DRIFT MID_OUT"
+
+REVERSED_SOLENOID_EXTRA_LINES = """\
+    LINE        SOLSEG      = (SOL_IN MID_IN SOL_DRIFT MID_OUT SOL_OUT);
+    LINE        REVERSED    = (START -SOLSEG END);
+    LINE        MANUAL      = (START -SOL_OUT MID_OUT SOL_DRIFT MID_IN -SOL_IN END);
+    LINE        MIXED_IN    = (START SOL_IN MID_IN SOL_DRIFT MID_OUT -SOL_OUT END);
+    LINE        MIXED_OUT   = (START -SOL_OUT MID_OUT SOL_DRIFT MID_IN SOL_IN END);
+"""
+
+REVERSED_SOLENOID_LINES = [
+    "TEST_LINE", "REVERSED", "MANUAL", "MIXED_IN", "MIXED_OUT"]
+
+REVERSED_SOLENOID_TRANSFORMS = [
+    "DX = 0.02",
+    "DY = -0.01",
+    "DZ = 0.005",
+    "CHI1 = 0.03",
+    "CHI2 = -0.02",
+    "CHI3 = 0.01",
+    "DX = 0.02 DY = -0.01 CHI1 = 0.03",
+    "DX = 0.02 DY = -0.01 DZ = 0.005 CHI1 = 0.03 CHI2 = -0.02 CHI3 = 0.01"]
+
+def _write_reversed_solenoid_lattice(
+        write_lattice,
+        transforms = REVERSED_SOLENOID_TRANSFORMS[-2]):
+    """
+    Write a bound solenoid lattice carrying every reversal spelling.
+
+    TEST_LINE is the forward segment; REVERSED reverses it as a subline,
+    MANUAL writes that reversal out by hand, and MIXED_IN/MIXED_OUT reverse
+    only one boundary. All five carry the MID_IN and MID_OUT markers.
+    """
+    return write_lattice(
+        _bound_solenoid_lattice(
+            bz                = 0.1,
+            sol_in_parameters = transforms,
+            middle_element    = REVERSED_SOLENOID_MIDDLE,
+            middle_name       = REVERSED_SOLENOID_MIDDLE_NAME,
+            extra_lines       = REVERSED_SOLENOID_EXTRA_LINES),
+        filename = "reversed_bound_solenoid.sad")
+
+def _convert_solenoid_line(lattice_path, line_name):
+    """
+    Convert one line of a reversed bound solenoid lattice.
+    """
+    return s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        line_name        = line_name,
+        output_directory = "N/A",
+        _verbose         = False,
+        _test_mode       = True)
+
+def _sad_twiss_line(lattice_path, line_name):
+    """
+    SAD's own Twiss table for one line of a written lattice.
+    """
+    cwd = os.getcwd()
+    os.chdir(lattice_path.parent)
+    try:
+        return twiss_sad(
+            lattice_filepath = lattice_path.name,
+            line_name        = line_name,
+            calc6d           = False,
+            closed           = False)
+    finally:
+        os.chdir(cwd)
+
+########################################
+# Orbit Against SAD
+########################################
+def _compare_solenoid_orbit_at_marker(
+        write_lattice,
+        rebuild_lattice,
+        tmp_path,
+        lattice_text,
+        filename,
+        line_name,
+        marker,
+        test_name,
+        notes = None,
+        compare_s = True):
+    """
+    Compare SAD and Xsuite orbit at one marker of one line.
+
+    Goes through `rebuild_lattice` like the other SOL comparisons. SAD derives
+    a GEO chain's downstream reference transforms during CALC, and the source
+    file never carries them, so only the rebuilt lattice gives the converter
+    the same information SAD used. Rebuilding flattens sublines but keeps every
+    "-", so a reversal is still exercised.
+    """
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+
+    try:
+        lattice_path = write_lattice(lattice_text, filename = filename)
+        rebuilt_path = rebuild_lattice(lattice_path, line_name = line_name)
+
+        tw_sad = twiss_sad(
+            lattice_filepath = lattice_path.name,
+            line_name        = line_name,
+            calc6d           = False,
+            closed           = False)
+
+        tw_xs = _convert_solenoid_line(rebuilt_path, line_name).twiss4d(
+            _continue_if_lost = True,
+            start             = xt.START,
+            end               = xt.END,
+            betx              = 1.0,
+            bety              = 1.0)
+    finally:
+        os.chdir(cwd)
+
+    sad_values    = _sol_orbit_values(tw_sad, marker)
+    xsuite_values = _sol_orbit_values(tw_xs, marker.lower())
+
+    if not compare_s:
+        sad_values.pop("s")
+        xsuite_values.pop("s")
+
+    _assert_sol_twiss_matches_sad(
+        test_name      = test_name,
+        lattice_text   = lattice_text,
+        sad_values     = sad_values,
+        xsuite_values  = xsuite_values,
+        parameters     = {"line": line_name, "marker": marker},
+        notes          = notes or [
+            "A reference shift is a constant orbit offset, not a "
+            "transfer-matrix element, so only an orbit comparison can see "
+            "whether it was applied and in which direction.",
+        ])
+
+def _compare_reversed_solenoid_orbit(
+        write_lattice,
+        rebuild_lattice,
+        tmp_path,
+        line_name,
+        marker,
+        test_name,
+        transforms = REVERSED_SOLENOID_TRANSFORMS[-2]):
+    """
+    Compare SAD and Xsuite orbit for one reversal spelling of the bound pair.
+    """
+    _compare_solenoid_orbit_at_marker(
+        write_lattice   = write_lattice,
+        rebuild_lattice = rebuild_lattice,
+        tmp_path        = tmp_path,
+        lattice_text    = _bound_solenoid_lattice(
+            bz                = 0.1,
+            sol_in_parameters = transforms,
+            middle_element    = REVERSED_SOLENOID_MIDDLE,
+            middle_name       = REVERSED_SOLENOID_MIDDLE_NAME,
+            extra_lines       = REVERSED_SOLENOID_EXTRA_LINES),
+        filename        = f"reversed_bound_solenoid_{line_name.lower()}.sad",
+        line_name       = line_name,
+        marker          = marker,
+        test_name       = test_name)
+
+@pytest.mark.parametrize("line_name", REVERSED_SOLENOID_LINES)
+@pytest.mark.parametrize("marker", ["MID_IN", "MID_OUT"])
+def test_bound_solenoid_reference_shift_orbit_matches_sad(
+        write_lattice,
+        rebuild_lattice,
+        tmp_path,
+        line_name,
+        marker):
+    """
+    Every reversal spelling should put the reference shift orbit where SAD
+    puts it, inside the solenoid boundaries.
+    """
+    _compare_reversed_solenoid_orbit(
+        write_lattice   = write_lattice,
+        rebuild_lattice = rebuild_lattice,
+        tmp_path        = tmp_path,
+        line_name       = line_name,
+        marker          = marker,
+        test_name       = "test_bound_solenoid_reference_shift_orbit_matches_sad")
+
+########################################
+# Reversed Subline
+########################################
+def test_reversed_bound_solenoid_segment_converts(write_lattice):
+    """
+    A line reversing a bound solenoid segment should convert, and build the
+    same number of elements as the same segment traversed forwards.
+    """
+    lattice_path = _write_reversed_solenoid_lattice(write_lattice)
+
+    forward  = _convert_solenoid_line(lattice_path, "TEST_LINE")
+    reversed_ = _convert_solenoid_line(lattice_path, "REVERSED")
+
+    assert len(reversed_.element_names) == len(forward.element_names), (
+        "Reversing a bound solenoid segment should build the same number of "
+        f"elements as the forward segment. Forward: "
+        f"{list(forward.element_names)}, reversed: "
+        f"{list(reversed_.element_names)}.")
+
+@pytest.mark.parametrize("transforms", REVERSED_SOLENOID_TRANSFORMS)
+def test_reversed_subline_matches_hand_written_reversal(
+        write_lattice,
+        transforms):
+    """
+    Reversing a subline should build the same line as writing the reversal out
+    by hand, for every reference shift a boundary can carry.
+
+    Both spellings go through the reversal handling, so this alone cannot show
+    either is correct -- `test_bound_solenoid_reference_shift_orbit_matches_sad`
+    anchors them to SAD. This pins the two spellings to each other.
+    """
+    lattice_path = _write_reversed_solenoid_lattice(write_lattice, transforms)
+
+    reversed_ = _convert_solenoid_line(lattice_path, "REVERSED")
+    manual    = _convert_solenoid_line(lattice_path, "MANUAL")
+
+    assert list(reversed_.element_names) == list(manual.element_names), (
+        f"With {transforms}, reversing a subline should build the same "
+        f"elements as the hand-written reversal. Reversed: "
+        f"{list(reversed_.element_names)}, hand-written: "
+        f"{list(manual.element_names)}.")
+
+    assert linear_transfer_matrix_4d(reversed_) == pytest.approx(
+        linear_transfer_matrix_4d(manual), abs = 1E-12), (
+        f"With {transforms}, the reversed subline should have the same "
+        "transfer matrix as the hand-written reversal.")
+
+########################################
+# Transfer Matrix Against SAD
+########################################
+@pytest.mark.parametrize("line_name", REVERSED_SOLENOID_LINES)
+def test_bound_solenoid_transfer_matrix_matches_sad(
+        write_lattice,
+        rebuild_lattice,
+        tmp_path,
+        line_name):
+    """
+    Every reversal spelling should reproduce SAD's own transfer matrix.
+
+    Supplements the orbit comparison: the matrix sees focusing and coupling the
+    orbit check cannot, and is blind to the reference shifts the orbit check
+    exists for. Converts the rebuilt lattice, for the reason given in
+    `_compare_solenoid_orbit_at_marker`.
+    """
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+
+    try:
+        lattice_path = write_lattice(
+            _bound_solenoid_lattice(
+                bz                = 0.1,
+                sol_in_parameters = REVERSED_SOLENOID_TRANSFORMS[-2],
+                middle_element    = REVERSED_SOLENOID_MIDDLE,
+                middle_name       = REVERSED_SOLENOID_MIDDLE_NAME,
+                extra_lines       = REVERSED_SOLENOID_EXTRA_LINES),
+            filename = f"reversed_bound_solenoid_matrix_{line_name.lower()}.sad")
+        rebuilt_path = rebuild_lattice(lattice_path, line_name = line_name)
+
+        sad_matrix = np.array(transfer_matrix_sad(
+            lattice_filepath = lattice_path.name,
+            line_name        = line_name))[:4, :4]
+        xsuite_matrix = linear_transfer_matrix_4d(
+            _convert_solenoid_line(rebuilt_path, line_name))
+    finally:
+        os.chdir(cwd)
+
+    assert xsuite_matrix == pytest.approx(sad_matrix, abs = 1E-6), (
+        f"The converted {line_name} line should match SAD's transfer "
+        f"matrix.\nSAD:\n{sad_matrix}\nXsuite:\n{xsuite_matrix}.")
+
+########################################
+# Three-Solenoid Interaction Region
+########################################
+# An interaction region can differ from the pair above in every structural
+# respect: three solenoids with the middle one unbound, a DPX angle shift
+# rather than a translation at the entrance, DX with CHI1 at the exit, and the
+# whole region reversed as a nested subline.
+#
+# DISFRIN = 1 throughout, since SAD2XS does not model the SAD solenoid fringe
+# kick. That costs 1.0e-7 equally in both directions and would mask what this
+# checks.
+THREE_SOLENOID_IR_LATTICE = """\
+    MOMENTUM = 1.0 GEV;
+
+    DRIFT   DA  = (L = 0.5)
+            DB  = (L = 0.5)
+            DC  = (L = 1.0);
+
+    QUAD    QF  = (L = 0.5 K1 = 0.1);
+
+    SOL     SOLA = (BZ = -1.0  DPX = 0.03 BOUND = 1 GEO = 1 DISFRIN = 1 F1 = 0.0)
+            SOLB = (BZ =  1.25 DISFRIN = 1 F1 = 0.0)
+            SOLC = (BZ =  0.0  DX = 0.02699595018 DZ = 0.0 BOUND = 1
+                    CHI1 = 0.03 DISFRIN = 1 F1 = 0.0);
+
+    MARK    IP      = ()
+            MID     = ()
+            START   = ()
+            END     = ();
+
+    LINE    FFT         = (IP SOLA DA SOLB DB SOLC MID QF DC);
+    LINE    IR          = (FFT);
+
+    LINE    TEST_LINE   = (START IR END);
+    LINE    REVERSED    = (START -IR END);
+    """
+
+@pytest.mark.parametrize("line_name", ["TEST_LINE", "REVERSED"])
+@pytest.mark.parametrize("marker", ["IP", "MID"])
+def test_three_solenoid_interaction_region_orbit_matches_sad(
+        write_lattice,
+        rebuild_lattice,
+        tmp_path,
+        line_name,
+        marker):
+    """
+    A three-solenoid interaction region should match SAD forwards and
+    reversed.
+
+    Covers what the bound pair does not: three solenoids with an unbound field
+    step between the boundaries, a DPX angle shift at the entrance against DX
+    and CHI1 at the exit, and reversal of a nested subline rather than a flat
+    one.
+    """
+    _compare_solenoid_orbit_at_marker(
+        write_lattice   = write_lattice,
+        rebuild_lattice = rebuild_lattice,
+        tmp_path        = tmp_path,
+        lattice_text    = THREE_SOLENOID_IR_LATTICE,
+        filename        = f"three_solenoid_ir_{line_name.lower()}.sad",
+        line_name       = line_name,
+        marker          = marker,
+        test_name       = "test_three_solenoid_interaction_region_orbit_matches_sad",
+        compare_s       = False,
+        notes           = [
+            "DISFRIN = 1 throughout: SAD2XS does not model the SAD solenoid "
+            "fringe kick, which costs 1.0e-7 equally in both directions.",
+            "s is not compared: DPX makes SAD and Xsuite disagree on "
+            "longitudinal position inside the solenoid by 4.5e-4, equally in "
+            "both directions. See compute_s_sad.",
+        ])
