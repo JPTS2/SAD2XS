@@ -897,7 +897,9 @@ a valid line.
 SAD also rejects every other use of `*` inside a `LINE`: an inline
 parenthesised group (`2*(D1 QF)`), a `*` between two names (`D1*D1`), a bare
 `*`, and a `*` within an element name. A `*` in a `LINE` is therefore always
-a repetition count, never anything else.
+a repetition count, never anything else. To repeat several components, define
+them as a named subline and repeat that name; inline grouped repetition is not
+valid SAD syntax.
 
 SAD reports none of these rejections. It exits with status 64 after its
 startup banner, printing no diagnostic. A caller that checks only for an
@@ -912,7 +914,10 @@ count as one SAD element where SAD counts four.
 Because a `*` is only ever a repetition, the parser treats any component
 containing a `*` that is not a well-formed `N*NAME` -- zero count included --
 as a malformed `LINE` definition, and raises citing the source line. This
-turns SAD's silent exit into an explicit error.
+turns SAD's silent exit into an explicit error. Parentheses are validated
+before the declaration is split or repetitions are expanded, so an invalid
+form such as `2*(D1 QF) D1` rejects the entire `LINE`; the parser cannot retain
+the group prefix while silently discarding the trailing component.
 
 Covered by `test_repetition_forms_are_accepted` and
 `test_malformed_repetition_forms_are_rejected` in `tests/sad/test_line.py`.

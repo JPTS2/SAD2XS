@@ -278,7 +278,14 @@ def test_unknown_assignment_section_is_deferred_expression(write_lattice):
     assert parsed["expressions"]["unknown_value"] == pytest.approx(1.25), (
         "Unknown assignment sections should be parsed as deferred expressions.")
 
-@pytest.mark.parametrize("component", ["0*CELL", "D1*D1"])
+@pytest.mark.parametrize(
+    "component",
+    [
+        "0*CELL",
+        "D1*D1",
+        "2*QF*D1",
+        "2*3*QF",
+    ])
 def test_malformed_repetition_raises_clear_error(write_lattice, component):
     """
     SAD uses "*" in a LINE only for repetition, and rejects a zero count. Any
@@ -293,4 +300,33 @@ def test_malformed_repetition_raises_clear_error(write_lattice, component):
         filename = "error_malformed_repetition.sad")
 
     with pytest.raises(ValueError, match = r"line 3:"):
+        parse_sad_file(str(lattice_path), Config(_verbose = False))
+
+@pytest.mark.parametrize(
+    "line_content",
+    [
+        "2*(D1 QF)",
+        "2*(D1 QF) D1",
+    ])
+def test_grouped_repetition_rejects_the_entire_line(
+        write_lattice,
+        line_content):
+    """
+    An invalid grouped repetition must not retain a partial element sequence.
+
+    In particular, the closing parenthesis of ``2*(D1 QF) D1`` must not
+    truncate the declaration and silently discard its trailing ``D1``.
+    """
+    lattice_path = write_lattice(
+        f"""\
+        MOMENTUM = 1.0 GEV;
+        DRIFT D1 = (L = 1.0);
+        QUAD QF = (L = 0.5 K1 = 0.1);
+        LINE RING = ({line_content});
+        """,
+        filename = "error_grouped_repetition.sad")
+
+    with pytest.raises(
+            ValueError,
+            match = r"line 4:.*nested parentheses"):
         parse_sad_file(str(lattice_path), Config(_verbose = False))
