@@ -24,10 +24,9 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 
 ################################################################################
 # Accepted / Rejected parameters
-#
+################################################################################
 # See tests/sad/README.md's "Parameter matrix" for the accepted/rejected
 # table this parametrization transcribes.
-################################################################################
 ACCEPTED_PARAMS = [
     pytest.param("L=1.0 K1=0.2",                     id = "k1"),
     pytest.param("L=1.0 DX=0.001",                   id = "dx"),
@@ -88,11 +87,10 @@ def test_quad_rejects(sad_rejects, params):
 
 ################################################################################
 # Thin quad (no length) behaviour
-#
+################################################################################
 # K1 in a no-L QUAD is an integrated quadrupole strength: it affects BOTH
 # Twiss (linear focusing) AND tracking (a direct px kick), verified by both
 # tests below — same pattern as BEND's K1 (see test_bend.py).
-################################################################################
 def test_quad_without_length_is_accepted_by_sad(sad_accepts):
     """
     SAD accepts a QUAD with K1 but no L parameter (thin/integrated quadrupole).

@@ -343,9 +343,10 @@ def test_skew_quad_twiss_convention_grid(write_lattice, tmp_path):
     _assert_r_matrix_matches_sad(tw_sad, et_values)
 
 ################################################################################
-# Solenoid coupling: Edwards-Teng matches SAD and coincides with the
-# Mais-Ripken projected sums (the rotational-coupling special case)
+# Solenoid coupling
 ################################################################################
+# Edwards-Teng matches SAD and coincides with the Mais-Ripken projected sums,
+# the rotational-coupling special case.
 def test_solenoid_transfer_matrix_matches_sad(write_lattice, tmp_path):
     """
     The converted bound-solenoid line's linear map equals SAD's — any twiss

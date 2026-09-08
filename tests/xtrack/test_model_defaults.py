@@ -21,11 +21,10 @@ import xtrack as xt
 
 ################################################################################
 # Test Parameters
-#
+################################################################################
 # An angle-dominated starting particle: the difference between the exact and
 # expanded transverse maps grows with angle, so a large px/py makes the
 # `adaptive` default's choice unambiguous rather than lost in noise.
-################################################################################
 MOMENTUM_EV = 1.0E9
 LENGTH_M    = 1.0
 
@@ -54,11 +53,10 @@ def _track_single(element):
 
 ################################################################################
 # The `adaptive` model default
-#
+################################################################################
 # SAD2XS sets `model` explicitly on every element it emits. These tests pin
 # the reason: the Xsuite default does not resolve to the exact map.
 # See docs/converter/models-integrators.md.
-################################################################################
 def test_drift_adaptive_default_matches_expanded_not_exact():
     """
     An `xt.Drift` left at its default model should track identically to
@@ -105,12 +103,11 @@ def test_quadrupole_adaptive_default_matches_expanded_not_exact():
 
 ################################################################################
 # yoshida4 kick batching
-#
+################################################################################
 # SAD2XS uses 14 kicks for yoshida4-tracked elements. The number is chosen
 # for its slice count, not its face value: yoshida4 batches kicks into groups
 # of seven, so every count in 8..14 costs the same and gives the same result.
 # See docs/converter/models-integrators.md.
-################################################################################
 @pytest.mark.parametrize("kicks", [8, 10, 12, 14])
 def test_yoshida4_kick_counts_in_one_slice_band_are_identical(kicks):
     """

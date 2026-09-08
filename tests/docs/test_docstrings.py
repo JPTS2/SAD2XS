@@ -24,10 +24,9 @@ from tests.support.docs_inventory import REPO_ROOT, relative, tracked_files
 
 ################################################################################
 # Test Parameters
-#
+################################################################################
 # Each check walks every tracked Python file and reports the complete list of
 # violations, so one failure names every offender rather than the first.
-################################################################################
 SOURCE_ROOTS = ("sad2xs/", "tests/")
 
 # The standard module header carried by every file in the project.

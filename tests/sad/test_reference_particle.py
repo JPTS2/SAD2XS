@@ -71,13 +71,12 @@ from tests.sad.conftest import (
 
 ################################################################################
 # Shared Constants
-#
+################################################################################
 # ELECTRON_MASS_MEV / PROTON_MASS_MEV / DEFAULT_MOMENTUM_GEV live in
 # tests/sad/conftest.py since they are generic physical/default values, not
 # specific to this file. BZ / SOL_LENGTH / DX_OFFSET / RF_* below are kept
 # local: they are this file's own solenoid/RF lattice design choices, not
 # values any other tests/sad/*.py file would need to share.
-################################################################################
 MOMENTUM_GEV    = DEFAULT_MOMENTUM_GEV
 BZ              = 3.0       # solenoid field [T] — strong enough for a clean signal
 SOL_LENGTH      = 1.0       # drift length between fringe elements [m]
@@ -140,10 +139,9 @@ def _run_twiss(tmp_path, lattice_text, name="test.sad"):
 
 ################################################################################
 # Default reference particle
-#
+################################################################################
 # When CHARGE and MASS are not specified, SAD uses positron defaults
 # (CHARGE=+1, MASS=electron mass).
-################################################################################
 
 def test_sad_default_reference_particle_matches_explicit_positron(tmp_path):
     """
@@ -281,12 +279,11 @@ def test_sad_solenoid_pair_restores_design_orbit_at_end(tmp_path):
 
 ################################################################################
 # Mass
-#
+################################################################################
 # For a static magnetic lattice at fixed MOMENTUM, the trajectory depends only
 # on q/Bρ = q²c/p0c (charge and momentum, not mass). Mass enters only through
 # the particle velocity β = p/(E) = p0c/sqrt(p0c² + (mc²)²), which affects
 # longitudinal dynamics (time of flight, RF phase) but not static orbit shape.
-################################################################################
 
 def test_sad_proton_mass_accepted_by_sad(tmp_path):
     """
@@ -324,7 +321,7 @@ def test_sad_proton_mass_orbit_matches_positron_orbit(tmp_path):
 
 ################################################################################
 # RF + dispersion mass and charge sensitivity
-#
+################################################################################
 # Strategy: CAVI → BEND → DRIFT → END (open line, low momentum).
 # The cavity gives energy kick ΔE = q·V·cos(φ). The downstream bend creates
 # dispersion D, so the exit orbit is x ≈ D·δ where δ = ΔE/(β·p₀c).
@@ -339,7 +336,6 @@ def test_sad_proton_mass_orbit_matches_positron_orbit(tmp_path):
 # on the zero-momentum orbit and creates no orbit perturbation.
 #
 # CALC6D tests here use calc6d=True and closed=False (INS open-line mode).
-################################################################################
 
 RF_MOMENTUM_GEV = 0.1   # low momentum: proton is highly non-relativistic here
 RF_VOLT_V       = 1e5   # 100 kV; small enough not to violate the thin-kick approximation
@@ -453,7 +449,7 @@ def test_sad_calc6d_open_line_does_not_propagate_cavi_kick_into_orbit(tmp_path):
 
 ################################################################################
 # Single-particle tracking (TRPT equivalent) — energy after RF cavity
-#
+################################################################################
 # track_sad wraps SAD's TrackParticles command, which tracks one or more
 # particles through the lattice for n_turns passes and returns final
 # (x, px, y, py, zeta, delta, state).
@@ -477,7 +473,6 @@ def test_sad_calc6d_open_line_does_not_propagate_cavi_kick_into_orbit(tmp_path):
 #   proton    β ≈ 0.106, transit time T_p ≈ 9.4 · T_e
 # The different transit times shift the effective cavity phase, changing the
 # energy gain — observable as different delta at the end of the line.
-################################################################################
 
 RF_PHI_RAD = np.pi / 4   # 45 degrees — neither on-crest nor zero-crossing
 
@@ -565,7 +560,7 @@ def test_sad_proton_mass_gives_different_delta_than_positron(tmp_path):
 
 ########################################
 # CHARGE dependence of the CAVI energy kick
-#
+########################################
 # Mirrors the solenoid CHARGE tests above: CHARGE = -1 gives the exact
 # sign-reversed kick (not zero), CHARGE = 2 gives a different, nonlinearly
 # scaled but still nonzero kick, and CHARGE = 0 gives exactly zero (a
@@ -575,7 +570,6 @@ def test_sad_proton_mass_gives_different_delta_than_positron(tmp_path):
 #   CHARGE = -1: delta = +7.071159e-4  (exact sign flip)
 #   CHARGE = +2: delta = -2.000026e-3  (not -1.414e-3 = 2x; nonlinear)
 #   CHARGE =  0: delta =  0.0          (exact)
-########################################
 
 def test_sad_cavi_charge_minus_one_gives_sign_reversed_delta(tmp_path):
     """

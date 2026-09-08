@@ -137,12 +137,11 @@ def chromaticity_sad(
     logger.debug("Creating SAD command")
 
     ########################################
-    # SAD changes cwd to the directory of
-    # the input script, so the script must
-    # live in cwd (same dir as the lattice).
-    # Use uuid names to avoid collisions;
-    # try/finally ensures cleanup.
+    # Temporary script placement
     ########################################
+    # SAD changes cwd to the directory of the input script, so the script must
+    # live in cwd, the same directory as the lattice. Use uuid names to avoid
+    # collisions; try/finally ensures cleanup.
     uid      = uuid.uuid4().hex[:12]
     cmd_file = f"_sad_chrom_{uid}.sad"
     out_file = f"_sad_chrom_{uid}.dat"

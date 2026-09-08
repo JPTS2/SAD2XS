@@ -24,10 +24,9 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 
 ################################################################################
 # Accepted / Rejected parameters
-#
+################################################################################
 # See tests/sad/README.md's "Parameter matrix" for the accepted/rejected
 # table this parametrization transcribes.
-################################################################################
 ACCEPTED_PARAMS = [
     pytest.param("L=1.0 ANGLE=0.01",                     id = "angle"),
     pytest.param("L=1.0 K0=0.01",                        id = "k0"),
@@ -88,12 +87,11 @@ def test_bend_rejects(sad_rejects, params):
 
 ################################################################################
 # Thin bend (no length) behaviour
-#
+################################################################################
 # A no-L BEND with ANGLE is a thin/integrated bend. K1 in a no-L BEND is an
 # integrated quadrupole strength: it affects BOTH Twiss (linear focusing,
 # like QUAD) AND tracking (a direct px kick on an off-axis particle) —
 # verified by both tests below.
-################################################################################
 def test_bend_without_length_is_accepted_by_sad(sad_accepts):
     """
     SAD accepts a BEND with a non-zero ANGLE but no L parameter.
@@ -174,12 +172,11 @@ def test_bend_without_length_k1_gives_quadrupole_kick(tmp_path):
 
 ################################################################################
 # Thin corrector (no length) behaviour
-#
+################################################################################
 # A no-L BEND with K0 but no ANGLE is SAD's convention for a corrector
 # magnet — an orbit-kick element, not a focusing one. Twiss betx is
 # unaffected by K0 alone (confirmed below); the kick is verified via
 # tracking, which shows px = K0 directly.
-################################################################################
 def test_corrector_without_length_is_accepted_by_sad(sad_accepts):
     """
     SAD accepts a BEND used as a corrector (K0 only, no ANGLE, no L).
