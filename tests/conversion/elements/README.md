@@ -44,7 +44,7 @@ to extend.
 | `test_oct.py` | 41 | 0 | — |
 | `test_quad.py` | 56 | 0 | — |
 | `test_sext.py` | 41 | 0 | — |
-| `test_sol.py` | 182 | 0 | — |
+| `test_sol.py` | 194 | 0 | — |
 
 ### `test_sol.py` note
 

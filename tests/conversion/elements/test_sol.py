@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-29
+Date:       2026-09-08
 ================================================================================
 """
 ################################################################################
@@ -49,7 +49,7 @@ from tests.support.diagnostics import (
     write_tracking_failure_report,
     write_twiss_failure_report)
 from tests.support.tracking_helpers import track_xsuite_particles
-from sad2xs.sad_helpers import twiss_sad
+from sad2xs.sad_helpers import transfer_matrix_sad, twiss_sad
 
 ################################################################################
 # Diagnostic Helpers
@@ -290,7 +290,8 @@ def _bound_solenoid_lattice(
         sol_out_parameters = "",
         middle_element = "DRIFT       SOL_DRIFT   = (L = 1.0);",
         middle_name = "SOL_DRIFT",
-        line_expression = None):
+        line_expression = None,
+        extra_lines = ""):
     """
     Build a standard bound-solenoid SAD lattice around one middle element.
 
@@ -298,6 +299,9 @@ def _bound_solenoid_lattice(
     SAD2XS does not model the SAD solenoid fringe kick — that is the fair
     comparison baseline. Pass `disfrin = False` deliberately to exercise the
     known, accepted divergence this causes (see `test_sol_disfrin_off_...`).
+
+    `extra_lines` is appended after `TEST_LINE`, for tests needing more than
+    one line over the same elements.
     """
     if line_expression is None:
         line_expression = f"START SOL_IN {middle_name} SOL_OUT END"
@@ -316,6 +320,7 @@ def _bound_solenoid_lattice(
                 END         = ();
 
     LINE        TEST_LINE   = ({line_expression});
+{extra_lines}\
     """
 
 def _reference_transform_lattice(
@@ -2139,3 +2144,150 @@ def test_sol_pipeline_rejects_bending_angle_inside_solenoid_region(write_lattice
             output_directory = "N/A",
             _verbose         = False,
             _test_mode       = True)
+
+
+################################################################################
+# Reversed Bound Solenoids
+################################################################################
+# Reversing a line traverses a bound solenoid's reference shifts from the other
+# side, so the entrance solenoid of the reversed line is the forward line's exit
+# solenoid. tests/sad/test_line_reversal.py pins what SAD does with this.
+#
+# The body is the standard drift: a focusing element inside a DX-shifted frame
+# carries its own SAD/Xsuite divergence that would swamp what is under test.
+REVERSED_SOLENOID_EXTRA_LINES = """\
+    LINE        SOLSEG      = (SOL_IN SOL_DRIFT SOL_OUT);
+    LINE        REVERSED    = (START -SOLSEG END);
+    LINE        MANUAL      = (START -SOL_OUT SOL_DRIFT -SOL_IN END);
+    LINE        MIXED_IN    = (START SOL_IN SOL_DRIFT -SOL_OUT END);
+    LINE        MIXED_OUT   = (START -SOL_OUT SOL_DRIFT SOL_IN END);
+"""
+
+REVERSED_SOLENOID_TRANSFORMS = [
+    "DX = 0.02",
+    "DY = -0.01",
+    "DZ = 0.005",
+    "CHI1 = 0.03",
+    "CHI2 = -0.02",
+    "CHI3 = 0.01",
+    "DX = 0.02 DY = -0.01 CHI1 = 0.03",
+    "DX = 0.02 DY = -0.01 DZ = 0.005 CHI1 = 0.03 CHI2 = -0.02 CHI3 = 0.01"]
+
+def _write_reversed_solenoid_lattice(
+        write_lattice,
+        transforms = REVERSED_SOLENOID_TRANSFORMS[-2]):
+    """
+    Write a bound solenoid lattice carrying every reversal spelling.
+
+    TEST_LINE is the forward segment; REVERSED reverses it as a subline,
+    MANUAL writes that reversal out by hand, and MIXED_IN/MIXED_OUT reverse
+    only one boundary.
+    """
+    return write_lattice(
+        _bound_solenoid_lattice(
+            bz                = 0.1,
+            sol_in_parameters = transforms,
+            extra_lines       = REVERSED_SOLENOID_EXTRA_LINES),
+        filename = "reversed_bound_solenoid.sad")
+
+def _convert_solenoid_line(lattice_path, line_name):
+    """
+    Convert one line of a reversed bound solenoid lattice.
+    """
+    return s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        line_name        = line_name,
+        output_directory = "N/A",
+        _verbose         = False,
+        _test_mode       = True)
+
+def _sad_transfer_matrix(lattice_path, line_name):
+    """
+    SAD's own 4x4 transfer matrix for one line of a written lattice.
+    """
+    cwd = os.getcwd()
+    os.chdir(lattice_path.parent)
+    try:
+        return np.array(transfer_matrix_sad(
+            lattice_filepath = lattice_path.name,
+            line_name        = line_name))[:4, :4]
+    finally:
+        os.chdir(cwd)
+
+########################################
+# Reversed Subline
+########################################
+def test_reversed_bound_solenoid_segment_converts(write_lattice):
+    """
+    A line reversing a bound solenoid segment should convert, and build the
+    same number of elements as the same segment traversed forwards.
+    """
+    lattice_path = _write_reversed_solenoid_lattice(write_lattice)
+
+    forward  = _convert_solenoid_line(lattice_path, "TEST_LINE")
+    reversed_ = _convert_solenoid_line(lattice_path, "REVERSED")
+
+    assert len(reversed_.element_names) == len(forward.element_names), (
+        "Reversing a bound solenoid segment should build the same number of "
+        f"elements as the forward segment. Forward: "
+        f"{list(forward.element_names)}, reversed: "
+        f"{list(reversed_.element_names)}.")
+
+@pytest.mark.parametrize("transforms", REVERSED_SOLENOID_TRANSFORMS)
+def test_reversed_subline_matches_hand_written_reversal(
+        write_lattice,
+        transforms):
+    """
+    Reversing a subline should build the same line as writing the reversal out
+    by hand.
+
+    SAD treats the two spellings as the same lattice, so the converter must
+    too. The hand-written spelling converts through a different code path, so
+    this compares the reversed-subline path against a known-good reference for
+    every reference shift the boundary can carry.
+    """
+    lattice_path = _write_reversed_solenoid_lattice(write_lattice, transforms)
+
+    reversed_ = _convert_solenoid_line(lattice_path, "REVERSED")
+    manual    = _convert_solenoid_line(lattice_path, "MANUAL")
+
+    assert list(reversed_.element_names) == list(manual.element_names), (
+        f"With {transforms}, reversing a subline should build the same "
+        f"elements as the hand-written reversal. Reversed: "
+        f"{list(reversed_.element_names)}, hand-written: "
+        f"{list(manual.element_names)}.")
+
+    assert linear_transfer_matrix_4d(reversed_) == pytest.approx(
+        linear_transfer_matrix_4d(manual), abs = 1E-12), (
+        f"With {transforms}, the reversed subline should have the same "
+        "transfer matrix as the hand-written reversal.")
+
+########################################
+# Against SAD
+########################################
+@pytest.mark.parametrize("line_name", ["REVERSED", "MIXED_IN", "MIXED_OUT"])
+def test_reversed_bound_solenoid_matches_sad_transfer_matrix(
+        write_lattice,
+        line_name):
+    """
+    Every reversal spelling should reproduce SAD's own transfer matrix.
+
+    Anchors the reversed-subline chain to SAD rather than only to the
+    hand-written spelling. MIXED_IN and MIXED_OUT reverse a single boundary,
+    reaching the differing-reversal reordering path that the fully-forward and
+    fully-reversed cases never exercise.
+
+    Uses the 4x4 finite-difference matrix rather than Twiss parameters, so no
+    parametrisation convention enters. SAD's own matrix differs between the two
+    directions by 9.2e-8 on a coupling magnitude of 1.5e-2; the tolerance sits
+    above that residual.
+    """
+    lattice_path = _write_reversed_solenoid_lattice(write_lattice)
+
+    xsuite_matrix = linear_transfer_matrix_4d(
+        _convert_solenoid_line(lattice_path, line_name))
+    sad_matrix = _sad_transfer_matrix(lattice_path, line_name)
+
+    assert xsuite_matrix == pytest.approx(sad_matrix, abs = 1E-6), (
+        f"The converted {line_name} line should match SAD's transfer "
+        f"matrix.\nSAD:\n{sad_matrix}\nXsuite:\n{xsuite_matrix}.")
