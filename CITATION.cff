@@ -15,8 +15,8 @@ authors:
 repository-code: "https://github.com/JPTS2/sad2xs"
 url: "https://github.com/JPTS2/sad2xs"
 license: Apache-2.0
-version: 0.3.0
-date-released: 2026-08-06
+version: 0.4.0
+date-released: 2026-09-08
 doi: 10.5281/zenodo.18985396
 keywords:
   - accelerator physics
