@@ -33,7 +33,7 @@ run.
 | `test_deferred_expressions.py` | 17 | 0 | — |
 | `test_functions.py` | 2 | 0 | — |
 | `test_repeated_definitions.py` | 9 | 0 | — |
-| `test_errors.py` | 22 | 0 | — |
+| `test_errors.py` | 23 | 0 | — |
 
 ### `test_preprocessing.py` note
 

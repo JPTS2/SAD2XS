@@ -305,17 +305,19 @@ def test_malformed_repetition_raises_clear_error(write_lattice, component):
 @pytest.mark.parametrize(
     "line_content",
     [
+        "(D1 QF)",
         "2*(D1 QF)",
         "2*(D1 QF) D1",
     ])
-def test_grouped_repetition_rejects_the_entire_line(
+def test_parenthesised_group_rejects_the_entire_line(
         write_lattice,
         line_content):
     """
-    An invalid grouped repetition must not retain a partial element sequence.
+    An anonymous parenthesised group must not enter a parsed LINE.
 
-    In particular, the closing parenthesis of ``2*(D1 QF) D1`` must not
-    truncate the declaration and silently discard its trailing ``D1``.
+    This applies with or without a repetition count. In particular, the
+    closing parenthesis of ``2*(D1 QF) D1`` must not truncate the declaration
+    and silently discard its trailing ``D1``.
     """
     lattice_path = write_lattice(
         f"""\
