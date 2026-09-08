@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-07
+Date:       2026-09-08
 ================================================================================
 """
 
@@ -1076,17 +1076,23 @@ def solenoid_reference_shift_corrections(
         end_idxs    = [i for i, name in enumerate(element_names) if name == sol_end_ele]
 
         for start_idx, end_idx in zip(start_idxs, end_idxs):
-            assert start_idx < end_idx
-
-            new_element_names   = []
-            new_element_names   += element_names[:start_idx]
             bound_elements      = [
                 f"{inbound_geo_solenoid}_rot",
                 f"{inbound_geo_solenoid}_dz",
                 f"{inbound_geo_solenoid}_dxy",
                 f"{inbound_geo_solenoid}_bound"]
+
+            # A reversed subline arrives with the compound already
+            # flipped, so _bound may be the last component, not the first
+            span_start          = min(start_idx, end_idx)
+            span_end            = max(start_idx, end_idx)
+            assert sorted(element_names[span_start:span_end + 1]) \
+                == sorted(bound_elements)
+
+            new_element_names   = []
+            new_element_names   += element_names[:span_start]
             new_element_names   += bound_elements
-            new_element_names   += element_names[end_idx + 1:]
+            new_element_names   += element_names[span_end + 1:]
 
             element_names       = new_element_names
 
@@ -1103,17 +1109,23 @@ def solenoid_reference_shift_corrections(
         end_idxs    = [i for i, name in enumerate(element_names) if name == sol_end_ele]
 
         for start_idx, end_idx in zip(start_idxs, end_idxs):
-            assert start_idx < end_idx
-
-            new_element_names   = []
-            new_element_names   += element_names[:start_idx]
             bound_elements      = [
                     f"{inbound_nongeo_solenoid}_rot",
                     f"{inbound_nongeo_solenoid}_dz",
                     f"{inbound_nongeo_solenoid}_dxy",
                     f"{inbound_nongeo_solenoid}_bound"]
+
+            # A reversed subline arrives with the compound already
+            # flipped, so _bound may be the last component, not the first
+            span_start          = min(start_idx, end_idx)
+            span_end            = max(start_idx, end_idx)
+            assert sorted(element_names[span_start:span_end + 1]) \
+                == sorted(bound_elements)
+
+            new_element_names   = []
+            new_element_names   += element_names[:span_start]
             new_element_names   += bound_elements
-            new_element_names   += element_names[end_idx + 1:]
+            new_element_names   += element_names[span_end + 1:]
 
             element_names       = new_element_names
 
@@ -1131,17 +1143,23 @@ def solenoid_reference_shift_corrections(
         end_idxs    = [i for i, name in enumerate(element_names) if name == sol_end_ele]
 
         for start_idx, end_idx in zip(start_idxs, end_idxs):
-            assert start_idx < end_idx
-
-            new_element_names   = []
-            new_element_names   += element_names[:start_idx]
             bound_elements      = [
                 f"{outbound_same_reversal_solenoid}_bound",
                 f"{outbound_same_reversal_solenoid}_dxy",
                 f"{outbound_same_reversal_solenoid}_dz",
                 f"{outbound_same_reversal_solenoid}_rot"]
+
+            # A reversed subline arrives with the compound already
+            # flipped, so _bound may be the last component, not the first
+            span_start          = min(start_idx, end_idx)
+            span_end            = max(start_idx, end_idx)
+            assert sorted(element_names[span_start:span_end + 1]) \
+                == sorted(bound_elements)
+
+            new_element_names   = []
+            new_element_names   += element_names[:span_start]
             new_element_names   += bound_elements
-            new_element_names   += element_names[end_idx + 1:]
+            new_element_names   += element_names[span_end + 1:]
 
             element_names       = new_element_names
 
@@ -1159,17 +1177,23 @@ def solenoid_reference_shift_corrections(
         end_idxs    = [i for i, name in enumerate(element_names) if name == sol_end_ele]
 
         for start_idx, end_idx in zip(start_idxs, end_idxs):
-            assert start_idx < end_idx
-
-            new_element_names   = []
-            new_element_names   += element_names[:start_idx]
             bound_elements      = [
                 f"{outbound_differing_reversal_solenoid}_rot",
                 f"{outbound_differing_reversal_solenoid}_dz",
                 f"{outbound_differing_reversal_solenoid}_dxy",
                 f"{outbound_differing_reversal_solenoid}_bound"]
+
+            # A reversed subline arrives with the compound already
+            # flipped, so _bound may be the last component, not the first
+            span_start          = min(start_idx, end_idx)
+            span_end            = max(start_idx, end_idx)
+            assert sorted(element_names[span_start:span_end + 1]) \
+                == sorted(bound_elements)
+
+            new_element_names   = []
+            new_element_names   += element_names[:span_start]
             new_element_names   += bound_elements
-            new_element_names   += element_names[end_idx + 1:]
+            new_element_names   += element_names[span_end + 1:]
             element_names       = new_element_names
 
     ########################################
