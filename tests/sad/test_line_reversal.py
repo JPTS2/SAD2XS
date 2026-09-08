@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-09-08
 ================================================================================
 """
 
@@ -18,7 +18,7 @@ import os
 import numpy as np
 import pytest
 
-from sad2xs.sad_helpers import track_sad
+from sad2xs.sad_helpers import track_sad, transfer_matrix_sad, twiss_sad
 
 ################################################################################
 # Reversed line syntax
@@ -94,7 +94,7 @@ def test_sad_reversed_line_reverses_tracking_element_order(tmp_path):
 
 ################################################################################
 # Reversed-element sign conventions
-#
+################################################################################
 # tests/conversion/pipeline/test_reverse_*.py already test the sad2xs
 # converter's own _007_reversals.py Python logic in detail (bend angle,
 # quad k1/k1s, sextupole/octupole, solenoid ks, etc.) — but those tests
@@ -106,7 +106,6 @@ def test_sad_reversed_line_reverses_tracking_element_order(tmp_path):
 # if the two disagree, the converter's assumption about SAD's own reversal
 # semantics is wrong at the source, regardless of how self-consistent its
 # Python logic is.
-################################################################################
 
 def test_reversed_line_bend_angle_sign_matches_converter_assumption(tmp_path):
     """
@@ -256,3 +255,103 @@ def test_reversed_line_solenoid_ks_sign_matches_converter_assumption(tmp_path):
             f"match a manually BZ-negated/GEO-swapped reconstruction "
             f"({coord} mismatch) — confirms the converter's solenoid "
             f"reversal assumption against real SAD.")
+
+
+################################################################################
+# Reversed bound-solenoid reference shifts
+################################################################################
+# A bound SOL carries reference shifts (DX/DY/DZ, CHI1/CHI2/CHI3) that move the
+# reference frame at the solenoid boundary. Reversing the line traverses that
+# boundary from the other side, so the shifts must act at the opposite end of
+# the segment. This is the fact _006_solenoid_converter.py's component
+# reordering has to reproduce.
+# The body is a plain drift. A focusing element inside a DX-shifted frame
+# carries its own SAD/Xsuite divergence, which would swamp what is under test
+# here and force a tolerance thousands of times looser than necessary.
+REFERENCE_SHIFT_LATTICE = (
+    "MOMENTUM = 1.0 GEV;\n"
+    "DRIFT DA = (L=1.0);\n"
+    "SOL   S1 = (BZ=0.1 BOUND=1 GEO=1 DX=0.02 DY=-0.01 CHI1=0.03 DISFRIN=1)\n"
+    "      S2 = (BZ=0.1 BOUND=1 DISFRIN=1);\n"
+    "MARK  START = ()\n"
+    "      END   = ();\n"
+    "LINE  SOLSEG = (S1 DA S2);\n"
+    "LINE  FWD    = (START SOLSEG END);\n"
+    "LINE  REV    = (START -SOLSEG END);\n")
+
+def _reference_shift_orbit(tmp_path, line_name):
+    """
+    Twiss one line of REFERENCE_SHIFT_LATTICE and return its interior orbit.
+
+    SAD reports the orbit at each element's entrance, so the first solenoid
+    row is read before its own reference shift is applied and is zero in both
+    directions. Skipping it, and the enclosing markers, leaves only the rows
+    that actually carry the shift.
+    """
+    lattice = tmp_path / "sol_reference_shift.sad"
+    lattice.write_text(REFERENCE_SHIFT_LATTICE)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        tw = twiss_sad(
+            lattice_filepath    = lattice.name,
+            line_name           = line_name,
+            calc6d              = False,
+            closed              = False)
+    finally:
+        os.chdir(cwd)
+
+    return [float(x) for x in tw.x[2:-1]], [float(y) for y in tw.y[2:-1]]
+
+def test_reversed_bound_solenoid_mirrors_reference_shift_orbit(tmp_path):
+    """
+    Reversing a line containing a bound solenoid pair mirrors the reference
+    shift orbit: the interior orbit of the reversed line is the forward
+    line's interior orbit, back to front.
+    """
+    forward_x, forward_y = _reference_shift_orbit(tmp_path, "FWD")
+    reversed_x, reversed_y = _reference_shift_orbit(tmp_path, "REV")
+
+    assert reversed_x == pytest.approx(forward_x[::-1], abs = 1E-12), (
+        "Reversing a bound solenoid segment should mirror the horizontal "
+        f"reference shift orbit. Forward: {forward_x}, reversed: {reversed_x}.")
+    assert reversed_y == pytest.approx(forward_y[::-1], abs = 1E-12), (
+        "Reversing a bound solenoid segment should mirror the vertical "
+        f"reference shift orbit. Forward: {forward_y}, reversed: {reversed_y}.")
+
+def test_reversed_bound_solenoid_negates_transverse_coupling(tmp_path):
+    """
+    Reversing a bound solenoid segment negates the transverse coupling blocks
+    of the transfer matrix and leaves the uncoupled blocks unchanged.
+
+    SAD's own transfer matrix carries a small residual between the two
+    directions: 1.4e-9 on the uncoupled blocks and 9.2e-8 on the coupling
+    blocks, against a coupling magnitude of 1.5e-2. The tolerance covers that
+    residual rather than asserting exact equality.
+    """
+    lattice = tmp_path / "sol_reference_shift.sad"
+    lattice.write_text(REFERENCE_SHIFT_LATTICE)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        forward  = np.array(transfer_matrix_sad(
+            lattice_filepath = lattice.name, line_name = "FWD"))[:4, :4]
+        reversed_ = np.array(transfer_matrix_sad(
+            lattice_filepath = lattice.name, line_name = "REV"))[:4, :4]
+    finally:
+        os.chdir(cwd)
+
+    assert reversed_[:2, :2] == pytest.approx(forward[:2, :2], abs = 1E-6), (
+        "Reversal should leave the horizontal block unchanged. "
+        f"Forward:\n{forward[:2, :2]}\nReversed:\n{reversed_[:2, :2]}.")
+    assert reversed_[2:, 2:] == pytest.approx(forward[2:, 2:], abs = 1E-6), (
+        "Reversal should leave the vertical block unchanged. "
+        f"Forward:\n{forward[2:, 2:]}\nReversed:\n{reversed_[2:, 2:]}.")
+    assert reversed_[:2, 2:] == pytest.approx(-forward[:2, 2:], abs = 1E-6), (
+        "Reversal should negate the horizontal-vertical coupling block. "
+        f"Forward:\n{forward[:2, 2:]}\nReversed:\n{reversed_[:2, 2:]}.")
+    assert reversed_[2:, :2] == pytest.approx(-forward[2:, :2], abs = 1E-6), (
+        "Reversal should negate the vertical-horizontal coupling block. "
+        f"Forward:\n{forward[2:, :2]}\nReversed:\n{reversed_[2:, :2]}.")

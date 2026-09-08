@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 import xtrack as xt
 
+from sad2xs.config import Config
 from tests.support.writer_helpers import write_and_load as _shared_write_and_load
 
 ################################################################################
@@ -99,6 +100,16 @@ def test_sol_writer_reloads_as_xsuite_uniform_solenoid(tmp_path):
     assert isinstance(reloaded_line["sol1"], xt.UniformSolenoid), (
         "Written solenoid element `sol1` should reload as xt.UniformSolenoid. "
         f"""Got: {type(reloaded_line["sol1"]).__name__}.""")
+
+
+def test_sol_writer_applies_configured_integrator(tmp_path):
+    """Generated lattices must retain the production solenoid integration."""
+    reloaded = _writer_roundtrip(_build_sol_line(knl = [0.0, 0.01]), tmp_path)
+    config   = Config(_verbose = False)
+
+    assert reloaded["sol1"].integrator == config.INTEGRATOR_SOL
+    assert reloaded["sol1"].num_multipole_kicks == (
+        config.N_INTEGRATOR_KICKS_SOL)
 
 
 def test_sol_writer_preserves_element_name(tmp_path):

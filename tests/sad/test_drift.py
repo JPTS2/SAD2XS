@@ -24,10 +24,10 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 
 ################################################################################
 # Rejected parameters
+################################################################################
 # DRIFT accepts only L — no misalignment parameters. See tests/sad/README.md's
 # "Parameter matrix" for the full accepted/rejected table this parametrization
 # transcribes.
-################################################################################
 REJECTED_PARAMS = [
     pytest.param("L=1.0 DX=0.001",   id = "dx"),
     pytest.param("L=1.0 DY=0.001",   id = "dy"),
@@ -71,11 +71,10 @@ def test_drift_rejects(sad_rejects, params):
 
 ################################################################################
 # Effect on Twiss and tracking
-#
+################################################################################
 # DRIFT's only parameter, L, determines the total line length in Twiss and
 # leaves a particle's transverse coordinates geometrically propagated (not
 # perturbed) in tracking.
-################################################################################
 def test_drift_length_matches_l_parameter(tmp_path):
     """
     A DRIFT's L parameter should determine the total Twiss s-coordinate.

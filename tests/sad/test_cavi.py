@@ -24,10 +24,9 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 
 ################################################################################
 # Accepted / Rejected parameters
-#
+################################################################################
 # See tests/sad/README.md's "Parameter matrix" for the accepted/rejected
 # table this parametrization transcribes.
-################################################################################
 ACCEPTED_PARAMS = [
     pytest.param("L=0.5 VOLT=0.5",    id = "volt"),
     pytest.param("L=0.5 FREQ=400E6",  id = "freq"),
@@ -95,13 +94,12 @@ def test_cavi_rejects(sad_rejects, params):
 
 ################################################################################
 # Effect on Twiss and tracking
-#
+################################################################################
 # VOLT does not perturb the 4D Twiss reference orbit (the cavity sits on the
 # zero-momentum orbit in CALC4D — a real SAD/COD limitation, not a bug),
 # but it does give a real, nonzero energy deviation in single-particle
 # tracking. Both are asserted explicitly so neither is left as an
 # unverified assumption.
-################################################################################
 def test_cavi_volt_does_not_affect_twiss_orbit_in_calc4d(tmp_path):
     """
     In CALC4D, VOLT should not perturb the Twiss reference orbit x: no
@@ -171,9 +169,9 @@ def test_cavi_volt_gives_nonzero_energy_deviation_in_tracking(tmp_path):
         "VOLT != 0 should give a nonzero energy deviation in tracking.")
 
 ################################################################################
-# FRINGE/DISFRIN RF edge-focusing kick (ground truth) -- see
-# docs/reference/sad-behaviour.md
+# FRINGE/DISFRIN RF edge-focusing kick
 ################################################################################
+# Ground truth. See docs/reference/sad-behaviour.md.
 def _track_cavi_probe(tmp_path, extra, name):
     """
     Track a single off-axis, off-crest particle through a VOLT CAVI and

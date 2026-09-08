@@ -21,12 +21,11 @@ import xtrack as xt
 
 ################################################################################
 # Test Parameters
-#
+################################################################################
 # Low reference momentum, strong VOLT (a large fraction of the reference
 # energy in a single element) -- the regime where SAD's own RF-focusing
 # kick (see docs/reference/sad-behaviour.md) is not negligible, so its absence in
 # Xsuite is unambiguous rather than lost in numerical noise.
-################################################################################
 MOMENTUM_GEV = 0.05
 MASS_MEV     = 0.51099895000
 VOLT         = 1.0E8
@@ -34,14 +33,13 @@ FREQUENCY    = 2.856E9
 
 ################################################################################
 # Cavity RF-Focusing
-#
+################################################################################
 # Parametrised over RF phase (on-crest and zero-crossing) to pair with
 # tests/sad/test_mult.py's ground truth: SAD's own RF-focusing kick is
 # present at both phases (nonzero even at the zero-crossing, larger nearer
 # the crest -- see tests/sad/test_mult.py and docs/reference/sad-behaviour.md).
 # Xsuite's Cavity gives zero coupling at every phase, since the coupling
 # calculation is disabled entirely, independent of the phase value passed.
-################################################################################
 @pytest.mark.parametrize(
     "phase", [np.pi / 2, 0.0], ids = ["on_crest", "zero_crossing"])
 def test_xsuite_cavity_has_no_transverse_rf_focusing_coupling(phase):

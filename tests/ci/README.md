@@ -23,6 +23,7 @@ This folder runs first (see `pytest.ini`'s `testpaths`), so a misconfigured
   for `run_tests.yml`).
 - Test path validation (paths listed in per-folder workflows exist in the repo).
 - Docker build workflow trigger and naming contracts.
+- Dockerfile build contracts.
 - `pytest.ini`'s `testpaths` completeness (every test collected by a full
   scan of `tests/` is also collected via `testpaths`, and vice versa).
 
@@ -46,9 +47,10 @@ Does not require the SAD binary.
 
 | File | Tests | Fail | Failure root cause |
 |------|-------|------|--------------------|
-| `test_workflow_checkout_refs.py` | 58 | 0 | — |
+| `test_workflow_checkout_refs.py` | 61 | 0 | — |
 | `test_workflow_test_targets.py` | 39 | 0 | — |
 | `test_pytest_ini_testpaths.py` | 2 | 0 | — |
+| `test_dockerfile_build_contract.py` | 1 | 0 | — |
 
 ### `test_workflow_checkout_refs.py`
 
@@ -71,7 +73,7 @@ without a matching workflow fails these tests instead of passing silently.
 
 **Run-all workflow tests (3, not parametrised):**
 - `run_tests.yml` has a `pull_request` trigger (catches regressions before merge)
-- `run_tests.yml` has a `schedule` trigger (weekly runs for upstream breakage)
+- `run_tests.yml` has a `schedule` trigger (nightly runs for upstream breakage)
 - `run_tests.yml` has a `workflow_dispatch` trigger (manual re-runs)
 
 **Regression-gate tests (5 functions, 5 instances):**
@@ -80,11 +82,16 @@ without a matching workflow fails these tests instead of passing silently.
 - The `run-tests` job itself remains blocking
 - The `run-tests` job checks out the triggering commit without a `ref` override
 
-**Docker build tests (4, not parametrised):**
+**Docker build tests (6, not parametrised):**
 - `docker-build.yml` name is stable and documented
 - Triggers on push to `main`
+- Triggers on push to `release/**`
+- Publishes a per-branch image tag
 - Has `workflow_dispatch` trigger
-- Uses `actions/checkout@v7`
+- Every job uses `actions/checkout@v7`
+
+**Template image tests (1, not parametrised):**
+- The template falls back to a tag the Docker build actually publishes
 
 ### `test_workflow_test_targets.py`
 
@@ -97,6 +104,15 @@ template's own normalisation logic).
 | `test_ci_folder_workflow_lists_at_least_one_test_target` | 12 PASS | Each workflow has a non-empty `test_files:` block |
 | `test_ci_folder_workflow_test_targets_all_exist` | 12 PASS | Each listed path (`tests/<folder>`) exists as a directory |
 | `test_ci_folder_workflow_test_targets_are_under_tests_directory` | 12 PASS | All paths start with `tests/` |
+
+### `test_dockerfile_build_contract.py`
+
+Reads the `Dockerfile` as text and pins the build contracts that are easy to
+undo by accident.
+
+| Test | Expected result | What it checks |
+|------|----------------|----------------|
+| `test_builder_stage_installs_yacc` | PASS | The builder stage installs bison, so make can regenerate `src/calc.c` from `src/calc.y` whenever the mtimes make it try |
 
 ### `test_pytest_ini_testpaths.py`
 

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-06
+Date:       2026-09-08
 ================================================================================
 """
 
@@ -18,12 +18,77 @@ Date:       2026-08-06
 ################################################################################
 import logging
 
-import xtrack as xt
 import numpy as np
+import xtrack as xt
 
+from ..config import REVERSED_LINE_SUFFIX
 from ..types import ConfigLike
+from ._000_helpers import is_effectively_zero
 
 logger  = logging.getLogger(__name__)
+
+################################################################################
+# Bound Solenoid Component Order
+################################################################################
+# A bound solenoid's transforms are built as bound/dxy/dz/rot. An inbound
+# boundary runs them in reverse so the rotation happens at x=y=0, where it
+# cannot pick up xt.Rotation's position-dependent zeta shift. An outbound
+# boundary keeps the built order, except when the pair's two boundaries differ
+# in reversal.
+INBOUND_COMPONENT_ORDER     = ("rot", "dz", "dxy", "bound")
+OUTBOUND_COMPONENT_ORDER    = ("bound", "dxy", "dz", "rot")
+
+def _reorder_bound_solenoid_components(
+        element_names:      list[str],
+        solenoid:           str,
+        component_order:    tuple[str, ...]) -> list[str]:
+    """
+    Rewrite one bound solenoid's transform components into `component_order`.
+
+    Parameters
+    ----------
+    element_names : list of str
+        The line's current element names.
+    solenoid : str
+        The solenoid whose components to reorder, without a suffix.
+    component_order : tuple of str
+        The component suffixes, in the order they should end up in.
+
+    Returns
+    -------
+    list of str
+        `element_names` with each occurrence of the solenoid's components
+        rewritten into `component_order`.
+    """
+    components  = [f"{solenoid}_{suffix}" for suffix in component_order]
+    bound_idxs  = [
+        i for i, name in enumerate(element_names) if name == f"{solenoid}_bound"]
+    rot_idxs    = [
+        i for i, name in enumerate(element_names) if name == f"{solenoid}_rot"]
+
+    if len(bound_idxs) != len(rot_idxs):
+        raise RuntimeError(
+            f"Cannot reorder {solenoid}: found {len(bound_idxs)} bound "
+            f"component(s) and {len(rot_idxs)} rotation component(s).")
+
+    for bound_idx, rot_idx in zip(bound_idxs, rot_idxs):
+
+        # A reversed subline arrives with the compound already flipped, so
+        # _bound may be the last component rather than the first
+        span_start  = min(bound_idx, rot_idx)
+        span_end    = max(bound_idx, rot_idx)
+        found       = element_names[span_start:span_end + 1]
+        if sorted(found) != sorted(components):
+            raise RuntimeError(
+                f"Cannot reorder {solenoid}: expected contiguous components "
+                f"{components}, found {found}.")
+
+        element_names = (
+            element_names[:span_start]
+            + components
+            + element_names[span_end + 1:])
+
+    return element_names
 
 ################################################################################
 # Conversion Function
@@ -77,8 +142,10 @@ def convert_solenoids(
     if "sol" not in parsed_elements:
         logger.info("No solenoids in lattice: skipping solenoid corrections")
         return
-    solenoids   = parsed_elements["sol"]
-    n_converted = 0
+    solenoids: dict                      = parsed_elements["sol"]
+    n_converted: int                     = 0
+    powered_dipole_elements: set[str]    = set()
+    powered_offset_fringes: set[str]     = set()
 
     ########################################
     # Get bound and geo solenoids
@@ -97,11 +164,9 @@ def convert_solenoids(
     ############################################################################
     for line_name in environment.lines:
 
-        # The line may be a compound solenoid element
+        # The line may be a compound solenoid element, or its reversal
         # e.g. dx, chi1, sol
-        if line_name in bound_solenoids:
-            continue
-        if line_name.endswith("_reversed") and line_name[:-9] in bound_solenoids:
+        if line_name.removesuffix(REVERSED_LINE_SUFFIX) in bound_solenoids:
             continue
 
         line    = environment.lines[line_name]
@@ -271,6 +336,10 @@ def convert_solenoids(
                     rotation    = line[element].rot_s_rad
                     knl         = [f"{k0} * {length}", f"{k1} * {length}"]
 
+                    if not is_effectively_zero(ks, tol = 0.0) \
+                            and not is_effectively_zero(k0, tol = 0.0):
+                        powered_dipole_elements.add(element.lstrip("-"))
+
                     x0          = -1 * (shift_x * np.cos(rotation) + \
                         shift_y * np.sin(rotation))
                     y0          = -1 * (shift_y * np.cos(rotation) - \
@@ -433,29 +502,68 @@ def convert_solenoids(
                     shift_y     = line[element].shift_y
                     rotation    = line[element].rot_s_rad
 
+                    if not is_effectively_zero(ks, tol = 0.0) and (
+                            not is_effectively_zero(knl[0], tol = 0.0)
+                            or not is_effectively_zero(ksl[0], tol = 0.0)):
+                        powered_dipole_elements.add(element.lstrip("-"))
+
                     x0          = -1 * (shift_x * np.cos(rotation) + \
                         shift_y * np.sin(rotation))
                     y0          = -1 * (shift_y * np.cos(rotation) - \
                         shift_x * np.sin(rotation))
 
-                    environment.element_dict.pop(element)                       # type: ignore
-                    environment.new(
-                        name				= element,
-                        prototype			= xt.UniformSolenoid,
-                        length				= length,
-                        ks					= ks,
-                        knl					= knl,
-                        ksl					= ksl,
-                        order				= config.MAX_KNL_ORDER,
-                        shift_x		        = shift_x,
-                        shift_y		        = shift_y,
-                        rot_s_rad           = rotation,
-                        x0                  = x0,
-                        y0                  = y0)
+                    new_element_name = f"{element}_{solenoid_suffix}"
+                    if new_element_name not in environment.element_dict:  # type: ignore
+                        environment.new(
+                            name        = new_element_name,
+                            prototype   = xt.UniformSolenoid,
+                            length      = length,
+                            ks          = ks,
+                            knl         = knl,
+                            ksl         = ksl,
+                            order       = config.MAX_KNL_ORDER,
+                            shift_x     = shift_x,
+                            shift_y     = shift_y,
+                            rot_s_rad   = rotation,
+                            x0          = x0,
+                            y0          = y0)
+                    line.element_names[idx] = new_element_name
 
                     n_converted += 1
                     logger.debug(
-                        f"Converted Multipole {element} to solenoid with ks = {ks}")
+                        f"Converted Multipole {element} to solenoid "
+                        f"{new_element_name} with ks = {ks}")
+                    continue
+
+                # Solenoid segment edges supply the local canonical transform,
+                # so the centred source fringe map remains unchanged.
+                elif isinstance(
+                        environment.element_dict[element],
+                        xt.SecondOrderTaylorMap):
+                    source_map = line[element]
+                    fringe_parameters = environment.metadata.get(
+                        "sad2xs", {}).get("fringe_taylor_maps", {}).get(
+                            element)
+                    if fringe_parameters is None:
+                        logger.warning(
+                            f"Element {element} in line {line_name} has not "
+                            "been converted")
+                        continue
+                    if is_effectively_zero(ks, tol = 0.0):
+                        continue
+                    if is_effectively_zero(
+                            fringe_parameters["a"], tol = 0.0) \
+                            and is_effectively_zero(
+                                fringe_parameters["b"], tol = 0.0):
+                        continue
+                    if float(source_map.shift_x) != 0.0 \
+                            or float(source_map.shift_y) != 0.0:
+                        source_name = element.lstrip("-")
+                        for suffix in ("_fringe_in", "_fringe_out"):
+                            if source_name.endswith(suffix):
+                                source_name = source_name[:-len(suffix)]
+                                break
+                        powered_offset_fringes.add(source_name)
                     continue
 
                 # Known thin elements that don't need conversion
@@ -466,6 +574,7 @@ def convert_solenoids(
                         xt.TimeDelay,
                         xt.Rotation,
                         xt.Marker,
+                        xt.MultipoleEdge,
                         xt.LimitEllipse,
                         xt.LimitRect,
                         xt.LimitRectEllipse)):
@@ -478,6 +587,28 @@ def convert_solenoids(
                 else:
                     logger.warning(
                         f"Element {element} in line {line_name} has not been converted")
+
+    if powered_dipole_elements:
+        logger.warning(
+            f"{len(powered_dipole_elements)} element(s) have "
+            "K0/SK0 body components inside powered bound-solenoid "
+            "regions. Xtrack's split solenoid/multipole map differs from "
+            "SAD's combined paraxial body map and can accumulate orbit and "
+            "coupled-optics differences.")
+        logger.debug(
+            "Elements affected by the powered-solenoid K0/SK0 body "
+            "limitation: " + ", ".join(sorted(powered_dipole_elements)))
+
+    if powered_offset_fringes:
+        logger.warning(
+            f"{len(powered_offset_fringes)} offset element(s) "
+            "with SAD K1 soft-edge fringes occur inside powered bound-solenoid "
+            "regions. SAD's combined DX/DY and local-BZ convention is not "
+            "reproduced exactly.")
+        logger.debug(
+            "Offset elements with K1 fringes affected by the powered-solenoid "
+            "limitation: "
+            + ", ".join(sorted(powered_offset_fringes)))
 
     logger.info(f"Converted {n_converted} elements inside solenoid regions")
 
@@ -996,113 +1127,16 @@ def solenoid_reference_shift_corrections(
     element_names   = line.element_names.copy()                 # type: ignore
 
     ########################################
-    # Reorder inbound geo solenoids
+    # Reorder the bound solenoid components
     ########################################
-    for inbound_geo_solenoid in inbound_geo_solenoids:
-
-        sol_start_ele   = f"{inbound_geo_solenoid}_bound"
-        sol_end_ele     = f"{inbound_geo_solenoid}_rot"
-
-        # Get the start and end indices
-        start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
-        end_idxs    = [i for i, name in enumerate(element_names) if name == sol_end_ele]
-
-        for start_idx, end_idx in zip(start_idxs, end_idxs):
-            assert start_idx < end_idx
-
-            new_element_names   = []
-            new_element_names   += element_names[:start_idx]
-            bound_elements      = [
-                f"{inbound_geo_solenoid}_rot",
-                f"{inbound_geo_solenoid}_dz",
-                f"{inbound_geo_solenoid}_dxy",
-                f"{inbound_geo_solenoid}_bound"]
-            new_element_names   += bound_elements
-            new_element_names   += element_names[end_idx + 1:]
-
-            element_names       = new_element_names
-
-    ########################################
-    # Reorder inbound non-geo solenoids
-    ########################################
-    for inbound_nongeo_solenoid in inbound_nongeo_solenoids:
-
-        sol_start_ele   = f"{inbound_nongeo_solenoid}_bound"
-        sol_end_ele     = f"{inbound_nongeo_solenoid}_rot"
-
-        # Get the start and end indices
-        start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
-        end_idxs    = [i for i, name in enumerate(element_names) if name == sol_end_ele]
-
-        for start_idx, end_idx in zip(start_idxs, end_idxs):
-            assert start_idx < end_idx
-
-            new_element_names   = []
-            new_element_names   += element_names[:start_idx]
-            bound_elements      = [
-                    f"{inbound_nongeo_solenoid}_rot",
-                    f"{inbound_nongeo_solenoid}_dz",
-                    f"{inbound_nongeo_solenoid}_dxy",
-                    f"{inbound_nongeo_solenoid}_bound"]
-            new_element_names   += bound_elements
-            new_element_names   += element_names[end_idx + 1:]
-
-            element_names       = new_element_names
-
-    ########################################
-    # Reorder outbound solenoids (inbound_reversed == outbound_reversed):
-    # unchanged bound/dxy/dz/rot
-    ########################################
-    for outbound_same_reversal_solenoid in outbound_same_reversal_solenoids:
-
-        sol_start_ele   = f"{outbound_same_reversal_solenoid}_bound"
-        sol_end_ele     = f"{outbound_same_reversal_solenoid}_rot"
-
-        # Get the start and end indices
-        start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
-        end_idxs    = [i for i, name in enumerate(element_names) if name == sol_end_ele]
-
-        for start_idx, end_idx in zip(start_idxs, end_idxs):
-            assert start_idx < end_idx
-
-            new_element_names   = []
-            new_element_names   += element_names[:start_idx]
-            bound_elements      = [
-                f"{outbound_same_reversal_solenoid}_bound",
-                f"{outbound_same_reversal_solenoid}_dxy",
-                f"{outbound_same_reversal_solenoid}_dz",
-                f"{outbound_same_reversal_solenoid}_rot"]
-            new_element_names   += bound_elements
-            new_element_names   += element_names[end_idx + 1:]
-
-            element_names       = new_element_names
-
-    ########################################
-    # Reorder outbound solenoids (inbound_reversed != outbound_reversed):
-    # rotation-first, same as inbound
-    ########################################
-    for outbound_differing_reversal_solenoid in outbound_differing_reversal_solenoids:
-
-        sol_start_ele   = f"{outbound_differing_reversal_solenoid}_bound"
-        sol_end_ele     = f"{outbound_differing_reversal_solenoid}_rot"
-
-        # Get the start and end indices
-        start_idxs  = [i for i, name in enumerate(element_names) if name == sol_start_ele]
-        end_idxs    = [i for i, name in enumerate(element_names) if name == sol_end_ele]
-
-        for start_idx, end_idx in zip(start_idxs, end_idxs):
-            assert start_idx < end_idx
-
-            new_element_names   = []
-            new_element_names   += element_names[:start_idx]
-            bound_elements      = [
-                f"{outbound_differing_reversal_solenoid}_rot",
-                f"{outbound_differing_reversal_solenoid}_dz",
-                f"{outbound_differing_reversal_solenoid}_dxy",
-                f"{outbound_differing_reversal_solenoid}_bound"]
-            new_element_names   += bound_elements
-            new_element_names   += element_names[end_idx + 1:]
-            element_names       = new_element_names
+    for solenoids, component_order in (
+            (inbound_geo_solenoids,                 INBOUND_COMPONENT_ORDER),
+            (inbound_nongeo_solenoids,              INBOUND_COMPONENT_ORDER),
+            (outbound_same_reversal_solenoids,      OUTBOUND_COMPONENT_ORDER),
+            (outbound_differing_reversal_solenoids, INBOUND_COMPONENT_ORDER)):
+        for solenoid in solenoids:
+            element_names = _reorder_bound_solenoid_components(
+                element_names, solenoid, component_order)
 
     ########################################
     # Update the line

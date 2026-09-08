@@ -20,9 +20,14 @@ Each of these is a known, characterised difference, not an open bug. Most raise 
 | Effect | Impact | Warns |
 | --- | --- | --- |
 | Solenoid fringe kick not modelled | solenoid optics, spin tracking | yes |
+| `MULT` K0/SK0 body inside powered solenoid | accumulated orbit/coupled-optics residual | yes |
+| Offset `MULT` K1 soft fringe inside powered solenoid | local DX/DY convention differs | yes |
 | Cavity RF-focusing kick not modelled | low-energy, high-gradient RF | yes |
 | Offset bend reference-orbit convention | bends with `ANGLE != 0` and `DX`/`DY` | yes |
 | `MULT` simplified to a bend | residual at `O(theta^4)` | yes |
+| `MULT` fringe with `DROT` | fringe skipped | yes |
+| `MULT` soft dipole fringe or hard order above K1/SK1 | unsupported component omitted | yes |
+| `MULT` fringe spin transport | spin unchanged across fringe components | no |
 | Hard-edge fringe gating ignored | bends and quadrupoles with `DISFRIN` | **no** |
 | Quadrupole fringe radiation untested | quadrupole fringe | no |
 | Radiation against SAD | sextupole, octupole, multipole, solenoid | no |
@@ -37,6 +42,16 @@ Neither `xt.UniformSolenoid` nor `xt.VariableSolenoid` implements the term. For 
 The same limitation applies to spin tracking. Spin precession is highly sensitive to the fine field detail at the fringe, so this converter is not a reliable tool for spin-tracking studies through solenoid lattices.
 
 See [solenoid conversion](../converter/solenoids.md).
+
+SAD uses `tsolque` for a combined paraxial solenoid--multipole body map.
+Xtrack's `UniformSolenoid` instead splits an exact solenoid drift and
+multipole kicks. For a `MULT` carrying `K0` or `SK0` inside a powered bound
+solenoid, the two maps are not identical even after the Xtrack integrator is
+converged. An isolated SAD regression shows that about `99.7%` of the small
+K0- or SK0-dependent linear response is absent from the split Xtrack
+representation for its test parameters. Conversion warns once with the
+affected count; debug logging names the elements. A source-derived corrective
+body map is not yet implemented.
 
 ## Cavities
 
@@ -60,13 +75,33 @@ See [element conversion](../converter/elements.md).
 
 ## Fringe fields
 
-SAD has several distinct fringe mechanisms. Two are imported, both on by default: the bend soft-edge fringe and the quadrupole linear fringe.
+SAD has several distinct fringe mechanisms. The bend soft edge, quadrupole
+linear fringe, and the supported MULT K0/SK0 hard, K1/SK1 hard, and F1/F2 soft
+components are imported by default.
 
-The rest are not imported. Most importantly, **`DISFRIN` is not read for bends or quadrupoles**. A lattice that deliberately disables the hard-edge fringe still gets that fringe after conversion. This limitation is silent: no warning is raised.
+**`DISFRIN` is still not read for bends or quadrupoles.** A lattice that
+deliberately disables their hard-edge fringe still gets it after conversion,
+without a warning. MULT conversion does read `DISFRIN`, but follows SAD
+tracking rather than SAD Twiss when `DISK0FR` differs; see the switch
+discussion in [fringe models](../converter/fringes.md).
 
 The imported bend fringe once carried an off-momentum residual of a few percent. Xsuite 0.57.0 corrected the momentum scaling that caused it, and it is below the supported minimum, so the residual no longer applies.
 
 The quadrupole fringe is modelled as a thin second-order Taylor map. This reproduces the optics correctly, but whether the map radiates is untested. Treat radiation results through quadrupole fringes with caution.
+
+The MULT Taylor map uses the same representation for its F1/F2 soft part and
+also contains the supported K0/SK0 hard edge. In a powered bound-solenoid
+region, adjacent Xtrack solenoid segment edges supply the local canonical
+transformation for centred maps; direct SAD F1 and F2 regressions pin that
+composition. For an offset K1 soft fringe, the combined DX/DY and local-field
+convention is not reproduced exactly, so the converter raises one warning and
+retains this as a stated limitation.
+
+MULT hard orders above K1/SK1 and the `FB1`/`FB2` soft-dipole term are not
+modelled and raise category warnings. Active hard-fringe inputs must be
+concrete rather than deferred. The supported five-element model is validated
+orbitally over its regression grid, but not at dynamic-aperture amplitudes,
+and neither of its Xtrack fringe element types transports spin.
 
 See [fringe models](../converter/fringes.md).
 

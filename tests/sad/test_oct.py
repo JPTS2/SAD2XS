@@ -24,10 +24,9 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 
 ################################################################################
 # Accepted / Rejected parameters
-#
+################################################################################
 # See tests/sad/README.md's "Parameter matrix" for the accepted/rejected
 # table this parametrization transcribes.
-################################################################################
 ACCEPTED_PARAMS = [
     pytest.param("L=1.0 K3=1.0",           id = "k3"),
     pytest.param("L=1.0 DX=0.001",         id = "dx"),

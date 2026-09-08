@@ -24,13 +24,13 @@ serialises.
 | `test_quad_writer.py` | 30 | 0 | `xt.Quadrupole` | `k1`, `k1s`, `shift_x`/`shift_y`, `rot_s_rad`, `knl`/`ksl` literal arrays |
 | `test_sext_writer.py` | 30 | 0 | `xt.Sextupole` | `k2`, `k2s`, `shift_x`/`shift_y`, `rot_s_rad`, `knl`/`ksl` literal arrays |
 | `test_oct_writer.py` | 30 | 0 | `xt.Octupole` | `k3`, `k3s`, `shift_x`/`shift_y`, `rot_s_rad`, `knl`/`ksl` literal arrays |
-| `test_mult_writer.py` | 25 | 0 | `xt.Multipole` | `knl`/`ksl` literal arrays, not optics variables; `shift_x`/`shift_y`, `rot_s_rad` |
-| `test_sol_writer.py` | 26 | 0 | `xt.UniformSolenoid` | `ks` as a literal number, `x0`/`y0` axis offsets, `knl`/`ksl`, `shift_x`/`shift_y`, `rot_s_rad` |
+| `test_mult_writer.py` | 26 | 0 | `xt.Multipole`, `xt.MultipoleEdge` | multipole `knl`/`ksl`; edge `kn`/`ks`, order, face and alignment; numeric rather than quoted values |
+| `test_sol_writer.py` | 27 | 0 | `xt.UniformSolenoid` | `ks` as a literal number, `x0`/`y0` axis offsets, `knl`/`ksl`, `shift_x`/`shift_y`, `rot_s_rad`, configured integrator and kick count |
 | `test_cavi_writer.py` | 24 | 0 | `xt.Cavity` | voltage, frequency, and phase as optics expressions; the `fshift` global shift; harmonic mode writing `harm_{name}` instead of `freq_{name}` |
 | `test_refshift_writer.py` | 39 | 0 | `xt.Translation`, `xt.TimeDelay`, `xt.Rotation` | every shift and rotation field as an optics expression, zero `default_to_zero` behaviour, all five types in one line |
 | `test_aper_writer.py` | 33 | 0 | `xt.LimitEllipse`, `xt.LimitRect`, `xt.LimitRectEllipse` | bounds, offsets, asymmetric bounds, mixed types |
 | `test_marker_writer.py` | 11 | 0 | `xt.Marker` | type, name, order, multiple markers, start/end convention, offset marker insertion |
-| `test_taylor_maps_writer.py` | 21 | 0 | `xt.FirstOrderTaylorMap`, `xt.SecondOrderTaylorMap` | map arrays as full-precision literals, quad-fringe reversal metadata, minus-sign root-name cleanup, multiple maps in one line |
+| `test_taylor_maps_writer.py` | 25 | 0 | `xt.FirstOrderTaylorMap`, `xt.SecondOrderTaylorMap` | generic maps as full-precision literals; compact SAD soft and composite maps, live QUAD dependency, reversal and mixed-grid tracking |
 
 ### `test_bend_writer.py` and `test_corr_writer.py` note
 
@@ -53,9 +53,15 @@ interpretation step. Physical correctness is Xsuite's contract, not SAD2XS's.
 
 ### `test_taylor_maps_writer.py` note
 
-`_new_quad_fringe_element` stashes `_sad_quad_fringe_a`, `_sad_quad_fringe_b`,
-and `_sad_quad_fringe_theta` on a quad-fringe map. The tests confirm these are
-preserved when present and absent when not.
+Recognised SAD fringe maps round-trip through one compact, self-contained
+generated helper. Tests compare its soft-only, hard-only, and composite maps
+directly with the converter, including signed length, mixed normal/skew field,
+rotation, alignment, standard environment metadata, and mixed-grid tracking.
+They also check the live dependency on an existing QUAD strength variable and
+reversal after reload. Generic Taylor maps continue to use literal coefficient
+arrays.
+
+The call omits `shift_x` and `shift_y` when they are zero; the helper defaults them.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

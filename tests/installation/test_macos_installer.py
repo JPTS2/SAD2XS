@@ -9,351 +9,795 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-08-27
 ================================================================================
 """
 ################################################################################
 # Required Packages
 ################################################################################
+import ast
+import io
 import subprocess
+import sys
+import tokenize
 from pathlib import Path
 
 import pytest
 
-import _install_sad_macos as installer
+from sad2xs.install_sad import macos as installer
 
 ################################################################################
-# Command Runner
+# Test Helpers
 ################################################################################
-def test_run_raises_command_error_on_nonzero_return_code(monkeypatch):
+def make_config() -> installer.InstallConfig:
     """
-    run should raise CommandError when a checked command returns non-zero.
+    Build a config that no test is allowed to reach.
+
+    Returns
+    -------
+    InstallConfig
+        A config for a prefix the dependency gate stops short of.
     """
-    def fake_subprocess_run(cmd, cwd = None, env = None, stdin = None):
-        return subprocess.CompletedProcess(cmd, 7)
-
-    monkeypatch.setattr(installer.subprocess, "run", fake_subprocess_run)
-
-    with pytest.raises(installer.CommandError) as exc_info:
-        installer.run(["sad-build-step"])
-
-    assert exc_info.value.cmd == ["sad-build-step"], (
-        "CommandError should report the command that failed.")
-    assert exc_info.value.returncode == 7, (
-        "CommandError should report the subprocess return code.")
-
-
-def test_run_check_false_returns_completed_process_on_nonzero(monkeypatch):
-    """
-    run should return the CompletedProcess when check=False.
-    """
-    completed = subprocess.CompletedProcess(["sad-build-step"], 7)
-
-    def fake_subprocess_run(cmd, cwd = None, env = None, stdin = None):
-        assert cmd == ["sad-build-step"]
-        return completed
-
-    monkeypatch.setattr(installer.subprocess, "run", fake_subprocess_run)
-
-    result = installer.run(["sad-build-step"], check = False)
-
-    assert result is completed, (
-        "run(check=False) should return the subprocess result without raising.")
-
+    return installer.InstallConfig(
+        prefix          = Path("/nonexistent/sad2xs"),
+        bin_dir         = Path("/nonexistent/bin"),
+        repo_url        = "https://example.invalid/sad.git",
+        branch          = "main",
+        branch_explicit = False,
+        reuse_clone     = False)
 
 ################################################################################
-# Homebrew Helpers
+# Dependency Probes
 ################################################################################
-def test_brew_install_uses_cask_flag(monkeypatch):
+########################################
+# Homebrew Prefix Lookup
+########################################
+def test_brew_prefix_returns_none_when_the_formula_is_absent(monkeypatch):
     """
-    Cask dependencies should be installed with `brew install --cask`.
+    A failed prefix lookup should report absence, never install anything.
     """
     commands = []
 
-    def fake_run(cmd):
+    def fake_run(cmd, **kwargs):
         commands.append(cmd)
+        return subprocess.CompletedProcess(cmd, 1, stdout = "")
 
-    monkeypatch.setattr(installer, "run", fake_run)
+    monkeypatch.setattr(installer.subprocess, "run", fake_run)
 
-    installer.brew_install("xquartz", cask = True)
+    assert installer.brew_prefix("gcc") is None, (
+        "An absent formula should give no prefix.")
+    assert commands == [["brew", "--prefix", "gcc"]], (
+        "brew_prefix should probe once and never retry after an install.")
 
-    assert commands == [["brew", "install", "--cask", "xquartz"]]
 
-
-def test_brew_prefix_installs_missing_formula_then_retries(monkeypatch):
+def test_brew_prefix_returns_none_when_homebrew_cannot_be_run(monkeypatch):
     """
-    brew_prefix(formula) should install a missing formula and retry lookup.
+    An absent brew executable should report absence, not raise.
     """
-    calls = []
-    installed = []
+    def fake_run(cmd, **kwargs):
+        raise OSError("no brew")
 
-    def fake_subprocess_run(cmd, text, stdout, stderr):
-        calls.append(cmd)
-        if len(calls) == 1:
-            return subprocess.CompletedProcess(cmd, 1, stdout = "")
-        return subprocess.CompletedProcess(
-            cmd,
-            0,
-            stdout = "/opt/homebrew/opt/gcc\n")
+    monkeypatch.setattr(installer.subprocess, "run", fake_run)
 
-    def fake_brew_install(formula):
-        installed.append(formula)
-
-    monkeypatch.setattr(installer.subprocess, "run", fake_subprocess_run)
-    monkeypatch.setattr(installer, "brew_install", fake_brew_install)
-
-    assert installer.brew_prefix("gcc") == Path("/opt/homebrew/opt/gcc")
-    assert installed == ["gcc"], (
-        "brew_prefix should install the requested formula when prefix lookup "
-        "fails.")
-    assert calls == [
-        ["brew", "--prefix", "gcc"],
-        ["brew", "--prefix", "gcc"],
-    ], "brew_prefix should retry prefix lookup after installation."
+    assert installer.brew_prefix() is None, (
+        "An unrunnable brew should give no prefix.")
 
 
-def test_ensure_brew_bin_exists_uses_executable_name(tmp_path, monkeypatch):
+########################################
+# Xcode Command Line Tools
+########################################
+def test_check_xcode_clt_passes_when_the_tools_are_configured(monkeypatch):
     """
-    Homebrew binary checks should not duplicate the `bin` path component.
+    A configured toolchain should report nothing missing.
     """
-    prefix  = tmp_path / "gcc"
-    bin_dir = prefix / "bin"
-    exe     = bin_dir / "gfortran"
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda cmd, **kwargs: subprocess.CompletedProcess(cmd, 0))
+    monkeypatch.setattr(
+        installer.subprocess,
+        "check_output",
+        lambda cmd, **kwargs: (
+            "/usr/bin" if "--show-sdk-path" in cmd else "/usr/bin/true"))
 
-    bin_dir.mkdir(parents = True)
-    exe.touch()
-
-    def fake_brew_prefix(formula):
-        assert formula == "gcc"
-        return prefix
-
-    def fail_brew_install(formula):
-        raise AssertionError(f"Unexpected install attempt for {formula}")
-
-    monkeypatch.setattr(installer, "brew_prefix", fake_brew_prefix)
-    monkeypatch.setattr(installer, "brew_install", fail_brew_install)
-
-    assert installer.ensure_brew_bin_exists("gfortran", "gcc") == exe
+    assert installer.check_xcode_clt() is None, (
+        "Configured Command Line Tools are not a missing dependency.")
 
 
-def test_ensure_command_exists_skips_install_when_command_available(monkeypatch):
+def test_check_xcode_clt_reports_the_command_that_installs_them(monkeypatch):
     """
-    ensure_command_exists should not install when the command is on PATH.
+    Unconfigured Command Line Tools should be reported naming the fix.
+
+    Without them the failure appears much later as a missing xcrun, which
+    says nothing about what the user has to do.
     """
-    monkeypatch.setattr(installer.shutil, "which", lambda cmd: f"/usr/bin/{cmd}")
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda cmd, **kwargs: subprocess.CompletedProcess(cmd, 1))
 
-    def fail_brew_install(formula):
-        raise AssertionError(f"Unexpected install attempt for {formula}")
+    missing = installer.check_xcode_clt()
 
-    monkeypatch.setattr(installer, "brew_install", fail_brew_install)
+    assert missing is not None, (
+        "Unconfigured Command Line Tools should be reported.")
+    assert "xcode-select --install" in missing.remedy, (
+        "The report should name the standard Command Line Tools repair.")
 
-    assert installer.ensure_command_exists("git", "git") is None
 
-
-def test_ensure_command_exists_installs_missing_command(monkeypatch):
+def test_check_xcode_clt_rejects_a_selection_whose_xcrun_fails(monkeypatch):
     """
-    ensure_command_exists should install the formula when the command is missing.
+    A selected developer directory is not proof that its toolchain works.
+
+    A partial or incompatible Xcode installation can satisfy xcode-select -p
+    while xcrun cannot load its own libraries.
     """
-    which_results = iter([None, "/opt/homebrew/bin/nroff"])
-    installed = []
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda cmd, **kwargs: subprocess.CompletedProcess(cmd, 0))
 
-    def fake_which(cmd):
-        assert cmd == "nroff"
-        return next(which_results)
+    def fail_xcrun(cmd, **kwargs):
+        raise subprocess.CalledProcessError(72, cmd)
 
-    def fake_brew_install(formula):
-        installed.append(formula)
+    monkeypatch.setattr(installer.subprocess, "check_output", fail_xcrun)
+
+    missing = installer.check_xcode_clt()
+
+    assert missing is not None, (
+        "An xcrun failure should make the selected toolchain unusable.")
+    assert "repair/select" in missing.remedy, (
+        "A broken full Xcode installation needs broader advice than install.")
+
+
+def test_resolve_xcode_toolchain_rejects_an_empty_result(monkeypatch):
+    """
+    An xcrun success with no path must not pass the dependency audit.
+    """
+    monkeypatch.setattr(
+        installer.subprocess,
+        "check_output",
+        lambda cmd, **kwargs: "")
+
+    with pytest.raises(installer.XcodeToolchainError) as exc_info:
+        installer.resolve_xcode_toolchain()
+
+    assert "empty path" in str(exc_info.value), (
+        "The failure should explain why an exit-zero probe was unusable.")
+
+
+########################################
+# Build PATH
+########################################
+def test_build_path_puts_homebrew_ahead_of_the_system_directories():
+    """
+    The build PATH should be Homebrew then macOS, and nothing else.
+    """
+    assert installer.build_path(Path("/opt/homebrew")) == (
+        "/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin"), (
+        "The build PATH should carry Homebrew ahead of the system directories.")
+
+
+def test_build_path_falls_back_to_the_system_directories_without_homebrew():
+    """
+    An absent Homebrew should leave only the macOS system directories.
+    """
+    assert installer.build_path(None) == installer.SYSTEM_PATH, (
+        "Without Homebrew the build PATH is the system directories alone.")
+
+
+def test_the_audit_and_the_build_use_the_same_path(tmp_path, monkeypatch):
+    """
+    The PATH the audit probes must be the PATH the build receives.
+
+    A command found on a different PATH can pass the audit and then vanish
+    once the build starts.
+    """
+    brew_root = tmp_path / "homebrew"
+    (brew_root / "bin").mkdir(parents = True)
+    (brew_root / "bin" / "gfortran").touch()
+    probed = []
+
+    monkeypatch.setattr(installer, "check_xcode_clt", lambda: None)
+    monkeypatch.setattr(installer, "check_x11_headers", lambda: None)
+    monkeypatch.setattr(installer, "brew_prefix", lambda formula = None: brew_root)
+    monkeypatch.setattr(installer, "check_brew_bin",
+                        lambda exe, formula, reason: None)
+
+    def fake_which(cmd, path = None):
+        if path is not None:
+            probed.append(path)
+        return f"/usr/bin/{cmd}"
 
     monkeypatch.setattr(installer.shutil, "which", fake_which)
-    monkeypatch.setattr(installer, "brew_install", fake_brew_install)
 
-    installer.ensure_command_exists("nroff", "groff")
+    installer.audit_dependencies()
 
-    assert installed == ["groff"], (
-        "ensure_command_exists should install the mapped formula when the "
-        "command is missing.")
-
-
-def test_check_x11_headers_installs_xquartz_when_headers_missing(monkeypatch):
-    """
-    Missing X11 headers should trigger xquartz cask installation.
-    """
-    installed = []
-
-    def fake_exists(path):
-        assert str(path) == "/opt/X11/include/X11/Xlib.h"
-        return False
-
-    def fake_brew_install(pkg, cask = False):
-        installed.append((pkg, cask))
-
-    monkeypatch.setattr(installer.Path, "exists", fake_exists)
-    monkeypatch.setattr(installer, "brew_install", fake_brew_install)
-
-    installer.check_x11_headers()
-
-    assert installed == [("xquartz", True)], (
-        "Missing X11 headers should install the xquartz cask.")
-
-
-def test_install_dependencies_checks_required_tools_in_order(monkeypatch):
-    """
-    install_dependencies should check Homebrew, required commands, gfortran,
-    and X11 headers without performing installation work directly.
-    """
-    checked_commands = []
-    checked_bins = []
-    checked_x11 = []
-
-    monkeypatch.setattr(installer.shutil, "which", lambda cmd: "/opt/homebrew/bin/brew")
     monkeypatch.setattr(
-        installer,
-        "ensure_command_exists",
-        lambda cmd, formula: checked_commands.append((cmd, formula)))
-    monkeypatch.setattr(
-        installer,
-        "ensure_brew_bin_exists",
-        lambda exe, formula: checked_bins.append((exe, formula)))
-    monkeypatch.setattr(
-        installer,
-        "check_x11_headers",
-        lambda: checked_x11.append(True))
-
-    installer.install_dependencies()
-
-    assert checked_commands == [
-        ("git", "git"),
-        ("make", "make"),
-        ("nroff", "groff"),
-    ], "install_dependencies should check the expected command dependencies."
-    assert checked_bins == [("gfortran", "gcc")], (
-        "install_dependencies should require Homebrew gfortran from gcc.")
-    assert checked_x11 == [True], (
-        "install_dependencies should check X11 headers.")
-
-
-################################################################################
-# Build Environment
-################################################################################
-def test_make_clean_build_env_strips_conda_vars_and_sets_toolchain(
-        tmp_path,
-        monkeypatch):
-    """
-    make_clean_build_env should remove conda/build contamination and configure
-    Homebrew plus Xcode toolchain paths.
-    """
-    tool_dir = tmp_path / "xcode"
-    brew_root = tmp_path / "homebrew"
-    gcc_prefix = brew_root / "opt" / "gcc"
-    gcc_bin = gcc_prefix / "bin"
-    tool_dir.mkdir()
-    gcc_bin.mkdir(parents = True)
-
-    tool_names = ["clang", "clang++", "ar", "ranlib", "nm", "strip", "ld"]
-    for tool_name in tool_names:
-        (tool_dir / tool_name).touch()
-    (gcc_bin / "gfortran").touch()
-
-    monkeypatch.setenv("CONDA_PREFIX", "/bad/conda")
-    monkeypatch.setenv("CC", "/bad/clang")
-    monkeypatch.setenv("CMAKE_PREFIX_PATH", "/bad/cmake")
-
-    def fake_brew_prefix(formula = None):
-        if formula == "gcc":
-            return gcc_prefix
-        return brew_root
-
-    def fake_check_output(cmd, text):
-        assert text is True
-        if cmd == ["xcrun", "--show-sdk-path"]:
-            return str(tmp_path / "sdk")
-        lookup = {
-            "clang":   tool_dir / "clang",
-            "clang++": tool_dir / "clang++",
-            "ar":      tool_dir / "ar",
-            "ranlib":  tool_dir / "ranlib",
-            "nm":      tool_dir / "nm",
-            "strip":   tool_dir / "strip",
-            "ld":      tool_dir / "ld",
-        }
-        return str(lookup[cmd[2]])
-
-    monkeypatch.setattr(installer, "brew_prefix", fake_brew_prefix)
-    monkeypatch.setattr(installer.subprocess, "check_output", fake_check_output)
+        installer.subprocess,
+        "check_output",
+        lambda cmd, **kwargs: (
+            "/usr/bin" if "--show-sdk-path" in cmd else "/usr/bin/true"))
 
     env = installer.make_clean_build_env()
 
-    assert "CONDA_PREFIX" not in env, (
-        "make_clean_build_env should remove conda environment variables.")
-    assert "CMAKE_PREFIX_PATH" not in env, (
-        "make_clean_build_env should remove build-system contamination.")
-    assert env["PATH"].startswith(f"{brew_root}/bin:{brew_root}/sbin:"), (
-        "make_clean_build_env should place Homebrew first on PATH.")
-    assert env["FC"] == str(gcc_bin / "gfortran"), (
-        "make_clean_build_env should use Homebrew gfortran.")
-    assert env["CC"] == str(tool_dir / "clang"), (
-        "make_clean_build_env should use the Xcode clang path.")
+    assert probed, "The audit should probe build commands on an explicit PATH."
+    assert set(probed) == {env["PATH"]}, (
+        "Every build-time probe must use the PATH the build receives.")
 
 
-################################################################################
-# Launcher and Shell Integration
-################################################################################
-def test_write_launcher_writes_executable_launcher(tmp_path, monkeypatch):
+########################################
+# PATH Command Check
+########################################
+def test_check_command_passes_when_the_command_is_on_path(monkeypatch):
     """
-    write_launcher should create an executable script pointing at the SAD build.
+    A command already on PATH should report nothing missing.
     """
-    src_dir = tmp_path / "src"
-    launcher_path = tmp_path / "sad"
+    monkeypatch.setattr(
+        installer.shutil, "which", lambda cmd, path = None: "/usr/bin/git")
 
-    monkeypatch.setattr(installer, "SRC_DIR", src_dir)
-    monkeypatch.setattr(installer, "LAUNCHER_SCRIPT", launcher_path)
-
-    installer.write_launcher()
-
-    launcher_text = launcher_path.read_text()
-
-    assert launcher_path.exists(), (
-        "write_launcher should create the configured launcher script.")
-    assert launcher_path.stat().st_mode & 0o111, (
-        "write_launcher should make the launcher executable.")
-    assert f"""SAD_DIR="{src_dir}\"""" in launcher_text, (
-        "Launcher should point at the configured SAD source directory.")
-    assert """GS_EXEC="$SAD_DIR/bin/gs\"""" in launcher_text, (
-        "Launcher should execute SAD's gs binary.")
+    assert installer.check_command("git", "why", "remedy") is None, (
+        "A command on PATH is not a missing dependency.")
 
 
-def test_append_to_shell_rc_does_not_duplicate_existing_path(
+def test_check_command_reports_the_remedy_for_a_missing_command(monkeypatch):
+    """
+    A missing command should be reported with its manual command.
+    """
+    monkeypatch.setattr(
+        installer.shutil, "which", lambda cmd, path = None: None)
+
+    missing = installer.check_command("nroff", "why", "brew install groff")
+
+    assert missing is not None, "A missing command should be reported."
+    assert missing.name == "nroff", (
+        "The report should name the command the user looked for.")
+    assert missing.remedy == "brew install groff", (
+        "The report should give what provides it.")
+
+
+def test_check_command_searches_only_the_path_it_is_given(tmp_path):
+    """
+    An explicit PATH should be searched instead of the caller's.
+    """
+    real_dir = tmp_path / "real"
+    empty_dir = tmp_path / "empty"
+    real_dir.mkdir()
+    empty_dir.mkdir()
+    tool = real_dir / "toolname"
+    tool.touch()
+    tool.chmod(0o755)
+
+    assert installer.check_command(
+        "toolname", "why", "remedy", path = str(real_dir)) is None, (
+        "A command on the given PATH should be accepted.")
+    assert installer.check_command(
+        "toolname", "why", "remedy", path = str(empty_dir)) is not None, (
+        "A command absent from the given PATH should be reported.")
+
+
+########################################
+# Conda Contamination
+########################################
+def test_a_build_command_supplied_only_by_conda_is_reported_missing(
         tmp_path,
         monkeypatch):
     """
-    append_to_shell_rc should not duplicate an existing SAD PATH entry.
+    A command that only conda supplies must not pass the build audit.
+
+    The build strips conda from PATH, so accepting it here would let the
+    install fail later with no explanation.
     """
-    rc_file = tmp_path / ".zshrc"
-    rc_file.write_text("""export PATH="$HOME/bin/sad:$PATH"\n""")
+    conda_bin = tmp_path / "conda" / "bin"
+    brew_root = tmp_path / "homebrew"
+    (brew_root / "bin").mkdir(parents = True)
+    conda_bin.mkdir(parents = True)
 
-    monkeypatch.setenv("SHELL", "/bin/zsh")
-    monkeypatch.setattr(installer.Path, "home", classmethod(lambda cls: tmp_path))
+    for name in ("make", "yacc", "nroff", "brew", "git"):
+        tool = conda_bin / name
+        tool.touch()
+        tool.chmod(0o755)
 
-    installer.append_to_shell_rc()
+    monkeypatch.setattr(installer, "check_xcode_clt", lambda: None)
+    monkeypatch.setattr(installer, "check_x11_headers", lambda: None)
+    monkeypatch.setattr(installer, "check_brew_bin",
+                        lambda exe, formula, reason: None)
+    monkeypatch.setattr(installer, "brew_prefix",
+                        lambda formula = None: brew_root)
+    monkeypatch.setattr(installer, "SYSTEM_PATH", str(tmp_path / "empty"))
+    monkeypatch.setenv("PATH", str(conda_bin))
 
-    assert rc_file.read_text().count("""export PATH="$HOME/bin/sad:$PATH\"""") == 1, (
-        "append_to_shell_rc should not duplicate an existing SAD PATH entry.")
+    names = [dependency.name for dependency in installer.audit_dependencies()]
+
+    assert names == ["make", "yacc", "nroff"], (
+        "A build command supplied only by conda must be reported missing.")
 
 
-def test_append_to_shell_rc_creates_missing_shell_rc(
+def test_a_build_command_on_the_sanitised_path_is_accepted(
         tmp_path,
         monkeypatch):
     """
-    append_to_shell_rc should create the shell rc file when it is missing.
+    A command the sanitised PATH supplies should pass the build audit.
+
+    This is the converse of the conda case, and proves the probe is not
+    simply rejecting everything.
     """
-    rc_file = tmp_path / ".bashrc"
+    caller_bin = tmp_path / "caller"
+    brew_root = tmp_path / "homebrew"
+    (brew_root / "bin").mkdir(parents = True)
+    caller_bin.mkdir()
 
-    monkeypatch.setenv("SHELL", "/bin/bash")
-    monkeypatch.setattr(installer.Path, "home", classmethod(lambda cls: tmp_path))
+    for name in ("brew", "git"):
+        tool = caller_bin / name
+        tool.touch()
+        tool.chmod(0o755)
+    for name in ("make", "yacc", "nroff"):
+        tool = brew_root / "bin" / name
+        tool.touch()
+        tool.chmod(0o755)
 
-    installer.append_to_shell_rc()
+    monkeypatch.setattr(installer, "check_xcode_clt", lambda: None)
+    monkeypatch.setattr(installer, "check_x11_headers", lambda: None)
+    monkeypatch.setattr(installer, "check_brew_bin",
+                        lambda exe, formula, reason: None)
+    monkeypatch.setattr(installer, "brew_prefix",
+                        lambda formula = None: brew_root)
+    monkeypatch.setattr(installer, "SYSTEM_PATH", str(tmp_path / "empty"))
+    monkeypatch.setenv("PATH", str(caller_bin))
 
-    assert rc_file.exists(), (
-        "append_to_shell_rc should create a missing bash rc file.")
-    assert """export PATH="$HOME/bin/sad:$PATH\"""" in rc_file.read_text(), (
-        "append_to_shell_rc should add SAD to PATH in the created rc file.")
+    assert installer.audit_dependencies() == [], (
+        "A command on the sanitised PATH should be accepted.")
+
+
+########################################
+# Clone Dependencies
+########################################
+def test_git_is_probed_on_the_callers_path(tmp_path, monkeypatch):
+    """
+    git should be found the way the clone will find it.
+
+    The clone runs before the build and inherits the caller's environment,
+    so probing it on the build PATH would report the wrong answer.
+    """
+    caller_bin = tmp_path / "caller"
+    caller_bin.mkdir()
+    git = caller_bin / "git"
+    git.touch()
+    git.chmod(0o755)
+
+    monkeypatch.setattr(installer, "check_xcode_clt", lambda: None)
+    monkeypatch.setattr(installer, "check_x11_headers", lambda: None)
+    monkeypatch.setattr(installer, "check_brew_bin",
+                        lambda exe, formula, reason: None)
+    monkeypatch.setattr(installer, "brew_prefix",
+                        lambda formula = None: tmp_path / "homebrew")
+    monkeypatch.setenv("PATH", str(caller_bin))
+
+    names = [dependency.name for dependency in installer.audit_dependencies()]
+
+    assert "git" not in names, (
+        "git on the caller's PATH should satisfy the clone dependency.")
+
+
+########################################
+# Formula Executable Check
+########################################
+def test_check_brew_bin_passes_when_the_formula_provides_it(tmp_path, monkeypatch):
+    """
+    A present, runnable formula executable should report nothing missing.
+    """
+    prefix = tmp_path / "gcc"
+    (prefix / "bin").mkdir(parents = True)
+    gfortran = prefix / "bin" / "gfortran"
+    gfortran.touch()
+    gfortran.chmod(0o755)
+
+    monkeypatch.setattr(installer, "brew_prefix", lambda formula = None: prefix)
+
+    assert installer.check_brew_bin("gfortran", "gcc", "why") is None, (
+        "A runnable executable is not a missing dependency.")
+
+
+def test_check_brew_bin_reports_an_executable_that_cannot_be_run(
+        tmp_path,
+        monkeypatch):
+    """
+    A present but non-executable file should be reported missing.
+
+    An interrupted install can leave the file behind without its
+    permissions, and the build would then fail with a bare exec error.
+    """
+    prefix = tmp_path / "gcc"
+    (prefix / "bin").mkdir(parents = True)
+    gfortran = prefix / "bin" / "gfortran"
+    gfortran.touch()
+    gfortran.chmod(0o644)
+
+    monkeypatch.setattr(installer, "brew_prefix", lambda formula = None: prefix)
+
+    assert installer.check_brew_bin("gfortran", "gcc", "why") is not None, (
+        "A file that cannot be run is not a satisfied dependency.")
+
+
+def test_check_brew_bin_reports_a_formula_that_is_not_installed(
+        tmp_path,
+        monkeypatch):
+    """
+    A prefix for an uninstalled formula should still report it missing.
+
+    Homebrew answers with a prefix for any formula it knows, installed or
+    not, so the prefix alone proves nothing.
+    """
+    monkeypatch.setattr(
+        installer, "brew_prefix", lambda formula = None: tmp_path / "absent")
+
+    missing = installer.check_brew_bin("gfortran", "gcc", "why")
+
+    assert missing is not None, "An uninstalled formula should be reported."
+    assert missing.remedy == "brew install gcc", (
+        "The report should give the formula that provides gfortran.")
+
+
+def test_check_brew_bin_reports_an_absent_formula(monkeypatch):
+    """
+    A formula with no prefix should be reported, not installed.
+    """
+    monkeypatch.setattr(installer, "brew_prefix", lambda formula = None: None)
+
+    missing = installer.check_brew_bin("gfortran", "gcc", "why")
+
+    assert missing is not None, "An absent formula should be reported."
+    assert missing.remedy == "brew install gcc", (
+        "The report should give the formula that provides gfortran.")
+
+
+########################################
+# X11 Headers
+########################################
+def test_check_x11_headers_reports_the_cask_when_headers_are_missing(monkeypatch):
+    """
+    Missing X11 headers should be reported, never installed.
+    """
+    monkeypatch.setattr(installer.Path, "exists", lambda self: False)
+
+    missing = installer.check_x11_headers()
+
+    assert missing is not None, "Absent X11 headers should be reported."
+    assert missing.remedy == "brew install --cask xquartz", (
+        "The report should give the cask that provides the headers.")
+
+
+def test_check_x11_headers_passes_when_the_header_is_present(monkeypatch):
+    """
+    Present X11 headers should report nothing missing.
+    """
+    monkeypatch.setattr(installer.Path, "exists", lambda self: True)
+
+    assert installer.check_x11_headers() is None, (
+        "A present header is not a missing dependency.")
+
+
+################################################################################
+# Dependency Audit
+################################################################################
+########################################
+# Complete Environment
+########################################
+def test_audit_dependencies_reports_nothing_when_everything_is_present(
+        monkeypatch):
+    """
+    A complete dependency set should produce an empty report.
+    """
+    monkeypatch.setattr(installer, "check_xcode_clt", lambda: None)
+    monkeypatch.setattr(
+        installer.shutil,
+        "which",
+        lambda cmd, path = None: f"/usr/bin/{cmd}")
+    monkeypatch.setattr(installer, "brew_prefix",
+                        lambda formula = None: Path("/opt/homebrew"))
+    monkeypatch.setattr(
+        installer,
+        "check_brew_bin",
+        lambda exe, formula, reason: None)
+    monkeypatch.setattr(installer, "check_x11_headers", lambda: None)
+
+    assert installer.audit_dependencies() == [], (
+        "A complete environment should report nothing missing.")
+
+
+########################################
+# Missing Homebrew
+########################################
+def test_audit_dependencies_reports_homebrew_without_probing_its_formulae(
+        monkeypatch):
+    """
+    An absent Homebrew should be reported without a formula probe.
+
+    Every formula probe goes through brew, so running them anyway would
+    bury the one real problem under formulae the user cannot check.
+    """
+    monkeypatch.setattr(installer, "check_xcode_clt", lambda: None)
+    monkeypatch.setattr(installer, "check_x11_headers", lambda: None)
+
+    def refuse(exe, formula, reason):
+        raise AssertionError("Formula probes must not run without Homebrew.")
+
+    monkeypatch.setattr(installer, "check_brew_bin", refuse)
+    monkeypatch.setattr(
+        installer.shutil,
+        "which",
+        lambda cmd, path = None: None if cmd == "brew" else f"/usr/bin/{cmd}")
+
+    names = [dependency.name for dependency in installer.audit_dependencies()]
+
+    assert names == ["brew"], (
+        "A missing Homebrew should be the only reported dependency.")
+
+
+########################################
+# Accumulated Report
+########################################
+def test_audit_dependencies_reports_every_miss_together(monkeypatch):
+    """
+    Several missing dependencies should be reported in one pass.
+
+    Reporting one at a time would make the user rerun the installer once
+    per missing package.
+    """
+    monkeypatch.setattr(
+        installer,
+        "check_xcode_clt",
+        lambda: installer.MissingDependency("clt", "why", "xcode-select --install"))
+    monkeypatch.setattr(installer, "brew_prefix",
+                        lambda formula = None: Path("/opt/homebrew"))
+    monkeypatch.setattr(
+        installer.shutil,
+        "which",
+        lambda cmd, path = None:
+            None if cmd in ("yacc", "nroff") else f"/usr/bin/{cmd}")
+    monkeypatch.setattr(
+        installer,
+        "check_brew_bin",
+        lambda exe, formula, reason:
+            installer.MissingDependency(exe, reason, f"brew install {formula}"))
+    monkeypatch.setattr(
+        installer,
+        "check_x11_headers",
+        lambda: installer.MissingDependency(
+            "Xlib.h", "why", "brew install --cask xquartz"))
+
+    names = [dependency.name for dependency in installer.audit_dependencies()]
+
+    assert names == ["clt", "yacc", "nroff", "gfortran", "Xlib.h"], (
+        "Every missing dependency should appear in a single report.")
+
+
+################################################################################
+# Dependency Gate
+################################################################################
+########################################
+# Complete Environment
+########################################
+def test_require_dependencies_returns_when_nothing_is_missing(monkeypatch):
+    """
+    A complete dependency set should let the install proceed.
+    """
+    monkeypatch.setattr(installer, "audit_dependencies", lambda: [])
+
+    assert installer.require_dependencies() is None, (
+        "A complete environment should not stop the install.")
+
+
+########################################
+# Missing Dependencies
+########################################
+def test_require_dependencies_exits_listing_every_manual_command(monkeypatch):
+    """
+    Missing dependencies should exit non-zero naming each manual command.
+    """
+    monkeypatch.setattr(
+        installer,
+        "audit_dependencies",
+        lambda: [
+            installer.MissingDependency(
+                "bison", "Needed to generate SAD's parser sources.",
+                "brew install bison"),
+            installer.MissingDependency(
+                "/opt/X11/include/X11/Xlib.h", "Needed to build SAD against X11.",
+                "brew install --cask xquartz")])
+
+    with pytest.raises(SystemExit) as exc_info:
+        installer.require_dependencies()
+
+    message = str(exc_info.value)
+
+    assert "brew install bison" in message, (
+        "The exit should give the command for each missing dependency.")
+    assert "brew install --cask xquartz" in message, (
+        "The exit should give the cask command for missing X11 headers.")
+    assert "never uses sudo" in message, (
+        "The exit should state that SAD2XS never uses sudo.")
+
+
+########################################
+# Installation Order
+########################################
+def test_install_sad_macos_stops_before_cloning_when_dependencies_are_missing(
+        monkeypatch):
+    """
+    A missing dependency should stop the install before SAD is fetched.
+
+    Cloning first would leave a half-installed tree behind that the user
+    never asked for.
+    """
+    cloned = []
+
+    monkeypatch.setattr(installer, "require_platform", lambda *args: None)
+    monkeypatch.setattr(
+        installer,
+        "require_dependencies",
+        lambda: sys.exit("missing"))
+    monkeypatch.setattr(
+        installer,
+        "install_sad_source",
+        lambda *args, **kwargs: cloned.append(args))
+
+    with pytest.raises(SystemExit):
+        installer.install_sad_macos(make_config())
+
+    assert cloned == [], (
+        "No source should be fetched when a dependency is missing.")
+
+
+def test_install_sad_macos_stops_before_cloning_when_xcrun_is_broken(
+        tmp_path,
+        monkeypatch):
+    """
+    A broken selected Xcode must be caught before source installation starts.
+    """
+    cloned = []
+
+    monkeypatch.setattr(installer, "require_platform", lambda *args: None)
+    monkeypatch.setattr(
+        installer.subprocess,
+        "run",
+        lambda cmd, **kwargs: subprocess.CompletedProcess(cmd, 0))
+
+    def fail_xcrun(cmd, **kwargs):
+        raise subprocess.CalledProcessError(72, cmd)
+
+    monkeypatch.setattr(installer.subprocess, "check_output", fail_xcrun)
+    monkeypatch.setattr(installer, "check_command", lambda *args, **kwargs: None)
+    monkeypatch.setattr(installer.shutil, "which", lambda cmd, path = None: cmd)
+    monkeypatch.setattr(
+        installer, "brew_prefix", lambda formula = None: tmp_path)
+    monkeypatch.setattr(installer, "check_brew_bin", lambda *args: None)
+    monkeypatch.setattr(installer, "check_x11_headers", lambda: None)
+    monkeypatch.setattr(
+        installer,
+        "install_sad_source",
+        lambda *args, **kwargs: cloned.append(args))
+
+    with pytest.raises(SystemExit) as exc_info:
+        installer.install_sad_macos(make_config())
+
+    assert "Xcode Command Line Tools" in str(exc_info.value), (
+        "The dependency report should identify the unusable toolchain.")
+    assert cloned == [], (
+        "No source should be fetched after an xcrun preflight failure.")
+
+
+################################################################################
+# Toolchain Verification
+################################################################################
+def test_make_clean_build_env_exits_when_a_tool_path_does_not_exist(
+        tmp_path,
+        monkeypatch):
+    """
+    A toolchain variable pointing nowhere should fail before the build.
+
+    xcrun can name a path that is not present, and the resulting build
+    failure says nothing about which tool was missing.
+    """
+    monkeypatch.setattr(installer, "brew_prefix", lambda formula = None: tmp_path)
+    sdk = tmp_path / "SDK"
+    sdk.mkdir()
+
+    monkeypatch.setattr(
+        installer.subprocess,
+        "check_output",
+        lambda cmd, **kwargs: (
+            str(sdk) if "--show-sdk-path" in cmd
+            else str(tmp_path / "absent_tool")))
+
+    with pytest.raises(SystemExit) as exc_info:
+        installer.make_clean_build_env()
+
+    assert "not executable" in str(exc_info.value), (
+        "The message should explain why the resolved tool cannot be used.")
+
+
+def test_make_clean_build_env_reports_an_xcrun_failure_without_a_traceback(
+        tmp_path,
+        monkeypatch):
+    """
+    A toolchain race after the audit should still fail as a concise CLI error.
+    """
+    monkeypatch.setattr(installer, "brew_prefix", lambda formula = None: tmp_path)
+
+    def fail_xcrun(cmd, **kwargs):
+        raise subprocess.CalledProcessError(72, cmd)
+
+    monkeypatch.setattr(installer.subprocess, "check_output", fail_xcrun)
+
+    with pytest.raises(SystemExit) as exc_info:
+        installer.make_clean_build_env()
+
+    message = str(exc_info.value)
+    assert "selected Xcode Command Line Tools are unusable" in message, (
+        "The build setup should translate the subprocess exception.")
+    assert "CalledProcessError" not in message, (
+        "The user-facing error should not expose a Python exception name.")
+
+
+def test_make_clean_build_env_exits_when_homebrew_has_no_prefix(monkeypatch):
+    """
+    An unusable Homebrew should fail naming the prefix, not crash later.
+    """
+    monkeypatch.setattr(installer, "brew_prefix", lambda formula = None: None)
+
+    with pytest.raises(SystemExit) as exc_info:
+        installer.make_clean_build_env()
+
+    assert "Homebrew prefix" in str(exc_info.value), (
+        "The message should name the lookup that failed.")
+
+
+################################################################################
+# Full Installation Sequence
+################################################################################
+def test_install_sad_macos_runs_every_stage_in_order(tmp_path, monkeypatch):
+    """
+    The install should check dependencies, build, then install the launcher.
+
+    Nothing else covers the function that performs the install, so a stage
+    dropped or reordered would otherwise reach users unnoticed.
+    """
+    stages = []
+    build_env = {"CC": "/usr/bin/clang"}
+
+    monkeypatch.setattr(installer, "require_platform", lambda *args: None)
+    monkeypatch.setattr(installer, "require_dependencies",
+                        lambda: stages.append("dependencies"))
+    monkeypatch.setattr(installer, "make_clean_build_env",
+                        lambda: build_env)
+    monkeypatch.setattr(installer, "report_path_setup",
+                        lambda config: stages.append("path"))
+
+    received = {}
+
+    def fake_install_sad_source(config, env, prepare = None):
+        stages.append("install")
+        received["env"] = env
+        received["prepare"] = prepare
+
+    monkeypatch.setattr(installer, "install_sad_source", fake_install_sad_source)
+
+    config = installer.InstallConfig(
+        prefix          = tmp_path / "share",
+        bin_dir         = tmp_path / "bin",
+        repo_url        = "https://example.invalid/SAD.git",
+        branch          = "master",
+        branch_explicit = False,
+        reuse_clone     = False)
+
+    installer.install_sad_macos(config)
+
+    assert stages == [
+        "dependencies",
+        "install",
+        "path",
+    ], "The install stages should run in dependency order."
+    assert received["env"] is build_env, (
+        "The build should run against the sanitised environment.")
+    assert received["prepare"] is None, (
+        "macOS needs no platform-specific source preparation.")

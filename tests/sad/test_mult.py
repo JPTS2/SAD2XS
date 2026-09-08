@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-08-29
 ================================================================================
 """
 ################################################################################
@@ -24,11 +24,10 @@ from sad2xs.sad_helpers import track_sad, transfer_matrix_sad, twiss_sad
 
 ################################################################################
 # Accepted parameters
-# MULT is the general multipole element — accepts all Kn/SKn, geometry,
-# and RF parameters.
-# See tests/sad/README.md's "Parameter matrix" for the full accepted/rejected
-# table this parametrization transcribes.
 ################################################################################
+# MULT is the general multipole element — accepts all Kn/SKn, geometry, and RF
+# parameters. See tests/sad/README.md's "Parameter matrix" for the full
+# accepted/rejected table this parametrization transcribes.
 ACCEPTED_PARAMS = [
     pytest.param("L=1.0 ANGLE=0.01",   id = "angle"),
     pytest.param("L=1.0 K0=0.01",      id = "k0"),
@@ -83,14 +82,67 @@ def test_mult_rejects_bz(sad_rejects):
         "MARK START = ()\n     END   = ();\n"
         "LINE TEST = (START M1 END);")
 
+
+def test_mult_k1_soft_edge_matches_sad_reference_values(tmp_path):
+    """Pin SAD's signed-F1, skew-K1 zero-BZ MULT soft-edge behaviour."""
+    lattice = tmp_path / "mult_k1_soft_edge_reference.sad"
+    lattice.write_text(
+        "MOMENTUM = 1.0 GEV;\n"
+        "MULT M1 = (L=1.0 K1=0.03 SK1=0.04 K2=0.02 "
+        "F1=-0.02 F2=0.01 FRINGE=3 DISFRIN=1);\n"
+        "MARK START=() END=();\n"
+        "LINE TEST=(START M1 END);\n")
+    initial = {
+        "x_init":     np.array([1e-3, -2e-3, 3e-3, -1.5e-3]),
+        "px_init":    np.array([2e-3, 1.5e-3, -1e-3, -0.5e-3]),
+        "y_init":     np.array([-1.5e-3, 2.5e-3, -0.5e-3, 1e-3]),
+        "py_init":    np.array([0.5e-3, -1e-3, 2e-3, 1.5e-3]),
+        "zeta_init":  np.zeros(4),
+        "delta_init": np.zeros(4),
+    }
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        result = track_sad(
+            lattice_filepath = lattice.name,
+            line_name        = "TEST",
+            n_turns          = 1,
+            rfsw             = False,
+            rad              = False,
+            fluc             = False,
+            radcod           = False,
+            radtaper         = False,
+            turn_by_turn_monitor = False,
+            with_progress    = False,
+            wall_time        = 30,
+            **initial)
+    finally:
+        os.chdir(cwd)
+
+    expected = {
+        "x": [0.0029491975576896663, -0.00043261337798525945,
+              0.001961338996657533, -0.0019466197271480194],
+        "px": [0.0018905491174308312, 0.0016168130673187573,
+               -0.0010538900284404636, -0.00037816297226527066],
+        "y": [-0.0009887145869658903, 0.0015020747339901063,
+              0.001555402838140819, 0.0024887101408945156],
+        "py": [0.0005418643853453135, -0.0009890866782368015,
+               0.0021149774963213318, 0.0014829739181530122],
+    }
+    for coordinate, reference in expected.items():
+        np.testing.assert_allclose(
+            result[coordinate], reference, rtol = 1e-10, atol = 1e-14,
+            err_msg = (
+                f"SAD {coordinate} changed for the pinned MULT K1/SK1 "
+                "soft-edge reference lattice."))
+
 ################################################################################
 # Effect on Twiss and tracking
-#
+################################################################################
 # MULT's K1 field acts as a quadrupole (same as QUAD's K1, see test_quad.py):
 # it both focuses the beam (changes Twiss betx) and gives a direct px kick
 # on an off-axis particle in tracking. This establishes that MULT's field
 # parameters are physically live, not just syntactically accepted.
-################################################################################
 def test_mult_k1_affects_twiss(tmp_path):
     """
     K1 on a MULT element changes Twiss betx, same as QUAD's K1.
@@ -326,14 +378,13 @@ def test_mult_k3_gives_cubic_kick(tmp_path):
 
 ################################################################################
 # RF focusing kick (VOLT) -- transverse coupling ground truth
-#
+################################################################################
 # MULT (and CAVI) elements with VOLT != 0, tracked with RFSW on, apply an
 # explicit transverse x/y focusing kick on top of the ordinary multipole
 # kick (SAD's tmultiacc in tmulti.f) -- see docs/reference/sad-behaviour.md. Unlike
 # the net energy gain (which is exactly zero at PHI=0, SAD's RF
 # zero-crossing), this kick is present at every phase and grows further
 # away from the crossing.
-################################################################################
 RF_FOCUS_MOMENTUM_GEV   = 0.05
 RF_FOCUS_VOLT           = 2.0E7
 RF_FOCUS_FREQ           = 2.856E9
@@ -510,9 +561,9 @@ def test_mult_sk0_dipole_fringe_mirrors_in_horizontal_plane(tmp_path):
         "fringe term m21 exactly.")
 
 ################################################################################
-# K0 dipole fringe with a real nonzero FB1/FB2 -- see the "MULT is out of
-# scope" decision in docs/converter/fringes.md
+# K0 dipole fringe with a real nonzero FB1/FB2
 ################################################################################
+# See the "MULT is out of scope" decision in docs/converter/fringes.md.
 def test_mult_k0_fringe_with_nonzero_fb_does_not_match_equivalent_bend(tmp_path):
     """
     A K0-only MULT and the equivalent K0-only BEND (same L/K0/FRINGE/
@@ -559,9 +610,9 @@ def test_mult_k0_fringe_with_nonzero_fb_does_not_match_equivalent_bend(tmp_path)
         "docs/converter/fringes.md's MULT exclusion should be revisited.")
 
 ################################################################################
-# F1/F2/FRINGE quad-style soft-edge fringe (ground truth) -- see
-# docs/reference/sad-behaviour.md
+# F1/F2/FRINGE quad-style soft-edge fringe
 ################################################################################
+# Ground truth. See docs/reference/sad-behaviour.md.
 def _track_mult_probe(tmp_path, lattice_body, name, x_vals, px_vals, y_vals, py_vals):
     """
     Track a grid of particles through a lattice body and return the
@@ -632,6 +683,38 @@ def test_mult_k1_fringe_mode_gates_entrance_exit(tmp_path):
     assert entry != pytest.approx(exit_), (
         "FRINGE=1 (entrance-only) and FRINGE=2 (exit-only) should give "
         "different kicks for asymmetric F1K1F/F1K1B/F2K1F/F2K1B.")
+
+
+def test_mult_k1_fringe_mode_uses_integer_keyword_semantics(tmp_path):
+    """SAD's input layer truncates FRINGE=1.5 to mode 1 before tracking."""
+    x_vals, px_vals = np.array([1e-3]), np.array([2e-3])
+    y_vals, py_vals = np.array([-1.5e-3]), np.array([0.5e-3])
+
+    def run(fringe):
+        body = (
+            "MULT M1=(L=1.0 K1=0.3 F1K1F=0.05 F1K1B=-0.03 "
+            f"F2K1F=0.02 F2K1B=-0.01 FRINGE={fringe});\n"
+            "MARK START=() END=(); LINE TEST=(START M1 END);")
+        return _track_mult_probe(
+            tmp_path, body, f"mult_nint_{fringe}.sad",
+            x_vals, px_vals, y_vals, py_vals)
+
+    results = {mode: run(mode) for mode in (0, 1, 1.5, 2, 3)}
+    transverse = {
+        mode: np.concatenate([
+            result[coordinate] for coordinate in ("x", "px", "y", "py")])
+        for mode, result in results.items()}
+
+    np.testing.assert_allclose(
+        transverse[1.5], transverse[1], rtol = 0.0, atol = 1e-15,
+        err_msg = "FRINGE=1.5 should truncate to entrance-only mode 1.")
+    for other_mode in (0, 2, 3):
+        assert not np.allclose(
+            transverse[1.5], transverse[other_mode],
+            rtol = 0.0, atol = 1e-15), (
+            "FRINGE=1.5 should match only mode 1, not "
+            f"mode {other_mode}.")
+
 
 def test_mult_k1_f1_f2_matches_sad_reference_values(tmp_path):
     """
@@ -710,9 +793,9 @@ def test_mult_reversed_line_fringe_mode_permutes(tmp_path):
             "may have changed.")
 
 ################################################################################
-# FB1/FB2 dipole-style soft-edge fringe (ground truth) -- see
-# docs/reference/sad-behaviour.md
+# FB1/FB2 dipole-style soft-edge fringe
 ################################################################################
+# Ground truth. See docs/reference/sad-behaviour.md.
 def test_mult_fb1_fb2_is_inert_without_fringe(tmp_path):
     """
     FB1/FB2 on an ANGLE/K0 MULT has no effect unless FRINGE is also set.
@@ -778,9 +861,10 @@ def test_mult_fb1_fb2_matches_sad_reference_values(tmp_path):
             "reference lattice was altered unintentionally.")
 
 ################################################################################
-# DISFRIN hard-edge fringe, and its interaction with FRINGE (ground truth)
-# -- see docs/reference/sad-behaviour.md
+# DISFRIN hard-edge fringe
 ################################################################################
+# Covers its interaction with FRINGE. Ground truth. See
+# docs/reference/sad-behaviour.md.
 def test_mult_disfrin_default_matches_explicit_zero(tmp_path):
     """
     DISFRIN unset defaults to DISFRIN=0 (hard-edge fringe enabled) --

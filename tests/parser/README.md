@@ -26,14 +26,14 @@ run.
 | `test_comments.py` | 10 | 0 | — |
 | `test_globals.py` | 22 | 0 | — |
 | `test_units.py` | 15 | 0 | — |
-| `test_lines.py` | 6 | 0 | — |
+| `test_lines.py` | 12 | 0 | — |
 | `test_line_names.py` | 3 | 0 | — |
 | `test_element_parameters.py` | 26 | 0 | — |
 | `test_element_expressions.py` | 8 | 0 | — |
 | `test_deferred_expressions.py` | 17 | 0 | — |
 | `test_functions.py` | 2 | 0 | — |
 | `test_repeated_definitions.py` | 9 | 0 | — |
-| `test_errors.py` | 16 | 0 | — |
+| `test_errors.py` | 23 | 0 | — |
 
 ### `test_preprocessing.py` note
 

@@ -1315,9 +1315,10 @@ def test_corrector_conversion_matches_sad_tracking_for_element_offsets(
         parameters              = {"dx": dx, "dy": dy})
 
 ################################################################################
-# FB1/FB2 soft-edge fringe import (_import_sad_bend_fringes) -- same
-# mechanism as test_bend.py's F1/FRINGE section; see docs/reference/sad-behaviour.md
+# FB1/FB2 soft-edge fringe import
 ################################################################################
+# Covers _import_sad_bend_fringes, the same mechanism as test_bend.py's
+# F1/FRINGE section. See docs/reference/sad-behaviour.md.
 def test_corrector_fringe_import_defaults_on(write_lattice, tmp_path):
     """
     _import_sad_bend_fringes defaults to True -- FB1/FB2/FRINGE on a

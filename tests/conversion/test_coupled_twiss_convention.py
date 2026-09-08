@@ -23,9 +23,9 @@ import sad2xs as s2x
 import xtrack as xt
 
 from sad2xs.sad_helpers import transfer_matrix_sad, twiss_sad
+from sad2xs.xsuite_helpers import propagate_edwards_teng
 from tests.support.coupled_optics import (
     couplings_sad_4d,
-    edwards_teng_optics,
     edwards_teng_optics_at,
     linear_transfer_matrix_4d,
     normalized_r_matrix)
@@ -213,7 +213,7 @@ def test_edwards_teng_propagation_matches_native_periodic_ring():
     rr_et0 = np.array([
         [tw_ring.r11_edw_teng[0], tw_ring.r12_edw_teng[0]],
         [tw_ring.r21_edw_teng[0], tw_ring.r22_edw_teng[0]]])
-    propagated = edwards_teng_optics(
+    propagated = propagate_edwards_teng(
         tw_ring,
         rr_et0  = rr_et0,
         betx0   = tw_ring.betx_edw_teng[0],
@@ -284,7 +284,7 @@ def test_edwards_teng_propagation_reduces_to_plain_twiss_when_uncoupled():
     tw = line.twiss4d(
         start = xt.START, end = xt.END,
         betx = 2.0, alfx = 0.1, bety = 3.0, alfy = -0.2)
-    propagated = edwards_teng_optics(tw)
+    propagated = propagate_edwards_teng(tw)
 
     for key in ["betx", "alfx", "bety", "alfy"]:
         assert np.allclose(
@@ -343,9 +343,10 @@ def test_skew_quad_twiss_convention_grid(write_lattice, tmp_path):
     _assert_r_matrix_matches_sad(tw_sad, et_values)
 
 ################################################################################
-# Solenoid coupling: Edwards-Teng matches SAD and coincides with the
-# Mais-Ripken projected sums (the rotational-coupling special case)
+# Solenoid coupling
 ################################################################################
+# Edwards-Teng matches SAD and coincides with the Mais-Ripken projected sums,
+# the rotational-coupling special case.
 def test_solenoid_transfer_matrix_matches_sad(write_lattice, tmp_path):
     """
     The converted bound-solenoid line's linear map equals SAD's — any twiss

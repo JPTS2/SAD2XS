@@ -94,7 +94,7 @@ is not held to the shape.
 | Test | What it asserts |
 |------|-----------------|
 | `test_per_file_counts_match_collection` | each per-file count in a folder README matches collection |
-| `test_folder_and_suite_totals_match_collection` | the Suite Total table in `tests/README.md` matches collection |
+| `test_folder_and_suite_totals_match_collection` | the Suite Total headline and table in `tests/README.md` match collection |
 
 **Do not update these counts, or the `Fail` counts, by hand.** Run:
 

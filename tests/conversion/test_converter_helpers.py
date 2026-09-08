@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-09-07
 ================================================================================
 """
 ################################################################################
@@ -19,18 +19,46 @@ import numpy as np
 import pytest
 import xtrack as xt
 
+from sad2xs.helpers import species_from_mass_and_charge
 from sad2xs.converter._000_helpers import (
     combine_k0_sk0,
+    compose_second_order_taylor_coefficients,
     divide_integrated_strength,
     define_strength_variable,
     get_element_integrated_strength,
     get_element_length,
     get_element_misalignments,
     is_effectively_zero,
+    negate_sad_value,
     only_index_nonzero,
-    species_from_mass_and_charge,
+    rotate_second_order_taylor_coefficients,
+    sad_hard_dipolar_fringe_coefficients,
+    sad_soft_quadrupolar_fringe_coefficients,
+    validate_element_lengths,
     values_provably_equal,
     values_provably_opposite)
+
+################################################################################
+# negate_sad_value
+################################################################################
+@pytest.mark.parametrize("value", [2.5, -3.0])
+def test_negate_sad_value_negates_numbers(value):
+    """Numeric SAD values should change sign directly."""
+    assert negate_sad_value(value) == -value
+
+
+@pytest.mark.parametrize(
+    "expression, expected",
+    [
+        ("k1_q1",              "-(k1_q1)"),
+        ("-(k1_q1)",           "k1_q1"),
+        ("-((k1_q1) + k1_q2)", "(k1_q1) + k1_q2"),
+        ("-(k1_q1) + k1_q2",   "-(-(k1_q1) + k1_q2)"),
+        ("-(a + b) - (c + d)",  "-(-(a + b) - (c + d))"),
+    ])
+def test_negate_sad_value_keeps_expressions_compact(expression, expected):
+    """Only a complete outer negation should be removed."""
+    assert negate_sad_value(expression) == expected
 
 ################################################################################
 # parse_expression
@@ -43,6 +71,62 @@ from sad2xs.converter._000_helpers import (
 #   tests/conversion/pipeline/test_math_function_expressions.py
 #   - test_math_function_expression_converts_to_correct_value[LOG-...]
 #   - test_math_function_expression_converts_to_correct_value[LN-...]
+
+################################################################################
+# validate_element_lengths
+################################################################################
+def test_validate_element_lengths_accepts_exact_zero():
+    """
+    An exactly zero length is the explicit thin-element convention.
+    """
+    validate_element_lengths(
+        parsed_elements = {"quad": {"q1": {"l": 0.0}}},
+        environment     = xt.Environment(),
+        minimum_length  = 1.0E-9)
+
+
+def test_validate_element_lengths_accepts_both_signs_at_cutoff():
+    """The cutoff itself is a valid resolved thick-element length."""
+    for length in (1.0E-9, -1.0E-9):
+        validate_element_lengths(
+            parsed_elements = {"quad": {"q1": {"l": length}}},
+            environment     = xt.Environment(),
+            minimum_length  = 1.0E-9)
+
+
+def test_validate_element_lengths_rejects_both_signs_below_cutoff():
+    """Either sign of concrete nonzero length below the cutoff is invalid."""
+    for length in (5.0E-10, -5.0E-10):
+        with pytest.raises(
+                ValueError,
+                match = r"QUAD element 'q1'.*below MAGNET_LENGTH_PRECISION"):
+            validate_element_lengths(
+                parsed_elements = {"quad": {"q1": {"l": length}}},
+                environment     = xt.Environment(),
+                minimum_length  = 1.0E-9)
+
+
+def test_validate_element_lengths_checks_initial_expression_value():
+    """A SAD length expression below the cutoff is rejected after evaluation."""
+    environment = xt.Environment()
+    environment["lq"] = 5.0E-10
+
+    with pytest.raises(ValueError, match = "below MAGNET_LENGTH_PRECISION"):
+        validate_element_lengths(
+            parsed_elements = {"quad": {"q1": {"l": "lq"}}},
+            environment     = environment,
+            minimum_length  = 1.0E-9)
+
+
+def test_validate_element_lengths_requires_positive_cutoff():
+    """A non-positive cutoff cannot define the thin/thick boundary."""
+    with pytest.raises(
+            ValueError,
+            match = "MAGNET_LENGTH_PRECISION must be greater than zero"):
+        validate_element_lengths(
+            parsed_elements = {},
+            environment     = xt.Environment(),
+            minimum_length  = 0.0)
 
 ################################################################################
 # is_effectively_zero
@@ -387,6 +471,11 @@ def test_only_index_nonzero_returns_false_for_zero_length():
     assert not only_index_nonzero(0.0, [1.0], [], 0, tol=1e-12), (
         "Zero numeric length should return False.")
 
+def test_only_index_nonzero_does_not_apply_strength_tolerance_to_length():
+    """Every nonzero validated length remains eligible for simplification."""
+    assert only_index_nonzero(1.0E-14, [1.0], [], 0, tol=1.0E-12), (
+        "KNL_ZERO_TOL should classify strengths, not nonzero lengths.")
+
 def test_only_index_nonzero_string_length_does_not_crash():
     """
     A symbolic length cannot be evaluated at parse time and should be treated
@@ -428,6 +517,238 @@ def test_only_index_nonzero_string_value_at_non_idx_returns_false():
     assert not only_index_nonzero(1.0, ["expr", 0.5], [], 1, tol=1e-12), (
         "A string value at a non-target index should be treated as nonzero, "
         "returning False.")
+
+################################################################################
+# SAD Hard Dipolar Fringe Maps
+################################################################################
+def test_sad_hard_dipolar_fringe_normal_coefficients_are_sparse():
+    """The normal entrance map should contain the two SAD quadratic kicks."""
+    k, R, T = sad_hard_dipolar_fringe_coefficients(
+        k0      = 0.02,
+        sk0     = 0.0,
+        length  = 0.5,
+        is_exit = False)
+
+    expected = np.zeros((6, 6, 6))
+    expected[0, 2, 2] = 0.02
+    expected[3, 1, 2] = expected[3, 2, 1] = -0.02
+    np.testing.assert_array_equal(k, np.zeros(6))
+    np.testing.assert_array_equal(R, np.eye(6))
+    np.testing.assert_allclose(T, expected, atol = 1.0E-18)
+
+
+def test_sad_hard_dipolar_fringe_skew_coefficients_are_rotated():
+    """A positive skew dipole rotates the normal kick by pi/2."""
+    _, _, T = sad_hard_dipolar_fringe_coefficients(
+        k0      = 0.0,
+        sk0     = 0.02,
+        length  = 0.5,
+        is_exit = False)
+
+    expected = np.zeros((6, 6, 6))
+    expected[2, 0, 0] = -0.02
+    expected[1, 0, 3] = expected[1, 3, 0] = 0.02
+    np.testing.assert_allclose(T, expected, atol = 2.0E-18)
+
+
+@pytest.mark.parametrize(
+    "changed_parameter",
+    ["strength", "length", "face"])
+def test_sad_hard_dipolar_fringe_sign_reversals(changed_parameter):
+    """Field sign, signed length and face reversal each negate the map."""
+    parameters = {
+        "k0": 0.017,
+        "sk0": -0.009,
+        "length": 0.45,
+        "is_exit": False}
+    _, _, reference = sad_hard_dipolar_fringe_coefficients(**parameters)
+
+    if changed_parameter == "strength":
+        parameters["k0"]  *= -1.0
+        parameters["sk0"] *= -1.0
+    elif changed_parameter == "length":
+        parameters["length"] *= -1.0
+    else:
+        parameters["is_exit"] = True
+
+    _, _, transformed = sad_hard_dipolar_fringe_coefficients(**parameters)
+    np.testing.assert_allclose(transformed, -reference, atol = 1.0E-18)
+
+
+def test_sad_hard_dipolar_fringe_zero_strength_is_identity():
+    """A zero field has no edge map and does not require a finite length."""
+    k, R, T = sad_hard_dipolar_fringe_coefficients(
+        k0 = 0.0, sk0 = 0.0, length = 0.0, is_exit = False)
+
+    np.testing.assert_array_equal(k, np.zeros(6))
+    np.testing.assert_array_equal(R, np.eye(6))
+    np.testing.assert_array_equal(T, np.zeros((6, 6, 6)))
+
+
+def test_sad_hard_dipolar_fringe_rejects_zero_length_with_field():
+    """A nonzero integrated field cannot define a thick edge at zero length."""
+    with pytest.raises(ValueError, match = "requires a nonzero length"):
+        sad_hard_dipolar_fringe_coefficients(
+            k0 = 0.01, sk0 = 0.0, length = 0.0, is_exit = False)
+
+################################################################################
+# Second-Order Taylor-Map Composition
+################################################################################
+def _track_taylor_maps(elements, coordinates):
+    """Track a coordinate grid through an ordered sequence of Taylor maps."""
+    particles = xt.Particles(
+        p0c   = 1.0E9,
+        mass0 = xt.ELECTRON_MASS_EV,
+        q0    = -1,
+        x     = coordinates[:, 0],
+        px    = coordinates[:, 1],
+        y     = coordinates[:, 2],
+        py    = coordinates[:, 3],
+        zeta  = coordinates[:, 4],
+        delta = coordinates[:, 5])
+    for element in elements:
+        element.track(particles)
+    return np.column_stack([
+        np.asarray(getattr(particles, coordinate))
+        for coordinate in ("x", "px", "y", "py", "zeta", "delta")])
+
+
+def _mixed_6d_coordinates():
+    """Return deterministic axial and mixed six-dimensional probes."""
+    probes = [np.zeros(6)]
+    for coordinate in range(6):
+        positive = np.zeros(6)
+        positive[coordinate] = 1.0
+        probes.extend((positive, -positive))
+
+    probes.extend(np.array([
+        [+1, +1, +1, +1, +1, +1],
+        [+1, +1, -1, -1, -1, -1],
+        [+1, -1, +1, -1, -1, +1],
+        [+1, -1, -1, +1, +1, -1],
+        [-1, +1, +1, -1, +1, -1],
+        [-1, +1, -1, +1, -1, +1],
+        [-1, -1, +1, +1, -1, -1],
+        [-1, -1, -1, -1, +1, +1]]))
+    amplitudes = np.array([
+        1.0E-3, 1.0E-4, 1.0E-3, 1.0E-4, 1.0E-3, 1.0E-3])
+    return np.asarray(probes) * amplitudes
+
+
+def test_compose_second_order_taylor_coefficients_preserves_tracking_order():
+    """The composite must apply the first map before the second map."""
+    first_k       = np.zeros(6)
+    first_k[0]    = 2.0E-4
+    first_R       = np.eye(6)
+    first_R[0, 1] = 0.3
+    first = xt.SecondOrderTaylorMap(k = first_k, R = first_R)
+
+    second_T          = np.zeros((6, 6, 6))
+    second_T[3, 0, 2] = second_T[3, 2, 0] = 0.2
+    second = xt.SecondOrderTaylorMap(T = second_T)
+
+    k, R, T  = compose_second_order_taylor_coefficients(first, second)
+    composite = xt.SecondOrderTaylorMap(k = k, R = R, T = T)
+    coordinates = np.array([
+        [1.0E-3, -2.0E-4, 0.7E-3, 0.3E-4, 0.0, 0.0],
+        [-0.5E-3, 0.6E-4, -1.1E-3, -0.2E-4, 0.0, 0.0]])
+
+    np.testing.assert_allclose(
+        _track_taylor_maps([composite], coordinates),
+        _track_taylor_maps([first, second], coordinates),
+        rtol = 0.0,
+        atol = 2.0E-16)
+
+
+def test_compose_second_order_taylor_coefficients_rejects_aligned_maps():
+    """Composition must not silently omit an element-frame transformation."""
+    aligned = xt.SecondOrderTaylorMap(shift_x = 1.0E-3)
+    plain   = xt.SecondOrderTaylorMap()
+
+    with pytest.raises(ValueError, match = "first Taylor map.*common local"):
+        compose_second_order_taylor_coefficients(aligned, plain)
+    with pytest.raises(ValueError, match = "second Taylor map.*common local"):
+        compose_second_order_taylor_coefficients(plain, aligned)
+
+
+def test_rotate_second_order_taylor_coefficients_changes_only_the_field_frame():
+    """A relative field rotation should be folded into the local tensors."""
+    _, _, T = sad_hard_dipolar_fringe_coefficients(
+        k0 = 0.017, sk0 = -0.009, length = 0.45, is_exit = False)
+    field_map = xt.SecondOrderTaylorMap(T = T)
+    k, R, T = rotate_second_order_taylor_coefficients(
+        field_map,
+        rotation = 0.23)
+    parent_frame = xt.SecondOrderTaylorMap(k = k, R = R, T = T)
+    rotated_field_map = xt.SecondOrderTaylorMap(T = field_map.T, rot_s_rad = 0.23)
+    coordinates = np.array([
+        [1.0E-3, -2.0E-4, 0.7E-3, 0.3E-4, 2.0E-3, 1.0E-3],
+        [-0.5E-3, 0.6E-4, -1.1E-3, -0.2E-4, -1.0E-3, -1.0E-3]])
+
+    np.testing.assert_allclose(
+        _track_taylor_maps([parent_frame], coordinates),
+        _track_taylor_maps([rotated_field_map], coordinates),
+        rtol = 0.0,
+        atol = 2.0E-16)
+
+
+def test_rotate_second_order_taylor_coefficients_rejects_aligned_map():
+    """The relative rotation helper must not consume magnet alignment."""
+    element = xt.SecondOrderTaylorMap(shift_x = 1.0E-3)
+
+    with pytest.raises(ValueError, match = "must be unaligned"):
+        rotate_second_order_taylor_coefficients(element, rotation = 0.2)
+
+
+def test_hard_and_soft_fringe_composition_matches_separate_maps_in_6d():
+    """The composite should match separate faces on a mixed 6D grid."""
+    environment = xt.Environment()
+    _, _, hard_T = sad_hard_dipolar_fringe_coefficients(
+        k0 = 1.0E-3, sk0 = -0.6E-3, length = 0.5, is_exit = False)
+    hard_local = xt.SecondOrderTaylorMap(T = hard_T)
+    soft_k, soft_R, soft_T = sad_soft_quadrupolar_fringe_coefficients(
+        environment, a = -3.0E-5, b = 6.0E-3)
+    soft_field = xt.SecondOrderTaylorMap(
+        k         = soft_k,
+        R         = soft_R,
+        T         = soft_T)
+
+    magnet_rotation = -0.17
+    field_rotation  = 0.28
+    soft_coefficients = rotate_second_order_taylor_coefficients(
+        soft_field,
+        rotation = field_rotation)
+    soft_local = xt.SecondOrderTaylorMap(
+        k = soft_coefficients[0],
+        R = soft_coefficients[1],
+        T = soft_coefficients[2])
+    k, R, T = compose_second_order_taylor_coefficients(
+        hard_local,
+        soft_local)
+
+    alignment = {
+        "shift_x": 1.2E-3,
+        "shift_y": -0.8E-3,
+        "rot_s_rad": magnet_rotation}
+    hard = xt.SecondOrderTaylorMap(T = hard_T, **alignment)
+    soft = xt.SecondOrderTaylorMap(
+        k         = soft_k,
+        R         = soft_R,
+        T         = soft_T,
+        shift_x   = alignment["shift_x"],
+        shift_y   = alignment["shift_y"],
+        rot_s_rad = magnet_rotation + field_rotation)
+    composite = xt.SecondOrderTaylorMap(k = k, R = R, T = T, **alignment)
+
+    assert composite.shift_x == hard.shift_x
+    assert composite.shift_y == hard.shift_y
+    assert composite.rot_s_rad == hard.rot_s_rad
+
+    coordinates = _mixed_6d_coordinates()
+    difference = (
+        _track_taylor_maps([composite], coordinates)
+        - _track_taylor_maps([hard, soft], coordinates))
+    assert np.max(np.abs(difference)) < 1.0E-10
 
 ################################################################################
 # species_from_mass_and_charge

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-09-07
 ================================================================================
 """
 
@@ -27,12 +27,11 @@ logger  = logging.getLogger(__name__)
 
 ################################################################################
 # SAD-native line flattening
-#
+################################################################################
 # "floor(OFFSET) positions forward" must be counted on SAD's own element
 # sequence, not the post-conversion Xsuite table: one SAD element can
 # become several Xsuite ones (quad fringe, RF-carrying MULT slices),
 # which would silently count sub-pieces instead of real SAD elements.
-################################################################################
 def _flatten_sad_line_elements(
         line_name:      str,
         parsed_lines:   dict[str, list[str]]) -> list[str]:
@@ -187,10 +186,10 @@ def convert_offset_markers(
     here keeps an unplaceable marker out of the generated file's single
     batched insertion, where one failure would cost every other marker.
 
-    Every moved marker (skipped or not) is removed from `line` here; a
-    surviving one is only re-inserted later, when the lattice file is
-    generated (`sad2xs.output_writer._016_offset_markers`) -- `line`
-    itself never gets it back.
+    Every moved marker (skipped or not) is removed from the intermediate
+    `line` here. A surviving marker is re-inserted when the generated lattice
+    is loaded (`sad2xs.output_writer._016_offset_markers`), before the normal
+    conversion path returns its rebuilt line.
 
     Parameters
     ----------
@@ -244,24 +243,24 @@ def convert_offset_markers(
         return line, {}
 
     ########################################
-    # SAD's own flat element sequence, and cumulative length along it
-    # -- the ground truth for "floor(OFFSET) positions forward", fully
-    # independent of how any element is represented in Xsuite.
+    # SAD's own flat element sequence
     ########################################
+    # Cumulative length along it is the ground truth for "floor(OFFSET)
+    # positions forward", fully independent of how any element is represented
+    # in Xsuite.
     sad_sequence    = _flatten_sad_line_elements(line_name, parsed_lattice_data["lines"])
     sad_lengths     = [_element_length(name, parsed_elements, line) for name in sad_sequence]
     cumulative_s    = np.concatenate(([0.0], np.cumsum(sad_lengths)))
 
     ########################################
-    # Get line table -- for the literal Xsuite marker names (with any
-    # "::N" replica or "-" reversal sign) so the right ones get removed
-    # from `line` at the end; not used for the position calculation.
+    # Get line table
     ########################################
+    # For the literal Xsuite marker names, with any "::N" replica or "-"
+    # reversal sign, so the right ones get removed from `line` at the end. Not
+    # used for the position calculation.
     logger.debug("Getting line table")
 
-    line.build_tracker()
     tt      = line.get_table(attr = True)
-    line.discard_tracker()
 
     ########################################
     # Get the names of the inserted markers in the line
@@ -318,9 +317,10 @@ def convert_offset_markers(
             offset = 1 - offset
 
         ########################################
-        # Case 1: Marker stays at its own nominal position (confirmed
-        # against real SAD: 0 <= OFFSET <= 1 never moves or splits anything)
+        # Case 1: Marker stays at its own nominal position
         ########################################
+        # Confirmed against real SAD: 0 <= OFFSET <= 1 never moves or splits
+        # anything.
         if 0 <= offset <= 1:
             unmoved_markers.add(base_marker)
             continue
@@ -396,13 +396,8 @@ def convert_offset_markers(
         f"Converted {len(offset_marker_locations)} offset markers "
         f"({n_locations} insertion points)")
 
-    # A relocated marker belongs only in the generated lattice file, so this is
-    # progress information, not a warning. The names go to DEBUG because on a
-    # real lattice the list runs to dozens.
+    # The names go to DEBUG because on a real lattice the list runs to dozens.
     if offset_marker_locations:
-        logger.info(
-            f"{len(offset_marker_locations)} relocated offset marker(s) are "
-            "present only in the generated lattice file, not the returned line")
         logger.debug(
             f"Relocated offset markers: {sorted(offset_marker_locations)}")
 

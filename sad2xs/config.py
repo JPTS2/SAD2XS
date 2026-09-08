@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-06
+Date:       2026-09-07
 ================================================================================
 """
 
@@ -19,13 +19,24 @@ Date:       2026-08-06
 from dataclasses import dataclass, field
 
 ################################################################################
-# Protected Element Names
-#
-# Element names that collide with Xsuite environment variables created during
-# conversion. SAD itself accepts these names; SAD2XS rejects them early to
-# prevent silent corruption of the Xsuite environment.
+# Protected Names
 ################################################################################
+
+########################################
+# Variable names used for conversion
+########################################
+# These names are used to store reference particle information during translation.
+# Rejected as SAD element names: SAD accepts them, but one would overwrite the variable.
 PROTECTED_ELEMENT_NAMES: frozenset[str] = frozenset({"mass0", "p0c", "q0"})
+
+########################################
+# Generated Line Suffixes
+########################################
+# Suffixes SAD2XS appends when it invents a line name
+# Ugly by design: "_compound" or "_reversed" could collide with a real subline name
+# Never emitted to the writer, but used to find generated lines later in the pipeline.
+COMPOUND_LINE_SUFFIX:   str = "_sad2xscompound"
+REVERSED_LINE_SUFFIX:   str = "_sad2xsrev"
 
 ################################################################################
 # Config Dataclass
@@ -46,6 +57,7 @@ class Config:
     _install_offset_markers:        bool            = True
     _import_sad_bend_fringes:       bool            = True
     _import_sad_quad_fringes:       bool            = True
+    _import_sad_mult_fringes:       bool            = True
 
     ############################################################################
     # Constants
@@ -147,6 +159,7 @@ class Config:
     INTEGRATOR_SEXT:                str             = "yoshida4"
     INTEGRATOR_OCT:                 str             = "yoshida4"
     INTEGRATOR_MULT:                str             = "yoshida4"
+    INTEGRATOR_SOL:                 str             = "yoshida4"
     INTEGRATOR_CAVI:                str             = "yoshida4"
 
     N_INTEGRATOR_KICKS_BEND:        int             = 20
@@ -154,7 +167,7 @@ class Config:
     N_INTEGRATOR_KICKS_SEXT:        int             = 14
     N_INTEGRATOR_KICKS_OCT:         int             = 14
     N_INTEGRATOR_KICKS_MULT:        int             = 14
-    N_INTEGRATOR_KICKS_SOL:         int             = 20
+    N_INTEGRATOR_KICKS_SOL:         int             = 14
 
     ABSOLUTE_TIME_CAVI:             bool            = False
 
@@ -172,6 +185,7 @@ class Config:
         default_factory = lambda: {
         "Marker", "Drift",
         "Bend", "Quadrupole", "Sextupole", "Octupole", "Multipole",
+        "MultipoleEdge",
         "UniformSolenoid",
         "Cavity", "Translation", "TimeDelay", "Rotation",
         "LimitEllipse", "LimitRect", "LimitRectEllipse",
@@ -183,6 +197,7 @@ class Config:
     MARKER_INSERTION_TOLERANCE:     float           = 1E-9
 
     ########################################
-    # Writer Magnet Length Precision
+    # Element Length Precision
     ########################################
+    # Minimum absolute nonzero concrete element length; exactly zero is thin.
     MAGNET_LENGTH_PRECISION:        float           = 1E-9

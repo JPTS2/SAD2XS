@@ -26,11 +26,14 @@ each parametrisation separately.
 | `test_multipole_replacements.py` | 8 | 0 | — |
 | `test_offset_markers.py` | 27 | 0 | — |
 | `test_reference_particle.py` | 11 | 0 | — |
-| `test_reverse_survey_horizontal.py` | 12 | 0 | — |
-| `test_reverse_survey_vertical.py` | 13 | 0 | — |
+| `test_reverse_survey_horizontal.py` | 21 | 0 | — |
+| `test_reverse_survey_vertical.py` | 20 | 0 | — |
 | `test_reverse_charge_sign.py` | 6 | 0 | — |
-| `test_reverse_element_order.py` | 17 | 0 | — |
-| `test_reversed_component_syntax.py` | 7 | 0 | — |
+| `test_reverse_element_order.py` | 19 | 0 | — |
+| `test_reversed_component_syntax.py` | 11 | 0 | — |
+| `test_reversed_subline_reuse.py` | 2 | 0 | — |
+| `test_generated_line_name_collisions.py` | 2 | 0 | — |
+| `test_repeated_components.py` | 1 | 0 | — |
 
 ### `test_convert_sad_to_xsuite.py` note
 
@@ -56,6 +59,13 @@ Covers offset marker resolution and installation:
 - symbolic `s` expressions resolve through the line's `xt.Environment`, not
   through a bare `eval()`.
 
+### `test_reverse_survey_horizontal.py` and `test_reverse_survey_vertical.py` note
+
+Both reflections negate `rot_s_rad`, which would leave a vertical dipole at
+-pi/2 instead of its canonical +pi/2. The canonical-rotation tests check that
+the reflected dipole keeps a canonical rotation, and that the canonical form
+tracks identically to the non-canonical one it replaces.
+
 ### `test_reverse_charge_sign.py` note
 
 Covers `reverse_charge_sign` and species-aware reference-particle setup:
@@ -68,11 +78,23 @@ reversal to electron and antiproton, `p0c`/`mass0` isolation, and the
 Covers SAD's per-element `-NAME` reversal syntax, through
 `create_reversed_component`. This is a separate path from the whole-line
 `-LINE` reversal covered by `test_reverse_element_order.py`.
+This coverage includes asymmetric QUAD and MULT soft fringes checked against
+SAD's native `-NAME` transfer map, including a line containing both forward
+and reversed occurrences. The face sign and occurrence isolation are
+therefore not inferred only from the in-memory representation.
 
 It covers direction-symmetric reuse for drifts and quadrupoles, solenoid `ks`
 negation, the bend edge-angle swap, and the bend `fint`/`hgap` swap. Two
 tracking comparisons run against SAD's own per-element-reversed line, with the
 poleface angle and the soft-edge fringe isolated from each other.
+
+### Complete MULT fringe reversal note
+
+`test_reverse_element_order.py` checks the supported hard and soft MULT
+components against SAD's native `-LINE` tracking map. It also pins component
+order, entry/exit flags and double-reversal restoration. The horizontal and
+vertical survey-reflection suites separately check the reflected strengths,
+alignments and mixed-grid tracking of the complete fringe model.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

@@ -9,12 +9,14 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-21
+Date:       2026-09-08
 ================================================================================
 """
 ################################################################################
 # Required Packages
 ################################################################################
+import pytest
+
 from sad2xs.config import Config
 from sad2xs.converter._001_parser import parse_sad_file
 
@@ -139,3 +141,36 @@ def test_empty_line_reference_is_preserved_in_parent_line(write_lattice):
         "The referenced empty line should be available in parsed lines.")
     assert parsed["lines"]["ring"] == ["a", "empty", "c"], (
         "Parent lines should preserve references to empty sub-lines literally.")
+
+################################################################################
+# "N*NAME" Repetition
+################################################################################
+@pytest.mark.parametrize("component, expected", [
+    ("4*CELL",   ["cell"] * 4),
+    ("4*D1",     ["d1"] * 4),
+    ("2 * CELL", ["cell"] * 2),
+    ("-2*CELL",  ["-cell"] * 2),
+    ("2*-CELL",  ["-cell"] * 2),
+    ("-2*-CELL", ["cell"] * 2)])
+def test_repetition_count_expands_to_repeated_components(
+        write_lattice,
+        component,
+        expected):
+    """
+    "N*NAME" is plain repetition in SAD, so the parser should expand it to N
+    copies of NAME. A "-" before the count or before the name reverses each
+    copy, and one in each position cancels.
+    """
+    lattice_path = write_lattice(
+        f"""\
+        MOMENTUM = 1.0 GEV;
+        LINE CELL = (A B);
+        LINE RING = (START {component} END);
+        """,
+        filename = "repeated_component.sad")
+
+    parsed = parse_sad_file(str(lattice_path), Config(_verbose = False))
+
+    assert parsed["lines"]["ring"] == ["start"] + expected + ["end"], (
+        f"\"{component}\" should expand to {expected}. "
+        f"""Got: {parsed["lines"]["ring"]}.""")

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-09-03
 ================================================================================
 """
 ################################################################################
@@ -17,7 +17,129 @@ Date:       2026-07-29
 ################################################################################
 import numpy as np
 import pytest
+import xtrack as xt
 import sad2xs as s2x
+
+################################################################################
+# SAD Soft Quadrupolar Fringe Reflection
+################################################################################
+def test_reverse_survey_vertical_reflects_soft_quadrupolar_fringe(
+        write_lattice):
+    """The semantic fringe map must follow the body's vertical mirror."""
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        QUAD Q1=(L=0.5 K1=0.1 F1=0.02 F2=0.01 FRINGE=3
+                 DX=0.0012 DY=-0.0008 ROTATE=0.2 DISFRIN=1);
+        SOL S1=(BZ=0.1 BOUND=1 GEO=1 DISFRIN=1)
+            S2=(BZ=0.1 BOUND=1 DISFRIN=1);
+        MARK START=() END=();
+        LINE TEST=(START S1 Q1 S2 END);
+        """,
+        filename = "reverse_vertical_k1_fringe.sad")
+    forward = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path), output_directory = "N/A",
+        _verbose = False, _test_mode = True)
+    reflected = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path), output_directory = "N/A",
+        reverse_survey_vertical = True,
+        _verbose = False, _test_mode = True)
+
+    for name in ("q1_fringe_in", "q1_fringe_out"):
+        assert reflected[name].shift_x == pytest.approx(forward[name].shift_x)
+        assert reflected[name].shift_y == pytest.approx(-forward[name].shift_y)
+        assert reflected[name].rot_s_rad == pytest.approx(
+            -forward[name].rot_s_rad)
+
+        forward_particle = xt.Particles(
+            p0c = 1.0E9, x = 1.1e-3, px = -2.0e-4,
+            y = -0.7e-3, py = 3.0e-4, zeta = 2.0e-3, delta = 0.01)
+        reflected_particle = forward_particle.copy()
+        reflected_particle.y  *= -1
+        reflected_particle.py *= -1
+        forward[name].track(forward_particle)
+        reflected[name].track(reflected_particle)
+        np.testing.assert_allclose(
+            [reflected_particle.x[0], reflected_particle.px[0],
+             reflected_particle.y[0], reflected_particle.py[0],
+             reflected_particle.zeta[0]],
+            [forward_particle.x[0], forward_particle.px[0],
+             -forward_particle.y[0], -forward_particle.py[0],
+             forward_particle.zeta[0]],
+            rtol = 1e-13,
+            atol = 1e-15)
+
+
+################################################################################
+# SAD MULT Fringe Reflection
+################################################################################
+def test_reverse_survey_vertical_reflects_complete_mult_fringe(
+        write_lattice):
+    """The complete MULT face model must follow the vertical mirror."""
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM = 1.0 GEV;
+        MULT M1=(L=0.5 K0=0.001 SK0=-0.0007 K1=0.1 SK1=0.03
+                 F1=0.02 F2=0.01 FRINGE=3
+                 DX=0.0012 DY=-0.0008 ROTATE=0.2);
+        MARK START=() END=();
+        LINE TEST=(START M1 END);
+        """,
+        filename = "reverse_vertical_mult_fringe.sad")
+    forward = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path), output_directory = "N/A",
+        SIMPLIFY_MULTIPOLES = False,
+        _verbose = False, _test_mode = True)
+    reflected = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path), output_directory = "N/A",
+        SIMPLIFY_MULTIPOLES = False, reverse_survey_vertical = True,
+        _verbose = False, _test_mode = True)
+
+    forward_parameters = forward.env.metadata[
+        "sad2xs"]["fringe_taylor_maps"]["m1_fringe_in"]
+    reflected_parameters = reflected.env.metadata[
+        "sad2xs"]["fringe_taylor_maps"]["m1_fringe_in"]
+    assert reflected_parameters["hard_dipole"]["k0"] == pytest.approx(
+        forward_parameters["hard_dipole"]["k0"])
+    assert reflected_parameters["hard_dipole"]["sk0"] == pytest.approx(
+        -forward_parameters["hard_dipole"]["sk0"])
+    assert reflected_parameters["relative_rotation"] == pytest.approx(
+        -forward_parameters["relative_rotation"])
+
+    for side in ("in", "out"):
+        forward_edge   = forward[f"m1_hard_edge_{side}"]
+        reflected_edge = reflected[f"m1_hard_edge_{side}"]
+        assert reflected_edge.kn[1] == pytest.approx(forward_edge.kn[1])
+        assert reflected_edge.ks[1] == pytest.approx(-forward_edge.ks[1])
+        assert reflected_edge.shift_x == pytest.approx(forward_edge.shift_x)
+        assert reflected_edge.shift_y == pytest.approx(-forward_edge.shift_y)
+        assert reflected_edge.rot_s_rad == pytest.approx(
+            -forward_edge.rot_s_rad)
+
+    for side, components in (
+            ("in",  ["m1_hard_edge_in", "m1_fringe_in"]),
+            ("out", ["m1_fringe_out", "m1_hard_edge_out"])):
+        forward_face = forward.env.new_line(
+            name = f"forward_{side}", components = components)
+        reflected_face = reflected.env.new_line(
+            name = f"reflected_{side}", components = components)
+        forward_particle = xt.Particles(
+            p0c = 1.0E9, x = 1.1e-3, px = -2.0e-4,
+            y = -0.7e-3, py = 3.0e-4, zeta = 2.0e-3, delta = 0.01)
+        reflected_particle = forward_particle.copy()
+        reflected_particle.y  *= -1
+        reflected_particle.py *= -1
+        forward_face.track(forward_particle)
+        reflected_face.track(reflected_particle)
+        np.testing.assert_allclose(
+            [reflected_particle.x[0], reflected_particle.px[0],
+             reflected_particle.y[0], reflected_particle.py[0],
+             reflected_particle.zeta[0], reflected_particle.delta[0]],
+            [forward_particle.x[0], forward_particle.px[0],
+             -forward_particle.y[0], -forward_particle.py[0],
+             forward_particle.zeta[0], forward_particle.delta[0]],
+            rtol = 1e-12,
+            atol = 1e-15)
 
 ################################################################################
 # Bend Adjustments
@@ -142,14 +264,14 @@ def test_pipeline_reverse_survey_vertical_bend_offsets_and_rotation(write_lattic
 
 def test_pipeline_reverse_survey_vertical_rotated_bend_direction_and_tracking(write_lattice):
     """
-    A genuine vertical bend, ROTATE = pi/2, has its direction flipped through
-    rot_s_rad rather than through angle.
+    A genuine vertical bend, ROTATE = pi/2, has its direction flipped.
 
     The converter canonicalises ROTATE = +-pi/2 to a fixed rot_s_rad = +pi/2
-    and carries direction in the sign of angle. This flag leaves angle
-    unchanged and negates rot_s_rad. A parameter check alone cannot prove that
-    is physically right, so this also tracks an asymmetric particle and asserts
-    the reversed line reproduces the y/py-mirror of the forward result.
+    and carries direction in the sign of angle. This flag negates rot_s_rad
+    and then restores that canonical rotation, which puts the direction flip
+    on angle. A parameter check alone cannot prove that is physically right,
+    so this also tracks an asymmetric particle and asserts the reversed line
+    reproduces the y/py-mirror of the forward result.
     """
     lattice_path = write_lattice(
         """\
@@ -189,13 +311,14 @@ def test_pipeline_reverse_survey_vertical_rotated_bend_direction_and_tracking(wr
     assert rot_s_forward == pytest.approx(np.pi / 2), (
         "Sanity check: SAD ROTATE = pi/2 on a BEND should canonicalise to "
         f"rot_s_rad = +pi/2. Got: {rot_s_forward}.")
-    assert angle_reversed == pytest.approx(angle_forward), (
-        "reverse_survey_vertical=True should leave a rotated bend's angle "
-        f"unchanged. Forward: {angle_forward}, reversed: {angle_reversed}.")
-    assert rot_s_reversed == pytest.approx(-rot_s_forward), (
-        "reverse_survey_vertical=True should negate rot_s_rad -- this is "
-        "what actually flips the vertical bend's direction. "
-        f"Forward: {rot_s_forward}, reversed: {rot_s_reversed}.")
+    assert angle_reversed == pytest.approx(-angle_forward), (
+        "reverse_survey_vertical=True negates a rotated bend's rot_s_rad and "
+        "then restores the canonical +pi/2, which moves the direction flip "
+        f"onto angle. Forward: {angle_forward}, reversed: {angle_reversed}.")
+    assert rot_s_reversed == pytest.approx(rot_s_forward), (
+        "A reflected vertical bend should keep the canonical rot_s_rad = "
+        "+pi/2, so the writer reads it as a vertical element rather than a "
+        f"skew one. Forward: {rot_s_forward}, reversed: {rot_s_reversed}.")
 
     ########################################
     # Tracking self-consistency check
@@ -816,3 +939,115 @@ def test_pipeline_reverse_survey_vertical_twiss_beta_functions_unchanged(write_l
         "reverse_survey_vertical=True is a geometric mirror: bety must be "
         "unchanged even though k1s/k2s flip sign. "
         f"Forward bety={bety_fwd:.6f}, reversed bety={bety_rev:.6f}.")
+
+
+################################################################################
+# Canonical Dipole Rotation
+################################################################################
+@pytest.mark.parametrize(
+    "sad_rotation",
+    [+np.pi / 2, -np.pi / 2, +np.pi, -np.pi])
+def test_reverse_survey_vertical_keeps_the_canonical_dipole_rotation(
+        write_lattice, sad_rotation):
+    """
+    A reflected dipole must keep the canonical rotation.
+
+    Reflection negates rot_s_rad, which turns the canonical +pi/2 of a
+    vertical corrector into -pi/2. The writer then reads it as a skew
+    corrector rather than a vertical one.
+    """
+    lattice_path = write_lattice(
+        f"""\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND        CV          = (
+            L       = 0.5
+            ANGLE   = 0.0
+            K0      = 0.1
+            ROTATE  = {sad_rotation}
+        );
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START CV END);
+        """,
+        filename = f"reverse_vertical_canonical_rotation_{sad_rotation:.6f}.sad")
+
+    reflected = s2x.convert_sad_to_xsuite(
+        sad_lattice_path            = str(lattice_path),
+        output_directory            = "N/A",
+        reverse_survey_vertical   = True,
+        _verbose                    = False,
+        _test_mode                  = True)
+
+    assert reflected["cv"].rot_s_rad in (
+        pytest.approx(0.0), pytest.approx(np.pi / 2)), (
+        "A reflected dipole should keep a canonical rotation of 0 or +pi/2, "
+        "with the direction carried by the field sign. Got "
+        f"""{reflected["cv"].rot_s_rad}.""")
+
+
+def test_reverse_survey_vertical_canonical_rotation_preserves_tracking(
+        write_lattice):
+    """
+    Restoring the canonical rotation must not change the reflected optics.
+
+    The canonical form differs from the reflected one by a pi rotation
+    about s, so the two describe the same physical element.
+    """
+    lattice_path = write_lattice(
+        """\
+        MOMENTUM    = 1.0 GEV;
+
+        BEND        CV          = (
+            L       = 0.5
+            ANGLE   = 0.0
+            K0      = 0.1
+            K1      = 0.02
+            DX      = 1.2E-3
+            DY      = -0.8E-3
+            ROTATE  = 90 DEG
+        );
+
+        MARK        START       = ()
+                    END         = ();
+
+        LINE        TEST_LINE   = (START CV END);
+        """,
+        filename = "reverse_vertical_canonical_rotation_tracking.sad")
+
+    reflected = s2x.convert_sad_to_xsuite(
+        sad_lattice_path            = str(lattice_path),
+        output_directory            = "N/A",
+        reverse_survey_vertical   = True,
+        _verbose                    = False,
+        _test_mode                  = True)
+
+    # Clone so the comparison keeps the converted element's tracking model
+    element = reflected["cv"]
+    reflected.env.new(
+        name        = "cv_non_canonical",
+        prototype   = "cv",
+        k0          = -element.k0,
+        rot_s_rad   = -element.rot_s_rad)
+    equivalent = reflected.env["cv_non_canonical"]
+
+    canonical_particle      = xt.Particles(
+        p0c = 1.0E9, x = 1.1E-3, px = -2.0E-4,
+        y = -0.7E-3, py = 3.0E-4, zeta = 2.0E-3, delta = 0.01)
+    non_canonical_particle  = canonical_particle.copy()
+    element.track(canonical_particle)
+    equivalent.track(non_canonical_particle)
+
+    np.testing.assert_allclose(
+        [canonical_particle.x[0], canonical_particle.px[0],
+         canonical_particle.y[0], canonical_particle.py[0],
+         canonical_particle.zeta[0]],
+        [non_canonical_particle.x[0], non_canonical_particle.px[0],
+         non_canonical_particle.y[0], non_canonical_particle.py[0],
+         non_canonical_particle.zeta[0]],
+        rtol = 1e-13,
+        atol = 1e-15,
+        err_msg = "The canonical rotation must track identically to the "
+                  "non-canonical form it replaces.")

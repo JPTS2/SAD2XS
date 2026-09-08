@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-27
+Date:       2026-09-07
 ================================================================================
 """
 ################################################################################
@@ -19,6 +19,10 @@ import numpy as np
 import pytest
 import xtrack as xt
 
+from sad2xs.converter._000_helpers import (
+    create_sad_fringe_taylor_map)
+from sad2xs.converter._005_line_converter import create_reversed_component
+from sad2xs.converter._007_reversals import reverse_line_element_order
 from tests.support.writer_helpers import write_and_load as _shared_write_and_load
 
 ################################################################################
@@ -54,12 +58,16 @@ def _build_first_order_map_line(length = 0.0, m0 = None, m1 = None, name = "m1")
     return line
 
 
-def _build_second_order_map_line(length = 0.0, k = None, R = None, T = None, name = "m1"):
+def _build_second_order_map_line(
+        length = 0.0, k = None, R = None, T = None, name = "m1",
+        shift_x = 0.0, shift_y = 0.0, rot_s_rad = 0.0):
     """
     Build a minimal single-SecondOrderTaylorMap Xsuite line with a reference
     particle.
     """
-    kwargs = dict(length = length)
+    kwargs = dict(
+        length = length, shift_x = shift_x, shift_y = shift_y,
+        rot_s_rad = rot_s_rad)
     if k is not None:
         kwargs["k"] = k
     if R is not None:
@@ -209,6 +217,16 @@ def test_second_order_taylor_map_writer_preserves_length(tmp_path):
         f"""Original: 0.6, reloaded: {reloaded_line["m1"].length}.""")
 
 
+def test_second_order_taylor_map_writer_preserves_transverse_alignment(tmp_path):
+    """Taylor-map transverse alignment must survive writer roundtrip."""
+    original_line = _build_second_order_map_line(
+        shift_x = 1.2e-3, shift_y = -0.8e-3, rot_s_rad = 0.2)
+    reloaded = _writer_roundtrip(original_line, tmp_path)["m1"]
+    assert reloaded.shift_x == pytest.approx(1.2e-3)
+    assert reloaded.shift_y == pytest.approx(-0.8e-3)
+    assert reloaded.rot_s_rad == pytest.approx(0.2)
+
+
 def test_second_order_taylor_map_writer_preserves_k(tmp_path):
     """
     A SecondOrderTaylorMap's k (6-vector) should be preserved through a write
@@ -274,49 +292,292 @@ def test_second_order_taylor_map_writer_preserves_full_double_precision(tmp_path
         f"""Original: {precise!r}, reloaded: {reloaded_line["m1"].k[0]!r}.""")
 
 
-################################################################################
-# SAD Quad-Fringe Reversal Metadata
-################################################################################
-def test_second_order_taylor_map_writer_preserves_sad_quad_fringe_metadata_when_present(tmp_path):
-    """
-    The converter stashes plain (non-xofield) _sad_quad_fringe_a/b/theta
-    attributes on a quad-fringe map. The reversal fix-up needs them, so they
-    should survive a write and reload cycle.
-    """
-    original_line = _build_second_order_map_line()
-    original_line["m1"]._sad_quad_fringe_a     = -3.125E-05
-    original_line["m1"]._sad_quad_fringe_b     = 0.006
-    original_line["m1"]._sad_quad_fringe_theta = 0.0
-
-    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
-
-    element = reloaded_line["m1"]
-    assert hasattr(element, "_sad_quad_fringe_a"), (
-        "Reloaded SecondOrderTaylorMap should carry _sad_quad_fringe_a when "
-        "the original element had it.")
-    assert element._sad_quad_fringe_a == pytest.approx(-3.125E-05), (
-        f"Reloaded _sad_quad_fringe_a should match the original. "
-        f"Got: {element._sad_quad_fringe_a}.")
-    assert element._sad_quad_fringe_b == pytest.approx(0.006), (
-        f"Reloaded _sad_quad_fringe_b should match the original. "
-        f"Got: {element._sad_quad_fringe_b}.")
-    assert element._sad_quad_fringe_theta == pytest.approx(0.0), (
-        f"Reloaded _sad_quad_fringe_theta should match the original. "
-        f"Got: {element._sad_quad_fringe_theta}.")
+########################################
+# SAD Soft Quadrupolar Fringes
+########################################
+def _build_soft_quadrupolar_fringe_line(a, b, field_rotation):
+    """Build a minimal line containing one recognised SAD fringe map."""
+    env = xt.Environment()
+    env.new(name = "start", prototype = xt.Marker)
+    env.new(name = "end", prototype = xt.Marker)
+    create_sad_fringe_taylor_map(
+        env,
+        name                = "m1",
+        soft_quadrupole     = {
+            "a": a,
+            "b": b},
+        alignment           = {
+            "shift_x":   1.2e-3,
+            "shift_y":   -0.8e-3,
+            "rot_s_rad": -field_rotation})
+    line = env.new_line(name = "test", components = ["start", "m1", "end"])
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
+    return line
 
 
-def test_second_order_taylor_map_writer_omits_sad_quad_fringe_metadata_when_absent(tmp_path):
-    """
-    A plain SecondOrderTaylorMap not built via the quad-fringe path (no
-    _sad_quad_fringe_a/b/theta attributes) should reload without them --
-    the writer must not assume every SecondOrderTaylorMap is a quad fringe.
-    """
-    original_line = _build_second_order_map_line()
-    reloaded_line = _writer_roundtrip(line = original_line, tmp_path = tmp_path)
+def test_sad_soft_quadrupolar_fringe_writer_is_compact_and_reproducible(tmp_path):
+    """Emit one helper for recognised fringes and literals for generic maps."""
+    line = _build_soft_quadrupolar_fringe_line(
+        a = -3.125E-05,
+        b = 0.006,
+        field_rotation = 0.125)
+    create_sad_fringe_taylor_map(
+        line.env,
+        name                = "m2",
+        soft_quadrupole     = {
+            "a": 2.5E-05,
+            "b": -0.004},
+        alignment           = {"rot_s_rad": 0.2})
+    generic_k    = np.zeros(6)
+    generic_k[0] = 0.25
+    line.env.new(
+        name      = "generic",
+        prototype = xt.SecondOrderTaylorMap,
+        k         = generic_k)
+    line = line.env.new_line(
+        name       = "mixed_test",
+        components = ["start", "m1", "m2", "generic", "end"])
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
 
-    assert not hasattr(reloaded_line["m1"], "_sad_quad_fringe_a"), (
-        "Reloaded SecondOrderTaylorMap should not carry _sad_quad_fringe_a "
-        "when the original element never had it.")
+    expected_k = np.asarray(line["m1"].k).copy()
+    expected_R = np.asarray(line["m1"].R).copy()
+    expected_T = np.asarray(line["m1"].T).copy()
+
+    output_dir = tmp_path / "compact_fringe_writer"
+    output_dir.mkdir()
+    import sad2xs as s2x
+    from sad2xs.config import Config
+    s2x.write_lattice(
+        line = line, output_filename = "lattice",
+        output_directory = str(output_dir), output_header = "test",
+        offset_marker_locations = None,
+        config = Config(_verbose = False))
+    source = (output_dir / "lattice.py").read_text()
+
+    assert source.count("def _create_sad_fringe_taylor_map(") == 1
+    assert source.count("_create_sad_fringe_taylor_map(") == 3
+    assert f'"rot_s_rad": {-0.125!r}' in source
+    assert source.count("T           = [[[") == 1
+
+    calls = [
+        block.split(")")[0] for block in
+        source.split("\n_create_sad_fringe_taylor_map(\n")[1:]]
+    assert len(calls) == 2
+    m1_call, m2_call = calls
+
+    # Offsets are emitted only when non-zero; the helper defaults them
+    assert "shift_x" in m1_call and "shift_y" in m1_call
+    assert "shift_x" not in m2_call and "shift_y" not in m2_call
+
+    # Emitted arguments use the writer's double-quoted, full-precision style
+    assert '"m1"' in m1_call and "'" not in m1_call
+    assert f'"a": {-3.125E-05!r}' in m1_call
+
+    env = xt.Environment()
+    env.call(str(output_dir / "lattice.py"))
+    reloaded = env["m1"]
+    parameters = env.metadata["sad2xs"]["fringe_taylor_maps"]["m1"]
+    assert "soft_quadrupolar_fringes" not in env.metadata["sad2xs"]
+    assert parameters["a"] == pytest.approx(-3.125E-05)
+    assert parameters["b"] == pytest.approx(0.006)
+    assert parameters["field_rotation"] == pytest.approx(0.125)
+    assert not hasattr(reloaded, "_sad_k1_fringe_a")
+    assert reloaded.shift_x == pytest.approx(1.2e-3)
+    assert reloaded.shift_y == pytest.approx(-0.8e-3)
+    np.testing.assert_array_equal(reloaded.k, expected_k)
+    np.testing.assert_array_equal(reloaded.R, expected_R)
+    np.testing.assert_array_equal(reloaded.T, expected_T)
+    assert env["generic"].k[0] == pytest.approx(0.25)
+    assert "generic" not in env.metadata[
+        "sad2xs"]["fringe_taylor_maps"]
+
+
+def test_hard_only_sad_fringe_helper_matches_converter(tmp_path):
+    """The emitted helper must reproduce a signed hard-only fringe map."""
+    env = xt.Environment()
+    create_sad_fringe_taylor_map(
+        env,
+        name                = "fringe",
+        hard_dipole         = {
+            "k0": -0.001, "sk0": 0.0007, "length": -0.5},
+        alignment           = {
+            "shift_x": -0.6E-03,
+            "shift_y": 0.9E-03,
+            "rot_s_rad": -0.3},
+        is_exit            = False)
+    line = env.new_line(name = "test", components = ["fringe"])
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
+
+    original = line["fringe"]
+    reloaded_line = _writer_roundtrip(line, tmp_path)
+    reloaded      = reloaded_line["fringe"]
+
+    for field in ("k", "R", "T"):
+        np.testing.assert_allclose(
+            getattr(reloaded, field), getattr(original, field),
+            rtol = 1.0E-14, atol = 5.0E-17)
+    for field in ("shift_x", "shift_y", "rot_s_rad"):
+        assert getattr(reloaded, field) == pytest.approx(
+            getattr(original, field))
+    assert reloaded_line.env.metadata[
+        "sad2xs"]["fringe_taylor_maps"]["fringe"] == env.metadata[
+            "sad2xs"]["fringe_taylor_maps"]["fringe"]
+
+
+def test_sad_soft_quadrupolar_fringe_writer_preserves_quad_dependency(tmp_path):
+    """A reloaded QUAD fringe must still follow its body-strength variable."""
+    env = xt.Environment()
+    env["k1_q1"] = 0.3
+    env.new(name = "start", prototype = xt.Marker)
+    env.new(name = "end", prototype = xt.Marker)
+    env.new(
+        name = "q1", prototype = xt.Quadrupole,
+        length = 1.0, k1 = "k1_q1")
+    create_sad_fringe_taylor_map(
+        env,
+        name                = "m1",
+        soft_quadrupole     = {
+            "a": "-1.0e-4 * sqrt(k1_q1**2)",
+            "b": "2.0e-2 * sqrt(k1_q1**2)"},
+        alignment           = {
+            "rot_s_rad": "-(0.5 * atan2(0.0, k1_q1))"})
+    line = env.new_line(
+        name = "test", components = ["start", "m1", "q1", "end"])
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
+
+    reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
+    initial_R     = np.asarray(reloaded_line["m1"].R).copy()
+    reloaded_line.env["k1_q1"] *= 2.0
+
+    assert not np.array_equal(reloaded_line["m1"].R, initial_R), (
+        "Writing and reloading should preserve the fringe's dependency on "
+        "the existing QUAD strength variable.")
+
+
+def test_complete_mult_fringe_writer_preserves_maps_order_and_tracking(tmp_path):
+    """The five-element MULT model must be self-contained after reloading."""
+    env       = xt.Environment()
+    alignment = {"shift_x": 1.2e-3, "shift_y": -0.8e-3, "rot_s_rad": 0.2}
+    env.elements["m1_hard_edge_in"] = xt.MultipoleEdge(
+        kn = [0.0, 0.2], ks = [0.0, -0.06], order = 1,
+        is_exit = False, **alignment)
+    env.elements["m1_hard_edge_out"] = xt.MultipoleEdge(
+        kn = [0.0, 0.2], ks = [0.0, -0.06], order = 1,
+        is_exit = True, **alignment)
+    env.metadata.setdefault("sad2xs", {})[
+        "mult_hard_quadrupolar_edges"] = {
+            "m1_hard_edge_in": {}, "m1_hard_edge_out": {}}
+    for side, is_exit in (("in", False), ("out", True)):
+        create_sad_fringe_taylor_map(
+            env,
+            name                = f"m1_fringe_{side}",
+            soft_quadrupole     = {
+                "a": -3.125e-5 if not is_exit else 3.125e-5,
+                "b": 0.006,
+                "relative_rotation": -0.075},
+            hard_dipole         = {
+                "k0": 0.001, "sk0": -0.0007, "length": 0.5},
+            alignment           = alignment,
+            is_exit            = is_exit)
+    env.elements["m1"] = xt.Multipole(
+        length = 0.5, knl = [0.001, 0.1], ksl = [-0.0007, 0.03],
+        _isthick = True, **alignment)
+    face_model = [
+        "m1_hard_edge_in", "m1_fringe_in", "m1",
+        "m1_fringe_out", "m1_hard_edge_out"]
+    components = face_model + face_model
+    line = env.new_line(name = "test", components = components)
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
+    table = line.get_table()
+    mults = table.rows[table.element_type == "Multipole"]
+    line.set(
+        mults,
+        model               = "mat-kick-mat",
+        integrator          = "yoshida4",
+        num_multipole_kicks = 14)
+
+    original_coefficients = {
+        name: (np.asarray(line[name].k).copy(),
+               np.asarray(line[name].R).copy(),
+               np.asarray(line[name].T).copy())
+        for name in ("m1_fringe_in", "m1_fringe_out")}
+    initial = xt.Particles(
+        "electron", p0c = 1.0E9,
+        x = [1e-3, -2e-3, 0.4e-3],
+        px = [2e-4, -1e-4, 0.3e-4],
+        y = [-0.5e-3, 0.7e-3, 0.9e-3],
+        py = [0.3e-4, -0.2e-4, 0.6e-4],
+        zeta = [0.0, 1e-3, -2e-3], delta = [0.0, 0.01, -0.01])
+    expected = initial.copy()
+    line.track(expected)
+
+    reloaded = _writer_roundtrip(line, tmp_path)
+
+    repeated_components = [
+        f"{name}.{repeat}"
+        for repeat in (0, 1)
+        for name in face_model]
+    assert list(reloaded.element_names) == repeated_components
+    sad2xs_metadata = reloaded.env.metadata["sad2xs"]
+    for repeat in (0, 1):
+        assert f"m1_fringe_in.{repeat}" \
+            in sad2xs_metadata["fringe_taylor_maps"]
+        assert f"m1_hard_edge_in.{repeat}" \
+            in sad2xs_metadata["mult_hard_quadrupolar_edges"]
+    for repeat in (0, 1):
+        assert reloaded[f"m1_hard_edge_in.{repeat}"].is_exit == 0
+        assert reloaded[f"m1_hard_edge_out.{repeat}"].is_exit == 1
+    for name, coefficients in original_coefficients.items():
+        for repeat in (0, 1):
+            repeated_name = f"{name}.{repeat}"
+            for actual, expected_coefficient in zip(
+                    (reloaded[repeated_name].k,
+                     reloaded[repeated_name].R,
+                     reloaded[repeated_name].T),
+                    coefficients):
+                np.testing.assert_allclose(
+                    actual, expected_coefficient, rtol = 1e-14, atol = 5e-17)
+
+    actual = initial.copy()
+    reloaded.track(actual)
+    for coordinate in ("x", "px", "y", "py", "zeta", "delta"):
+        np.testing.assert_allclose(
+            getattr(actual, coordinate), getattr(expected, coordinate),
+            rtol = 0.0, atol = 1e-15)
+
+    source = (tmp_path / "writer_output" / "test_lattice.py").read_text()
+    assert source.count("def _create_sad_fringe_taylor_map(") == 1
+
+    reverse_line_element_order(reloaded)
+    assert list(reloaded.element_names) == [
+        "-m1_hard_edge_out.1", "-m1_fringe_out.1", "m1.1",
+        "-m1_fringe_in.1", "-m1_hard_edge_in.1",
+        "-m1_hard_edge_out.0", "-m1_fringe_out.0", "m1.0",
+        "-m1_fringe_in.0", "-m1_hard_edge_in.0"]
+    for repeat in (0, 1):
+        assert reloaded[f"-m1_hard_edge_out.{repeat}"].is_exit == 0
+        assert reloaded[f"-m1_hard_edge_in.{repeat}"].is_exit == 1
+
+
+def test_reversal_only_soft_quadrupolar_fringe_writes_under_root_name(tmp_path):
+    """A line containing only ``-name`` must retain that reversed face map."""
+    line = _build_soft_quadrupolar_fringe_line(
+        a = -3.125E-05,
+        b = 0.006,
+        field_rotation = 0.125)
+    reversed_name = create_reversed_component("-m1", line.env)
+    line = line.env.new_line(
+        name = "reversed_test", components = ["start", reversed_name, "end"])
+    line.particle_ref = xt.Particles("electron", p0c = 1.0E9)
+    expected_R = np.asarray(line[reversed_name].R).copy()
+
+    reloaded_line = _writer_roundtrip(line = line, tmp_path = tmp_path)
+
+    assert "m1" in reloaded_line.element_names
+    parameters = reloaded_line.env.metadata[
+        "sad2xs"]["fringe_taylor_maps"]["m1"]
+    assert parameters["a"] == pytest.approx(+3.125E-05)
+    np.testing.assert_allclose(reloaded_line["m1"].R, expected_R)
 
 
 ################################################################################

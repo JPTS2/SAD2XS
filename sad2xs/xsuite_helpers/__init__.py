@@ -9,14 +9,15 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-20
+Date:       2026-09-04
 ================================================================================
 """
 
 ################################################################################
 # Xsuite Helper Functions
 ################################################################################
-from .comparison_plots import plot_xsuite_sad_comparison
+from .comparison_plots import PLOT_GROUPS, plot_xsuite_sad_comparison
+from .coupled_optics import propagate_edwards_teng
 from .reference_energy import (
     install_reference_energy_updates,
     update_reference_energy_updates)

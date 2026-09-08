@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-24
+Date:       2026-09-07
 ================================================================================
 """
 
@@ -19,6 +19,12 @@ Date:       2026-07-24
 import logging
 
 import xtrack as xt
+
+from ..config import COMPOUND_LINE_SUFFIX, REVERSED_LINE_SUFFIX
+
+from ._000_helpers import (
+    create_sad_fringe_taylor_map,
+    negate_sad_value)
 
 logger  = logging.getLogger(__name__)
 
@@ -35,15 +41,17 @@ def create_reversed_component(
     A reversed component name always starts with `-`. For element
     types whose physics genuinely differs under reversal (Bend:
     entry/exit edge angles AND fringe fields (fint/hgap) swapped;
-    UniformSolenoid: ks negated; Translation/TimeDelay/Rotation: cloned
-    so the reversed line gets its own copy; Marker elements that are
-    SAD OFFSET markers: identified rather than cloned, so later
-    offset-marker handling can still find them by name), a genuinely
-    reversed clone is created.
-    Every other element type (Drift, Quadrupole, Sextupole, Octupole,
-    Multipole, Cavity, plain Marker, Aperture) is direction-symmetric,
-    so the `-` prefix is simply dropped and the original element
-    reused.
+    UniformSolenoid: ks negated; SAD fringe Taylor maps: rebuilt for the
+    opposite face; MULT hard quadrupolar edges: cloned with entry/exit
+    toggled; Translation/TimeDelay/Rotation: cloned so the reversed line
+    gets its own copy; Marker elements that are SAD OFFSET markers:
+    identified rather than cloned, so later offset-marker handling can
+    still find them by name), a genuinely reversed clone is created.
+    A Quadrupole used as a simplified SAD MULT is also cloned when it has
+    one-sided native edge activity. Every other element type (Drift, ordinary
+    Quadrupole, Sextupole, Octupole, Multipole, Cavity, plain Marker,
+    Aperture) is direction-symmetric, so the `-` prefix is simply dropped and
+    the original element reused.
 
     Parameters
     ----------
@@ -67,6 +75,14 @@ def create_reversed_component(
     """
 
     assert component.startswith("-"), """Component must start with "-" to be reversed"""
+    fringe_taylor_maps = environment.metadata.get(
+        "sad2xs", {}).get("fringe_taylor_maps", {})
+    hard_quadrupolar_edges = environment.metadata.get(
+        "sad2xs", {}).get("mult_hard_quadrupolar_edges", {})
+    native_fringe_faces = environment.metadata.get(
+        "sad2xs", {}).get("mult_native_fringe_faces", {})
+    source_name  = component[1:]
+    native_faces = native_fringe_faces.get(source_name)
 
     # Cannot overwrite elements, so must remove and recreate
     if component in environment.element_dict:
@@ -92,6 +108,37 @@ def create_reversed_component(
             environment[component[1:]].edge_exit_hgap
         environment[component].edge_exit_hgap    =\
             environment[component[1:]].edge_entry_hgap
+        environment[component].edge_entry_active =\
+            environment[component[1:]].edge_exit_active
+        environment[component].edge_exit_active  =\
+            environment[component[1:]].edge_entry_active
+        if component[1:] in native_fringe_faces:
+            native_fringe_faces[component] = {
+                "edge_entry_active": bool(
+                    environment[component].edge_entry_active),
+                "edge_exit_active": bool(
+                    environment[component].edge_exit_active)}
+
+    ########################################
+    # SAD MULT represented by a Quadrupole
+    ########################################
+    elif native_faces is not None \
+            and native_faces["edge_entry_active"] \
+            != native_faces["edge_exit_active"] \
+            and isinstance(environment.element_dict[source_name], xt.Quadrupole):
+        environment.new(
+            name      = component,
+            prototype = component[1:],
+            mode      = "clone")
+        environment[component].edge_entry_active =\
+            environment[component[1:]].edge_exit_active
+        environment[component].edge_exit_active  =\
+            environment[component[1:]].edge_entry_active
+        native_fringe_faces[component] = {
+            "edge_entry_active": bool(
+                environment[component].edge_entry_active),
+            "edge_exit_active": bool(
+                environment[component].edge_exit_active)}
 
     ########################################
     # Solenoid
@@ -134,6 +181,41 @@ def create_reversed_component(
         # Here we need the - sign on the element to ID with solenoids
 
     ########################################
+    # SAD Fringe Taylor Map
+    ########################################
+    elif component[1:] in fringe_taylor_maps:
+        parameters = fringe_taylor_maps[component[1:]]
+        parent_rotation = parameters.get(
+            "parent_rotation", negate_sad_value(parameters["field_rotation"]))
+        soft_quadrupole = None
+        if parameters["a"] != 0.0 or parameters["b"] != 0.0:
+            soft_quadrupole = {
+                "a": negate_sad_value(parameters["a"]),
+                "b": parameters["b"]}
+            if "relative_rotation" in parameters:
+                soft_quadrupole["relative_rotation"] = parameters[
+                    "relative_rotation"]
+        create_sad_fringe_taylor_map(
+            environment,
+            name                = component,
+            soft_quadrupole     = soft_quadrupole,
+            hard_dipole         = parameters.get("hard_dipole"),
+            alignment           = {
+                "shift_x":   parameters["shift_x"],
+                "shift_y":   parameters["shift_y"],
+                "rot_s_rad": parent_rotation},
+            is_exit            = not parameters.get("is_exit", False))
+
+    ########################################
+    # SAD MULT Hard Quadrupolar Edge
+    ########################################
+    elif component[1:] in hard_quadrupolar_edges:
+        source = environment.element_dict[component[1:]]
+        environment.element_dict[component] = source.copy()
+        environment[component].is_exit = not source.is_exit
+        hard_quadrupolar_edges[component] = {}
+
+    ########################################
     # Offset Marker (Mark, Moni, BeamBeam all convert to xt.Marker)
     ########################################
     elif isinstance(environment.element_dict[component[1:]], xt.Marker) \
@@ -158,18 +240,18 @@ def convert_lines(
     """
     Build every parsed SAD LINE as an Xsuite line, handling reversals.
 
-    A component referencing a quad-fringe compound (`{name}_compound`,
-    see `convert_quadrupoles`) is first redirected there from the bare
-    `{name}` SAD element name. Reversed line references (`-LINENAME`)
+    A component referencing a soft-edge-fringe compound is first
+    redirected there from the bare `{name}` SAD element name. Reversed
+    line references (`-LINENAME`)
     are then resolved in three passes: (1) reversed real (imported)
     sublines have their element order reversed and every component
     negated; (2) reversed generated sublines (e.g. solenoid/reference-
     shift/thick-cavity sub-lines, which are never reordered) have
     every component negated but keep their order; (3) any remaining
     reversed component (a single element, not a subline) is resolved
-    directly via `create_reversed_component`. Reversed generated
-    sublines are deduplicated by name, so repeated references reuse
-    the same `*_reversed` line.
+    directly via `create_reversed_component`. Reversed sublines, real
+    and generated alike, are deduplicated by name, so repeated
+    references reuse the same reversed line.
 
     Parameters
     ----------
@@ -211,15 +293,15 @@ def convert_lines(
         components = list(components)
 
         ########################################################################
-        # Handle quad-fringe compound references
+        # Handle soft-edge-fringe compound references
         ########################################################################
-        # convert_quadrupoles names a fringe/body compound's wrapping line
-        # "{name}_compound" so the quadrupole body can keep the bare SAD
-        # name -- redirect any component referencing "{name}" onto it.
+        # Element converters give a fringe/body compound's wrapping line a
+        # suffixed name so the body can keep the bare SAD name. Redirect any
+        # component referencing "{name}" onto it.
         for i, component in enumerate(components):
             is_reversed     = component.startswith("-")
             base_name       = component[1:] if is_reversed else component
-            compound_name   = f"{base_name}_compound"
+            compound_name   = f"{base_name}{COMPOUND_LINE_SUFFIX}"
             if compound_name in environment.lines:
                 components[i] = f"-{compound_name}" if is_reversed else compound_name
 
@@ -232,7 +314,13 @@ def convert_lines(
             if "-" in component \
                     and component[1:] in parsed_lines:
 
-                reversed_line_name      = component[1:] + "_reversed"
+                reversed_line_name      = component[1:] + REVERSED_LINE_SUFFIX
+
+                # Check if the line hasn't already been reversed (duplicate element)
+                if reversed_line_name in environment.lines:
+                    components[i] = reversed_line_name
+                    continue
+
                 reversed_line_elements  = environment.lines[component[1:]].element_names
 
                 # If it is a real subline, reverse the order of the elements
@@ -243,7 +331,8 @@ def convert_lines(
 
                 reverse_handled_components  = []
                 for component in reversed_line_elements:
-                    component   = create_reversed_component(component, environment, offset_marker_names)
+                    component = create_reversed_component(
+                        component, environment, offset_marker_names)
                     reverse_handled_components.append(component)
 
                 environment.new_line(
@@ -267,22 +356,30 @@ def convert_lines(
                 #   - The line is generated, not imported (parsed lines)
                 #   - The line exists in the environment (to be reversed)
 
-                reversed_line_name      = component[1:] + "_reversed"
+                reversed_line_name      = component[1:] + REVERSED_LINE_SUFFIX
 
                 # Check if the line hasn't already been reversed (duplicate element)
                 if reversed_line_name in environment.lines:
                     components[i] = reversed_line_name
                     continue
 
-                reversed_line_elements  = environment.lines[component[1:]].element_names
+                reversed_line_elements = list(
+                    environment.lines[component[1:]].element_names)
 
-                # If it is a generated subline, do not reverse the order of the elements
-                # Just negate the individual elements
+                fringe_names = environment.metadata.get(
+                    "sad2xs", {}).get("fringe_taylor_maps", {})
+                if any(name in fringe_names for name in reversed_line_elements):
+                    # Unlike coordinate wrappers, the compound represents
+                    # distinct entrance/body/exit maps. SAD's -NAME operator
+                    # traverses those maps in the opposite order.
+                    reversed_line_elements.reverse()
+
                 reversed_line_elements  = [f"-{elem}" for elem in reversed_line_elements]
 
                 reverse_handled_components  = []
                 for component in reversed_line_elements:
-                    component   = create_reversed_component(component, environment, offset_marker_names)
+                    component = create_reversed_component(
+                        component, environment, offset_marker_names)
                     reverse_handled_components.append(component)
 
                 environment.new_line(
@@ -298,7 +395,7 @@ def convert_lines(
         for component in components:
 
             if "-" in component:
-                # Reversed sublines were replaced by their *_reversed lines in
+                # Reversed sublines were replaced by their reversed lines in
                 # the passes above; a remaining line reference here means that
                 # replacement logic missed a case.
                 if component[1:] in environment.lines:

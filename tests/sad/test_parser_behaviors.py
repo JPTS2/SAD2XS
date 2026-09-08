@@ -21,13 +21,12 @@ from sad2xs.sad_helpers import twiss_sad
 
 ################################################################################
 # Global keyword prefix collisions
-#
+################################################################################
 # SAD special globals: MOMENTUM, MASS, CHARGE, FSHIFT.
 # Names that begin with one of those keywords but are not an exact match
 # (e.g. MOMENTUM_OFFSET) should be ordinary user variables, not special globals.
 #
 # The conftest fixture already prepends "MOMENTUM = 1.0 GEV;" to every lattice.
-################################################################################
 
 @pytest.mark.parametrize("name, value", [
     ("MOMENTUM_OFFSET", 1.0),
@@ -51,10 +50,9 @@ def test_global_keyword_prefix_collision_is_accepted_as_variable(
 
 ################################################################################
 # Repeated element names across different element types
-#
+################################################################################
 # SAD rejects reusing the same element name across different element types.
 # Same-type repetition (final definition wins) should remain accepted.
-################################################################################
 
 def test_repeated_element_name_across_types_is_rejected(sad_rejects):
     """
@@ -82,10 +80,9 @@ def test_repeated_element_name_same_type_is_accepted(sad_accepts):
 
 ################################################################################
 # Multiline deferred expressions
-#
+################################################################################
 # SAD accepts deferred expressions that span multiple physical lines, treating
 # the continuation as part of the same expression until the closing semicolon.
-################################################################################
 
 def test_multiline_deferred_expression_is_accepted(sad_accepts):
     """
@@ -102,11 +99,10 @@ def test_multiline_deferred_expression_is_accepted(sad_accepts):
 
 ################################################################################
 # Protected element names (SAD2XS-level guard)
-#
+################################################################################
 # These names collide with Xsuite environment variables created during
 # conversion. SAD itself has no restriction on using them as element names —
 # the protection is a SAD2XS concern, not a SAD concern.
-################################################################################
 
 @pytest.mark.parametrize("protected_name", sorted(PROTECTED_ELEMENT_NAMES))
 def test_protected_element_name_is_accepted_by_sad(sad_accepts, protected_name):
@@ -134,12 +130,11 @@ def test_fshift_as_element_name_is_rejected_by_sad(sad_rejects):
 
 ################################################################################
 # Math functions and nested parentheses in element parameters
-#
+################################################################################
 # SAD FFS is Mathematica-based. These tests confirm which built-in math
 # functions are accepted in element parameter expressions, and that nested
 # parentheses evaluate correctly. Results are verified via the total
 # s-coordinate of a drift whose length is the expression under test.
-################################################################################
 
 def test_element_parameter_with_nested_parentheses_evaluates_correctly(tmp_path):
     """
@@ -224,10 +219,9 @@ def test_unsupported_math_function_is_rejected_by_sad(sad_rejects, func_expr):
 
 ################################################################################
 # Malformed LINE definitions
-#
+################################################################################
 # These are invalid SAD syntax — confirming SAD rejects them establishes that
 # any SAD2XS error for these inputs is consistent with SAD's own behaviour.
-################################################################################
 
 def test_line_without_equals_produces_correct_length(tmp_path):
     """
@@ -328,11 +322,10 @@ def test_trailing_operator_expression_silently_absorbs_next_token(tmp_path):
 
 ################################################################################
 # ON/OFF prefix collisions
-#
+################################################################################
 # SAD simulation commands: ON <flag>, OFF <flag>.
 # Variable names that begin with ON or OFF (e.g. ONVALUE, OFFVALUE) must not
 # be treated as simulation commands and silently discarded.
-################################################################################
 
 @pytest.mark.parametrize("name, value", [
     ("ONVALUE",  1.0),
@@ -352,10 +345,9 @@ def test_on_off_prefix_variable_is_accepted_as_variable(
 
 ################################################################################
 # MOMENTUM requirement
-#
+################################################################################
 # Verify whether SAD itself requires a MOMENTUM statement. The conftest helper
 # always prepends MOMENTUM, so this test calls twiss_sad directly.
-################################################################################
 def test_sad_rejects_lattice_without_momentum(tmp_path):
     """
     SAD should reject a lattice that has no MOMENTUM statement.

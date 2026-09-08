@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-09-08
 ================================================================================
 """
 
@@ -581,7 +581,7 @@ def parse_sad_file(
                 line_section = line_section.replace("  ", " ")
 
             ########################################
-            # Validate parenthesis balance
+            # Validate LINE parentheses
             ########################################
             open_count  = line_section.count("(")
             close_count = line_section.count(")")
@@ -590,6 +590,23 @@ def parse_sad_file(
                     f"line {line_no}: Malformed LINE definition — unmatched "
                     f"parentheses ({open_count} opening, {close_count} closing): "
                     f"""\"{line_section.strip()}\"""")
+
+            depth = 0
+            for character in line_section:
+                if character == "(":
+                    depth += 1
+                    if depth > 1:
+                        raise ValueError(
+                            f"line {line_no}: Malformed LINE definition -- "
+                            "nested parentheses are not supported by SAD: "
+                            f"""\"{line_section.strip()}\"""")
+                elif character == ")":
+                    depth -= 1
+                    if depth < 0:
+                        raise ValueError(
+                            f"line {line_no}: Malformed LINE definition -- "
+                            "closing parenthesis precedes opening parenthesis: "
+                            f"""\"{line_section.strip()}\"""")
 
             ########################################
             # Split into lines by closing bracket
@@ -618,16 +635,40 @@ def parse_sad_file(
                 else:
                     continue
 
+                # Remove whitespace and parentheses
                 line_name       = line_name.replace(" ", "")
                 line_content    = line_content.replace("(", "")
                 line_content    = line_content.replace("\n", " ")
                 line_content    = line_content.replace("\t", " ")
                 line_content    = line_content.replace(",", " ")
 
+                # Remove the whitespace around the repetition "*"
+                line_content    = re.sub(r"\s*\*\s*", "*", line_content)
+
+                # Separate N*ELE into N repetitions of ELE
                 line_elements = []
                 for element in line_content.split():
-                    if len(element) > 0:
+
+                    # Repeated elements take the form N*NAME
+                    if "*" not in element:
                         line_elements.append(element)
+                        continue
+
+                    # A "*" in a LINE is only ever a repetition count, so
+                    # anything else is malformed: docs/reference/sad-behaviour.md
+                    repetition  = re.match(
+                        r"^(-?)([1-9]\d*)\*(-?)([^*]+)$", element)
+                    if repetition is None:
+                        raise ValueError(
+                            f"line {line_no}: Malformed LINE definition -- "
+                            f"expected a repetition of the form \"N*NAME\": "
+                            f'''"{element}".''')
+
+                    count_sign, count, name_sign, name = repetition.groups()
+
+                    # -1 * -NAME becomes NAME not -NAME
+                    sign    = "-" if bool(count_sign) != bool(name_sign) else ""
+                    line_elements.extend([f"{sign}{name}"] * int(count))
 
                 cleaned_lines[line_name] = line_elements
 
@@ -690,9 +731,9 @@ def parse_sad_file(
 
                 ########################################
                 # Handle the element variables
+                ########################################
                 # The depth-aware split guarantees the body ends with the outer
                 # closing `)` — strip exactly that one character.
-                ########################################
                 ele_vars    = ele_vars[:-1]
                 ele_vars    = ele_vars.replace("\n", "")
                 while "= " in ele_vars:
@@ -778,9 +819,10 @@ def parse_sad_file(
             continue
 
         ########################################
-        # Reject SAD function definitions explicitly (`:=`) instead of
-        # silently misparsing them as a garbage deferred expression.
+        # Reject SAD function definitions
         ########################################
+        # Rejected explicitly on `:=`, rather than silently misparsed as a
+        # garbage deferred expression.
         if ":=" in section:
             raise ValueError(
                 f"""line {line_no}: SAD function definitions ("name[args] := """

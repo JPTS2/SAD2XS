@@ -26,7 +26,7 @@ Does not require the SAD binary.
 
 | File | Tests | Fail | Failure root cause |
 |------|-------|------|--------------------|
-| `test_release_metadata.py` | 9 | 0 | — |
+| `test_release_metadata.py` | 10 | 0 | — |
 | `test_import_boundaries.py` | 9 | 0 | — |
 | `test_environment_matches_pyproject.py` | 3 | 0 | — |
 
@@ -60,6 +60,7 @@ presence so the checks remain valid across version bumps.
 | `test_release_metadata_numpy_is_listed_as_a_dependency` | `numpy` appears in the dependencies |
 | `test_release_metadata_scipy_is_listed_as_a_dependency` | `scipy` appears in the dependencies |
 | `test_release_metadata_tfs_is_an_optional_extra_not_a_hard_dependency` | `tfs-pandas` is listed under an optional extra, not a hard dependency |
+| `test_release_metadata_console_scripts_resolve_to_real_callables` | Every `[project.scripts]` target imports and is callable |
 
 ### `test_import_boundaries.py`
 

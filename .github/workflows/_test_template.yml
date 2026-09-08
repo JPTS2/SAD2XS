@@ -8,7 +8,7 @@
 #
 # Authors:    John P. T. Salvesen
 # Email:      john.salvesen@cern.ch
-# Date:       2026-07-20
+# Date:       2026-08-25
 # ==============================================================================
 
 name: _Test Template
@@ -21,10 +21,10 @@ on:
         required: true
         type: string
       pull_tag:
-        description: "Image tag to pull (e.g. latest or main)"
+        description: "Image tag to pull, or 'auto' to derive it from the branch under test"
         required: false
         type: string
-        default: latest
+        default: auto
 
 permissions:
   contents: read
@@ -70,11 +70,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Compute IMAGE env (lowercase owner)
+      - name: Compute IMAGE and TAG
         run: |
           OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "IMAGE=ghcr.io/${OWNER_LC}/sad2xs-sad" >> "$GITHUB_ENV"
-          echo "TAG=${{ inputs.pull_tag }}" >> "$GITHUB_ENV"
+
+          # 'auto' resolves to the branch's own image, so a release branch is
+          # never tested against main's Python and dependency versions. On a
+          # pull request that means the base branch: the head branch has no
+          # image of its own.
+          REQUESTED="${{ inputs.pull_tag }}"
+          if [ "${REQUESTED}" = "auto" ]; then
+            BRANCH="${{ github.base_ref || github.ref_name }}"
+            REQUESTED=$(echo "${BRANCH}" | tr '/' '-')
+          fi
+          echo "TAG=${REQUESTED}" >> "$GITHUB_ENV"
 
       - name: Login to GHCR
         uses: docker/login-action@v4.4.0
@@ -83,15 +93,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull image (tag=${{ inputs.pull_tag }}, fallback to :main)
+      # The previous fallback pulled :main, a tag the build workflow never
+      # pushed, so it could only ever fail. :latest always exists.
+      - name: Pull image (tag=${{ inputs.pull_tag }}, fallback to :latest)
         id: pull
         run: |
           if docker pull "${IMAGE}:${TAG}"; then
             echo "image_ref=${IMAGE}:${TAG}" >> "$GITHUB_OUTPUT"
           else
-            echo "Tag '${TAG}' not found; trying :main"
-            docker pull "${IMAGE}:main"
-            echo "image_ref=${IMAGE}:main" >> "$GITHUB_OUTPUT"
+            echo "Tag '${TAG}' not found; falling back to :latest"
+            docker pull "${IMAGE}:latest"
+            echo "image_ref=${IMAGE}:latest" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Pytest ${{ matrix.test_file }}

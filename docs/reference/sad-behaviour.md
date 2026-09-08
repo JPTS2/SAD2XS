@@ -29,6 +29,8 @@ the underlying evidence.
 - [Bend element-offset (`DX`/`DY`) reference-orbit convention](#bend-element-offset-dxdy-reference-orbit-convention)
 - [Twiss conventions in coupled regions (skew quads, solenoids, ...)](#twiss-conventions-in-coupled-regions-skew-quads-solenoids-)
 - [`LINE X = (-Y);` reversal is a MAIN-file declaration, not a live command](#line-x---y-reversal-is-a-main-file-declaration-not-a-live-command)
+- [`N*NAME` repetition in `LINE` definitions](#nname-repetition-in-line-definitions)
+- [Bound `GEO` solenoid boundary transforms are derived at `CALC`](#bound-geo-solenoid-boundary-transforms-are-derived-at-calc)
 
 ## Solenoid fringe kick (`DISFRIN`)
 
@@ -369,11 +371,18 @@ A SAD `MULT` combines two kinds of content in a single element:
 - QUAD-style quadrupole content: `K1`, with soft-edge
   `F1`/`F2`/`F1K1F`/`F2K1F`/`F1K1B`/`F2K1B`.
 
-Its source, `tmulti.f`, mirrors `tquad.f` almost line-for-line. A `MULT`
-with only `K1` set, and no other order content, gives **bit-identical**
-tracking output to the equivalent `QUAD`, including every pinned reference
-value (`tests/sad/test_mult.py`,
-`test_mult_k1_f1_f2_matches_sad_reference_values`).
+Its source, `tmulte.f`, mirrors the quadrupole path closely. A `MULT` with
+only `K1` set and positive face lengths gives bit-identical tracking output
+to the equivalent `QUAD` in the pinned reference cases. The parameter path is
+not identical for signed face lengths: `tsetfringepe` passes raw MULT face
+values to `tqlfre`, whereas the QUAD path uses its precomputed table.
+
+For combined normal/skew K1 content, the linear soft-edge coefficients use
+`abs(K1+i*SK1)/abs(L)` and the frame angle uses
+`ROTATE+akang(K1+i*SK1)`. The live formula in `tqlfre.f` retains the face
+sign:
+`a=-abs(K1+i*SK1)/abs(L)*f1_raw*abs(f1_raw)/24`.
+The negative-F1 real-SAD regression pins this signed form directly.
 
 `FRINGE`, internally `mfring`, uses the **same `{1, 2, 3}` numbering as
 `QUAD`**: `1` is entrance-only, `2` is exit-only, and `3` is both. It
@@ -382,6 +391,9 @@ quad-style linear fringe, the `FB1`/`FB2` dipole-style linear fringe, and
 the `DISFRIN`-gated hard-edge kick all read the same `mfring` value to
 select the entrance or the exit. This was confirmed against the real binary
 for `FB1`/`FB2` (`test_mult_fb1_fb2_fringe_mode_gates_entrance_exit`).
+Although the tracking source calls `NINT`, SAD's input layer has already
+truncated this integer-valued keyword: for example, `FRINGE=1.5` tracks
+bit-identically to `FRINGE=1`, not `FRINGE=2`.
 
 This explains a finding recorded above. A `K0`-only `MULT` and the
 equivalent `K0`-only `BEND`, both given the same `FRINGE=1`, `FB1`, and
@@ -411,16 +423,18 @@ term.** The hard-edge gate in `tmulti.f` checks only `mfring /= 1` and
 hard-edge sides fully active on a `MULT`, while the identical value disables
 both on a `QUAD`.
 
-The `K0`/`SK0` dipole-fringe transfer-matrix finding above, where `FRINGE=1`
-zeroes `m43`/`m21` exactly and `DISFRIN` does not control it, comes from a
-different code path. It is a Twiss and linear-map-level fact from SAD's
-`CALC4D` and `TransferMatrix[]` machinery, not from the particle-tracking
-`tmulti` routine described here.
+The `K0`/`SK0` dipole-fringe transfer-matrix finding above comes from a
+different code path. SAD Twiss passes `DISFRIN == 0` as the general fringe
+switch and `DISK0FR == 0` independently to its dipole-component map. Particle
+tracking instead puts the complete field-order loop, including order zero,
+behind `DISFRIN` and has no corresponding `DISK0FR` gate.
 
-The two findings are complementary, not in tension. `DISFRIN` does affect
-tracked orbits through a `MULT` carrying `K1` or higher-order content, by
-the hard-edge mechanism above. It leaves the fringe term of the `K0`-order
-linear map exactly as `FRINGE` alone sets it.
+An isolated K0+K1 or SK0+K1 MULT confirms the consequence. SAD tracking and
+Twiss agree to about `1e-11` or better when `DISFRIN` and `DISK0FR` are equal,
+but differ by about `2e-6` when exactly one is set. The result is stable across
+finite-difference step, normal/skew K0 and local BZ. Thus `DISFRIN=1` alone
+does not define a fringe-free reference consistently for SAD tracking and
+Twiss.
 
 ## `SEXT`/`OCT` `DISFRIN` hard-edge fringe
 
@@ -755,9 +769,10 @@ and **mode-2** Mais-Ripken eigenmode components only. The cross-mode leakage
 terms sit in separate `betx2`, `bety1`, `alfx2`, and `alfy1` columns.
 
 Xsuite can compute Edwards-Teng parameters natively with
-`coupling_edw_teng=True`, but only for periodic lines. `tests/support/coupled_optics.py`
-wraps Xtrack's open-line Edwards-Teng propagation, so converted transfer
-lines can be compared against SAD through coupled regions. See
+`coupling_edw_teng=True`, but only for periodic lines.
+`sad2xs.xsuite_helpers.propagate_edwards_teng` covers the open-line case, so
+converted transfer lines can be compared against SAD through coupled
+regions. See
 [SAD helpers](../helpers/sad-helpers.md) for the practical usage.
 
 The convention map, established empirically (each case anchored by SAD and
@@ -839,6 +854,135 @@ This was verified directly against real SAD. It gives bit-for-bit identical
 Twiss and survey results to a `LINE REV = (-FWD);` declared natively in the
 lattice file. It also matches element names exactly, where an earlier
 workaround based on a temporary lattice file matched them only partially.
+
+---
+
+## `N*NAME` repetition in `LINE` definitions
+
+SAD accepts a repetition count before a name inside a `LINE` definition.
+`4*CELL` is plain textual repetition: it builds exactly the same element
+sequence as writing `CELL CELL CELL CELL` by hand.
+
+This was verified by comparing the two forms directly. Both produce 20
+elements over 15.5 m for the same `CELL`, with identical element names.
+
+The count may precede a subline or a plain element. Repetitions nest: a line
+containing `4*CELL`, itself referenced as `2*THATLINE`, yields eight copies
+of `CELL`. Whitespace around the `*` is accepted, so `2 * CELL` and `2*CELL`
+are the same.
+
+### Reversal signs
+
+A `-` may sit on either side of the `*`, and one on each side cancels:
+
+| Written | Expands to |
+|---------|------------|
+| `4*CELL` | `CELL CELL CELL CELL` |
+| `-2*CELL` | `-CELL -CELL` |
+| `2*-CELL` | `-CELL -CELL` |
+| `-2*-CELL` | `CELL CELL` |
+
+`-2*CELL` and `2*-CELL` give identical element sequences. `-2*-CELL` runs
+forwards: the two signs cancel rather than compounding.
+
+### Rejected forms
+
+SAD rejects a zero count. `0*CELL` does **not** parse as "insert nothing":
+SAD exits without twissing the lattice. This was confirmed with a controlled
+comparison, three lattices differing only in the count -- `0*CELL` fails,
+while `1*CELL` and `2*CELL` both twiss normally. The same holds for a zero
+count on a plain element, `0*B1`, where dropping the term would still leave
+a valid line.
+
+SAD does not accept anonymous parenthesised groups inside a `LINE`.
+`(D1 QF)` is rejected, as is the repeated form `2*(D1 QF)`. To group or repeat
+several components, define them as a named subline and reference that name.
+
+SAD also rejects every other use of `*` inside a `LINE`: a `*` between two
+names (`D1*D1`), a bare `*`, and a `*` within an element name. A `*` in a
+`LINE` is therefore always a repetition count, never anything else.
+
+SAD reports none of these rejections. It exits with status 64 after its
+startup banner, printing no diagnostic. A caller that checks only for an
+error message, rather than the exit status, sees nothing wrong.
+
+**Consequence.** The parser expands `N*NAME` into N copies of `NAME` when it
+reads the `LINE`, so later stages never see the syntax. This matters because
+element exclusion and offset-marker counting both match component names
+exactly: an unexpanded `4*QF` would never match an excluded `QF`, and would
+count as one SAD element where SAD counts four.
+
+Because a `*` is only ever a repetition, the parser treats any component
+containing a `*` that is not a well-formed `N*NAME` -- zero count included --
+as a malformed `LINE` definition, and raises citing the source line. This
+turns SAD's silent exit into an explicit error. Parentheses are validated
+before the declaration is split or repetitions are expanded, so an invalid
+form such as `2*(D1 QF) D1` rejects the entire `LINE`; the parser cannot retain
+the group prefix while silently discarding the trailing component.
+
+Covered by `test_repetition_forms_are_accepted`,
+`test_inline_parenthesised_group_is_rejected`, and
+`test_malformed_repetition_forms_are_rejected` in `tests/sad/test_line.py`.
+
+The converter side is covered by
+`test_repetition_count_expands_to_repeated_components` in
+`tests/parser/test_lines.py`, by
+`test_malformed_repetition_raises_clear_error` and
+`test_parenthesised_group_rejects_the_entire_line` in
+`tests/parser/test_errors.py`, and by
+`test_repeated_subline_matches_hand_written_expansion` in
+`tests/conversion/pipeline/test_repeated_components.py`, which asserts the
+two forms convert to the same Xsuite line.
+
+---
+
+## Bound `GEO` solenoid boundary transforms are derived at `CALC`
+
+A bound solenoid pair with `GEO = 1` defines a reference frame that must close
+across the pair. SAD derives the boundary transforms it needs during `CALC`,
+from the solenoid geometry, and tracks with the derived values.
+
+A source file **may** carry those transforms already. It may also carry only
+some of them, or values that differ from the ones SAD derives. Either way SAD
+uses its own, so the source text is not a reliable statement of what SAD
+tracked. Rebuilding a lattice through SAD writes the derived values out, and
+they can differ from the source in sign as well as magnitude.
+
+SAD2XS has only the source text. It does not run `CALC`, and does not derive
+these transforms, so it converts what is written.
+
+### Evidence
+
+Take a bound pair whose entrance carries `GEO = 1` with `DX = 0.02`, and whose
+exit declares no transforms:
+
+    SOL   SOL_IN  = (BZ = 0.1 BOUND = 1 GEO = 1 DISFRIN = 1 DX = 0.02)
+          SOL_OUT = (BZ = 0.1 BOUND = 1 DISFRIN = 1);
+
+Rebuilding through SAD fills `SOL_OUT` in with `DX`, `DZ` and `CHI1` values
+that close the frame. Converting the source directly leaves them at zero, so
+the frame never closes.
+
+The effect appears only downstream of the exit boundary. Inside the pair the
+entrance transform is enough, so a marker between the boundaries agrees either
+way:
+
+| marker | position | from source | from rebuilt |
+|--------|----------|-------------|--------------|
+| inside the pair | between the boundaries | 2.5e-11 | 2.5e-11 |
+| after the exit | downstream | 1.98e-02 | 3.5e-18 |
+
+`1.98e-02` is the entrance `DX` left un-closed: the orbit never comes back.
+
+**Consequence.** Xsuite requires the boundary transforms to be present, so a
+`GEO` chain must be rebuilt through SAD before conversion: `USE` the line, run
+`CALC`, write the beamline out, and convert that file.
+`sad2xs.sad_helpers.rebuild_sad_lattice` does this, and the solenoid
+conversion tests compare against a rebuilt lattice for the same reason.
+
+Covered by `test_bound_solenoid_reference_shift_orbit_matches_sad` and
+`test_three_solenoid_interaction_region_orbit_matches_sad` in
+`tests/conversion/elements/test_sol.py`.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

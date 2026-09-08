@@ -21,7 +21,7 @@ See [element conversion](../converter/elements.md) for what each type becomes, a
 
 The writer serialises Xsuite classes, not SAD types. By this point the SAD input is no longer the model.
 
-The two sets do not map one to one. A single SAD element can become several Xsuite elements: a bound solenoid becomes a four-component sub-line, an RF-carrying `MULT` becomes alternating multipole and cavity slices, and a quadrupole with fringe parameters becomes up to three elements.
+The two sets do not map one to one. A single SAD element can become several Xsuite elements: a bound solenoid becomes a four-component sub-line, an RF-carrying `MULT` becomes alternating multipole and cavity slices, and a quadrupole or K1-carrying `MULT` with fringe parameters becomes a body bracketed by up to two Taylor maps.
 
 See [output writer](../writer/README.md) for the class list and what each preserves.
 

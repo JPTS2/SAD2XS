@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-09-01
 ================================================================================
 """
 ################################################################################
@@ -22,7 +22,8 @@ import pytest
 import xtrack as xt
 
 import sad2xs as s2x
-from sad2xs.sad_helpers import track_sad
+from sad2xs.sad_helpers import track_sad, transfer_matrix_sad
+from tests.support.coupled_optics import linear_transfer_matrix_4d
 
 ################################################################################
 # Direction-Symmetric Elements: Reused, Not Cloned
@@ -84,6 +85,103 @@ def test_reversed_component_quad_k1_unchanged(write_lattice):
     assert line["q1"].k1 == pytest.approx(0.2), (
         "A per-element \"-Q1\" reference should not change k1. "
         f"""Got: {line["q1"].k1}.""")
+
+
+########################################
+# Soft Quadrupolar Fringe Reversal
+########################################
+@pytest.mark.parametrize(
+    "element_definition",
+    [
+        "QUAD Q1=(L=1 K1=0.3 F1K1F=0.05 F1K1B=-0.03 "
+        "F2K1F=0.02 F2K1B=-0.01 FRINGE=1 DISFRIN=1);",
+        "MULT Q1=(L=1 K1=0.3 F1K1F=0.05 F1K1B=-0.03 "
+        "F2K1F=0.02 F2K1B=-0.01 FRINGE=1 DISFRIN=1);",
+    ],
+    ids = ["quad", "mult"])
+def test_reversed_component_soft_quadrupolar_fringe_matches_sad(
+        tmp_path,
+        element_definition):
+    """A per-element reversal must reverse the active fringe face."""
+    lattice_content = (
+        "MOMENTUM=1 GEV;\n"
+        f"{element_definition}\n"
+        "MARK START=() END=();\n"
+        "LINE TEST=(START -Q1 END);\n")
+    lattice_path = tmp_path / "reversed_soft_quadrupolar_fringe.sad"
+    lattice_path.write_text(lattice_content)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        sad_matrix = transfer_matrix_sad(lattice_path.name, "TEST")
+    finally:
+        os.chdir(cwd)
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path = str(lattice_path),
+        output_directory = "N/A",
+        line_name = "TEST",
+        SIMPLIFY_MULTIPOLES = False,
+        _verbose = False,
+        _test_mode = True)
+
+    np.testing.assert_allclose(
+        linear_transfer_matrix_4d(line),
+        sad_matrix,
+        rtol = 3e-6,
+        atol = 1e-6,
+        err_msg = (
+            "A per-element reversed soft quadrupolar fringe should match "
+            "SAD's -NAME transfer map within the known thick-MULT body "
+            "integration residual."))
+
+
+@pytest.mark.parametrize(
+    "element_definition",
+    [
+        "QUAD Q1=(L=1 K1=0.3 F1K1F=0.05 F2K1F=0.02 "
+        "FRINGE=1 DISFRIN=1);",
+        "MULT Q1=(L=1 K1=0.3 F1K1F=0.05 F2K1F=0.02 "
+        "FRINGE=1 DISFRIN=1);",
+    ],
+    ids = ["quad", "mult"])
+def test_forward_and_reversed_soft_quadrupolar_fringe_occurrences_match_sad(
+        tmp_path,
+        element_definition):
+    """A reversed occurrence must not mutate a shared forward fringe map."""
+    lattice_path = tmp_path / "mixed_soft_quadrupolar_fringe_directions.sad"
+    lattice_path.write_text(
+        "MOMENTUM=1 GEV;\n"
+        f"{element_definition}\n"
+        "MARK START=() END=();\n"
+        "LINE TEST=(START Q1 -Q1 END);\n")
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        sad_matrix = transfer_matrix_sad(lattice_path.name, "TEST")
+    finally:
+        os.chdir(cwd)
+
+    line = s2x.convert_sad_to_xsuite(
+        sad_lattice_path    = str(lattice_path),
+        output_directory    = "N/A",
+        line_name           = "TEST",
+        SIMPLIFY_MULTIPOLES = False,
+        _verbose            = False,
+        _test_mode          = True)
+
+    assert "q1_fringe_in" in line.element_names
+    assert "-q1_fringe_in" in line.element_names
+    np.testing.assert_allclose(
+        linear_transfer_matrix_4d(line),
+        sad_matrix,
+        rtol = 3e-6,
+        atol = 2e-6,
+        err_msg = (
+            "Forward and -NAME occurrences should retain distinct soft "
+            "quadrupolar face maps and match SAD."))
 
 
 ################################################################################

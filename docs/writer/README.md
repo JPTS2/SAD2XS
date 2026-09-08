@@ -20,7 +20,7 @@ The modules live in `sad2xs/output_writer/`. The entry points themselves are in 
 - [The lattice file](#the-lattice-file)
 - [The optics file](#the-optics-file)
 - [Supported elements](#supported-elements)
-- [Taylor maps are written as literals](#taylor-maps-are-written-as-literals)
+- [Taylor-map output](#taylor-map-output)
 - [Limitations](#limitations)
 
 ## The lattice file
@@ -39,7 +39,7 @@ The order matters. Later steps depend on earlier ones existing, and the offset-m
 
 Identical elements are written once and reused through `env.new(..., mode="clone")` rather than repeated.
 
-Grouping is by length. `quantize_length` rounds lengths to a set precision so that elements which are identical in practice are recognised as such, rather than being written separately because of floating-point noise.
+Grouping is by length. `quantize_length` rounds lengths to `Config.MAGNET_LENGTH_PRECISION` so that elements which are identical in practice are recognised as such, rather than being written separately because of floating-point noise. The converter uses the same value as its minimum absolute nonzero concrete element length, keeping the thin/thick decision consistent with the writer's resolution.
 
 ### Reversed elements
 
@@ -52,6 +52,16 @@ Where both exist they are genuinely distinct elements and both are written. Wher
 Several helpers decide whether an element qualifies for a compact one-line form: `check_is_simple_bend_corr`, `check_is_simple_quad_sext_oct`, `check_is_skew_quad_sext_oct`, `check_is_simple_unpowered_multipole`, and `check_is_simple_solenoid`.
 
 An element qualifies only when every attribute outside the compact form is at its default. This is easy to get wrong when a new field is added: a bend carrying only `fint` and `hgap` once qualified as simple, and was written with those fields silently dropped. Any new serialised attribute must also be added to the corresponding check.
+
+### Number formatting
+
+Every scalar goes through `get_value_string`. A number is written as its
+shortest exact representation, which reads back as the same float. A string is
+an optics-variable expression, written as a double-quoted literal.
+
+Infinity and NaN have no literal spelling in Python, so they are written as
+`float("inf")`, `float("-inf")`, and `float("nan")`. The optics file does not
+import NumPy, so `np.inf` cannot be used.
 
 ## The optics file
 
@@ -70,7 +80,7 @@ The writer's supported set is **not** the same question as which SAD elements th
 | `xt.Drift` | |
 | `xt.Bend` | two distinct paths: `h != 0`, and corrector with `h = 0` |
 | `xt.Quadrupole`, `xt.Sextupole`, `xt.Octupole` | |
-| `xt.Multipole` | |
+| `xt.Multipole`, `xt.MultipoleEdge` | edge strengths, face flag and alignment are preserved |
 | `xt.UniformSolenoid` | |
 | `xt.Cavity` | |
 | `xt.Translation`, `xt.TimeDelay`, `xt.Rotation` | the reference shifts |
@@ -82,19 +92,46 @@ The writer's supported set is **not** the same question as which SAD elements th
 
 `xt.LimitRectEllipse` is the one class the policy test does not cover. It is serialised, and it is tested by the element-level aperture writer tests in `tests/writer/elements/test_aper_writer.py`, but it has no row in the policy test.
 
-## Taylor maps are written as literals
+## Taylor-map output
 
-`xt.FirstOrderTaylorMap` and `xt.SecondOrderTaylorMap` are serialised as literal arrays at full double precision, not as optics variables.
+Generic first- and second-order Taylor maps are written as full-precision
+coefficient arrays.
+
+Recognised SAD fringe Taylor maps are written differently: one self-contained
+helper is emitted, followed by a compact call for each face containing its
+physical soft-quadrupole and/or hard-dipole inputs and parent alignment. This
+preserves a thick QUAD fringe's dependency on the existing scalar
+quadrupole-strength variable, and reconstructs a MULT composite map without
+writing dense tensors or adding fringe strength variables. The generated
+lattice does not import SAD2XS. Reconstruction records live in standard
+`Environment.metadata`; no private fields are added to Xsuite elements.
+
+SAD-generated `MultipoleEdge` elements are written with their normal/skew
+strength arrays, order, entrance/exit flag and alignment. Only edges already
+registered as SAD fringes retain reversal metadata after reload; a generic
+user-created edge remains generic.
+
+When repeated elements are made independent, SAD2XS clones repeated
+`MultipoleEdge` occurrences explicitly before calling Xtrack's general
+repeated-element helper, which does not currently accept that element type.
+The resulting `{name}.N` copies retain their physical face identity for later
+line reversal.
+
+Generic `xt.FirstOrderTaylorMap` and `xt.SecondOrderTaylorMap` elements are
+serialised as literal arrays at full double precision, not as optics variables.
 
 Their coefficients are not physically meaningful knobs a user would retune, and a second-order map's `T` tensor would produce an unusable number of variables.
-
-Quad-fringe maps additionally carry `_sad_quad_fringe_a`, `_sad_quad_fringe_b`, and `_sad_quad_fringe_theta` as plain attributes. The writer preserves these when present, because the reversal step needs them. See [fringe models](../converter/fringes.md).
 
 ## Limitations
 
 **The writer is not a general Xsuite serialiser.** It handles the element classes listed above, and it still carries assumptions from being the final step of a SAD2XS conversion rather than a standalone tool.
 
-**Deferred expressions are baked to literal floats.** An `xt.Line` built with xdeps expressions loses those expressions on write: the generated file contains the evaluated numbers. Structure and values survive a round trip; the dependency graph does not.
+**Most deferred expressions are baked to literal floats.** An arbitrary
+`xt.Line` built with xdeps expressions generally loses those expressions on
+write: the generated file contains evaluated numbers. The explicit exception
+is a recognised SAD fringe Taylor map. A QUAD map keeps its dependency on the
+existing strength variable; a numeric MULT composite keeps its compact
+physical reconstruction inputs.
 
 Both are tracked in the [issue tracker](https://github.com/JPTS2/sad2xs/issues).
 

@@ -22,8 +22,8 @@ Does not require the SAD binary.
 | `test_reference_energy.py` | 14 | 0 | — |
 | `test_symplecticity.py` | 4 | 0 | — |
 | `test_twiss_assertions.py` | 4 | 0 | — |
-| `test_twiss_alignment.py` | 9 | 0 | — |
-| `test_comparison_plots.py` | 27 | 0 | — |
+| `test_twiss_alignment.py` | 11 | 0 | — |
+| `test_comparison_plots.py` | 30 | 0 | — |
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

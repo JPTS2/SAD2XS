@@ -40,11 +40,11 @@ to extend.
 | `test_map.py` | 6 | 0 | — |
 | `test_mark.py` | 5 | 0 | — |
 | `test_moni.py` | 5 | 0 | — |
-| `test_mult.py` | 50 | 0 | — |
+| `test_mult.py` | 105 | 0 | — |
 | `test_oct.py` | 41 | 0 | — |
-| `test_quad.py` | 50 | 0 | — |
+| `test_quad.py` | 56 | 0 | — |
 | `test_sext.py` | 41 | 0 | — |
-| `test_sol.py` | 171 | 0 | — |
+| `test_sol.py` | 212 | 0 | — |
 
 ### `test_sol.py` note
 
@@ -86,6 +86,16 @@ Retuning the model and integrator defaults in `sad2xs/config.py` closed it.
 per-element defaults.
 
 ### `test_mult.py` note
+
+The MULT fringe section pins the five-element orbital model at three levels:
+analytic K0/SK0 and F1/F2 Taylor coefficients, native K1/SK1 edges, and
+enabled-minus-disabled SAD tracking over mixed 6D grids. It covers face gates,
+signs, alignment, minimum length, RF bodies, simplification and replacement
+branches, deferred inputs, unsupported-category warnings, and the exact
+absence of identity placeholders. The companion solenoid tests verify centred
+powered-BZ response, the warning for offset K1 soft fringes, reuse of source
+face maps with context-specific bodies, and the measured K0/SK0 combined-body
+limitation.
 
 `test_mult_conversion_matches_sad_twiss_for_single_order` isolates powered
 multipole orders (`K1`-`K3`, `SK1`-`SK3`) after the model retune above
@@ -191,6 +201,12 @@ representations. Correctors (`ANGLE == 0`) and MULT-derived dipoles never
 carry a nonzero curvature and are confirmed unaffected.
 
 ### `test_quad.py` default edge fringe note
+
+The soft quadrupolar tests separately cover positive and negative K1, signed
+length, the existing scalar strength-variable dependency, and the associated
+pi/2 field-frame change when K1 crosses zero. The very-short-QUAD case remains
+numeric because Xsuite represents its body as a thin `Multipole`, which has no
+existing scalar `k1` variable to reuse.
 
 SAD applies a default hard-edge quadrupole fringe kick (gated by `DISFRIN`,
 verified against real SAD in `tests/sad/test_quad.py`). Xsuite's

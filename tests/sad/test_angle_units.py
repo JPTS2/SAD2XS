@@ -65,11 +65,10 @@ def test_rotate_with_deg_suffix_is_accepted(sad_accepts):
 
 ################################################################################
 # ANGLE angle unit suffixes (BEND)
-#
+################################################################################
 # BEND's ANGLE parameter is a separate SAD keyword from QUAD/SEXT/OCT's
 # ROTATE, so its unit-suffix handling is verified independently rather than
 # assumed to follow from the ROTATE tests above.
-################################################################################
 def test_angle_without_unit_suffix_is_accepted(sad_accepts):
     """
     SAD accepts a plain numeric ANGLE value with no unit suffix (radians).
