@@ -20,6 +20,7 @@ import logging
 import numpy as np
 import xtrack as xt
 
+from ..config import COMPOUND_LINE_SUFFIX
 from ..types import ConfigLike, SadValue
 
 logger = logging.getLogger(__name__)
@@ -1515,4 +1516,4 @@ def install_sad_mult_fringes(
     components = face_components["in"] + [ele_name] + face_components["out"]
     if components != [ele_name]:
         environment.new_line(
-            name = f"{ele_name}_compound", components = components)
+            name = f"{ele_name}{COMPOUND_LINE_SUFFIX}", components = components)

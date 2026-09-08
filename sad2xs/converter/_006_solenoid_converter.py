@@ -21,6 +21,7 @@ import logging
 import numpy as np
 import xtrack as xt
 
+from ..config import REVERSED_LINE_SUFFIX
 from ..types import ConfigLike
 from ._000_helpers import is_effectively_zero
 
@@ -100,11 +101,9 @@ def convert_solenoids(
     ############################################################################
     for line_name in environment.lines:
 
-        # The line may be a compound solenoid element
+        # The line may be a compound solenoid element, or its reversal
         # e.g. dx, chi1, sol
-        if line_name in bound_solenoids:
-            continue
-        if line_name.endswith("_reversed") and line_name[:-9] in bound_solenoids:
+        if line_name.removesuffix(REVERSED_LINE_SUFFIX) in bound_solenoids:
             continue
 
         line    = environment.lines[line_name]

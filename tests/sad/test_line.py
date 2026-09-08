@@ -9,9 +9,13 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-06-24
+Date:       2026-09-08
 ================================================================================
 """
+################################################################################
+# Required Packages
+################################################################################
+import pytest
 
 ################################################################################
 # Line names containing the substring "line"
@@ -58,3 +62,45 @@ def test_line_keyword_with_newline_before_name_is_accepted(sad_accepts):
         "LINE\n"
         "    TEST_LINE = (START D1 END);\n"
         "LINE TEST = (TEST_LINE);")
+
+
+################################################################################
+# "N*NAME" repetition
+################################################################################
+# A repetition count may precede a subline or a plain element name. A "-" may
+# sit on either side of the "*", and one on each side cancels. See
+# docs/reference/sad-behaviour.md for what each form expands to.
+REPETITION_LATTICE = (
+    "MARK START = ()\n"
+    "     END   = ();\n"
+    "DRIFT D1 = (L=1.0);\n"
+    "QUAD  QF = (L=0.5 K1=0.1);\n"
+    "LINE CELL = (D1 QF);\n"
+    "LINE TEST = (START {component} END);")
+
+@pytest.mark.parametrize("component", [
+    "4*CELL",       # subline
+    "4*D1",         # plain element
+    "2 * CELL",     # whitespace around the "*"
+    "-2*CELL",      # reversal sign before the count
+    "2*-CELL",      # reversal sign before the name
+    "-2*-CELL"])    # a sign in both positions
+def test_repetition_forms_are_accepted(sad_accepts, component):
+    """
+    SAD accepts a repetition count before a subline or an element name, with
+    or without whitespace around the "*", and with a reversal "-" in either
+    or both positions.
+    """
+    sad_accepts(REPETITION_LATTICE.format(component = component))
+
+
+@pytest.mark.parametrize("component", [
+    "0*CELL",       # zero count
+    "2*(D1 QF)",    # inline parenthesised group
+    "(D1 QF)"])     # inline group without a count
+def test_malformed_repetition_forms_are_rejected(sad_rejects, component):
+    """
+    SAD rejects a zero repetition count, and rejects an inline parenthesised
+    group with or without a count. A count may only precede a name.
+    """
+    sad_rejects(REPETITION_LATTICE.format(component = component))

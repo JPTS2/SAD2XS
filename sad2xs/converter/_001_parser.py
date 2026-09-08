@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-21
+Date:       2026-09-08
 ================================================================================
 """
 
@@ -618,16 +618,39 @@ def parse_sad_file(
                 else:
                     continue
 
+                # Remove whitespace and parentheses
                 line_name       = line_name.replace(" ", "")
                 line_content    = line_content.replace("(", "")
                 line_content    = line_content.replace("\n", " ")
                 line_content    = line_content.replace("\t", " ")
                 line_content    = line_content.replace(",", " ")
 
+                # Remove the whitespace around the repetition "*"
+                line_content    = re.sub(r"\s*\*\s*", "*", line_content)
+
+                # Separate N*ELE into N repetitions of ELE
                 line_elements = []
                 for element in line_content.split():
-                    if len(element) > 0:
+
+                    # Repeated elements take the form N*NAME
+                    if "*" not in element:
                         line_elements.append(element)
+                        continue
+
+                    # A "*" in a LINE is only ever a repetition count, so
+                    # anything else is malformed: docs/reference/sad-behaviour.md
+                    repetition  = re.match(r"^(-?)([1-9]\d*)\*(-?)(.+)$", element)
+                    if repetition is None:
+                        raise ValueError(
+                            f"line {line_no}: Malformed LINE definition -- "
+                            f"expected a repetition of the form \"N*NAME\": "
+                            f'''"{element}".''')
+
+                    count_sign, count, name_sign, name = repetition.groups()
+
+                    # -1 * -NAME becomes NAME not -NAME
+                    sign    = "-" if bool(count_sign) != bool(name_sign) else ""
+                    line_elements.extend([f"{sign}{name}"] * int(count))
 
                 cleaned_lines[line_name] = line_elements
 

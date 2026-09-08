@@ -19,13 +19,24 @@ Date:       2026-09-07
 from dataclasses import dataclass, field
 
 ################################################################################
-# Protected Element Names
-#
-# Element names that collide with Xsuite environment variables created during
-# conversion. SAD itself accepts these names; SAD2XS rejects them early to
-# prevent silent corruption of the Xsuite environment.
+# Protected Names
 ################################################################################
+
+########################################
+# Variable names used for conversion
+########################################
+# These names are used to store reference particle information during translation.
+# Rejected as SAD element names: SAD accepts them, but one would overwrite the variable.
 PROTECTED_ELEMENT_NAMES: frozenset[str] = frozenset({"mass0", "p0c", "q0"})
+
+########################################
+# Generated Line Suffixes
+########################################
+# Suffixes SAD2XS appends when it invents a line name
+# Ugly by design: "_compound" or "_reversed" could collide with a real subline name
+# Never emitted to the writer, but used to find generated lines later in the pipeline.
+COMPOUND_LINE_SUFFIX:   str = "_sad2xscompound"
+REVERSED_LINE_SUFFIX:   str = "_sad2xsrev"
 
 ################################################################################
 # Config Dataclass

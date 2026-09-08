@@ -23,7 +23,7 @@ import pytest
 import sad2xs as s2x
 import xtrack as xt
 
-from sad2xs.config import Config
+from sad2xs.config import COMPOUND_LINE_SUFFIX, Config
 from sad2xs.converter._004_element_converter import convert_elements, convert_multipoles
 from sad2xs.sad_helpers import track_sad, transfer_matrix_sad, twiss_sad
 from tests.support.config import (
@@ -1514,7 +1514,7 @@ def test_mult_supported_fringes_use_five_element_order(
         user_multipole_replacements = None,
         config                       = _mult_config(simplify = False))
 
-    assert xsuite_environment.lines["m1_compound"].element_names == [
+    assert xsuite_environment.lines[f"m1{COMPOUND_LINE_SUFFIX}"].element_names == [
         "m1_hard_edge_in",
         "m1_fringe_in",
         "m1",
@@ -1582,7 +1582,7 @@ def test_mult_fringe_builds_only_active_physical_components(
         user_multipole_replacements = None,
         config                       = _mult_config(simplify = False))
 
-    assert xsuite_environment.lines["m1_compound"].element_names \
+    assert xsuite_environment.lines[f"m1{COMPOUND_LINE_SUFFIX}"].element_names \
         == expected_names
 
 
@@ -1603,7 +1603,7 @@ def test_mult_default_face_mode_retains_both_hard_edges(
         user_multipole_replacements = None,
         config                       = _mult_config(simplify = False))
 
-    assert xsuite_environment.lines["m1_compound"].element_names == [
+    assert xsuite_environment.lines[f"m1{COMPOUND_LINE_SUFFIX}"].element_names == [
         "m1_hard_edge_in",
         "m1_fringe_in",
         "m1",
@@ -1632,7 +1632,7 @@ def test_mult_default_face_mode_with_disfrin_has_no_fringe(
         user_multipole_replacements = None,
         config                       = _mult_config(simplify = False))
 
-    assert "m1_compound" not in xsuite_environment.lines
+    assert f"m1{COMPOUND_LINE_SUFFIX}" not in xsuite_environment.lines
     assert not any(
         "fringe" in name or "hard_edge" in name
         for name in xsuite_environment.element_dict)
@@ -1828,7 +1828,7 @@ def test_mult_soft_quadrupolar_fringe_can_be_disabled(
             _import_sad_mult_fringes = False))
 
     assert "m1" in xsuite_environment.element_dict
-    assert "m1_compound" not in xsuite_environment.lines
+    assert f"m1{COMPOUND_LINE_SUFFIX}" not in xsuite_environment.lines
     assert not any("fringe" in name for name in xsuite_environment.element_dict)
 
 
@@ -1848,7 +1848,7 @@ def test_mult_soft_quadrupolar_fringe_with_drot_warns_and_is_skipped(
         user_multipole_replacements = None,
         config                      = _mult_config(simplify = False))
 
-    assert "m1_compound" not in xsuite_environment.lines
+    assert f"m1{COMPOUND_LINE_SUFFIX}" not in xsuite_environment.lines
     assert "nonzero DROT" in caplog.text
 
 
@@ -1868,7 +1868,7 @@ def test_mult_drot_without_an_active_fringe_does_not_claim_one_was_skipped(
         user_multipole_replacements = None,
         config                       = _mult_config(simplify = False))
 
-    assert "m1_compound" not in xsuite_environment.lines
+    assert f"m1{COMPOUND_LINE_SUFFIX}" not in xsuite_environment.lines
     assert "active fringe" not in caplog.text
     assert "being skipped" not in caplog.text
 
@@ -1886,7 +1886,7 @@ def test_mult_soft_quadrupolar_fringe_wraps_user_quadrupole_replacement(
         config = _mult_config(simplify = False))
 
     assert isinstance(xsuite_environment["m1"], xt.Quadrupole)
-    assert xsuite_environment.lines["m1_compound"].element_names == [
+    assert xsuite_environment.lines[f"m1{COMPOUND_LINE_SUFFIX}"].element_names == [
         "m1_fringe_in", "m1", "m1_fringe_out"]
     assert xsuite_environment["m1"].edge_entry_active == 1
     assert xsuite_environment["m1"].edge_exit_active == 1
@@ -2054,7 +2054,7 @@ def test_mult_soft_quadrupolar_fringe_is_skipped_when_replacement_discards_k1(
         config = _mult_config(simplify = False))
 
     assert isinstance(xsuite_environment["m1"], xt.Sextupole)
-    assert "m1_compound" not in xsuite_environment.lines
+    assert f"m1{COMPOUND_LINE_SUFFIX}" not in xsuite_environment.lines
     assert "replacement discards K1/SK1" in caplog.text
 
 
@@ -2082,7 +2082,7 @@ def test_mult_replacements_that_discard_k1_do_not_keep_its_fringes(
         config                       = _mult_config(simplify = False))
 
     assert isinstance(xsuite_environment["m1"], element_type)
-    assert "m1_compound" not in xsuite_environment.lines
+    assert f"m1{COMPOUND_LINE_SUFFIX}" not in xsuite_environment.lines
     assert "discards K1/SK1" in caplog.text
 
 
@@ -2101,7 +2101,7 @@ def test_mult_quadrupole_replacement_discards_only_k0_fringe(
         user_multipole_replacements = {"m1": "Quadrupole"},
         config                       = _mult_config(simplify = False))
 
-    assert xsuite_environment.lines["m1_compound"].element_names == [
+    assert xsuite_environment.lines[f"m1{COMPOUND_LINE_SUFFIX}"].element_names == [
         "m1_fringe_in", "m1", "m1_fringe_out"]
     assert "discards K0/SK0" in caplog.text
 
@@ -2142,7 +2142,7 @@ def test_mult_soft_quadrupolar_fringe_wraps_complete_rf_sliced_body(
         user_multipole_replacements = None,
         config = _mult_config(simplify = False))
 
-    names = xsuite_environment.lines["m1_compound"].element_names
+    names = xsuite_environment.lines[f"m1{COMPOUND_LINE_SUFFIX}"].element_names
     assert names[:2] == ["m1_hard_edge_in", "m1_fringe_in"]
     assert names[-2:] == ["m1_fringe_out", "m1_hard_edge_out"]
     assert any("m1_cavi_" in name for name in names)
