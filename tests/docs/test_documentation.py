@@ -25,10 +25,9 @@ from tests.support.docs_inventory import REPO_ROOT, relative
 
 ################################################################################
 # Test Parameters
-#
+################################################################################
 # Each test walks every documentation file and reports the complete list of
 # violations. A sweep that stops at the first failure would hide the rest.
-################################################################################
 MODELS_DOC     = REPO_ROOT / "docs" / "converter" / "models-integrators.md"
 ELEMENTS_DOC   = REPO_ROOT / "docs" / "usage" / "supported-elements.md"
 WRITER_DOC     = REPO_ROOT / "docs" / "writer" / "README.md"

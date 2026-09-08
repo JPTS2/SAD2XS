@@ -94,7 +94,7 @@ def test_sad_reversed_line_reverses_tracking_element_order(tmp_path):
 
 ################################################################################
 # Reversed-element sign conventions
-#
+################################################################################
 # tests/conversion/pipeline/test_reverse_*.py already test the sad2xs
 # converter's own _007_reversals.py Python logic in detail (bend angle,
 # quad k1/k1s, sextupole/octupole, solenoid ks, etc.) — but those tests
@@ -106,7 +106,6 @@ def test_sad_reversed_line_reverses_tracking_element_order(tmp_path):
 # if the two disagree, the converter's assumption about SAD's own reversal
 # semantics is wrong at the source, regardless of how self-consistent its
 # Python logic is.
-################################################################################
 
 def test_reversed_line_bend_angle_sign_matches_converter_assumption(tmp_path):
     """

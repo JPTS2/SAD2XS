@@ -22,10 +22,9 @@ from sad2xs.converter._001_parser import parse_sad_file
 
 ################################################################################
 # SAD Function Definitions
-#
+################################################################################
 # See tests/parser/README.md's "test_functions.py note" for why these are
 # rejected outright and why the tests below are consolidated to two.
-################################################################################
 def test_sad_function_definition_raises_clear_error(write_lattice):
     """
     A SAD function definition should raise a clear, explicit error rather than

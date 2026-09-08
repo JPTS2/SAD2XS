@@ -87,7 +87,7 @@ def test_apert_does_not_affect_twiss_betx(tmp_path):
 
 ################################################################################
 # Effect on tracking: grid-based ground truth
-#
+################################################################################
 # These tests establish, against real SAD, the same analytic pass/fail
 # formulas already trusted at the converter/Xsuite level
 # (tests/conversion/elements/test_apert.py's _ellipse_alive / _rectangle_alive
@@ -100,7 +100,6 @@ def test_apert_does_not_affect_twiss_betx(tmp_path):
 # a missing ellipse axis (AX or AY entirely omitted) does not behave as
 # "infinite" — see test_apert_missing_ellipse_axis_behavior. This is under
 # active discussion with the SAD side.
-################################################################################
 def _track_apert_grid(tmp_path, name, apert_params, x_grid, y_grid):
     """
     Track a grid of particles (all other coordinates zero) through a single

@@ -139,12 +139,11 @@ def test_mult_k1_soft_edge_matches_sad_reference_values(tmp_path):
 
 ################################################################################
 # Effect on Twiss and tracking
-#
+################################################################################
 # MULT's K1 field acts as a quadrupole (same as QUAD's K1, see test_quad.py):
 # it both focuses the beam (changes Twiss betx) and gives a direct px kick
 # on an off-axis particle in tracking. This establishes that MULT's field
 # parameters are physically live, not just syntactically accepted.
-################################################################################
 def test_mult_k1_affects_twiss(tmp_path):
     """
     K1 on a MULT element changes Twiss betx, same as QUAD's K1.
@@ -380,14 +379,13 @@ def test_mult_k3_gives_cubic_kick(tmp_path):
 
 ################################################################################
 # RF focusing kick (VOLT) -- transverse coupling ground truth
-#
+################################################################################
 # MULT (and CAVI) elements with VOLT != 0, tracked with RFSW on, apply an
 # explicit transverse x/y focusing kick on top of the ordinary multipole
 # kick (SAD's tmultiacc in tmulti.f) -- see docs/reference/sad-behaviour.md. Unlike
 # the net energy gain (which is exactly zero at PHI=0, SAD's RF
 # zero-crossing), this kick is present at every phase and grows further
 # away from the crossing.
-################################################################################
 RF_FOCUS_MOMENTUM_GEV   = 0.05
 RF_FOCUS_VOLT           = 2.0E7
 RF_FOCUS_FREQ           = 2.856E9

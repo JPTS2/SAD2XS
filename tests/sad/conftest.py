@@ -23,13 +23,12 @@ from sad2xs.sad_helpers import twiss_sad
 
 ################################################################################
 # Shared Constants
-#
+################################################################################
 # Default values used across tests/sad/*.py that build their own lattice
 # strings directly (rather than going through the sad_accepts/sad_rejects
 # fixtures, which already hardcode MOMENTUM = 1.0 GEV via _run_sad_twiss
 # below). Centralised here so every file uses the same defaults rather than
 # each redefining its own copy.
-################################################################################
 DEFAULT_MOMENTUM_GEV    = 1.0
 ELECTRON_MASS_MEV       = 0.51099895    # positron/electron mass
 PROTON_MASS_MEV         = 938.27208816  # proton mass

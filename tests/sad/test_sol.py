@@ -24,10 +24,9 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 
 ################################################################################
 # Structural probes: SOL pairing and BOUND requirement
-#
+################################################################################
 # See tests/sad/README.md's "SOL structural requirement" for the
 # pairing/BOUND/GEO rules these probes check.
-################################################################################
 def test_sol_single_no_bound_rejects(sad_rejects):
     """
     A SOL with BZ but no BOUND is not part of a bound pair and should be
@@ -104,10 +103,9 @@ def test_sol_three_element_inner_no_bound_accepts(sad_accepts):
 ################################################################################
 # Accepted / Rejected parameters (SOL + DRIFT + SOL with GEO=1 on entrance as
 # baseline)
-#
+################################################################################
 # See tests/sad/README.md's "Parameter matrix" for the accepted/rejected
 # table this parametrization transcribes.
-################################################################################
 ACCEPTED_PARAMS = [
     pytest.param("",              "",           id = "bz"),
     pytest.param(" DX=0.001",     "",           id = "dx"),
@@ -173,10 +171,9 @@ def test_sol_rejects(sad_rejects, param):
 
 ################################################################################
 # Effect on Twiss and tracking
-#
+################################################################################
 # See tests/sad/README.md's "SOL's BZ" bullet for why this coupling persists
 # past the exit fringe, unlike a pure geometric GEO/DX frame shift.
-################################################################################
 def test_sol_bz_gives_nonzero_twiss_coupling(tmp_path):
     """
     A live BZ solenoid pair gives nonzero Twiss coupling terms (R1, R4)

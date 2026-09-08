@@ -56,10 +56,9 @@ def test_moni_accepts(sad_accepts, params):
 
 ################################################################################
 # Rejected parameters
-#
+################################################################################
 # See tests/sad/README.md's "Parameter matrix" for the accepted/rejected
 # table this parametrization transcribes.
-################################################################################
 REJECTED_PARAMS = [
     pytest.param("K0=0.1",     id = "k0"),
     pytest.param("K1=0.1",     id = "k1"),
@@ -100,10 +99,9 @@ def test_moni_rejects(sad_rejects, params):
 
 ################################################################################
 # Effect on Twiss and tracking
-#
+################################################################################
 # MONI is a passive monitor: even with DX/DY/ROTATE set, it should not
 # perturb Twiss or a tracked particle.
-################################################################################
 def test_moni_does_not_affect_twiss_betx(tmp_path):
     """
     A MONI with DX/DY/ROTATE set should give the same Twiss betx as a bare

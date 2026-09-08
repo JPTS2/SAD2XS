@@ -71,11 +71,10 @@ def test_drift_rejects(sad_rejects, params):
 
 ################################################################################
 # Effect on Twiss and tracking
-#
+################################################################################
 # DRIFT's only parameter, L, determines the total line length in Twiss and
 # leaves a particle's transverse coordinates geometrically propagated (not
 # perturbed) in tracking.
-################################################################################
 def test_drift_length_matches_l_parameter(tmp_path):
     """
     A DRIFT's L parameter should determine the total Twiss s-coordinate.

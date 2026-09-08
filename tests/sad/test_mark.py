@@ -55,10 +55,9 @@ def test_mark_accepts(sad_accepts, params):
 
 ################################################################################
 # Rejected parameters
-#
+################################################################################
 # See tests/sad/README.md's "Parameter matrix" for the accepted/rejected
 # table this parametrization transcribes.
-################################################################################
 REJECTED_PARAMS = [
     pytest.param("K1=0.1",     id = "k1"),
     pytest.param("K2=0.1",     id = "k2"),
@@ -100,10 +99,9 @@ def test_mark_rejects(sad_rejects, params):
 
 ################################################################################
 # Effect on Twiss and tracking
-#
+################################################################################
 # MARK is a pure location marker: even with BZ/DX/DY set, it should not
 # perturb Twiss or a tracked particle.
-################################################################################
 def test_mark_does_not_affect_twiss_betx(tmp_path):
     """
     A MARK with DX/DY/BZ set should give the same Twiss betx as a bare MARK

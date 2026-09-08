@@ -24,7 +24,7 @@ from sad2xs.converter._003_expression_converter import convert_expressions
 
 ################################################################################
 # Math function expression conversion
-#
+################################################################################
 # SAD FFS accepts a specific set of math functions. After conversion the
 # expressions are evaluated by Xsuite's Python-based environment. The function
 # names and semantics must survive the SAD → Xsuite translation correctly.
@@ -35,7 +35,6 @@ from sad2xs.converter._003_expression_converter import convert_expressions
 #
 # Lattice uses a single MARK so we only need expression conversion, not element
 # conversion. The environment value for `a` is checked directly.
-################################################################################
 
 @pytest.mark.parametrize("sad_func, argument, expected", [
     ("SQRT", "4.0",    2.0),

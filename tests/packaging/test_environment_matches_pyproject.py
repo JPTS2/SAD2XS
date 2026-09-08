@@ -25,11 +25,10 @@ from packaging.version import Version
 
 ################################################################################
 # Test Parameters
-#
+################################################################################
 # Two files declare the same dependencies. environment.yml stays installable on
 # its own, which is why the duplication is kept rather than removed, so these
 # tests are what stop the two drifting apart.
-################################################################################
 REPO_ROOT   = Path(__file__).resolve().parents[2]
 PYPROJECT   = REPO_ROOT / "pyproject.toml"
 ENVIRONMENT = REPO_ROOT / "environment.yml"

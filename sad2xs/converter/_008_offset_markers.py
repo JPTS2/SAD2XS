@@ -27,12 +27,11 @@ logger  = logging.getLogger(__name__)
 
 ################################################################################
 # SAD-native line flattening
-#
+################################################################################
 # "floor(OFFSET) positions forward" must be counted on SAD's own element
 # sequence, not the post-conversion Xsuite table: one SAD element can
 # become several Xsuite ones (quad fringe, RF-carrying MULT slices),
 # which would silently count sub-pieces instead of real SAD elements.
-################################################################################
 def _flatten_sad_line_elements(
         line_name:      str,
         parsed_lines:   dict[str, list[str]]) -> list[str]:
