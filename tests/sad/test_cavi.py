@@ -169,9 +169,9 @@ def test_cavi_volt_gives_nonzero_energy_deviation_in_tracking(tmp_path):
         "VOLT != 0 should give a nonzero energy deviation in tracking.")
 
 ################################################################################
-# FRINGE/DISFRIN RF edge-focusing kick (ground truth) -- see
-# docs/reference/sad-behaviour.md
+# FRINGE/DISFRIN RF edge-focusing kick
 ################################################################################
+# Ground truth. See docs/reference/sad-behaviour.md.
 def _track_cavi_probe(tmp_path, extra, name):
     """
     Track a single off-axis, off-crest particle through a VOLT CAVI and

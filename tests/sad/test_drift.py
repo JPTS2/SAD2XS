@@ -24,10 +24,10 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 
 ################################################################################
 # Rejected parameters
+################################################################################
 # DRIFT accepts only L — no misalignment parameters. See tests/sad/README.md's
 # "Parameter matrix" for the full accepted/rejected table this parametrization
 # transcribes.
-################################################################################
 REJECTED_PARAMS = [
     pytest.param("L=1.0 DX=0.001",   id = "dx"),
     pytest.param("L=1.0 DY=0.001",   id = "dy"),

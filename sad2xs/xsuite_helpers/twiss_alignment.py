@@ -204,10 +204,11 @@ def align_xsuite_twiss_with_sad_twiss(
         sad_rows_by_name[name.lower()].append(sad_row)
 
     ########################################
-    # Xsuite side (drop the trailing "_end_point" row, if present).
-    # Match SAD's physical s, corrected for reference-frame TimeDelays
-    # where that information is available.
+    # Xsuite side
     ########################################
+    # Drop the trailing "_end_point" row, if present. Match SAD's physical s,
+    # corrected for reference-frame TimeDelays where that information is
+    # available.
     xs_names    = [str(n) for n in xsuite_twiss.name]
     xs_s        = np.asarray(xsuite_twiss.s, dtype = float)
     s_sad       = compute_s_sad(xsuite_twiss) if use_s_sad else None
@@ -218,9 +219,10 @@ def align_xsuite_twiss_with_sad_twiss(
     s_for_tol   = s_sad if s_sad is not None else xs_s
 
     ########################################
-    # Face row per placement: earliest row (table order, not s -- ties
-    # on s must still resolve to the earlier row).
+    # Face row per placement
     ########################################
+    # The earliest row in table order, not in s: ties on s must still resolve
+    # to the earlier row.
     face_row_for_placement     = {}
     for row, name in enumerate(xs_names):
         placement_name  = _collapse_slicing(name)
@@ -341,10 +343,11 @@ def align_xsuite_twiss_with_sad_twiss(
             _position_match(sad_rows, candidates)
 
     ########################################
-    # Pass 3: solenoid-interior rename ({name}_{neighbouring_solenoid}).
-    # The neighbour isn't known in advance, so candidates are found by
-    # string-prefix search; `s_tol` guards against a coincidental match.
+    # Pass 3: solenoid-interior rename
     ########################################
+    # Renames to {name}_{neighbouring_solenoid}. The neighbour is not known in
+    # advance, so candidates are found by string-prefix search; `s_tol` guards
+    # against a coincidental match.
     for sad_row, name in enumerate(sad_names):
         if sad_row in claimed_sad_rows:
             continue

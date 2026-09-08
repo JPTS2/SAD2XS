@@ -24,11 +24,10 @@ from sad2xs.sad_helpers import track_sad, transfer_matrix_sad, twiss_sad
 
 ################################################################################
 # Accepted parameters
-# MULT is the general multipole element — accepts all Kn/SKn, geometry,
-# and RF parameters.
-# See tests/sad/README.md's "Parameter matrix" for the full accepted/rejected
-# table this parametrization transcribes.
 ################################################################################
+# MULT is the general multipole element — accepts all Kn/SKn, geometry, and RF
+# parameters. See tests/sad/README.md's "Parameter matrix" for the full
+# accepted/rejected table this parametrization transcribes.
 ACCEPTED_PARAMS = [
     pytest.param("L=1.0 ANGLE=0.01",   id = "angle"),
     pytest.param("L=1.0 K0=0.01",      id = "k0"),
@@ -562,9 +561,9 @@ def test_mult_sk0_dipole_fringe_mirrors_in_horizontal_plane(tmp_path):
         "fringe term m21 exactly.")
 
 ################################################################################
-# K0 dipole fringe with a real nonzero FB1/FB2 -- see the "MULT is out of
-# scope" decision in docs/converter/fringes.md
+# K0 dipole fringe with a real nonzero FB1/FB2
 ################################################################################
+# See the "MULT is out of scope" decision in docs/converter/fringes.md.
 def test_mult_k0_fringe_with_nonzero_fb_does_not_match_equivalent_bend(tmp_path):
     """
     A K0-only MULT and the equivalent K0-only BEND (same L/K0/FRINGE/
@@ -611,9 +610,9 @@ def test_mult_k0_fringe_with_nonzero_fb_does_not_match_equivalent_bend(tmp_path)
         "docs/converter/fringes.md's MULT exclusion should be revisited.")
 
 ################################################################################
-# F1/F2/FRINGE quad-style soft-edge fringe (ground truth) -- see
-# docs/reference/sad-behaviour.md
+# F1/F2/FRINGE quad-style soft-edge fringe
 ################################################################################
+# Ground truth. See docs/reference/sad-behaviour.md.
 def _track_mult_probe(tmp_path, lattice_body, name, x_vals, px_vals, y_vals, py_vals):
     """
     Track a grid of particles through a lattice body and return the
@@ -794,9 +793,9 @@ def test_mult_reversed_line_fringe_mode_permutes(tmp_path):
             "may have changed.")
 
 ################################################################################
-# FB1/FB2 dipole-style soft-edge fringe (ground truth) -- see
-# docs/reference/sad-behaviour.md
+# FB1/FB2 dipole-style soft-edge fringe
 ################################################################################
+# Ground truth. See docs/reference/sad-behaviour.md.
 def test_mult_fb1_fb2_is_inert_without_fringe(tmp_path):
     """
     FB1/FB2 on an ANGLE/K0 MULT has no effect unless FRINGE is also set.
@@ -862,9 +861,10 @@ def test_mult_fb1_fb2_matches_sad_reference_values(tmp_path):
             "reference lattice was altered unintentionally.")
 
 ################################################################################
-# DISFRIN hard-edge fringe, and its interaction with FRINGE (ground truth)
-# -- see docs/reference/sad-behaviour.md
+# DISFRIN hard-edge fringe
 ################################################################################
+# Covers its interaction with FRINGE. Ground truth. See
+# docs/reference/sad-behaviour.md.
 def test_mult_disfrin_default_matches_explicit_zero(tmp_path):
     """
     DISFRIN unset defaults to DISFRIN=0 (hard-edge fringe enabled) --

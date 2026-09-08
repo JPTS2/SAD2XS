@@ -24,9 +24,9 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 
 ################################################################################
 # Accepted parameters
+################################################################################
 # Bare MARK is already relied on by the conftest (START/END). BZ, DX, DY are
 # accepted — likely recorded as field/offset annotations rather than physics.
-################################################################################
 def test_mark_bare_accepts(sad_accepts):
     """
     SAD's MARK element should accept a bare definition with no parameters.

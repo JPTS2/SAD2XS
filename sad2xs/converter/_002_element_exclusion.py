@@ -57,9 +57,10 @@ def exclude_elements(
         return parsed_lattice_data
 
     ########################################
-    # Parsed element/line names are lowercase; accept SAD's own (usually
-    # uppercase) spelling too, rather than silently matching nothing.
+    # Accept SAD's own name spelling
     ########################################
+    # Parsed names are lowercase. Accept SAD's own, usually uppercase, spelling
+    # too, rather than silently matching nothing.
     excluded_elements   = [elem.lower() for elem in excluded_elements]
 
     ########################################

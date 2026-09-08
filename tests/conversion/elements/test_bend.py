@@ -2825,9 +2825,10 @@ def test_bend_offset_rotated_coupling_is_a_sad_side_artifact(write_lattice, tmp_
             "same magnitude-independent signature as R1/R4.")
 
 ################################################################################
-# F1/FRINGE soft-edge fringe import (_import_sad_bend_fringes) -- see
-# docs/reference/sad-behaviour.md and docs/converter/fringes.md
+# F1/FRINGE soft-edge fringe import
 ################################################################################
+# Covers _import_sad_bend_fringes. See docs/reference/sad-behaviour.md and
+# docs/converter/fringes.md.
 def test_bend_fringe_import_defaults_on(write_lattice, tmp_path):
     """
     _import_sad_bend_fringes defaults to True -- F1/FRINGE on a BEND should

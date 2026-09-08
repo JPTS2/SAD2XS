@@ -243,19 +243,21 @@ def convert_offset_markers(
         return line, {}
 
     ########################################
-    # SAD's own flat element sequence, and cumulative length along it
-    # -- the ground truth for "floor(OFFSET) positions forward", fully
-    # independent of how any element is represented in Xsuite.
+    # SAD's own flat element sequence
     ########################################
+    # Cumulative length along it is the ground truth for "floor(OFFSET)
+    # positions forward", fully independent of how any element is represented
+    # in Xsuite.
     sad_sequence    = _flatten_sad_line_elements(line_name, parsed_lattice_data["lines"])
     sad_lengths     = [_element_length(name, parsed_elements, line) for name in sad_sequence]
     cumulative_s    = np.concatenate(([0.0], np.cumsum(sad_lengths)))
 
     ########################################
-    # Get line table -- for the literal Xsuite marker names (with any
-    # "::N" replica or "-" reversal sign) so the right ones get removed
-    # from `line` at the end; not used for the position calculation.
+    # Get line table
     ########################################
+    # For the literal Xsuite marker names, with any "::N" replica or "-"
+    # reversal sign, so the right ones get removed from `line` at the end. Not
+    # used for the position calculation.
     logger.debug("Getting line table")
 
     tt      = line.get_table(attr = True)
@@ -315,9 +317,10 @@ def convert_offset_markers(
             offset = 1 - offset
 
         ########################################
-        # Case 1: Marker stays at its own nominal position (confirmed
-        # against real SAD: 0 <= OFFSET <= 1 never moves or splits anything)
+        # Case 1: Marker stays at its own nominal position
         ########################################
+        # Confirmed against real SAD: 0 <= OFFSET <= 1 never moves or splits
+        # anything.
         if 0 <= offset <= 1:
             unmoved_markers.add(base_marker)
             continue

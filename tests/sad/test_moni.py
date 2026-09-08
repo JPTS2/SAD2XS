@@ -24,9 +24,9 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 
 ################################################################################
 # Accepted parameters
+################################################################################
 # DX/DY/ROTATE are non-obvious: MONI is a physical element and may accept
 # misalignment parameters. These tests verify that assumption.
-################################################################################
 def test_moni_bare_accepts(sad_accepts):
     """
     SAD's MONI element should accept a bare definition with no parameters.

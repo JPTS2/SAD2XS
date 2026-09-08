@@ -101,9 +101,9 @@ def test_sol_three_element_inner_no_bound_accepts(sad_accepts):
         "LINE TEST = (START SL1 D0 SL_MID D1 SL2 END);")
 
 ################################################################################
-# Accepted / Rejected parameters (SOL + DRIFT + SOL with GEO=1 on entrance as
-# baseline)
+# Accepted / Rejected parameters
 ################################################################################
+# Uses SOL + DRIFT + SOL, with GEO=1 on the entrance, as the baseline.
 # See tests/sad/README.md's "Parameter matrix" for the accepted/rejected
 # table this parametrization transcribes.
 ACCEPTED_PARAMS = [

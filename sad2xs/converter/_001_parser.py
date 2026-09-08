@@ -713,9 +713,9 @@ def parse_sad_file(
 
                 ########################################
                 # Handle the element variables
+                ########################################
                 # The depth-aware split guarantees the body ends with the outer
                 # closing `)` — strip exactly that one character.
-                ########################################
                 ele_vars    = ele_vars[:-1]
                 ele_vars    = ele_vars.replace("\n", "")
                 while "= " in ele_vars:
@@ -801,9 +801,10 @@ def parse_sad_file(
             continue
 
         ########################################
-        # Reject SAD function definitions explicitly (`:=`) instead of
-        # silently misparsing them as a garbage deferred expression.
+        # Reject SAD function definitions
         ########################################
+        # Rejected explicitly on `:=`, rather than silently misparsed as a
+        # garbage deferred expression.
         if ":=" in section:
             raise ValueError(
                 f"""line {line_no}: SAD function definitions ("name[args] := """

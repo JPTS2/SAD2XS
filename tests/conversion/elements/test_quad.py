@@ -1211,11 +1211,11 @@ def test_quad_conversion_matches_sad_tracking_for_element_rotation(
         ])
 
 ################################################################################
-# Linear (F1/F2) fringe import (_import_sad_quad_fringes) -- see
-# tests/sad/test_quad.py for the ground truth this mirrors, and
-# docs/reference/sad-behaviour.md. Defaults to True, as
-# _import_sad_bend_fringes does.
+# Linear (F1/F2) fringe import
 ################################################################################
+# Covers _import_sad_quad_fringes. See tests/sad/test_quad.py for the ground
+# truth this mirrors, and docs/reference/sad-behaviour.md. Defaults to True, as
+# _import_sad_bend_fringes does.
 def _quad_fringe_lattice_text(fringe_params, k1 = 0.3, length = 1.0):
     """
     A single-quadrupole lattice carrying the given fringe parameters.

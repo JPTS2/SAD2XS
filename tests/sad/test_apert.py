@@ -24,9 +24,9 @@ from sad2xs.sad_helpers import track_sad, twiss_sad
 
 ################################################################################
 # Accepted parameters
+################################################################################
 # APERT supports multiple aperture shapes (ellipse, rect, rectellipse), each
 # with their own parameter set. DX, DY, ROTATE are non-obvious.
-################################################################################
 ACCEPTED_PARAMS = [
     pytest.param("AX=0.05",                       id = "ax"),
     pytest.param("AY=0.03",                       id = "ay"),
@@ -324,10 +324,10 @@ def test_apert_degenerate_rectangle_bound_behavior(tmp_path):
 
 ################################################################################
 # Rejected parameters
-# APERT is a geometry element — it has no magnetic field parameters. See
-# tests/sad/README.md's "Parameter matrix" for the full accepted/rejected
-# table this parametrization transcribes.
 ################################################################################
+# APERT is a geometry element — it has no magnetic field parameters. See
+# tests/sad/README.md's "Parameter matrix" for the full accepted/rejected table
+# this parametrization transcribes.
 REJECTED_PARAMS = [
     pytest.param("AX=0.05 AY=0.03 ANGLE=0.01", id = "angle"),
     pytest.param("AX=0.05 AY=0.03 K0=0.1",     id = "k0"),

@@ -53,9 +53,10 @@ def _matplotlib():
     return plt, PatchCollection, Rectangle
 
 ################################################################################
-# Quantity groups -- one figure per group, one row pair per quantity.
-# (sad_column, overlay y-label, diff y-label)
+# Quantity groups
 ################################################################################
+# One figure per group, one row pair per quantity: (sad_column, overlay
+# y-label, diff y-label).
 _QUANTITY_GROUPS    = {
     "orbit_xy":     ("Orbit (x, y)", [
         ("x",       r"$x$ [m]",             r"$\Delta x$ [m]"),
@@ -252,12 +253,12 @@ def _window_by_element(
     return xsuite_aligned.rows[rows], sad_aligned.rows[rows]
 
 ################################################################################
-# Lattice ribbon -- Xsuite's own element-type bars (xt.TwissTable.plot),
-# computed for real once and copied onto every other axis. It's the same
-# lattice for every quantity and every figure in one comparison call, so
-# there's no reason to make Xsuite redraw thousands of magnets from scratch
-# on each of them.
+# Lattice ribbon
 ################################################################################
+# Xsuite's own element-type bars (xt.TwissTable.plot), computed for real once
+# and copied onto every other axis. It is the same lattice for every quantity
+# and every figure in one comparison call, so there is no reason to make Xsuite
+# redraw thousands of magnets from scratch on each of them.
 def _draw_lattice_ribbon(
         overlay_ax:     "matplotlib.axes.Axes",
         lattice_twiss:  xt.Table,
