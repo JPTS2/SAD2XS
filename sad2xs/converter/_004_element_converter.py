@@ -1048,9 +1048,9 @@ def convert_quadrupoles(
     placeholder identity map for an inactive side. The quadrupole body
     keeps the bare `{name}` (so physicists and twiss-alignment tooling
     can still find it by its original SAD name); the wrapping subline
-    is named `{name}_compound` instead. That name never surfaces in a
+    is named `{name}_sad2xscompound` instead. That name never surfaces in a
     built line -- `convert_lines` (`_005_line_converter.py`) redirects
-    any component reference to `{name}` onto `{name}_compound`, which
+    any component reference to `{name}` onto `{name}_sad2xscompound`, which
     then flattens transparently to its own components.
 
     Parameters

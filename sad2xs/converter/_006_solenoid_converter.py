@@ -66,13 +66,22 @@ def _reorder_bound_solenoid_components(
     rot_idxs    = [
         i for i, name in enumerate(element_names) if name == f"{solenoid}_rot"]
 
+    if len(bound_idxs) != len(rot_idxs):
+        raise RuntimeError(
+            f"Cannot reorder {solenoid}: found {len(bound_idxs)} bound "
+            f"component(s) and {len(rot_idxs)} rotation component(s).")
+
     for bound_idx, rot_idx in zip(bound_idxs, rot_idxs):
 
         # A reversed subline arrives with the compound already flipped, so
         # _bound may be the last component rather than the first
         span_start  = min(bound_idx, rot_idx)
         span_end    = max(bound_idx, rot_idx)
-        assert sorted(element_names[span_start:span_end + 1]) == sorted(components)
+        found       = element_names[span_start:span_end + 1]
+        if sorted(found) != sorted(components):
+            raise RuntimeError(
+                f"Cannot reorder {solenoid}: expected contiguous components "
+                f"{components}, found {found}.")
 
         element_names = (
             element_names[:span_start]

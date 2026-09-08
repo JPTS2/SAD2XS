@@ -27,6 +27,9 @@ from scipy.constants import c as clight
 
 from sad2xs.config import Config
 from sad2xs.converter._004_element_converter import convert_solenoids
+from sad2xs.converter._006_solenoid_converter import (
+    INBOUND_COMPONENT_ORDER,
+    _reorder_bound_solenoid_components)
 from sad2xs.sad_helpers import track_sad, transfer_matrix_sad
 from tests.support.config import (
     DELTA_DELTA_ATOL,
@@ -2176,6 +2179,25 @@ REVERSED_SOLENOID_EXTRA_LINES = """\
 
 REVERSED_SOLENOID_LINES = [
     "TEST_LINE", "REVERSED", "MANUAL", "MIXED_IN", "MIXED_OUT"]
+
+########################################
+# Bound Solenoid Component Reordering
+########################################
+@pytest.mark.parametrize(
+    "element_names",
+    [
+        ["sol_bound", "sol_dxy", "unexpected", "sol_rot"],
+        ["sol_bound", "sol_dxy", "sol_dz"],
+    ])
+def test_bound_solenoid_reorder_rejects_incomplete_compound(element_names):
+    """
+    Reordering should fail if the expected four components are not intact.
+    """
+    with pytest.raises(RuntimeError, match = "Cannot reorder sol"):
+        _reorder_bound_solenoid_components(
+            element_names,
+            "sol",
+            INBOUND_COMPONENT_ORDER)
 
 REVERSED_SOLENOID_TRANSFORMS = [
     "DX = 0.02",

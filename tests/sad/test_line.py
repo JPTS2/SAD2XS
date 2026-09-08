@@ -94,13 +94,23 @@ def test_repetition_forms_are_accepted(sad_accepts, component):
     sad_accepts(REPETITION_LATTICE.format(component = component))
 
 
+def test_inline_parenthesised_group_is_rejected(sad_rejects):
+    """
+    SAD does not allow an anonymous ``(D1 QF)`` group inside a LINE.
+
+    Multiple components must be given a subline name before that group can be
+    referenced or repeated.
+    """
+    sad_rejects(REPETITION_LATTICE.format(component = "(D1 QF)"))
+
+
 @pytest.mark.parametrize("component", [
     "0*CELL",       # zero count
-    "2*(D1 QF)",    # inline parenthesised group
-    "(D1 QF)"])     # inline group without a count
+    "2*(D1 QF)"])   # repetition of an anonymous inline group
 def test_malformed_repetition_forms_are_rejected(sad_rejects, component):
     """
-    SAD rejects a zero repetition count, and rejects an inline parenthesised
-    group with or without a count. A count may only precede a name.
+    SAD rejects a zero repetition count and repetition of an anonymous group.
+
+    A valid repetition count may only precede an element or subline name.
     """
     sad_rejects(REPETITION_LATTICE.format(component = component))

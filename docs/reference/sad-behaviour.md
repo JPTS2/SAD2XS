@@ -894,10 +894,13 @@ while `1*CELL` and `2*CELL` both twiss normally. The same holds for a zero
 count on a plain element, `0*B1`, where dropping the term would still leave
 a valid line.
 
-SAD also rejects every other use of `*` inside a `LINE`: an inline
-parenthesised group (`2*(D1 QF)`), a `*` between two names (`D1*D1`), a bare
-`*`, and a `*` within an element name. A `*` in a `LINE` is therefore always
-a repetition count, never anything else.
+SAD does not accept anonymous parenthesised groups inside a `LINE`.
+`(D1 QF)` is rejected, as is the repeated form `2*(D1 QF)`. To group or repeat
+several components, define them as a named subline and reference that name.
+
+SAD also rejects every other use of `*` inside a `LINE`: a `*` between two
+names (`D1*D1`), a bare `*`, and a `*` within an element name. A `*` in a
+`LINE` is therefore always a repetition count, never anything else.
 
 SAD reports none of these rejections. It exits with status 64 after its
 startup banner, printing no diagnostic. A caller that checks only for an
@@ -912,15 +915,20 @@ count as one SAD element where SAD counts four.
 Because a `*` is only ever a repetition, the parser treats any component
 containing a `*` that is not a well-formed `N*NAME` -- zero count included --
 as a malformed `LINE` definition, and raises citing the source line. This
-turns SAD's silent exit into an explicit error.
+turns SAD's silent exit into an explicit error. Parentheses are validated
+before the declaration is split or repetitions are expanded, so an invalid
+form such as `2*(D1 QF) D1` rejects the entire `LINE`; the parser cannot retain
+the group prefix while silently discarding the trailing component.
 
-Covered by `test_repetition_forms_are_accepted` and
+Covered by `test_repetition_forms_are_accepted`,
+`test_inline_parenthesised_group_is_rejected`, and
 `test_malformed_repetition_forms_are_rejected` in `tests/sad/test_line.py`.
 
 The converter side is covered by
 `test_repetition_count_expands_to_repeated_components` in
 `tests/parser/test_lines.py`, by
-`test_malformed_repetition_raises_clear_error` in
+`test_malformed_repetition_raises_clear_error` and
+`test_parenthesised_group_rejects_the_entire_line` in
 `tests/parser/test_errors.py`, and by
 `test_repeated_subline_matches_hand_written_expansion` in
 `tests/conversion/pipeline/test_repeated_components.py`, which asserts the

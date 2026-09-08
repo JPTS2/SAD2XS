@@ -581,7 +581,7 @@ def parse_sad_file(
                 line_section = line_section.replace("  ", " ")
 
             ########################################
-            # Validate parenthesis balance
+            # Validate LINE parentheses
             ########################################
             open_count  = line_section.count("(")
             close_count = line_section.count(")")
@@ -590,6 +590,23 @@ def parse_sad_file(
                     f"line {line_no}: Malformed LINE definition — unmatched "
                     f"parentheses ({open_count} opening, {close_count} closing): "
                     f"""\"{line_section.strip()}\"""")
+
+            depth = 0
+            for character in line_section:
+                if character == "(":
+                    depth += 1
+                    if depth > 1:
+                        raise ValueError(
+                            f"line {line_no}: Malformed LINE definition -- "
+                            "nested parentheses are not supported by SAD: "
+                            f"""\"{line_section.strip()}\"""")
+                elif character == ")":
+                    depth -= 1
+                    if depth < 0:
+                        raise ValueError(
+                            f"line {line_no}: Malformed LINE definition -- "
+                            "closing parenthesis precedes opening parenthesis: "
+                            f"""\"{line_section.strip()}\"""")
 
             ########################################
             # Split into lines by closing bracket
@@ -639,7 +656,8 @@ def parse_sad_file(
 
                     # A "*" in a LINE is only ever a repetition count, so
                     # anything else is malformed: docs/reference/sad-behaviour.md
-                    repetition  = re.match(r"^(-?)([1-9]\d*)\*(-?)(.+)$", element)
+                    repetition  = re.match(
+                        r"^(-?)([1-9]\d*)\*(-?)([^*]+)$", element)
                     if repetition is None:
                         raise ValueError(
                             f"line {line_no}: Malformed LINE definition -- "
