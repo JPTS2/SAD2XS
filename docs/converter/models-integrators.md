@@ -40,12 +40,12 @@ That method caught two real biases that a single-trial sweep would have missed: 
 | --- | --- | --- | --- |
 | Drift | `exact` | — | — |
 | Bend | `bend-kick-bend` | `uniform` | 20 |
-| Quadrupole | `mat-kick-mat` | `yoshida4` | 14 |
-| Sextupole | `mat-kick-mat` | `yoshida4` | 14 |
-| Octupole | `mat-kick-mat` | `yoshida4` | 14 |
-| Multipole | `mat-kick-mat` | `yoshida4` | 14 |
-| Cavity | `drift-kick-drift-exact` | `yoshida4` | — |
-| Solenoid | no `model` attribute | `yoshida4` | 14 (two 7-kick blocks) |
+| Quadrupole | `mat-kick-mat` | `yoshida-6` | 14 |
+| Sextupole | `mat-kick-mat` | `yoshida-6` | 14 |
+| Octupole | `mat-kick-mat` | `yoshida-6` | 14 |
+| Multipole | `mat-kick-mat` | `yoshida-6` | 14 |
+| Cavity | `drift-kick-drift-exact` | `yoshida-6` | — |
+| Solenoid | no `model` attribute | `yoshida-6` | 14 |
 
 A zero-angle SAD `CORRECTOR` converts to a plain `xt.Bend`, so correctors follow the Bend row.
 
@@ -106,18 +106,18 @@ The symptom is severe, and it is easy to miss. Single-pass tracking looks correc
 
 ## Choosing the integrator
 
-`uniform` and `yoshida4` fail in opposite directions, so neither is correct everywhere.
+`uniform` and `yoshida-6` fail in opposite directions, so neither is correct everywhere.
 
-`yoshida4` places its internal sub-kicks at fixed fractional positions, chosen to cancel the operator-splitting error of the overall map. This gives an excellent tracking order. It also means radiation occurs at a few clustered locations, rather than spread along the element.
+`yoshida-6` places its internal sub-kicks at fixed fractional positions, chosen to cancel the operator-splitting error of the overall map. This gives an excellent tracking order. It also means radiation occurs at a few clustered locations, rather than spread along the element.
 
 `uniform` spreads its kicks across the real length of the element. This is what fidelity of the radiation trajectory spread needs.
 
-For every element where this was tested — bend, quadrupole, and solenoid — `uniform` gives better radiation trajectory-spread fidelity than `yoshida4`, at comparable or lower cost.
+For every element where this was tested — bend, quadrupole, and solenoid — `uniform` gives better radiation trajectory-spread fidelity than `yoshida-6`, at comparable or lower cost.
 
 The resulting rule:
 
 - **Bend and corrector use `uniform`.** Radiation fidelity is a first-order concern for them. A wiggler is physically modelled as a strong corrector, so correctors are treated like bends by default, rather than as weak incidental orbit correctors.
-- **Quadrupole, Sextupole, Octupole and Multipole use `yoshida4`.** Radiation is a secondary concern for a normally configured element of these types, so the large tracking advantage of `yoshida4` wins the trade.
+- **Quadrupole, Sextupole, Octupole and Multipole use `yoshida-6`.** Radiation is a secondary concern for a normally configured element of these types, so the large tracking advantage of `yoshida-6` wins the trade.
 
 Switch an individual element to `uniform` where its radiation fidelity does become a first-order concern, such as at large dispersion or at a large closed-orbit offset.
 
@@ -125,9 +125,9 @@ Radiation needs its own kick resolution whether or not the tracking is exact. Th
 
 ## Choosing the kick count
 
-### `yoshida4` batches kicks in groups of seven
+### `yoshida-6` batches kicks in groups of seven
 
-`yoshida4` internally batches kicks into groups of seven sub-stages:
+`yoshida-6` internally batches kicks into groups of seven sub-stages:
 
 ```text
 num_slices = ceil(num_multipole_kicks / 7)
@@ -192,9 +192,9 @@ A rectangular-bend hypothesis, `e1 = e2 = angle/2`, was tested separately and ru
 
 The solenoid has no `model` attribute, so the model choice does not apply.
 
-Its own field, `ks` or `ks_profile`, is fully thick whatever the kick count. This includes a genuine linear ramp on `VariableSolenoid`, not only a constant field. A pure solenoid therefore needs no kick budget at all. When the solenoid also carries `knl` or `ksl` content, SAD2XS explicitly uses `yoshida4`; the configured count of 14 selects two complete seven-kick blocks internally.
+Its own field, `ks` or `ks_profile`, is fully thick whatever the kick count. This includes a genuine linear ramp on `VariableSolenoid`, not only a constant field. A pure solenoid therefore needs no kick budget at all. When the solenoid also carries `knl` or `ksl` content, SAD2XS explicitly uses `yoshida-6`; the configured count of 14 selects two complete seven-kick blocks internally.
 
-A solenoid carrying additional `knl` or `ksl` content is different. Treat it like any other `yoshida4`-tracked element.
+A solenoid carrying additional `knl` or `ksl` content is different. Treat it like any other `yoshida-6`-tracked element.
 
 For solenoid radiation fidelity specifically, the study recommends `uniform` with 50 kicks. At 20 kicks there is a small but real bias of about 0.2–0.3%. `UniformSolenoid` and `VariableSolenoid` share one recommendation throughout.
 

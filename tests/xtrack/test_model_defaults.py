@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-09-28
 ================================================================================
 """
 ################################################################################
@@ -102,46 +102,46 @@ def test_quadrupole_adaptive_default_matches_expanded_not_exact():
 
 
 ################################################################################
-# yoshida4 kick batching
+# yoshida-6 kick batching
 ################################################################################
-# SAD2XS uses 14 kicks for yoshida4-tracked elements. The number is chosen
-# for its slice count, not its face value: yoshida4 batches kicks into groups
+# SAD2XS uses 14 kicks for yoshida-6-tracked elements. The number is chosen
+# for its slice count, not its face value: yoshida-6 batches kicks into groups
 # of seven, so every count in 8..14 costs the same and gives the same result.
 # See docs/converter/models-integrators.md.
 @pytest.mark.parametrize("kicks", [8, 10, 12, 14])
-def test_yoshida4_kick_counts_in_one_slice_band_are_identical(kicks):
+def test_yoshida6_kick_counts_in_one_slice_band_are_identical(kicks):
     """
-    Every `num_multipole_kicks` in 8..14 maps to two yoshida4 slices and must
+    Every `num_multipole_kicks` in 8..14 maps to two yoshida-6 slices and must
     give an identical result. This is what makes 14 free relative to 10.
     """
     reference = _track_single(xt.Sextupole(
         length = LENGTH_M, k2 = 1.0, model = "mat-kick-mat",
-        integrator = "yoshida4", num_multipole_kicks = 8))
+        integrator = "yoshida-6", num_multipole_kicks = 8))
     tracked = _track_single(xt.Sextupole(
         length = LENGTH_M, k2 = 1.0, model = "mat-kick-mat",
-        integrator = "yoshida4", num_multipole_kicks = kicks))
+        integrator = "yoshida-6", num_multipole_kicks = kicks))
 
     assert tracked == reference, (
-        f"yoshida4 with {kicks} kicks should be identical to 8 kicks: both "
-        "map to two internal slices. If this fails, yoshida4's batching has "
+        f"yoshida-6 with {kicks} kicks should be identical to 8 kicks: both "
+        "map to two internal slices. If this fails, yoshida-6's batching has "
         "changed and the kick-count rationale needs revisiting.")
 
 
-def test_yoshida4_next_slice_band_differs():
+def test_yoshida6_next_slice_band_differs():
     """
     Crossing from two slices to three must change the result.
 
-    Without this, the test above would also pass if yoshida4 ignored
+    Without this, the test above would also pass if yoshida-6 ignored
     `num_multipole_kicks` entirely.
     """
     two_slices = _track_single(xt.Sextupole(
         length = LENGTH_M, k2 = 1.0, model = "mat-kick-mat",
-        integrator = "yoshida4", num_multipole_kicks = 14))
+        integrator = "yoshida-6", num_multipole_kicks = 14))
     three_slices = _track_single(xt.Sextupole(
         length = LENGTH_M, k2 = 1.0, model = "mat-kick-mat",
-        integrator = "yoshida4", num_multipole_kicks = 21))
+        integrator = "yoshida-6", num_multipole_kicks = 21))
 
     assert two_slices != three_slices, (
-        "yoshida4 at 14 kicks (two slices) and 21 kicks (three slices) "
+        "yoshida-6 at 14 kicks (two slices) and 21 kicks (three slices) "
         "should differ. If they agree, num_multipole_kicks is not reaching "
         "the integrator.")

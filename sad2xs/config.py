@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-07
+Date:       2026-09-28
 ================================================================================
 """
 
@@ -155,12 +155,12 @@ class Config:
     MODEL_CAVI:                     str             = "drift-kick-drift-exact"
 
     INTEGRATOR_BEND:                str             = "uniform"
-    INTEGRATOR_QUAD:                str             = "yoshida4"
-    INTEGRATOR_SEXT:                str             = "yoshida4"
-    INTEGRATOR_OCT:                 str             = "yoshida4"
-    INTEGRATOR_MULT:                str             = "yoshida4"
-    INTEGRATOR_SOL:                 str             = "yoshida4"
-    INTEGRATOR_CAVI:                str             = "yoshida4"
+    INTEGRATOR_QUAD:                str             = "yoshida-6"
+    INTEGRATOR_SEXT:                str             = "yoshida-6"
+    INTEGRATOR_OCT:                 str             = "yoshida-6"
+    INTEGRATOR_MULT:                str             = "yoshida-6"
+    INTEGRATOR_SOL:                 str             = "yoshida-6"
+    INTEGRATOR_CAVI:                str             = "yoshida-6"
 
     N_INTEGRATOR_KICKS_BEND:        int             = 20
     N_INTEGRATOR_KICKS_QUAD:        int             = 14
