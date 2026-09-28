@@ -150,12 +150,6 @@ contains both `Q1` and `-Q1`. Survey reflection changes the field-frame angle
 and the relevant offset, while leaving the normal-frame Taylor coefficients
 unchanged.
 
-### Requires Xsuite 0.59.0
-
-The import builds an `xt.SecondOrderTaylorMap` through `env.new`. Xsuite 0.58.0 is the first release to support that.
-
-The supported minimum is higher. Xtrack 0.111.0, shipped in Xsuite 0.59.0, split `xtrack.twiss` from a module into a package, and the project tracks current Xsuite rather than pinning behind it.
-
 ### Hard-edge: applied unconditionally, and it does not compose additively
 
 A `QUAD` also carries a `DISFRIN`-gated hard-edge kick, with the same boolean convention as the bend.

@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-07
+Date:       2026-09-28
 ================================================================================
 """
 ################################################################################
@@ -493,7 +493,7 @@ def test_complete_mult_fringe_writer_preserves_maps_order_and_tracking(tmp_path)
     line.set(
         mults,
         model               = "mat-kick-mat",
-        integrator          = "yoshida4",
+        integrator          = "yoshida-6",
         num_multipole_kicks = 14)
 
     original_coefficients = {

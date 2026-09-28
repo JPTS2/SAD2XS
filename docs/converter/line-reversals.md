@@ -414,7 +414,7 @@ element is unchanged physically. Without this step a reflected vertical
 corrector reaches the writer at `-pi/2`, where it is serialised as a skew
 corrector rather than a vertical one.
 
-**Verified against real xtrack tracking, not just algebra**: for each
+**Verified against real Xtrack tracking, not just algebra**: for each
 element type (including a `Bend` at `rot_s_rad` of `0`, `+pi/2`, and a
 generic non-canonicalised angle, all with asymmetric edge angles/offsets), a
 test particle tracked through the transformed element with y/py-mirrored
