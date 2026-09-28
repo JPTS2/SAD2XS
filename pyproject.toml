@@ -18,7 +18,7 @@ build-backend   = "setuptools.build_meta"
 
 [project]
 name            = "sad2xs"
-version         = "0.4.0"
+version         = "0.4.1"
 description     = "Conversion of SAD lattices to Xtrack format"
 readme          = "README.md"
 license         = "Apache-2.0"
