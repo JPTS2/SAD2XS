@@ -42,7 +42,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Physics"]
 
-# Floors are the oldest releases known to support Python 3.13
+# Strict floors: SAD2XS tracks current Xsuite features
 dependencies = [
     "numpy>=2.1",
     "pyyaml>=6.0",
