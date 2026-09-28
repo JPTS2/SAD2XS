@@ -17,7 +17,7 @@ or from reading the source once. If xtrack ever adds this term, this test fails 
 and the warning (and the docs entry) need revisiting.
 
 The same applies to xtrack behaviour that sad2xs's own defaults rest on: the `adaptive`
-model resolving to the expanded map, and yoshida4 batching kicks in groups of seven. Both
+model resolving to the expanded map, and yoshida-6 batching kicks in groups of seven. Both
 are the stated reasons for choices in `docs/converter/models-integrators.md`.
 
 ## Test harness

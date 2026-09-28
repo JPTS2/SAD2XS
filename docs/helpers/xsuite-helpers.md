@@ -64,7 +64,7 @@ value on a coupled transfer line silently gives the uncoupled answer.
 and beta/alpha seeds. A comparison beginning inside a solenoid needs
 those seeds; nothing detects a coupled start.
 
-Its propagation routine is vendored from xtrack 0.111.4, where it was
+Its propagation routine is vendored from Xtrack 0.111.4, where it was
 `xtrack.twiss.coupling_edw_teng._propagate_edwards_teng` (Apache-2.0, the
 same licence as this project). Xtrack 0.111.5 removed it in favour of a
 periodic-only route, leaving no upstream symbol to call. The algorithm is
@@ -160,7 +160,7 @@ plot_xsuite_sad_comparison(tw_xs_aligned, tw_sad_aligned)
 
 `align_xsuite_twiss_with_sad_twiss` does not interpolate: it matches each
 SAD element to the one Xsuite row that is unambiguously the same physical
-element (undoing xtrack's own slicing/repeat-naming and sad2xs's generated
+element (undoing Xtrack's own slicing/repeat-naming and sad2xs's generated
 naming), and raises if any SAD element found no match.
 
 ### Matching passes
@@ -183,7 +183,7 @@ against `s_tol` before being accepted:
 
 A SAD name that itself looks like a repeat (`base.N`, e.g. `LXL28467.1`)
 skips pass 1 entirely when Xsuite also has a family under that base, since
-it could otherwise coincidentally string-match an unrelated xtrack repeat.
+it could otherwise coincidentally string-match an unrelated Xtrack repeat.
 
 ### Solenoid-boundary compound
 

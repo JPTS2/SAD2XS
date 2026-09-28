@@ -33,8 +33,13 @@ The converter is pre-1.0.
 The public API and the generated lattice format may still change between minor releases.
 
 ## Installation
-SAD2XS requires Python 3.13 or newer.
 
+### Requirements
+SAD2XS requires Python 3.13 or newer.
+SAD2XS uses current Xsuite features, so it sets strict minimum versions for its dependencies.
+`pip` enforces them automatically.
+
+### From PyPI
 Install the converter from PyPI:
 
 ```bash
