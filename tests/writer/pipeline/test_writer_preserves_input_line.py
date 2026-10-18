@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-07-29
+Date:       2026-10-17
 ================================================================================
 """
 ################################################################################
@@ -151,6 +151,7 @@ def _normalise(value):
     """
     Recursively convert dicts/arrays/tuples/numpy scalars into
     hashable, order-independent Python values for equality comparison.
+    NaN compares equal to NaN.
     """
     if isinstance(value, dict):
         return tuple(sorted((key, _normalise(item)) for key, item in value.items()))
@@ -159,7 +160,10 @@ def _normalise(value):
     if isinstance(value, (list, tuple)):
         return tuple(_normalise(item) for item in value)
     if hasattr(value, "item"):
-        return value.item()
+        value = value.item()
+    # Xtrack marks unset Particles scalars (e.g. reference_turns) with NaN
+    if isinstance(value, float) and np.isnan(value):
+        return "nan"
 
     return value
 

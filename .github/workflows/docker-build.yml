@@ -8,7 +8,7 @@
 #
 # Authors:    John P. T. Salvesen
 # Email:      john.salvesen@cern.ch
-# Date:       2026-08-25
+# Date:       2026-10-17
 # ==============================================================================
 
 name: SAD Docker Build
@@ -126,6 +126,8 @@ jobs:
             SAD_SMOKE_PATH=tests/installation/sad_installation_test.sad
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Cached layers would pin SAD and Xsuite to whatever the last uncached build resolved
+          no-cache: ${{ github.event_name == 'schedule' }}
 
       - name: Smoke (SAD starts) using freshly pushed image
         run: |
