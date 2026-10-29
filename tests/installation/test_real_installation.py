@@ -9,13 +9,14 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-27
+Date:       2026-10-29
 ================================================================================
 
-Every other installer test monkeypatches its subprocess calls, and the SAD
-smoke test uses the binary already present in the CI image. Neither exercises
-the installer end to end. This file does: it clones and builds SAD, then runs
-the committed smoke lattice through the launcher it generated.
+The other installer tests replace the clone and the build with stand-ins, and
+the SAD smoke test uses the binary already present in the CI image. Neither
+exercises the installer end to end. This file does: it clones and builds SAD,
+checks the binary and the arch pin, then runs the committed smoke lattice
+through the launcher it generated.
 
 Opt-in, because it needs the network and takes minutes. See
 tests/installation/README.md for the manual procedure and its recorded result.
@@ -74,10 +75,18 @@ def test_installer_builds_sad_and_the_launcher_runs_the_smoke_lattice(tmp_path):
         f"{install.stdout[-2000:]}\n{install.stderr[-2000:]}")
 
     launcher    = bin_dir / "sad"
-    executable  = prefix / "src" / "bin" / "gs"
+    src_dir     = prefix / "src"
+    arch        = subprocess.run(
+        [str(src_dir / "bin" / "HostArch")],
+        capture_output  = True,
+        text            = True,
+        check           = True).stdout.strip()
 
-    assert os.access(executable, os.X_OK), (
-        "The build should produce a runnable SAD binary.")
+    assert os.access(src_dir / "obj" / arch / "sad1.exe", os.X_OK), (
+        f"The build should produce a runnable obj/{arch}/sad1.exe.")
+    gs_lines = (src_dir / "bin" / "gs").read_text(encoding = "utf-8").splitlines()
+    assert f"SAD_ARCH={arch}" in gs_lines, (
+        f"The installer should pin bin/gs to the arch it built for, {arch}.")
     assert os.access(launcher, os.X_OK), (
         "The install should produce a runnable launcher.")
 

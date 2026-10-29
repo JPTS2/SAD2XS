@@ -43,9 +43,10 @@ how the command reports a platform it cannot serve or a build that failed.
 
 ### `test_installer_helpers.py`
 
-Covers the platform-independent installer machinery in `_helpers.py` by
-monkeypatching subprocess calls. No test clones, builds, or writes outside
-`tmp_path`. Weighted towards the destructive paths: which source trees may
+Covers the platform-independent installer machinery in `_helpers.py`. The
+clone and the build are monkeypatched. The only process a test runs is a
+two-line stand-in for SAD's `bin/HostArch`, which the build fixtures write
+into `tmp_path`. No test clones, builds, or writes outside `tmp_path`. Weighted towards the destructive paths: which source trees may
 be replaced, what happens when a clone or a source request fails, and what
 reaches the launcher and the printed PATH instruction.
 
@@ -245,7 +246,10 @@ rather than one platform's.
 ### `test_real_installation.py`
 
 Opt-in end-to-end install. Clones and builds SAD into a temporary prefix,
-then runs the smoke lattice through the generated launcher. Needs the
+checks `obj/<arch>/sad1.exe` and the `SAD_ARCH=` pin in `bin/gs` against the
+tree's own HostArch, then runs the smoke lattice through the generated
+launcher. It is the only test that runs the arch check and pin against a real
+SAD tree. Needs the
 network and takes minutes, so it is skipped unless
 `SAD2XS_REAL_INSTALL_TEST=1` is set.
 
@@ -263,8 +267,8 @@ Smoke check against a real SAD installation. Requires the SAD binary.
 
 ## Real Installation Validation
 
-Every other test in this folder monkeypatches its subprocess calls, so none of
-them proves the installer can actually build SAD. `test_real_installation.py`
+Every other test in this folder replaces the clone and the build with
+stand-ins, so none of them proves the installer can actually build SAD. `test_real_installation.py`
 does, but it needs the network and takes minutes, so it does not run by
 default.
 
