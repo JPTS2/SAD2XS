@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-27
+Date:       2026-10-29
 ================================================================================
 """
 ################################################################################
@@ -808,16 +808,25 @@ def test_make_sad_cleans_only_a_reused_tree(
 ########################################
 # Build Verification
 ########################################
+def _built_binary(src_dir: Path, mode: int = 0o755) -> Path:
+    """
+    Write an empty `obj/TEST-Arch1/sad1.exe` with the given permissions.
+    """
+    binary = src_dir / "obj" / "TEST-Arch1" / "sad1.exe"
+    binary.parent.mkdir(parents = True)
+    binary.touch()
+    binary.chmod(mode)
+    return binary
+
+
 def test_verify_executable_accepts_an_executable_binary(tmp_path):
     """
     A build that produced a runnable binary should pass without exiting.
     """
     config = make_config(tmp_path)
-    config.executable.parent.mkdir(parents = True)
-    config.executable.touch()
-    config.executable.chmod(0o755)
+    _built_binary(config.src_dir)
 
-    _helpers.verify_executable(config, config.src_dir)
+    _helpers.verify_executable(config, config.src_dir, "TEST-Arch1")
 
 
 def test_verify_executable_rejects_a_binary_without_the_executable_bit(tmp_path):
@@ -825,12 +834,10 @@ def test_verify_executable_rejects_a_binary_without_the_executable_bit(tmp_path)
     A file that exists but cannot be run is a failed build.
     """
     config = make_config(tmp_path)
-    config.executable.parent.mkdir(parents = True)
-    config.executable.touch()
-    config.executable.chmod(0o644)
+    _built_binary(config.src_dir, mode = 0o644)
 
     with pytest.raises(SystemExit) as exc_info:
-        _helpers.verify_executable(config, config.src_dir)
+        _helpers.verify_executable(config, config.src_dir, "TEST-Arch1")
 
     assert "not executable" in str(exc_info.value), (
         "A present but unrunnable binary should be reported as a failed build.")
@@ -839,14 +846,38 @@ def test_verify_executable_rejects_a_binary_without_the_executable_bit(tmp_path)
 def test_verify_executable_exits_when_the_build_produced_no_binary(tmp_path):
     """
     A build that returns zero but leaves no binary should still fail.
+
+    `bin/gs` is tracked in the SAD repository, so it is present here as it
+    would be after any clone. It must not count as a built binary.
+    """
+    config = make_config(tmp_path)
+    config.executable.parent.mkdir(parents = True)
+    config.executable.touch()
+    config.executable.chmod(0o755)
+
+    with pytest.raises(SystemExit) as exc_info:
+        _helpers.verify_executable(config, config.src_dir, "TEST-Arch1")
+
+    assert "sad1.exe" in str(exc_info.value), (
+        "The message should name the missing sad1.exe, not bin/gs.")
+    assert str(config.build_log) in str(exc_info.value), (
+        "The message should point at the build log.")
+
+
+def test_verify_executable_exits_when_no_arch_was_reported(tmp_path):
+    """
+    Without an arch name there is no binary path to check.
     """
     config = make_config(tmp_path)
 
     with pytest.raises(SystemExit) as exc_info:
-        _helpers.verify_executable(config, config.src_dir)
+        _helpers.verify_executable(config, config.src_dir, None)
 
+    assert "HostArch" in str(exc_info.value), (
+        "The message should say HostArch did not report the arch.")
     assert str(config.build_log) in str(exc_info.value), (
         "The message should point at the build log.")
+
 
 ################################################################################
 # Install Transaction
@@ -945,6 +976,10 @@ def _building_prepare(config, failing_stage: str = ""):
         binary = src_dir / "bin" / "gs"
         binary.write_text("new gs\n", encoding = "utf-8")
         binary.chmod(0o755)
+        host_arch = src_dir / "bin" / "HostArch"
+        host_arch.write_text("#!/bin/sh\necho TEST-Arch1\n", encoding = "utf-8")
+        host_arch.chmod(0o755)
+        _built_binary(src_dir)
 
     return prepare
 

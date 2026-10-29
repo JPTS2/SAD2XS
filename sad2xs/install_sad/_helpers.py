@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-07
+Date:       2026-10-29
 ================================================================================
 """
 ################################################################################
@@ -1237,11 +1237,45 @@ def make_sad(
 ########################################
 # Verify Executable
 ########################################
+def _sad_arch(work_dir: Path) -> str | None:
+    """
+    Return the arch name SAD's own `bin/HostArch` reports for this host.
+
+    Parameters
+    ----------
+    work_dir : Path
+        SAD source tree.
+
+    Returns
+    -------
+    str or None
+        The arch name, such as `arm-Darwin25`, or None if HostArch is
+        missing, fails, or prints nothing.
+    """
+    try:
+        process = subprocess.run(       # pylint: disable=subprocess-run-check
+            [str(work_dir / "bin" / "HostArch")],
+            text    = True,
+            stdout  = subprocess.PIPE,
+            stderr  = subprocess.DEVNULL)
+    except OSError:
+        return None
+    arch = process.stdout.strip()
+    if process.returncode != 0 or not arch:
+        return None
+    return arch
+
+
 def verify_executable(
         config:     InstallConfig,
-        work_dir:   Path) -> None:
+        work_dir:   Path,
+        arch:       str | None) -> None:
     """
     Check that the build produced a runnable SAD binary.
+
+    The binary is `obj/<arch>/sad1.exe`. `bin/gs` is not checked: it is a
+    wrapper script tracked in the SAD repository, so it exists whether or
+    not anything was built.
 
     Parameters
     ----------
@@ -1249,13 +1283,21 @@ def verify_executable(
         Install configuration.
     work_dir : Path
         Directory the build ran in.
+    arch : str or None
+        Arch name the tree's `bin/HostArch` reported, or None if it
+        reported none.
 
     Raises
     ------
     SystemExit
-        If the binary is missing or not executable.
+        If the arch cannot be read, or the binary is missing or not
+        executable.
     """
-    executable = work_dir / "bin" / "gs"
+    if arch is None:
+        sys.exit(
+            f"Build finished but {work_dir / 'bin' / 'HostArch'} did not "
+            f"report the SAD arch. See {config.build_log}")
+    executable = work_dir / "obj" / arch / "sad1.exe"
     if not os.access(executable, os.X_OK):
         sys.exit(
             f"Build finished but {executable} is missing or not "
@@ -1322,7 +1364,8 @@ def install_sad_source(
         if prepare is not None:
             prepare(config.src_dir)
         make_sad(config, env, reused_tree, config.src_dir)
-        verify_executable(config, config.src_dir)
+        arch = _sad_arch(config.src_dir)
+        verify_executable(config, config.src_dir, arch)
         write_launcher(config)
     except BaseException as error:
         rollback(config, error)
