@@ -431,14 +431,30 @@ def test_ci_docker_build_tags_image_per_branch():
         "docker-build.yml should derive a per-branch tag slug for the image.")
 
 
+def test_ci_docker_build_tags_image_with_the_built_commit():
+    """
+    The sha tag must name the commit this matrix leg checked out.
+
+    `github.sha` is the commit that triggered the run. A scheduled run fans
+    out over main and every release branch, so `github.sha` is main's head
+    for every leg, and each release-branch image was tagged with main's sha.
+    """
+    run_text = _job_run_text(_load(DOCKER_PATH), "rebuild-docker")
+    assert "${IMAGE}:$(git rev-parse HEAD)" in run_text, (
+        "docker-build.yml should tag the image with the checked-out commit, "
+        "`$(git rev-parse HEAD)`.")
+    assert "github.sha" not in run_text, (
+        "docker-build.yml must not tag the image with `github.sha`, the "
+        "triggering commit rather than the one built.")
+
+
 def test_ci_docker_build_smoke_runs_the_image_by_digest():
     """
     The smoke step must run the image this matrix leg built, by digest.
 
-    Every leg pushes the same `:<sha>` tag, since a scheduled run checks out
-    one commit per branch under one triggering sha. The tag then names
-    whichever leg pushed last, so a leg could smoke-test another branch's
-    image.
+    A tag can be pushed by more than one build: two legs or two runs at the
+    same commit both push its sha. The tag then names whichever pushed last.
+    The digest names exactly the image this leg built.
     """
     step = _step_by_name(
         _load(DOCKER_PATH), "rebuild-docker",
@@ -449,8 +465,8 @@ def test_ci_docker_build_smoke_runs_the_image_by_digest():
     assert "@${{ steps.build.outputs.digest }}" in step["run"], (
         "The smoke step must run the image by the build step's digest output.")
     assert "github.sha" not in step["run"], (
-        "The smoke step must not run the shared `:<sha>` tag, which every "
-        "matrix leg pushes.")
+        "The smoke step must run the image by digest, not by a tag another "
+        "build can overwrite.")
 
 
 def test_ci_template_falls_back_to_a_tag_the_build_publishes():

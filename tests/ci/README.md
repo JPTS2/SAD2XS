@@ -47,7 +47,7 @@ Does not require the SAD binary.
 
 | File | Tests | Fail | Failure root cause |
 |------|-------|------|--------------------|
-| `test_workflow_checkout_refs.py` | 62 | 0 | — |
+| `test_workflow_checkout_refs.py` | 63 | 0 | — |
 | `test_workflow_test_targets.py` | 39 | 0 | — |
 | `test_pytest_ini_testpaths.py` | 2 | 0 | — |
 | `test_dockerfile_build_contract.py` | 3 | 0 | — |
@@ -82,14 +82,15 @@ without a matching workflow fails these tests instead of passing silently.
 - The `run-tests` job itself remains blocking
 - The `run-tests` job checks out the triggering commit without a `ref` override
 
-**Docker build tests (7, not parametrised):**
+**Docker build tests (8, not parametrised):**
 - `docker-build.yml` name is stable and documented
 - Triggers on push to `main`
 - Triggers on push to `release/**`
 - Publishes a per-branch image tag
 - Has `workflow_dispatch` trigger
 - Every job uses `actions/checkout@v7`
-- The smoke step runs the image by the build step's digest, not the shared `:<sha>` tag
+- The sha tag names the checked-out commit (`git rev-parse HEAD`), not the triggering `github.sha`
+- The smoke step runs the image by the build step's digest, not by a tag
 
 **Template image tests (1, not parametrised):**
 - The template falls back to a tag the Docker build actually publishes

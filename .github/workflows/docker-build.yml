@@ -94,7 +94,8 @@ jobs:
           # Tag slug: release/0.4.0 -> release-0.4.0
           SLUG=$(echo "${{ matrix.branch }}" | tr '/' '-')
 
-          TAGS="${IMAGE}:${{ github.sha }}
+          # The triggering commit is main's for every leg of a scheduled run
+          TAGS="${IMAGE}:$(git rev-parse HEAD)
           ${IMAGE}:${SLUG}"
           # :latest follows main, so anything pulling it unqualified is unaffected.
           if [ "${{ matrix.branch }}" = "main" ]; then
@@ -130,7 +131,7 @@ jobs:
           # Cached layers would pin SAD and Xsuite to whatever the last uncached build resolved
           no-cache: ${{ github.event_name == 'schedule' }}
 
-      # Every matrix leg pushes the shared sha tag, so only the digest names this leg's image
+      # Another build can repush a tag; only the digest names this leg's image
       - name: Smoke (SAD starts) using freshly pushed image
         run: |
           docker run --rm ${{ steps.img.outputs.image }}@${{ steps.build.outputs.digest }} \
