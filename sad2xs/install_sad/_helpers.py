@@ -1304,6 +1304,43 @@ def verify_executable(
             f"executable. See {config.build_log}")
     logger.info(f"Build OK: {executable}")
 
+########################################
+# Pin Arch
+########################################
+def pin_sad_arch(
+        work_dir:   Path,
+        arch:       str) -> None:
+    """
+    Pin `bin/gs` to the arch the tree was built for.
+
+    `bin/gs` runs `bin/HostArch` at every start, and HostArch names the arch
+    after the kernel major version. Without the pin, a macOS major upgrade
+    sends `gs` to an `obj/<arch>` directory the build never made. A rebuild
+    replaces an earlier pin.
+
+    Parameters
+    ----------
+    work_dir : Path
+        Directory the build ran in.
+    arch : str
+        Arch name the build used.
+
+    Raises
+    ------
+    SystemExit
+        If `bin/gs` does not have exactly one `SAD_ARCH=` line.
+    """
+    gs          = work_dir / "bin" / "gs"
+    lines       = gs.read_text(encoding = "utf-8").splitlines(keepends = True)
+    arch_lines  = [i for i, line in enumerate(lines) if line.startswith("SAD_ARCH=")]
+    if len(arch_lines) != 1:
+        sys.exit(
+            f"Cannot pin the SAD arch: {gs} has {len(arch_lines)} "
+            f"`SAD_ARCH=` lines, expected one.")
+    lines[arch_lines[0]] = f"SAD_ARCH={arch}\n"
+    gs.write_text("".join(lines), encoding = "utf-8")
+    logger.info(f"Pinned {gs} to {arch}")
+
 ################################################################################
 # Source Lifecycle
 ################################################################################
@@ -1366,6 +1403,7 @@ def install_sad_source(
         make_sad(config, env, reused_tree, config.src_dir)
         arch = _sad_arch(config.src_dir)
         verify_executable(config, config.src_dir, arch)
+        pin_sad_arch(config.src_dir, arch)
         write_launcher(config)
     except BaseException as error:
         rollback(config, error)

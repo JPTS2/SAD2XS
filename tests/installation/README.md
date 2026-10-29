@@ -17,7 +17,7 @@ Requires the SAD binary for the executable smoke test.
 | File | Tests | Fail | Failure root cause |
 |------|-------|------|--------------------|
 | `test_installer_dispatch.py` | 11 | 0 | — |
-| `test_installer_helpers.py` | 91 | 0 | — |
+| `test_installer_helpers.py` | 97 | 0 | — |
 | `test_linux_installer.py` | 52 | 0 | — |
 | `test_macos_installer.py` | 32 | 0 | — |
 | `test_real_installation.py` | 1 | 0 | — |
@@ -109,6 +109,9 @@ test, not by the monkeypatched ones.
 | `test_verify_executable_rejects_a_binary_without_the_executable_bit` | A file that exists but cannot be run is a failed build. |
 | `test_verify_executable_exits_when_the_build_produced_no_binary` | A build that returns zero but leaves no binary should still fail, even with the tracked `bin/gs` present. |
 | `test_verify_executable_exits_when_no_arch_was_reported` | Without an arch name there is no binary path to check. |
+| `test_pin_sad_arch_rewrites_only_the_arch_line` | The pin replaces the HostArch call and leaves the rest of gs alone. |
+| `test_pin_sad_arch_replaces_an_earlier_pin` | A rebuild after an OS upgrade must move the pin to the new arch. |
+| `test_pin_sad_arch_refuses_a_gs_without_exactly_one_arch_line` | An upstream gs that sets the arch differently must not be guessed at. |
 | `test_a_failure_at_any_stage_leaves_the_previous_installation_working` | An install that fails must cost the user nothing. |
 | `test_a_verified_install_replaces_the_previous_one_and_leaves_no_state` | A build that passes verification should become the installation. |
 | `test_an_unowned_launcher_is_refused_before_anything_is_cloned_or_moved` | An unowned launcher should cost no clone, no build, and no move. |

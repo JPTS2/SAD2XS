@@ -879,6 +879,70 @@ def test_verify_executable_exits_when_no_arch_was_reported(tmp_path):
         "The message should point at the build log.")
 
 
+########################################
+# Arch Pin
+########################################
+UNPINNED_GS = (
+    "#!/bin/sh\n"
+    "SAD_ARCH=`$SAD_ROOTPATH/bin/HostArch`\n"
+    "SAD_EXE=\"$SAD_ROOTPATH/obj/${SAD_ARCH}/sad1.exe\"\n")
+
+
+def _write_gs(src_dir: Path, text: str) -> Path:
+    """
+    Write `bin/gs` with the given text.
+    """
+    gs = src_dir / "bin" / "gs"
+    gs.parent.mkdir(parents = True, exist_ok = True)
+    gs.write_text(text, encoding = "utf-8")
+    return gs
+
+
+def test_pin_sad_arch_rewrites_only_the_arch_line(tmp_path):
+    """
+    The pin replaces the HostArch call and leaves the rest of gs alone.
+    """
+    gs = _write_gs(tmp_path, UNPINNED_GS)
+
+    _helpers.pin_sad_arch(tmp_path, "TEST-Arch1")
+
+    expected = UNPINNED_GS.replace(
+        "SAD_ARCH=`$SAD_ROOTPATH/bin/HostArch`", "SAD_ARCH=TEST-Arch1")
+    assert gs.read_text(encoding = "utf-8") == expected, (
+        "Only the SAD_ARCH= line of bin/gs should change.")
+
+
+def test_pin_sad_arch_replaces_an_earlier_pin(tmp_path):
+    """
+    A rebuild after an OS upgrade must move the pin to the new arch.
+    """
+    gs = _write_gs(tmp_path, "#!/bin/sh\nSAD_ARCH=TEST-Arch0\n")
+
+    _helpers.pin_sad_arch(tmp_path, "TEST-Arch1")
+
+    assert gs.read_text(encoding = "utf-8") == "#!/bin/sh\nSAD_ARCH=TEST-Arch1\n", (
+        "A rebuild should replace the earlier pin.")
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["#!/bin/sh\n", "SAD_ARCH=a\nSAD_ARCH=b\n"],
+    ids = ["no_arch_line", "two_arch_lines"])
+def test_pin_sad_arch_refuses_a_gs_without_exactly_one_arch_line(tmp_path, text):
+    """
+    An upstream gs that sets the arch differently must not be guessed at.
+    """
+    gs = _write_gs(tmp_path, text)
+
+    with pytest.raises(SystemExit) as exc_info:
+        _helpers.pin_sad_arch(tmp_path, "TEST-Arch1")
+
+    assert "SAD_ARCH=" in str(exc_info.value), (
+        "The message should say which line could not be pinned.")
+    assert gs.read_text(encoding = "utf-8") == text, (
+        "A refused pin should leave bin/gs unchanged.")
+
+
 ################################################################################
 # Install Transaction
 ################################################################################
@@ -950,6 +1014,10 @@ def _cloning_run(failing_stage: str = ""):
     return fake_run
 
 
+NEW_GS          = "new gs\nSAD_ARCH=`$SAD_ROOTPATH/bin/HostArch`\n"
+PINNED_NEW_GS   = "new gs\nSAD_ARCH=TEST-Arch1\n"
+
+
 def _building_prepare(config, failing_stage: str = ""):
     """
     Build a preparation step that produces the new SAD binary.
@@ -959,8 +1027,9 @@ def _building_prepare(config, failing_stage: str = ""):
     config : InstallConfig
         Install configuration.
     failing_stage : str, optional
-        "prepare" to fail here, "verify" to leave no binary behind.
-        Defaults to producing a working binary.
+        "prepare" to fail here, "verify" to leave no binary behind, "pin"
+        to leave a gs with no line to pin. Defaults to producing a working
+        binary.
 
     Returns
     -------
@@ -972,10 +1041,8 @@ def _building_prepare(config, failing_stage: str = ""):
             sys.exit("preparation failed")
         if failing_stage == "verify":
             return
-        (src_dir / "bin").mkdir(parents = True, exist_ok = True)
-        binary = src_dir / "bin" / "gs"
-        binary.write_text("new gs\n", encoding = "utf-8")
-        binary.chmod(0o755)
+        gs_text = "new gs\n" if failing_stage == "pin" else NEW_GS
+        _write_gs(src_dir, gs_text).chmod(0o755)
         host_arch = src_dir / "bin" / "HostArch"
         host_arch.write_text("#!/bin/sh\necho TEST-Arch1\n", encoding = "utf-8")
         host_arch.chmod(0o755)
@@ -1008,7 +1075,7 @@ def _assert_installation_survived(config, launcher_before) -> None:
 ########################################
 @pytest.mark.parametrize(
     "failing_stage",
-    ["clone", "prepare", "make depend", "make exe", "verify", "launcher"])
+    ["clone", "prepare", "make depend", "make exe", "verify", "pin", "launcher"])
 def test_a_failure_at_any_stage_leaves_the_previous_installation_working(
         tmp_path,
         monkeypatch,
@@ -1060,7 +1127,7 @@ def test_a_verified_install_replaces_the_previous_one_and_leaves_no_state(
 
     _helpers.install_sad_source(config, {}, _building_prepare(config))
 
-    assert config.executable.read_text(encoding = "utf-8") == "new gs\n", (
+    assert config.executable.read_text(encoding = "utf-8") == PINNED_NEW_GS, (
         "A verified build should replace the previous installation.")
     assert config.marker.is_file(), (
         "The installed tree should be marked as this installer's.")
@@ -1233,7 +1300,7 @@ def test_a_fresh_invocation_recovers_an_interrupted_install(
 
     assert not (config.src_dir / "half_built.txt").exists(), (
         "The interrupted install should have been reconciled first.")
-    assert config.executable.read_text(encoding = "utf-8") == "new gs\n", (
+    assert config.executable.read_text(encoding = "utf-8") == PINNED_NEW_GS, (
         "The new install should then proceed to completion.")
     assert not config.transaction_dir.exists(), (
         "No transaction state should survive the committed install.")
@@ -1244,7 +1311,7 @@ def test_a_fresh_invocation_recovers_an_interrupted_install(
 ########################################
 @pytest.mark.parametrize(
     "failing_stage",
-    ["prepare", "make depend", "make exe", "verify", "launcher"])
+    ["prepare", "make depend", "make exe", "verify", "pin", "launcher"])
 def test_a_first_install_that_fails_leaves_nothing_behind(
         tmp_path,
         monkeypatch,
@@ -1502,7 +1569,7 @@ def test_a_failed_commit_cleanup_does_not_roll_the_install_back(
 
     _helpers.install_sad_source(config, {}, _building_prepare(config))
 
-    assert config.executable.read_text(encoding = "utf-8") == "new gs\n", (
+    assert config.executable.read_text(encoding = "utf-8") == PINNED_NEW_GS, (
         "The install should have completed.")
 
     leftovers = list(config.prefix.glob(f"{_helpers.CLEANUP_PREFIX}*"))
@@ -1512,7 +1579,7 @@ def test_a_failed_commit_cleanup_does_not_roll_the_install_back(
     monkeypatch.setattr(_helpers.shutil, "rmtree", real_rmtree)
     _helpers.reconcile_transaction(config)
 
-    assert config.executable.read_text(encoding = "utf-8") == "new gs\n", (
+    assert config.executable.read_text(encoding = "utf-8") == PINNED_NEW_GS, (
         "A later run must not read committed leftovers as rollback state.")
 
 
