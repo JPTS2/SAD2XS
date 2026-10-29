@@ -118,10 +118,11 @@ flag. That means a build which fails part way can leave that tree unusable, so
 prefer a normal install when you have a working SAD you depend on.
 
 The installer pins the `SAD_ARCH=` line of SAD's `bin/gs` to the arch it built
-for. Without the pin, SAD stops starting after every macOS major upgrade,
-because SAD names its build directory after the OS version. The pin does not
-protect against Homebrew replacing the gfortran runtime. If SAD then fails to
-start with a missing-library error, rerun `sad2xs-install-sad`.
+for. Without the pin, SAD stops starting after every macOS major upgrade or
+Linux kernel major upgrade, because SAD names its build directory after the OS
+version. The pin does not protect against an upgrade replacing the C or
+gfortran runtime, for example through Homebrew. If SAD then fails to start
+with a missing-library error, rerun `sad2xs-install-sad`.
 
 The installer never edits your shell configuration. If the launcher directory
 is not on your PATH it prints the exact line to add.

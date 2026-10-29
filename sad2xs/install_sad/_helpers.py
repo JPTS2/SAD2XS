@@ -313,7 +313,7 @@ class InstallConfig:
 
     @property
     def executable(self) -> Path:
-        """Path: The SAD binary produced by the build."""
+        """Path: The `bin/gs` wrapper the launcher runs."""
         return self.src_dir / "bin" / "gs"
 
 ################################################################################
@@ -1237,7 +1237,9 @@ def make_sad(
 ########################################
 # Verify Executable
 ########################################
-def _sad_arch(work_dir: Path) -> str | None:
+def _sad_arch(
+        work_dir:   Path,
+        env:        dict[str, str]) -> str | None:
     """
     Return the arch name SAD's own `bin/HostArch` reports for this host.
 
@@ -1245,6 +1247,8 @@ def _sad_arch(work_dir: Path) -> str | None:
     ----------
     work_dir : Path
         SAD source tree.
+    env : dict
+        Environment the build ran in, so HostArch names the arch make used.
 
     Returns
     -------
@@ -1255,6 +1259,7 @@ def _sad_arch(work_dir: Path) -> str | None:
     try:
         process = subprocess.run(       # pylint: disable=subprocess-run-check
             [str(work_dir / "bin" / "HostArch")],
+            env     = env,
             text    = True,
             stdout  = subprocess.PIPE,
             stderr  = subprocess.DEVNULL)
@@ -1331,14 +1336,16 @@ def pin_sad_arch(
         If `bin/gs` does not have exactly one `SAD_ARCH=` line.
     """
     gs          = work_dir / "bin" / "gs"
-    lines       = gs.read_text(encoding = "utf-8").splitlines(keepends = True)
+    # surrogateescape round-trips any non-UTF-8 bytes upstream adds to gs
+    lines       = gs.read_text(
+        encoding = "utf-8", errors = "surrogateescape").splitlines(keepends = True)
     arch_lines  = [i for i, line in enumerate(lines) if line.startswith("SAD_ARCH=")]
     if len(arch_lines) != 1:
         sys.exit(
             f"Cannot pin the SAD arch: {gs} has {len(arch_lines)} "
             f"`SAD_ARCH=` lines, expected one.")
     lines[arch_lines[0]] = f"SAD_ARCH={arch}\n"
-    gs.write_text("".join(lines), encoding = "utf-8")
+    gs.write_text("".join(lines), encoding = "utf-8", errors = "surrogateescape")
     logger.info(f"Pinned {gs} to {arch}")
 
 ################################################################################
@@ -1401,7 +1408,7 @@ def install_sad_source(
         if prepare is not None:
             prepare(config.src_dir)
         make_sad(config, env, reused_tree, config.src_dir)
-        arch = _sad_arch(config.src_dir)
+        arch = _sad_arch(config.src_dir, env)
         verify_executable(config, config.src_dir, arch)
         pin_sad_arch(config.src_dir, arch)
         write_launcher(config)

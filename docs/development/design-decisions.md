@@ -99,7 +99,7 @@ Reasoning: `bin/gs` does not record which binary it belongs to. It runs `bin/Hos
 
 Consequence: a build no longer fails just because the kernel major version changed. SAD's own build still uses HostArch, so a rebuild picks up the new arch name and writes a new pin. `bin/gs` is tracked in the SAD repository, so a pinned tree shows it as modified. Only `make install` regenerates it, and SAD2XS does not run that. In the Dockerfile the build, the binary check, and the pin share one `RUN` instruction, so a build layer cached on one kernel is never pinned on another.
 
-The pin removes only the arch-name failure. On Linux the binary depends on its own glibc and gfortran runtime, not on the kernel version, so a pinned build keeps working. On macOS a major upgrade can break the binary for real, for example when Homebrew replaces `libgfortran`. The pin does not hide that: SAD then fails to start with a dyld error naming the missing library, and the fix is to rebuild.
+The pin removes only the arch-name failure. The binary depends on the C and gfortran runtime libraries it was linked against, not on the kernel version. In the Docker image those libraries are baked in, so a pinned build keeps working on any host. A local install uses the machine's own libraries, so an OS upgrade or a Homebrew `libgfortran` update can break the binary for real. The pin does not hide that: SAD then fails to start with an error naming the missing library, and the fix is to rebuild.
 
 Pinning the runner kernel instead is not possible on GitHub-hosted runners, and it would move the same failure to every other host that runs the image.
 

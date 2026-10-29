@@ -115,7 +115,7 @@ undo by accident.
 | Test | Expected result | What it checks |
 |------|----------------|----------------|
 | `test_builder_stage_installs_yacc` | PASS | The builder stage installs bison, so make can regenerate `src/calc.c` from `src/calc.y` whenever the mtimes make it try |
-| `test_builder_stage_checks_the_sad_binary` | PASS | The builder stage checks that `make exe` linked `obj/<arch>/sad1.exe`, not only that the tracked `bin/gs` script exists |
+| `test_builder_stage_checks_the_sad_binary` | PASS | The builder stage checks that `make exe` linked `obj/<arch>/sad1.exe`, in the same `RUN` as the build, not only that the tracked `bin/gs` script exists |
 | `test_builder_stage_pins_the_sad_arch_in_gs` | PASS | The builder stage rewrites the `SAD_ARCH=` line of `bin/gs` to the arch it built for, in the same `RUN` as the build, so the image runs on any host kernel |
 
 ### `test_pytest_ini_testpaths.py`

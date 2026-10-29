@@ -888,6 +888,16 @@ UNPINNED_GS = (
     "SAD_EXE=\"$SAD_ROOTPATH/obj/${SAD_ARCH}/sad1.exe\"\n")
 
 
+def _write_host_arch(src_dir: Path) -> None:
+    """
+    Write a `bin/HostArch` that reports TEST-Arch1, as a build tree has.
+    """
+    host_arch = src_dir / "bin" / "HostArch"
+    host_arch.parent.mkdir(parents = True, exist_ok = True)
+    host_arch.write_text("#!/bin/sh\necho TEST-Arch1\n", encoding = "utf-8")
+    host_arch.chmod(0o755)
+
+
 def _write_gs(src_dir: Path, text: str) -> Path:
     """
     Write `bin/gs` with the given text.
@@ -1043,9 +1053,7 @@ def _building_prepare(config, failing_stage: str = ""):
             return
         gs_text = "new gs\n" if failing_stage == "pin" else NEW_GS
         _write_gs(src_dir, gs_text).chmod(0o755)
-        host_arch = src_dir / "bin" / "HostArch"
-        host_arch.write_text("#!/bin/sh\necho TEST-Arch1\n", encoding = "utf-8")
-        host_arch.chmod(0o755)
+        _write_host_arch(src_dir)
         _built_binary(src_dir)
 
     return prepare
@@ -1727,6 +1735,9 @@ def test_reuse_clone_builds_in_place_without_cloning_another_tree(
     """
     config, _launcher_before = _working_installation(tmp_path)
     config = replace(config, reuse_clone = True)
+    _write_gs(config.src_dir, "previous gs\nSAD_ARCH=TEST-Arch0\n")
+    _write_host_arch(config.src_dir)
+    _built_binary(config.src_dir)
 
     monkeypatch.setattr(_helpers, "_check_reuse_matches_request", lambda config: None)
 
@@ -1744,8 +1755,10 @@ def test_reuse_clone_builds_in_place_without_cloning_another_tree(
 
     assert set(built_in) == {config.src_dir}, (
         "--reuse-clone should build in the existing source tree.")
-    assert config.executable.read_text(encoding = "utf-8") == "previous gs\n", (
-        "An in-place rebuild keeps the tree it was given.")
+    assert config.executable.read_text(encoding = "utf-8") == (
+            "previous gs\nSAD_ARCH=TEST-Arch1\n"), (
+        "An in-place rebuild keeps the tree it was given, and moves its pin "
+        "to the arch it was rebuilt for.")
 
 
 ################################################################################
