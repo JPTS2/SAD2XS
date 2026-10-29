@@ -8,7 +8,7 @@
 #
 # Authors:    John P. T. Salvesen
 # Email:      john.salvesen@cern.ch
-# Date:       2026-08-25
+# Date:       2026-10-29
 # ==============================================================================
 
 name: Run Tests
@@ -113,6 +113,13 @@ jobs:
             -v "$GITHUB_WORKSPACE":/work -w /work \
             "$IMAGE" \
             bash -lc '
-              python -m pip install --no-cache-dir -e . &&
+              python -m pip install --no-cache-dir -e . || exit
               pytest -ra -q -m "known_issue" tests/
+              status=$?
+              # Exit 5 means nothing is marked known_issue, which is not a failure
+              if [ "$status" -eq 5 ]; then
+                echo "No known-issue tests to run."
+                exit 0
+              fi
+              exit "$status"
             '

@@ -47,7 +47,7 @@ Does not require the SAD binary.
 
 | File | Tests | Fail | Failure root cause |
 |------|-------|------|--------------------|
-| `test_workflow_checkout_refs.py` | 63 | 0 | — |
+| `test_workflow_checkout_refs.py` | 64 | 0 | — |
 | `test_workflow_test_targets.py` | 39 | 0 | — |
 | `test_pytest_ini_testpaths.py` | 2 | 0 | — |
 | `test_dockerfile_build_contract.py` | 3 | 0 | — |
@@ -76,9 +76,10 @@ without a matching workflow fails these tests instead of passing silently.
 - `run_tests.yml` has a `schedule` trigger (nightly runs for upstream breakage)
 - `run_tests.yml` has a `workflow_dispatch` trigger (manual re-runs)
 
-**Regression-gate tests (5 functions, 5 instances):**
+**Regression-gate tests (6 functions, 6 instances):**
 - The `Run regression tests` step in the single `run-tests` job selects `not known_issue`
 - The `Run known-issue tests` step selects `known_issue` only and is non-blocking (`continue-on-error: true`)
+- The `Run known-issue tests` step passes when no test is marked (pytest exit 5), and fails on any other non-zero exit
 - The `run-tests` job itself remains blocking
 - The `run-tests` job checks out the triggering commit without a `ref` override
 

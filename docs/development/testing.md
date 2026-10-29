@@ -232,7 +232,8 @@ It has one job, `run-tests`, with two sequential steps:
 
 1. `pytest -m "not known_issue" tests/`, which blocks the PR on failure;
 2. `pytest -m "known_issue" tests/` with `continue-on-error: true`, so known-bug
-   failures stay visible without blocking a merge.
+   failures stay visible without blocking a merge. With no known issues open,
+   pytest selects nothing and exits 5. The step treats that as a pass.
 
 Both steps pull the SAD Docker image and run pytest inside it.
 

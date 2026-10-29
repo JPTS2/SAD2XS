@@ -310,6 +310,25 @@ def test_ci_known_issues_step_selects_only_known_issues():
     assert "pip install --no-cache-dir -e ." in step["run"]
 
 
+def test_ci_known_issues_step_passes_when_no_test_is_selected():
+    """
+    The `Run known-issue tests` step must pass when nothing is marked.
+
+    pytest exits 5 when it collects no tests, which is the expected result
+    with no open known issues. `continue-on-error` keeps the job green, but
+    the step still showed as a red error on every run. Any other non-zero
+    exit must still fail the step.
+    """
+    data = _load(RUN_ALL_PATH)
+    step = _step_by_name(data, "run-tests", "Run known-issue tests")
+    assert step is not None, "run-tests job must have a `Run known-issue tests` step."
+    assert '"$status" -eq 5' in step["run"], (
+        "`Run known-issue tests` must treat pytest exit code 5 (no tests "
+        "selected) as success.")
+    assert 'exit "$status"' in step["run"], (
+        "`Run known-issue tests` must still fail on any other exit code.")
+
+
 def test_ci_known_issues_step_is_non_blocking():
     """
     The `Run known-issue tests` step must set continue-on-error: true
