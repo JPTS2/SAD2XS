@@ -278,6 +278,11 @@ To run it:
 SAD2XS_REAL_INSTALL_TEST=1 python -m pytest tests/installation/test_real_installation.py -v
 ```
 
+The test runs the `sad2xs-install-sad` found on PATH, as a separate process.
+That process imports whichever `sad2xs` its environment has installed, not the
+checkout pytest runs from. Install the checkout with `pip install -e .`, or
+set `PYTHONPATH` to the checkout, or the test exercises the installed release.
+
 It installs into a pytest `tmp_path`, never the default location, and asserts
 that `~/.zshrc` and `~/.bashrc` are byte-identical afterwards.
 
@@ -292,13 +297,14 @@ it, and ran the smoke lattice through the generated launcher, leaving the shell
 startup files unchanged. Last run 2026-08-27 on linux/arm64: `ubuntu:24.04` and
 `almalinux:9`, both passed.
 
-Last run: 2026-08-28, macOS 26.6.2 (Darwin 25.6.0), arm64, from the `xsuite`
-conda environment with `DEVELOPER_DIR=/Library/Developer/CommandLineTools`.
-Passed in 202 s: clone into a staging directory, swap into place, `make depend`,
-`make exe`, a runnable `src/bin/gs`, and the smoke lattice completing with
-return code 0 through the generated launcher invoked from an unrelated working
-directory. Both shell rc files were unchanged, checked for modification and
-for creation.
+Last run: 2026-10-29, macOS 26.6.2 (Darwin 25.6.0), arm64, from the `xsuite`
+conda environment with the checkout on `PYTHONPATH`. Passed in 225 s: clone
+into a staging directory, swap into place, `make depend`, `make exe`, an
+executable `obj/arm-Darwin25/sad1.exe`, `bin/gs` pinned to
+`SAD_ARCH=arm-Darwin25`, and the smoke lattice completing with return code 0
+through the generated launcher invoked from an unrelated working directory.
+Both shell rc files were unchanged, checked for modification and for
+creation.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.
