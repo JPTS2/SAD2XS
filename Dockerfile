@@ -8,7 +8,7 @@
 #
 # Authors:    John P. T. Salvesen
 # Email:      john.salvesen@cern.ch
-# Date:       2026-08-25
+# Date:       2026-10-29
 # ==============================================================================
 
 ################################################################################
@@ -73,8 +73,15 @@ RUN awk 'NR<=70' sad.conf > sad.conf.new && mv sad.conf.new sad.conf
 ########################################
 # Build SAD and check
 ########################################
-RUN make depend && make -s exe
-RUN test -x /opt/sad/src/bin/gs
+# bin/gs is a tracked wrapper script, present even when make links no binary.
+# gs re-derives the arch from the kernel at run time, and CI runner kernels vary.
+# One layer, so the check and the pin always see the kernel the build ran on.
+RUN make depend && make -s exe \
+ && ARCH="$(bin/HostArch)" \
+ && test -x "obj/${ARCH}/sad1.exe" \
+ && test "$(grep -c '^SAD_ARCH=' bin/gs)" = 1 \
+ && sed -i "s|^SAD_ARCH=.*\$|SAD_ARCH=${ARCH}|" bin/gs \
+ && grep -qx "SAD_ARCH=${ARCH}" bin/gs
 
 ########################################
 # Collect exact runtime libs
