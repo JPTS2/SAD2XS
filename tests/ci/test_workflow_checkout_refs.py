@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-25
+Date:       2026-10-29
 ================================================================================
 """
 ################################################################################
@@ -429,6 +429,28 @@ def test_ci_docker_build_tags_image_per_branch():
     run_text = _job_run_text(_load(DOCKER_PATH), "rebuild-docker")
     assert "SLUG" in run_text, (
         "docker-build.yml should derive a per-branch tag slug for the image.")
+
+
+def test_ci_docker_build_smoke_runs_the_image_by_digest():
+    """
+    The smoke step must run the image this matrix leg built, by digest.
+
+    Every leg pushes the same `:<sha>` tag, since a scheduled run checks out
+    one commit per branch under one triggering sha. The tag then names
+    whichever leg pushed last, so a leg could smoke-test another branch's
+    image.
+    """
+    step = _step_by_name(
+        _load(DOCKER_PATH), "rebuild-docker",
+        "Smoke (SAD starts) using freshly pushed image")
+    assert step is not None, (
+        "docker-build.yml must have a `Smoke (SAD starts) using freshly "
+        "pushed image` step.")
+    assert "@${{ steps.build.outputs.digest }}" in step["run"], (
+        "The smoke step must run the image by the build step's digest output.")
+    assert "github.sha" not in step["run"], (
+        "The smoke step must not run the shared `:<sha>` tag, which every "
+        "matrix leg pushes.")
 
 
 def test_ci_template_falls_back_to_a_tag_the_build_publishes():
