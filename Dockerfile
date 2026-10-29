@@ -74,9 +74,14 @@ RUN awk 'NR<=70' sad.conf > sad.conf.new && mv sad.conf.new sad.conf
 # Build SAD and check
 ########################################
 # bin/gs is a tracked wrapper script, present even when make links no binary.
-# One layer, so a cached build is never checked against another kernel's arch.
+# gs re-derives the arch from the kernel at run time, and CI runner kernels vary.
+# One layer, so the check and the pin always see the kernel the build ran on.
 RUN make depend && make -s exe \
- && test -x "obj/$(bin/HostArch)/sad1.exe"
+ && ARCH="$(bin/HostArch)" \
+ && test -x "obj/${ARCH}/sad1.exe" \
+ && test "$(grep -c '^SAD_ARCH=' bin/gs)" = 1 \
+ && sed -i "s|^SAD_ARCH=.*\$|SAD_ARCH=${ARCH}|" bin/gs \
+ && grep -qx "SAD_ARCH=${ARCH}" bin/gs
 
 ########################################
 # Collect exact runtime libs

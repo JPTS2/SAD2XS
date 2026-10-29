@@ -15,6 +15,7 @@ Date:       2026-10-29
 ################################################################################
 # Required Packages
 ################################################################################
+import re
 from pathlib import Path
 
 ################################################################################
@@ -101,3 +102,23 @@ def test_builder_stage_checks_the_sad_binary():
     assert "test -x /opt/sad/src/bin/gs" not in stage, (
         "The Dockerfile builder stage must not treat `bin/gs` as proof of a "
         "successful build: it is a tracked script that always exists.")
+
+################################################################################
+# Architecture pin
+################################################################################
+def test_builder_stage_pins_the_sad_arch_in_gs():
+    """
+    The builder must pin `SAD_ARCH` in `bin/gs` to the arch it built for.
+
+    `bin/gs` runs `bin/HostArch` at every start, and HostArch names the arch
+    after the kernel major version. A container shares the host kernel, so an
+    image built on a Linux 6 runner looks for `obj/AMD64-Linux7` on a Linux 7
+    runner and finds nothing.
+
+    The pin must share the build's RUN instruction. Otherwise a pin layer
+    rerun over a build layer cached on another kernel records the wrong arch.
+    """
+    build = _run_instruction(_builder_stage(), "make -s exe")
+    assert re.search(r"sed -i \"s\|\^SAD_ARCH=.*\" bin/gs", build), (
+        "The Dockerfile builder stage must rewrite the `SAD_ARCH=` line of "
+        "bin/gs in the same RUN instruction as `make exe`.")
