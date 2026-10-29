@@ -50,7 +50,7 @@ Does not require the SAD binary.
 | `test_workflow_checkout_refs.py` | 61 | 0 | — |
 | `test_workflow_test_targets.py` | 39 | 0 | — |
 | `test_pytest_ini_testpaths.py` | 2 | 0 | — |
-| `test_dockerfile_build_contract.py` | 1 | 0 | — |
+| `test_dockerfile_build_contract.py` | 2 | 0 | — |
 
 ### `test_workflow_checkout_refs.py`
 
@@ -113,6 +113,7 @@ undo by accident.
 | Test | Expected result | What it checks |
 |------|----------------|----------------|
 | `test_builder_stage_installs_yacc` | PASS | The builder stage installs bison, so make can regenerate `src/calc.c` from `src/calc.y` whenever the mtimes make it try |
+| `test_builder_stage_checks_the_sad_binary` | PASS | The builder stage checks that `make exe` linked `obj/<arch>/sad1.exe`, not only that the tracked `bin/gs` script exists |
 
 ### `test_pytest_ini_testpaths.py`
 

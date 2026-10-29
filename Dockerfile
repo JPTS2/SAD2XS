@@ -8,7 +8,7 @@
 #
 # Authors:    John P. T. Salvesen
 # Email:      john.salvesen@cern.ch
-# Date:       2026-08-25
+# Date:       2026-10-29
 # ==============================================================================
 
 ################################################################################
@@ -73,8 +73,10 @@ RUN awk 'NR<=70' sad.conf > sad.conf.new && mv sad.conf.new sad.conf
 ########################################
 # Build SAD and check
 ########################################
-RUN make depend && make -s exe
-RUN test -x /opt/sad/src/bin/gs
+# bin/gs is a tracked wrapper script, present even when make links no binary.
+# One layer, so a cached build is never checked against another kernel's arch.
+RUN make depend && make -s exe \
+ && test -x "obj/$(bin/HostArch)/sad1.exe"
 
 ########################################
 # Collect exact runtime libs
