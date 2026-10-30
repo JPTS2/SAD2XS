@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-27
+Date:       2026-10-29
 ================================================================================
 """
 ################################################################################
@@ -753,8 +753,16 @@ def test_the_linux_install_writes_a_launcher_that_runs(tmp_path, monkeypatch):
     config.src_dir.mkdir(parents = True)
     (config.src_dir / "bin").mkdir()
     gs = config.src_dir / "bin" / "gs"
-    gs.write_text('#!/bin/sh\necho "gs ran"\n', encoding = "utf-8")
+    gs.write_text(
+        '#!/bin/sh\nSAD_ARCH=`unpinned`\necho "gs ran"\n', encoding = "utf-8")
     gs.chmod(0o755)
+    host_arch = config.src_dir / "bin" / "HostArch"
+    host_arch.write_text("#!/bin/sh\necho TEST-Arch1\n", encoding = "utf-8")
+    host_arch.chmod(0o755)
+    binary = config.src_dir / "obj" / "TEST-Arch1" / "sad1.exe"
+    binary.parent.mkdir(parents = True)
+    binary.touch()
+    binary.chmod(0o755)
     (config.src_dir / "sad.conf").write_text(
         "".join(f"line {n}\n" for n in range(1, 121)), encoding = "utf-8")
 
@@ -767,6 +775,9 @@ def test_the_linux_install_writes_a_launcher_that_runs(tmp_path, monkeypatch):
     monkeypatch.setattr(_helpers, "make_sad", lambda *args, **kwargs: None)
 
     installer.install_sad_linux(config)
+
+    assert "SAD_ARCH=TEST-Arch1" in gs.read_text(encoding = "utf-8").splitlines(), (
+        "The Linux install should pin bin/gs to the arch it built for.")
 
     result = subprocess.run(
         [bash, str(config.launcher)],

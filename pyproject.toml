@@ -8,7 +8,7 @@
 #
 # Authors:  John P. T. Salvesen
 # Email:    john.salvesen@cern.ch
-# Date:     2026-10-18
+# Date:     2026-10-30
 ################################################################################
 
 [build-system]
@@ -18,7 +18,7 @@ build-backend   = "setuptools.build_meta"
 
 [project]
 name            = "sad2xs"
-version         = "0.4.2"
+version         = "0.4.3"
 description     = "Conversion of SAD lattices to Xtrack format"
 readme          = "README.md"
 license         = "Apache-2.0"
@@ -47,7 +47,7 @@ dependencies = [
     "numpy>=2.1",
     "pyyaml>=6.0",
     "scipy>=1.14",
-    "xsuite>=0.63.0"]
+    "xsuite>=0.67.2"]
 
 [project.scripts]
 # Builds SAD from source.

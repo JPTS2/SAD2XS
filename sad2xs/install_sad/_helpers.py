@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-09-07
+Date:       2026-10-29
 ================================================================================
 """
 ################################################################################
@@ -313,7 +313,7 @@ class InstallConfig:
 
     @property
     def executable(self) -> Path:
-        """Path: The SAD binary produced by the build."""
+        """Path: The `bin/gs` wrapper the launcher runs."""
         return self.src_dir / "bin" / "gs"
 
 ################################################################################
@@ -1237,11 +1237,50 @@ def make_sad(
 ########################################
 # Verify Executable
 ########################################
+def _sad_arch(
+        work_dir:   Path,
+        env:        dict[str, str]) -> str | None:
+    """
+    Return the arch name SAD's own `bin/HostArch` reports for this host.
+
+    Parameters
+    ----------
+    work_dir : Path
+        SAD source tree.
+    env : dict
+        Environment the build ran in, so HostArch names the arch make used.
+
+    Returns
+    -------
+    str or None
+        The arch name, such as `arm-Darwin25`, or None if HostArch is
+        missing, fails, or prints nothing.
+    """
+    try:
+        process = subprocess.run(       # pylint: disable=subprocess-run-check
+            [str(work_dir / "bin" / "HostArch")],
+            env     = env,
+            text    = True,
+            stdout  = subprocess.PIPE,
+            stderr  = subprocess.DEVNULL)
+    except OSError:
+        return None
+    arch = process.stdout.strip()
+    if process.returncode != 0 or not arch:
+        return None
+    return arch
+
+
 def verify_executable(
         config:     InstallConfig,
-        work_dir:   Path) -> None:
+        work_dir:   Path,
+        arch:       str | None) -> None:
     """
     Check that the build produced a runnable SAD binary.
+
+    The binary is `obj/<arch>/sad1.exe`. `bin/gs` is not checked: it is a
+    wrapper script tracked in the SAD repository, so it exists whether or
+    not anything was built.
 
     Parameters
     ----------
@@ -1249,18 +1288,65 @@ def verify_executable(
         Install configuration.
     work_dir : Path
         Directory the build ran in.
+    arch : str or None
+        Arch name the tree's `bin/HostArch` reported, or None if it
+        reported none.
 
     Raises
     ------
     SystemExit
-        If the binary is missing or not executable.
+        If the arch cannot be read, or the binary is missing or not
+        executable.
     """
-    executable = work_dir / "bin" / "gs"
+    if arch is None:
+        sys.exit(
+            f"Build finished but {work_dir / 'bin' / 'HostArch'} did not "
+            f"report the SAD arch. See {config.build_log}")
+    executable = work_dir / "obj" / arch / "sad1.exe"
     if not os.access(executable, os.X_OK):
         sys.exit(
             f"Build finished but {executable} is missing or not "
             f"executable. See {config.build_log}")
     logger.info(f"Build OK: {executable}")
+
+########################################
+# Pin Arch
+########################################
+def pin_sad_arch(
+        work_dir:   Path,
+        arch:       str) -> None:
+    """
+    Pin `bin/gs` to the arch the tree was built for.
+
+    `bin/gs` runs `bin/HostArch` at every start, and HostArch names the arch
+    after the kernel major version. Without the pin, a macOS major upgrade
+    sends `gs` to an `obj/<arch>` directory the build never made. A rebuild
+    replaces an earlier pin.
+
+    Parameters
+    ----------
+    work_dir : Path
+        Directory the build ran in.
+    arch : str
+        Arch name the build used.
+
+    Raises
+    ------
+    SystemExit
+        If `bin/gs` does not have exactly one `SAD_ARCH=` line.
+    """
+    gs          = work_dir / "bin" / "gs"
+    # surrogateescape round-trips any non-UTF-8 bytes upstream adds to gs
+    lines       = gs.read_text(
+        encoding = "utf-8", errors = "surrogateescape").splitlines(keepends = True)
+    arch_lines  = [i for i, line in enumerate(lines) if line.startswith("SAD_ARCH=")]
+    if len(arch_lines) != 1:
+        sys.exit(
+            f"Cannot pin the SAD arch: {gs} has {len(arch_lines)} "
+            f"`SAD_ARCH=` lines, expected one.")
+    lines[arch_lines[0]] = f"SAD_ARCH={arch}\n"
+    gs.write_text("".join(lines), encoding = "utf-8", errors = "surrogateescape")
+    logger.info(f"Pinned {gs} to {arch}")
 
 ################################################################################
 # Source Lifecycle
@@ -1322,7 +1408,9 @@ def install_sad_source(
         if prepare is not None:
             prepare(config.src_dir)
         make_sad(config, env, reused_tree, config.src_dir)
-        verify_executable(config, config.src_dir)
+        arch = _sad_arch(config.src_dir, env)
+        verify_executable(config, config.src_dir, arch)
+        pin_sad_arch(config.src_dir, arch)
         write_launcher(config)
     except BaseException as error:
         rollback(config, error)

@@ -8,7 +8,7 @@
 #
 # Authors:    John P. T. Salvesen
 # Email:      john.salvesen@cern.ch
-# Date:       2026-10-17
+# Date:       2026-10-29
 # ==============================================================================
 
 name: SAD Docker Build
@@ -94,7 +94,8 @@ jobs:
           # Tag slug: release/0.4.0 -> release-0.4.0
           SLUG=$(echo "${{ matrix.branch }}" | tr '/' '-')
 
-          TAGS="${IMAGE}:${{ github.sha }}
+          # The triggering commit is main's for every leg of a scheduled run
+          TAGS="${IMAGE}:$(git rev-parse HEAD)
           ${IMAGE}:${SLUG}"
           # :latest follows main, so anything pulling it unqualified is unaffected.
           if [ "${{ matrix.branch }}" = "main" ]; then
@@ -115,6 +116,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & push image
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -129,7 +131,8 @@ jobs:
           # Cached layers would pin SAD and Xsuite to whatever the last uncached build resolved
           no-cache: ${{ github.event_name == 'schedule' }}
 
+      # Another build can repush a tag; only the digest names this leg's image
       - name: Smoke (SAD starts) using freshly pushed image
         run: |
-          docker run --rm ${{ steps.img.outputs.image }}:${{ github.sha }} \
+          docker run --rm ${{ steps.img.outputs.image }}@${{ steps.build.outputs.digest }} \
             sad-smoke /opt/smoke.sad 20

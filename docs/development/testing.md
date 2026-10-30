@@ -232,7 +232,8 @@ It has one job, `run-tests`, with two sequential steps:
 
 1. `pytest -m "not known_issue" tests/`, which blocks the PR on failure;
 2. `pytest -m "known_issue" tests/` with `continue-on-error: true`, so known-bug
-   failures stay visible without blocking a merge.
+   failures stay visible without blocking a merge. With no known issues open,
+   pytest selects nothing and exits 5. The step treats that as a pass.
 
 Both steps pull the SAD Docker image and run pytest inside it.
 
@@ -259,8 +260,17 @@ requirements. Each branch gets its own tag instead: `main` publishes
 
 The test workflows pull the tag matching the branch under test, which on a
 pull request means the base branch, and fall back to `:latest` when no such
-image exists. A scheduled build fires only on the default branch, so it fans
+image exists. A pull request that changes the `Dockerfile` is therefore
+tested against the base branch's existing image. The change is first built
+and tested after it merges. A scheduled build fires only on the default branch, so it fans
 out over main and every release branch explicitly.
+
+Each build also tags the image with the commit it was built from. The smoke
+step after the push runs the image by digest, because a tag can be repushed by
+another build. The image pins SAD's `bin/gs` to the arch it was built for, so
+it runs on any runner kernel. The
+[design decisions](design-decisions.md#a-sad-build-is-pinned-to-the-arch-it-was-built-for)
+explain why.
 
 ## Physics Edge Cases
 

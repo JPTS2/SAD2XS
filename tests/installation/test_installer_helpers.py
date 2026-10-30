@@ -9,7 +9,7 @@ See LICENSE for details.
 
 Authors:    John P. T. Salvesen
 Email:      john.salvesen@cern.ch
-Date:       2026-08-27
+Date:       2026-10-29
 ================================================================================
 """
 ################################################################################
@@ -808,16 +808,25 @@ def test_make_sad_cleans_only_a_reused_tree(
 ########################################
 # Build Verification
 ########################################
+def _built_binary(src_dir: Path, mode: int = 0o755) -> Path:
+    """
+    Write an empty `obj/TEST-Arch1/sad1.exe` with the given permissions.
+    """
+    binary = src_dir / "obj" / "TEST-Arch1" / "sad1.exe"
+    binary.parent.mkdir(parents = True)
+    binary.touch()
+    binary.chmod(mode)
+    return binary
+
+
 def test_verify_executable_accepts_an_executable_binary(tmp_path):
     """
     A build that produced a runnable binary should pass without exiting.
     """
     config = make_config(tmp_path)
-    config.executable.parent.mkdir(parents = True)
-    config.executable.touch()
-    config.executable.chmod(0o755)
+    _built_binary(config.src_dir)
 
-    _helpers.verify_executable(config, config.src_dir)
+    _helpers.verify_executable(config, config.src_dir, "TEST-Arch1")
 
 
 def test_verify_executable_rejects_a_binary_without_the_executable_bit(tmp_path):
@@ -825,12 +834,10 @@ def test_verify_executable_rejects_a_binary_without_the_executable_bit(tmp_path)
     A file that exists but cannot be run is a failed build.
     """
     config = make_config(tmp_path)
-    config.executable.parent.mkdir(parents = True)
-    config.executable.touch()
-    config.executable.chmod(0o644)
+    _built_binary(config.src_dir, mode = 0o644)
 
     with pytest.raises(SystemExit) as exc_info:
-        _helpers.verify_executable(config, config.src_dir)
+        _helpers.verify_executable(config, config.src_dir, "TEST-Arch1")
 
     assert "not executable" in str(exc_info.value), (
         "A present but unrunnable binary should be reported as a failed build.")
@@ -839,14 +846,112 @@ def test_verify_executable_rejects_a_binary_without_the_executable_bit(tmp_path)
 def test_verify_executable_exits_when_the_build_produced_no_binary(tmp_path):
     """
     A build that returns zero but leaves no binary should still fail.
+
+    `bin/gs` is tracked in the SAD repository, so it is present here as it
+    would be after any clone. It must not count as a built binary.
+    """
+    config = make_config(tmp_path)
+    config.executable.parent.mkdir(parents = True)
+    config.executable.touch()
+    config.executable.chmod(0o755)
+
+    with pytest.raises(SystemExit) as exc_info:
+        _helpers.verify_executable(config, config.src_dir, "TEST-Arch1")
+
+    assert "sad1.exe" in str(exc_info.value), (
+        "The message should name the missing sad1.exe, not bin/gs.")
+    assert str(config.build_log) in str(exc_info.value), (
+        "The message should point at the build log.")
+
+
+def test_verify_executable_exits_when_no_arch_was_reported(tmp_path):
+    """
+    Without an arch name there is no binary path to check.
     """
     config = make_config(tmp_path)
 
     with pytest.raises(SystemExit) as exc_info:
-        _helpers.verify_executable(config, config.src_dir)
+        _helpers.verify_executable(config, config.src_dir, None)
 
+    assert "HostArch" in str(exc_info.value), (
+        "The message should say HostArch did not report the arch.")
     assert str(config.build_log) in str(exc_info.value), (
         "The message should point at the build log.")
+
+
+########################################
+# Arch Pin
+########################################
+UNPINNED_GS = (
+    "#!/bin/sh\n"
+    "SAD_ARCH=`$SAD_ROOTPATH/bin/HostArch`\n"
+    "SAD_EXE=\"$SAD_ROOTPATH/obj/${SAD_ARCH}/sad1.exe\"\n")
+
+
+def _write_host_arch(src_dir: Path) -> None:
+    """
+    Write a `bin/HostArch` that reports TEST-Arch1, as a build tree has.
+    """
+    host_arch = src_dir / "bin" / "HostArch"
+    host_arch.parent.mkdir(parents = True, exist_ok = True)
+    host_arch.write_text("#!/bin/sh\necho TEST-Arch1\n", encoding = "utf-8")
+    host_arch.chmod(0o755)
+
+
+def _write_gs(src_dir: Path, text: str) -> Path:
+    """
+    Write `bin/gs` with the given text.
+    """
+    gs = src_dir / "bin" / "gs"
+    gs.parent.mkdir(parents = True, exist_ok = True)
+    gs.write_text(text, encoding = "utf-8")
+    return gs
+
+
+def test_pin_sad_arch_rewrites_only_the_arch_line(tmp_path):
+    """
+    The pin replaces the HostArch call and leaves the rest of gs alone.
+    """
+    gs = _write_gs(tmp_path, UNPINNED_GS)
+
+    _helpers.pin_sad_arch(tmp_path, "TEST-Arch1")
+
+    expected = UNPINNED_GS.replace(
+        "SAD_ARCH=`$SAD_ROOTPATH/bin/HostArch`", "SAD_ARCH=TEST-Arch1")
+    assert gs.read_text(encoding = "utf-8") == expected, (
+        "Only the SAD_ARCH= line of bin/gs should change.")
+
+
+def test_pin_sad_arch_replaces_an_earlier_pin(tmp_path):
+    """
+    A rebuild after an OS upgrade must move the pin to the new arch.
+    """
+    gs = _write_gs(tmp_path, "#!/bin/sh\nSAD_ARCH=TEST-Arch0\n")
+
+    _helpers.pin_sad_arch(tmp_path, "TEST-Arch1")
+
+    assert gs.read_text(encoding = "utf-8") == "#!/bin/sh\nSAD_ARCH=TEST-Arch1\n", (
+        "A rebuild should replace the earlier pin.")
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["#!/bin/sh\n", "SAD_ARCH=a\nSAD_ARCH=b\n"],
+    ids = ["no_arch_line", "two_arch_lines"])
+def test_pin_sad_arch_refuses_a_gs_without_exactly_one_arch_line(tmp_path, text):
+    """
+    An upstream gs that sets the arch differently must not be guessed at.
+    """
+    gs = _write_gs(tmp_path, text)
+
+    with pytest.raises(SystemExit) as exc_info:
+        _helpers.pin_sad_arch(tmp_path, "TEST-Arch1")
+
+    assert "SAD_ARCH=" in str(exc_info.value), (
+        "The message should say which line could not be pinned.")
+    assert gs.read_text(encoding = "utf-8") == text, (
+        "A refused pin should leave bin/gs unchanged.")
+
 
 ################################################################################
 # Install Transaction
@@ -919,6 +1024,10 @@ def _cloning_run(failing_stage: str = ""):
     return fake_run
 
 
+NEW_GS          = "new gs\nSAD_ARCH=`$SAD_ROOTPATH/bin/HostArch`\n"
+PINNED_NEW_GS   = "new gs\nSAD_ARCH=TEST-Arch1\n"
+
+
 def _building_prepare(config, failing_stage: str = ""):
     """
     Build a preparation step that produces the new SAD binary.
@@ -928,8 +1037,9 @@ def _building_prepare(config, failing_stage: str = ""):
     config : InstallConfig
         Install configuration.
     failing_stage : str, optional
-        "prepare" to fail here, "verify" to leave no binary behind.
-        Defaults to producing a working binary.
+        "prepare" to fail here, "verify" to leave no binary behind, "pin"
+        to leave a gs with no line to pin. Defaults to producing a working
+        binary.
 
     Returns
     -------
@@ -941,10 +1051,10 @@ def _building_prepare(config, failing_stage: str = ""):
             sys.exit("preparation failed")
         if failing_stage == "verify":
             return
-        (src_dir / "bin").mkdir(parents = True, exist_ok = True)
-        binary = src_dir / "bin" / "gs"
-        binary.write_text("new gs\n", encoding = "utf-8")
-        binary.chmod(0o755)
+        gs_text = "new gs\n" if failing_stage == "pin" else NEW_GS
+        _write_gs(src_dir, gs_text).chmod(0o755)
+        _write_host_arch(src_dir)
+        _built_binary(src_dir)
 
     return prepare
 
@@ -973,7 +1083,7 @@ def _assert_installation_survived(config, launcher_before) -> None:
 ########################################
 @pytest.mark.parametrize(
     "failing_stage",
-    ["clone", "prepare", "make depend", "make exe", "verify", "launcher"])
+    ["clone", "prepare", "make depend", "make exe", "verify", "pin", "launcher"])
 def test_a_failure_at_any_stage_leaves_the_previous_installation_working(
         tmp_path,
         monkeypatch,
@@ -1025,7 +1135,7 @@ def test_a_verified_install_replaces_the_previous_one_and_leaves_no_state(
 
     _helpers.install_sad_source(config, {}, _building_prepare(config))
 
-    assert config.executable.read_text(encoding = "utf-8") == "new gs\n", (
+    assert config.executable.read_text(encoding = "utf-8") == PINNED_NEW_GS, (
         "A verified build should replace the previous installation.")
     assert config.marker.is_file(), (
         "The installed tree should be marked as this installer's.")
@@ -1198,7 +1308,7 @@ def test_a_fresh_invocation_recovers_an_interrupted_install(
 
     assert not (config.src_dir / "half_built.txt").exists(), (
         "The interrupted install should have been reconciled first.")
-    assert config.executable.read_text(encoding = "utf-8") == "new gs\n", (
+    assert config.executable.read_text(encoding = "utf-8") == PINNED_NEW_GS, (
         "The new install should then proceed to completion.")
     assert not config.transaction_dir.exists(), (
         "No transaction state should survive the committed install.")
@@ -1209,7 +1319,7 @@ def test_a_fresh_invocation_recovers_an_interrupted_install(
 ########################################
 @pytest.mark.parametrize(
     "failing_stage",
-    ["prepare", "make depend", "make exe", "verify", "launcher"])
+    ["prepare", "make depend", "make exe", "verify", "pin", "launcher"])
 def test_a_first_install_that_fails_leaves_nothing_behind(
         tmp_path,
         monkeypatch,
@@ -1467,7 +1577,7 @@ def test_a_failed_commit_cleanup_does_not_roll_the_install_back(
 
     _helpers.install_sad_source(config, {}, _building_prepare(config))
 
-    assert config.executable.read_text(encoding = "utf-8") == "new gs\n", (
+    assert config.executable.read_text(encoding = "utf-8") == PINNED_NEW_GS, (
         "The install should have completed.")
 
     leftovers = list(config.prefix.glob(f"{_helpers.CLEANUP_PREFIX}*"))
@@ -1477,7 +1587,7 @@ def test_a_failed_commit_cleanup_does_not_roll_the_install_back(
     monkeypatch.setattr(_helpers.shutil, "rmtree", real_rmtree)
     _helpers.reconcile_transaction(config)
 
-    assert config.executable.read_text(encoding = "utf-8") == "new gs\n", (
+    assert config.executable.read_text(encoding = "utf-8") == PINNED_NEW_GS, (
         "A later run must not read committed leftovers as rollback state.")
 
 
@@ -1625,6 +1735,9 @@ def test_reuse_clone_builds_in_place_without_cloning_another_tree(
     """
     config, _launcher_before = _working_installation(tmp_path)
     config = replace(config, reuse_clone = True)
+    _write_gs(config.src_dir, "previous gs\nSAD_ARCH=TEST-Arch0\n")
+    _write_host_arch(config.src_dir)
+    _built_binary(config.src_dir)
 
     monkeypatch.setattr(_helpers, "_check_reuse_matches_request", lambda config: None)
 
@@ -1642,8 +1755,10 @@ def test_reuse_clone_builds_in_place_without_cloning_another_tree(
 
     assert set(built_in) == {config.src_dir}, (
         "--reuse-clone should build in the existing source tree.")
-    assert config.executable.read_text(encoding = "utf-8") == "previous gs\n", (
-        "An in-place rebuild keeps the tree it was given.")
+    assert config.executable.read_text(encoding = "utf-8") == (
+            "previous gs\nSAD_ARCH=TEST-Arch1\n"), (
+        "An in-place rebuild keeps the tree it was given, and moves its pin "
+        "to the arch it was rebuilt for.")
 
 
 ################################################################################

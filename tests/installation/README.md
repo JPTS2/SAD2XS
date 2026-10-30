@@ -17,7 +17,7 @@ Requires the SAD binary for the executable smoke test.
 | File | Tests | Fail | Failure root cause |
 |------|-------|------|--------------------|
 | `test_installer_dispatch.py` | 11 | 0 | — |
-| `test_installer_helpers.py` | 90 | 0 | — |
+| `test_installer_helpers.py` | 97 | 0 | — |
 | `test_linux_installer.py` | 52 | 0 | — |
 | `test_macos_installer.py` | 32 | 0 | — |
 | `test_real_installation.py` | 1 | 0 | — |
@@ -43,9 +43,10 @@ how the command reports a platform it cannot serve or a build that failed.
 
 ### `test_installer_helpers.py`
 
-Covers the platform-independent installer machinery in `_helpers.py` by
-monkeypatching subprocess calls. No test clones, builds, or writes outside
-`tmp_path`. Weighted towards the destructive paths: which source trees may
+Covers the platform-independent installer machinery in `_helpers.py`. The
+clone and the build are monkeypatched. The only process a test runs is a
+two-line stand-in for SAD's `bin/HostArch`, which the build fixtures write
+into `tmp_path`. No test clones, builds, or writes outside `tmp_path`. Weighted towards the destructive paths: which source trees may
 be replaced, what happens when a clone or a source request fails, and what
 reaches the launcher and the printed PATH instruction.
 
@@ -107,7 +108,11 @@ test, not by the monkeypatched ones.
 | `test_make_sad_cleans_only_a_reused_tree` | A fresh clone has nothing to clean, and upstream's clean target fails when there is nothing to remove. |
 | `test_verify_executable_accepts_an_executable_binary` | A build that produced a runnable binary should pass without exiting. |
 | `test_verify_executable_rejects_a_binary_without_the_executable_bit` | A file that exists but cannot be run is a failed build. |
-| `test_verify_executable_exits_when_the_build_produced_no_binary` | A build that returns zero but leaves no binary should still fail. |
+| `test_verify_executable_exits_when_the_build_produced_no_binary` | A build that returns zero but leaves no binary should still fail, even with the tracked `bin/gs` present. |
+| `test_verify_executable_exits_when_no_arch_was_reported` | Without an arch name there is no binary path to check. |
+| `test_pin_sad_arch_rewrites_only_the_arch_line` | The pin replaces the HostArch call and leaves the rest of gs alone. |
+| `test_pin_sad_arch_replaces_an_earlier_pin` | A rebuild after an OS upgrade must move the pin to the new arch. |
+| `test_pin_sad_arch_refuses_a_gs_without_exactly_one_arch_line` | An upstream gs that sets the arch differently must not be guessed at. |
 | `test_a_failure_at_any_stage_leaves_the_previous_installation_working` | An install that fails must cost the user nothing. |
 | `test_a_verified_install_replaces_the_previous_one_and_leaves_no_state` | A build that passes verification should become the installation. |
 | `test_an_unowned_launcher_is_refused_before_anything_is_cloned_or_moved` | An unowned launcher should cost no clone, no build, and no move. |
@@ -241,7 +246,10 @@ rather than one platform's.
 ### `test_real_installation.py`
 
 Opt-in end-to-end install. Clones and builds SAD into a temporary prefix,
-then runs the smoke lattice through the generated launcher. Needs the
+checks `obj/<arch>/sad1.exe` and the `SAD_ARCH=` pin in `bin/gs` against the
+tree's own HostArch, then runs the smoke lattice through the generated
+launcher. It is the only test that runs the arch check and pin against a real
+SAD tree. Needs the
 network and takes minutes, so it is skipped unless
 `SAD2XS_REAL_INSTALL_TEST=1` is set.
 
@@ -259,8 +267,8 @@ Smoke check against a real SAD installation. Requires the SAD binary.
 
 ## Real Installation Validation
 
-Every other test in this folder monkeypatches its subprocess calls, so none of
-them proves the installer can actually build SAD. `test_real_installation.py`
+Every other test in this folder replaces the clone and the build with
+stand-ins, so none of them proves the installer can actually build SAD. `test_real_installation.py`
 does, but it needs the network and takes minutes, so it does not run by
 default.
 
@@ -269,6 +277,11 @@ To run it:
 ```bash
 SAD2XS_REAL_INSTALL_TEST=1 python -m pytest tests/installation/test_real_installation.py -v
 ```
+
+The test runs the `sad2xs-install-sad` found on PATH, as a separate process.
+That process imports whichever `sad2xs` its environment has installed, not the
+checkout pytest runs from. Install the checkout with `pip install -e .`, or
+set `PYTHONPATH` to the checkout, or the test exercises the installed release.
 
 It installs into a pytest `tmp_path`, never the default location, and asserts
 that `~/.zshrc` and `~/.bashrc` are byte-identical afterwards.
@@ -284,13 +297,14 @@ it, and ran the smoke lattice through the generated launcher, leaving the shell
 startup files unchanged. Last run 2026-08-27 on linux/arm64: `ubuntu:24.04` and
 `almalinux:9`, both passed.
 
-Last run: 2026-08-28, macOS 26.6.2 (Darwin 25.6.0), arm64, from the `xsuite`
-conda environment with `DEVELOPER_DIR=/Library/Developer/CommandLineTools`.
-Passed in 202 s: clone into a staging directory, swap into place, `make depend`,
-`make exe`, a runnable `src/bin/gs`, and the smoke lattice completing with
-return code 0 through the generated launcher invoked from an unrelated working
-directory. Both shell rc files were unchanged, checked for modification and
-for creation.
+Last run: 2026-10-29, macOS 26.6.2 (Darwin 25.6.0), arm64, from the `xsuite`
+conda environment with the checkout on `PYTHONPATH`. Passed in 225 s: clone
+into a staging directory, swap into place, `make depend`, `make exe`, an
+executable `obj/arm-Darwin25/sad1.exe`, `bin/gs` pinned to
+`SAD_ARCH=arm-Darwin25`, and the smoke lattice completing with return code 0
+through the generated launcher invoked from an unrelated working directory.
+Both shell rc files were unchanged, checked for modification and for
+creation.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

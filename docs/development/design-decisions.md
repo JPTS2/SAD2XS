@@ -15,6 +15,7 @@ Decisions about how specific SAD physics is modelled live with the feature they 
 - [Parser hardening is staged, not a full grammar rewrite](#parser-hardening-is-staged-not-a-full-grammar-rewrite)
 - [SAD builds against the system toolchain, not a conda environment](#sad-builds-against-the-system-toolchain-not-a-conda-environment)
 - [The installer never installs system dependencies](#the-installer-never-installs-system-dependencies)
+- [A SAD build is pinned to the arch it was built for](#a-sad-build-is-pinned-to-the-arch-it-was-built-for)
 
 ## Xsuite is the canonical intermediate model
 
@@ -89,6 +90,18 @@ Decision: `sad2xs-install-sad` never runs `sudo` and never runs a package manage
 Reasoning: SAD2XS is a lattice converter, not a system administration tool, and it has had no public security review. Asking for a password would ask users to trust it with far more than it needs. Reporting is also more honest across distributions: package names differ, and a machine where the user cannot become root is common on shared systems.
 
 Consequence: distribution detection exists only to name packages accurately in a printed report. The report names the detected distribution family and the package that provides each missing dependency; it prints no command to run as root, and no automatic-confirmation flag. How those packages arrive is left to the user and whoever administers the machine. Source-level tests assert that no executable path in any installer module — the shared code included, since every platform runs it — can invoke a package manager. The clone, the build, the build logs, and the launcher are all owned by the user.
+
+## A SAD build is pinned to the arch it was built for
+
+Decision: after building SAD, SAD2XS rewrites the `SAD_ARCH=` line of `bin/gs` to the arch name `bin/HostArch` reported at build time.
+
+Reasoning: `bin/gs` does not record which binary it belongs to. It runs `bin/HostArch` at every start and looks for `obj/<arch>/sad1.exe`. HostArch builds the arch name from `uname`, including the kernel major version: `AMD64-Linux6`, `arm-Darwin25`. When the kernel major version changes, `gs` looks in a directory the build never made and fails. A Docker container shares its host's kernel, and GitHub runners run more than one kernel major version, so an image built on one runner can fail on the next. A macOS major upgrade breaks a local install the same way.
+
+Consequence: a build no longer fails just because the kernel major version changed. SAD's own build still uses HostArch, so a rebuild picks up the new arch name and writes a new pin. `bin/gs` is tracked in the SAD repository, so a pinned tree shows it as modified. Only `make install` regenerates it, and SAD2XS does not run that. In the Dockerfile the build, the binary check, and the pin share one `RUN` instruction, so a build layer cached on one kernel is never pinned on another.
+
+The pin removes only the arch-name failure. The binary depends on the C and gfortran runtime libraries it was linked against, not on the kernel version. In the Docker image those libraries are baked in, so a pinned build keeps working on any host. A local install uses the machine's own libraries, so an OS upgrade or a Homebrew `libgfortran` update can break the binary for real. The pin does not hide that: SAD then fails to start with an error naming the missing library, and the fix is to rebuild.
+
+Pinning the runner kernel instead is not possible on GitHub-hosted runners, and it would move the same failure to every other host that runs the image.
 
 ---
 Part of the SAD2XS project — the unofficial Strategic Accelerator Design (SAD) to Xsuite converter.

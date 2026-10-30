@@ -47,10 +47,10 @@ Does not require the SAD binary.
 
 | File | Tests | Fail | Failure root cause |
 |------|-------|------|--------------------|
-| `test_workflow_checkout_refs.py` | 61 | 0 | — |
+| `test_workflow_checkout_refs.py` | 64 | 0 | — |
 | `test_workflow_test_targets.py` | 39 | 0 | — |
 | `test_pytest_ini_testpaths.py` | 2 | 0 | — |
-| `test_dockerfile_build_contract.py` | 1 | 0 | — |
+| `test_dockerfile_build_contract.py` | 3 | 0 | — |
 
 ### `test_workflow_checkout_refs.py`
 
@@ -76,19 +76,22 @@ without a matching workflow fails these tests instead of passing silently.
 - `run_tests.yml` has a `schedule` trigger (nightly runs for upstream breakage)
 - `run_tests.yml` has a `workflow_dispatch` trigger (manual re-runs)
 
-**Regression-gate tests (5 functions, 5 instances):**
+**Regression-gate tests (6 functions, 6 instances):**
 - The `Run regression tests` step in the single `run-tests` job selects `not known_issue`
 - The `Run known-issue tests` step selects `known_issue` only and is non-blocking (`continue-on-error: true`)
+- The `Run known-issue tests` step passes when no test is marked (pytest exit 5), and fails on any other non-zero exit
 - The `run-tests` job itself remains blocking
 - The `run-tests` job checks out the triggering commit without a `ref` override
 
-**Docker build tests (6, not parametrised):**
+**Docker build tests (8, not parametrised):**
 - `docker-build.yml` name is stable and documented
 - Triggers on push to `main`
 - Triggers on push to `release/**`
 - Publishes a per-branch image tag
 - Has `workflow_dispatch` trigger
 - Every job uses `actions/checkout@v7`
+- The sha tag names the checked-out commit (`git rev-parse HEAD`), not the triggering `github.sha`
+- The smoke step runs the image by the build step's digest, not by a tag
 
 **Template image tests (1, not parametrised):**
 - The template falls back to a tag the Docker build actually publishes
@@ -113,6 +116,8 @@ undo by accident.
 | Test | Expected result | What it checks |
 |------|----------------|----------------|
 | `test_builder_stage_installs_yacc` | PASS | The builder stage installs bison, so make can regenerate `src/calc.c` from `src/calc.y` whenever the mtimes make it try |
+| `test_builder_stage_checks_the_sad_binary` | PASS | The builder stage checks that `make exe` linked `obj/<arch>/sad1.exe`, in the same `RUN` as the build, not only that the tracked `bin/gs` script exists |
+| `test_builder_stage_pins_the_sad_arch_in_gs` | PASS | The builder stage rewrites the `SAD_ARCH=` line of `bin/gs` to the arch it built for, in the same `RUN` as the build, so the image runs on any host kernel |
 
 ### `test_pytest_ini_testpaths.py`
 
